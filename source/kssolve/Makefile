@@ -12,7 +12,7 @@ OBJ= libkssolve.so
 SOURCE = kssolve.o
 
 $(OBJ): $(SOURCE)
-	$(CPP) $(CFLAGS) -shared -lfftw3 -lm  $^ -o $@ 
+	$(CPP) $(CFLAGS) -shared -lm -lfftw3   $^ -o $@ 
 
 %.o: %.cc
 	$(CPP) $(CFLAGS) -fpic -o $@ -c $^

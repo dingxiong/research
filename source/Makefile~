@@ -1,0 +1,34 @@
+CC = gcc
+ifeq ($(CC),gcc) 
+	CPP = g++
+	COPTFLAGS = -O3 -march=core2 
+else 
+	CPP=icpc
+	COPTFLAGS = -O3 -xSSE4.2 
+endif
+
+OBJ= test
+SOURCE = preexplore.ocu testexplore.occ timer.oc
+PRE= preexplore.cu
+TEST = testexplore.cc 
+TIME =timer.c
+
+$(OBJ): $(SOURCE) 
+	$(CPP) $(CFLAGS) $^ -o $@ 
+
+%.oc: %.c 
+	$(CC) $(COPTFLAGS) -o $@ -c $^
+
+%.occ: %.cc
+	$(CPP) $(COPTFLAGS) -o $@ -c $^
+
+%.ocu: %.cu 
+	$(NVCC) $(NVCCFLAGS) -o $@ -c $^ 
+
+clean:
+	rm -f cuda.[e,o]* core *.ocu *.oc *.occ *~ $(OBJ) 
+
+que:
+	qsub cuda.pbs
+
+# eof

@@ -1,0 +1,36 @@
+#include "kssolve.hpp"
+#include <iostream>
+#include <cstdlib>
+using std::cout;
+using std::endl;
+int main(){
+	
+
+	// const int n=17;
+	 double h=0.25;
+	 double d=22;
+	// CPVec g,v;
+	// double E[n], E2[n], Q[n], f1[n], f2[n], f3[n];
+	// calcoe(h,d,E,E2,g,Q,f1,f2,f3,N);
+
+	int nstp=50000;
+	int np=1;
+	int nqr =1;
+	double a0[N-2];
+	double *aa = (double *)malloc((N-2)*(nstp/np)*sizeof(double));
+	double *daa = (double *)malloc((N-2)*(N-2)*(nstp/nqr)*sizeof(double));
+	for(int i=0; i<N-2; i++) a0[i]=0.1;
+	//	kssolve(a0,d,h,nstp,np,aa);
+	ksfj(a0, d, h, nstp, np, nqr, aa, daa);
+	
+//	for(int i=0; i<(N-2)*(nstp/np+1); i++) cout<<aa[i]<<endl;
+	// int ix = 5;
+	//  for(int j=0; j< N-2; j++) cout<<aa[ix*(N-2)+j]<<'\n';
+	
+	// int ixx = 5; int k = 0;
+	// for(int j=0; j<(N-2); j++) cout<<daa[ixx*(N-2)*(N-2)+k*(N-2)+j]<<endl;
+	  
+	free(aa);
+	
+	return 0;
+}

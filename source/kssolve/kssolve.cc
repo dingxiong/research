@@ -311,8 +311,13 @@ calNL(dcomp *g, dcomp *u, dcomp *Nv, int N, const FFT *p, const FFT *rp ){
 */
 void 
 irfft(const dcomp *u, int N, const FFT &rp){
+  // memcpy(rp.c, u, (N/2+1) * sizeof(fftw_complex));
   
-  memcpy(rp.c, u, (N/2+1) * sizeof(fftw_complex));
+  for(int i = 0; i < N/2 + 1; i++){
+    rp.c[i][0] = u[i].real();
+    rp.c[i][1] = u[i].imag();
+  }
+
   fftw_execute(rp.p);
   for(int i = 0; i < N; i++) rp.r[i] /= N;
 }

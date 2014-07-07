@@ -346,9 +346,9 @@ initFFT(FFT &p, const int N, int a){
   p.r = (double*) fftw_malloc(sizeof(double) * N);
   p.c= (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (N/2+1));
   if(a == 1)
-    p.p = fftw_plan_dft_r2c_1d(N, p.r, p.c, FFTW_MEASURE);
+    p.p = fftw_plan_dft_r2c_1d(N, p.r, p.c, FFTW_ESTIMATE);
   else if(a == -1)
-    p.p = fftw_plan_dft_c2r_1d(N, p.c, p.r, FFTW_MEASURE);
+    p.p = fftw_plan_dft_c2r_1d(N, p.c, p.r, FFTW_ESTIMATE);
   else{ 
     printf("please indicate the correct FFT direction.\n");
     exit(1);

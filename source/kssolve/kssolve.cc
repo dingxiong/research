@@ -61,7 +61,7 @@ ksfj(double *a0, double d, double h, int nstp, int np, int nqr, double *aa, doub
   for(int i = 0; i < N-1; i++) initFFT(p[i], N, 1);
     
   // the size of aa should be (N-2)*(nstp/np)
-  for(int i = 0; i < N-2; ++i) aa[i]=a0[i];
+  for(int i = 0; i < N - 2; ++i) aa[i]=a0[i];
   int ix1 = 1; // index counter for aa.
   // the size of daa should be (N-2)^2 * nstp/nqr
   int ix2 = 0; // index counter for daa.
@@ -142,7 +142,7 @@ ksf(double *a0, double d, double h, int nstp, int np, double *aa){
 /**
    @brief initialize the Jacobian matrix for KS.
 
-   @parameter[out] v [N-1, N/2+1] dimensional complex array.
+   @param[out] v [N-1, N/2+1] dimensional complex array.
 */
 void
 initJ(dcomp *v, int N){

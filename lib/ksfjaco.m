@@ -1,8 +1,8 @@
 function [aa, daa] = ksfjaco(a0, h, nstp, d, np, nqr)
 % integrate KS system with/without calculate Jacobian matrix.
 % exmple usage:
-  %   aa = ksfjaco(a0, 0.25, 1000);
-% [aa, daa] = ksfjaco(a0, 0.25, 1000);
+%   aa = ksfjaco(a0, 0.25, 1000);
+%   [aa, daa] = ksfjaco(a0, 0.25, 1000);
 
 if nargin < 6, nqr = 1; end
 if nargin < 5, np = 1; end

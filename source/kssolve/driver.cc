@@ -21,7 +21,7 @@ int main(){
   
   int k1=0; int k2=0;
   //for(int i = 0; i < 30; i++) cout<<daa[900*k1+30*k2+i] <<endl;
-  for(int i =0 ;i <90; i++) cout<<aa[i]<<endl;
+  for(int i =0 ;i <120; i++) cout<<aa[i]<<endl;
     
   free(aa);
   free(daa);

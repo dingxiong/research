@@ -99,6 +99,10 @@ ksfj(double *a0, double d, double h, int nstp, int np, int nqr, double *aa, doub
   }
   for(int i = 0; i < N - 1; i++) freeFFT(p[i]);
   for(int i = 0; i < N - 1; i++) freeFFT(rp[i]);
+
+  //fftw_cleanup frees heap reservation of FFTW. It may not affect this C++
+  //program, but it can cause unpredictable behavior in MEX and Ctypes,
+  //so just keep it.
   fftw_cleanup();
 }
 

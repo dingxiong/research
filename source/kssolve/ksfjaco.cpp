@@ -11,9 +11,9 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
   mwSize nqr = mxGetScalar(prhs[5]);
   
   plhs[0] = mxCreateDoubleMatrix(N-2, nstp/np, mxREAL);
-  plhs[1] = mxCreateDoubleMatrix((N-2)*nstp/nqr, N-2, mxREAL);
+  plhs[1] = mxCreateDoubleMatrix((N-2)*(N-2), nstp/nqr, mxREAL);
   double *aa = mxGetPr(plhs[0]);
   double *daa = mxGetPr(plhs[1]);
 
-  ksfj(a0, d, h, nstp, np, nqr, aa, daa);
+  ksfj(a0, d, h, nstp, np, nqr, aa, daa);  
 }

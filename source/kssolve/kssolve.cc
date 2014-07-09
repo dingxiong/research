@@ -99,7 +99,7 @@ ksfj(double *a0, double d, double h, int nstp, int np, int nqr, double *aa, doub
   }
   for(int i = 0; i < N - 1; i++) freeFFT(p[i]);
   for(int i = 0; i < N - 1; i++) freeFFT(rp[i]);
-
+  fftw_cleanup();
 }
 
 
@@ -311,12 +311,7 @@ calNL(dcomp *g, dcomp *u, dcomp *Nv, int N, const FFT *p, const FFT *rp ){
 */
 void 
 irfft(const dcomp *u, int N, const FFT &rp){
-  // memcpy(rp.c, u, (N/2+1) * sizeof(fftw_complex));
-  
-  for(int i = 0; i < N/2 + 1; i++){
-    rp.c[i][0] = u[i].real();
-    rp.c[i][1] = u[i].imag();
-  }
+  memcpy(rp.c, u, (N/2+1) * sizeof(fftw_complex));
 
   fftw_execute(rp.p);
   for(int i = 0; i < N; i++) rp.r[i] /= N;
@@ -351,9 +346,9 @@ initFFT(FFT &p, const int N, int a){
   p.r = (double*) fftw_malloc(sizeof(double) * N);
   p.c= (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (N/2+1));
   if(a == 1)
-    p.p = fftw_plan_dft_r2c_1d(N, p.r, p.c, FFTW_ESTIMATE);
+    p.p = fftw_plan_dft_r2c_1d(N, p.r, p.c, FFTW_MEASURE);
   else if(a == -1)
-    p.p = fftw_plan_dft_c2r_1d(N, p.c, p.r, FFTW_ESTIMATE);
+    p.p = fftw_plan_dft_c2r_1d(N, p.c, p.r, FFTW_MEASURE);
   else{ 
     printf("please indicate the correct FFT direction.\n");
     exit(1);

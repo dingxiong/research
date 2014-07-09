@@ -2,7 +2,7 @@
 CC = g++
 ifeq ($(CC),g++) 
 	CPP = g++
-	CFLAGS =  
+	CFLAGS = -O2 
 else 
 	CPP=icpc
 	CFLAGS = -O3 -xSSE4.2 

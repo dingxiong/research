@@ -126,7 +126,7 @@ ksf(double *a0, double d, double h, int nstp, int np, double *aa){
   
   for (int i=0; i<nstp; ++i){
     onestep(g, v, E, E2, Q, f1, f2, f3, N, p, rp);
-    if( (i+1)%np == 0 ) {
+    if( (i+1)%np == 0 && i != nstp - 1) {
       for(int i = 0; i< N/2 - 1; i++) {
 	aa[ix*(N-2)+ 2*i] = v[i+1].real();
 	aa[ix*(N-2)+ 2*i + 1] = v[i+1].imag();
@@ -136,7 +136,7 @@ ksf(double *a0, double d, double h, int nstp, int np, double *aa){
   }
   freeFFT(p);
   freeFFT(rp);
-
+  fftw_cleanup();
 }
 
 /**
@@ -169,6 +169,11 @@ calcoe(double h, double d,  double *E, double *E2, dcomp *g, double *Q, double *
   for(int i = 0; i < M; i++) r[i] = exp(dcomp(0, PI*(i+0.5)/M)); 
     
   dcomp LR, LR3, cf1, cf2, cf3, cQ;
+  // first initiate Q, f1, f2, f3
+  memset(Q, 0, (N/2+1) * sizeof(double));
+  memset(f1, 0, (N/2+1) * sizeof(double));
+  memset(f2, 0, (N/2+1) * sizeof(double));
+  memset(f3, 0, (N/2+1) * sizeof(double));
   // In the equiverlent matlab code, LR is a matrix, and then 
   // Q, f1, f2, f3 are all column vectors after averaging over matrix rows. 
   for(int i = 0; i < N/2 + 1; ++i){ // iteration over column

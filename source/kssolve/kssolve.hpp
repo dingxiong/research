@@ -18,8 +18,8 @@ extern "C"{
    @param[in] nstp number of steps to be integrated
    @param[in] np state saving spacing.
    @param[out] aa saved state vector size = (nstp/np)*(N-2)
-			   eg. if state column vector is v0, v1, ... vn-1, then
-			   aa is a row vector [ v0^{T}, v1^{T}, ... vn-1^{T}].
+   eg. if state column vector is v0, v1, ... vn-1, then
+   aa is a row vector [ v0^{T}, v1^{T}, ... vn-1^{T}].
 */
   void
   ksf(double *a0, double d, double h, int nstp, int np, double *aa);

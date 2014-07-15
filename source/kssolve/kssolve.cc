@@ -47,6 +47,15 @@ void
 calcoe(double h, double d,  double *E, double *E2, dcomp *g, double *Q, double *f1, double *f2, double *f3, int N, const int M = 16);
 void
 initJ(dcomp *v, int N);
+/*----------------      for 1st mode slice     ------------------------------*/
+void
+calNLM1(dcomp* g, dcomp*u, dcomp *Nv, double *L, int N, const FFT &p, const FFT &rp);
+void  
+onestepM1(dcomp *g, dcomp *v, double *E, double *E2, double *Q, double *f1, double *f2,
+	  double *f3, double *L, int N, FFT &p, FFT &rp);
+void
+calL(double d, double *L);
+
 
 //////////////////////////////////////////////////////////////////////
 void
@@ -118,7 +127,7 @@ ksf(double *a0, double d, double h, int nstp, int np, double *aa){
   initFFT(rp, N, -1);
   initFFT(p, N, 1);
     
-  // the size of aa should be (N-2)*(nstp/np+1)
+  // the size of aa should be (N-2)*(nstp/np)
   for(int i = 0; i < N-2; ++i) aa[i]=a0[i];
   int ix = 1;
   
@@ -372,4 +381,97 @@ freeFFT(FFT &p){
   fftw_destroy_plan(p.p);
   fftw_free(p.c);
   fftw_free(p.r);
+}
+
+//////////////////////////////////////////////////////////////////////
+/*  1st mode part  */
+
+void 
+ksfM1(double *a0, double d, double h, int nstp, int np, double *aa, double *tt){
+  double E[N/2+1], E2[N/2+1], Q[N/2+1],f1[N/2+1],f2[N/2+1],f3[N/2+1];
+  dcomp g[N/2+1];
+  calcoe(h,d,E,E2,g,Q,f1,f2,f3,N);
+  double L[N/2+1];
+  calL(d,L);
+
+  FFT rp, p;
+  initFFT(rp, N, -1);
+  initFFT(p, N, 1);
+  
+  // the size of aa should be (N-3)*(nstp/np)
+  for(int i = 0; i<N-2; ++i) aa[i] = a0[i];
+  tt[0] = 0;
+  size_t ix = 1;
+
+  //initialize initial data.
+  dcomp v[N/2+1]; 
+  v[0] =dcomp(0,0); 
+  v[N/2] = dcomp(0,0); 
+  v[1] = dcomp(a0[0], 0);
+  for(int i = 0; i<N/2-2; i++) v[i+2] = dcomp(a0[2*i+1], a0[2*i+2]);
+
+  for(int i=0; i<nstp; ++i){
+    onestepM1(g, v, E, E2, Q, f1, f2, f3, L, N, p, rp);
+    if((i+1)%np ==0 && i != nstp - 1){
+      aa[ix*(N-3)] = v[1].real();
+      for(int i = 0; i < N/2 - 2; i++){
+	aa[ix*(N-3) + 2*i + 1] = v[i+2].real();
+	aa[ix*(N-3) + 2*i + 2] = v[i+2].imag();
+      }
+      tt[ix] = tt[ix-1] + (aa[ix * (N-3)] + aa[(ix-1) * (N-3)]) * h / 2;
+      ix++;
+    }
+  }
+  freeFFT(p);
+  freeFFT(rp);
+  fftw_cleanup();
+}
+
+/**
+   @brief calculte the nonlinear term for the 1st mode slice without Jacobian.
+*/
+void
+calNLM1(dcomp* g, dcomp*u, dcomp *Nv, double *L, int N, const FFT &p, const FFT &rp){
+
+  irfft(u, N, rp);
+  for(int i = 0; i < N; i++) rp.r[i] = rp.r[i] * rp.r[i];
+  rfft(rp.r, N, p);
+  
+  double a1 = u[1].real();
+  for(int i = 0; i < N/2 + 1; i++)
+    Nv[i] = (a1-1) * L[i] * u[i] + a1 * g[i] * dcomp(p.c[i][0], p.c[i][1])
+      - p.c[1][0] * g[i] * u[i];
+
+}
+
+/**
+   @brief calculate linear coeffient  L.
+*/
+void
+calL(double d, double *L){
+  double k[N/2+1];
+  for(int i = 0; i< N/2 + 1; i++){
+    k[i] = i * 2 * PI / d;
+    L[i] = k[i]*k[i] - k[i]*k[i]*k[i]*k[i];    
+  }
+}
+
+void  
+onestepM1(dcomp *g, dcomp *v, double *E, double *E2, double *Q, double *f1, double *f2,
+	  double *f3, double *L, int N, FFT &p, FFT &rp){
+  dcomp Nv[N/2+1], a[N/2+1], Na[N/2+1], b[N/2+1], Nb[N/2+1], c[N/2+1], Nc[N/2+1];
+	
+  calNLM1(g, v, Nv, L, N, p, rp);	
+  for (int i = 0; i < N/2 + 1; i++) a[i] = E2[i]*v[i] + Q[i]*Nv[i];
+  calNLM1(g, a, Na, L, N, p, rp);	
+	
+  for (int i = 0; i < N/2 + 1; i++) b[i] = E2[i]*v[i] + Q[i]*Na[i];
+  calNLM1(g, b, Nb, L, N, p, rp);
+	
+  for (int i = 0; i < N/2 + 1; i++) c[i] = E2[i]*a[i] + Q[i]*(Nb[i]*2.0-Nv[i]);
+  calNLM1(g, c, Nc, L, N, p, rp);
+	
+  for (int i = 0; i < N/2 + 1; i++) v[i] = E[i]*v[i] + Nv[i]*f1[i] + 2.0*f2[i]
+				      *(Na[i]+Nb[i]) + Nc[i]*f3[i];
+  
 }

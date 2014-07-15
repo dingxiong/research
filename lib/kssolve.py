@@ -17,7 +17,7 @@ def ksfjaco(a0, h, nstp, d = 22, np = 1, nqr = 1, isJ = True):
     
     ks = ctypes.cdll.LoadLibrary('./libkssolve.so')
 
-    if isJ:
+    if isJ: 
         daa = numpy.empty(nstp/nqr*(N-2)**2);
         pdaa = daa.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
         ks.ksfj(pa0, cd, ch, cnstp, cnp, cnqr, paa, pdaa)

@@ -8,7 +8,7 @@ extern "C"{
 #endif
 
 /********         function declaration               ***********/
-
+  
 /**
    @brief KS solver without calculating Jacobian matrix.
    
@@ -24,7 +24,7 @@ extern "C"{
   void
   ksf(double *a0, double d, double h, int nstp, int np, double *aa);
 
-/**
+  /**
    @brief KS solver with calculating Jacobian (size (N-2)*(N-2)).
 
    @param[in] nqr Jacobian saving spacing spacing
@@ -34,9 +34,16 @@ extern "C"{
                daa is a row vector [vec(J1), vec(J2), vec(Jn)], where
                vec(J)= [v1^{T}, v2^{T},...,vn^{T}] with each element
                visted column-wise.
-*/
+  */
   void
   ksfj(double *a0, double d, double h, int nstp, int np, int nqr, double *aa, double *daa);
+  
+  /* --------------------------------------------------------------------*/
+  /**
+     @brief KS solver in the 1st mode slice without Jacobian.
+   */
+  void 
+  ksfM1(double *a0, double d, double h, int nstp, int np, double *aa, double *tt);
 
 #ifdef __cplusplus
 } // extern "C"

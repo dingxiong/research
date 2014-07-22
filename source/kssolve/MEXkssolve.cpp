@@ -26,9 +26,9 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
   }
   else{
     plhs[0] = mxCreateDoubleMatrix(nstp/np, 1, mxREAL);
-    plhs[1] = mxCreateDoubleMatrix(N-2, nstp/np, mxREAL);
+    plhs[1] = mxCreateDoubleMatrix(N-3, nstp/np, mxREAL);
     double *tt = mxGetPr(plhs[0]);
     double *aa = mxGetPr(plhs[1]);
-    ksfM1(a0, d, h, nstp, np, aa, tt)
+    ksfM1(a0, d, h, nstp, np, aa, tt);
   }
 }

@@ -385,6 +385,66 @@ freeFFT(FFT &p){
 
 //////////////////////////////////////////////////////////////////////
 /*  1st mode part  */
+void
+ksfjM1(double *a0, double d, double h, int nstp, int np, int nqr, double *aa, double *daa){
+
+  double E[N/2+1], E2[N/2+1], Q[N/2+1],f1[N/2+1],f2[N/2+1],f3[N/2+1];
+  dcomp g[N/2+1];
+  calcoe(h,d,E,E2,g,Q,f1,f2,f3,N);
+  double L[N/2+1];
+  calL(d,L);
+  
+  FFT rp[N-1], p[N-1];
+  for(int i = 0; i < N-1; i++) initFFT(rp[i], N, -1);
+  for(int i = 0; i < N-1; i++) initFFT(p[i], N, 1);
+    
+  // the size of aa should be (N-3)*(nstp/np)
+  for(int i = 0; i < N - 3; ++i) aa[i]=a0[i];
+  tt[0] = 0;	
+  int ix1 = 1; // index counter for aa.
+  // the size of daa should be (N-2)^2 * nstp/nqr
+  int ix2 = 0; // index counter for daa.
+
+  // initialize initial data.
+  dcomp v[(N/2+1) * (N-1)]; // wave mode 0 and N/2 are both zero.
+  v[0] = dcomp(0, 0);
+  v[N/2] = dcomp(0, 0);
+  for(int i = 0; i < N/2 - 1; i++) v[i+1] = dcomp(a0[2*i], a0[2*i+1]);
+  initJ(v, N);
+
+  for (int i = 0; i < nstp; ++i){
+    
+    onestep(g, v, E, E2, Q, f1, f2, f3, N, p, rp);
+    
+    if( (i+1)%np == 0 && i != nstp - 1) {
+      for(int i = 0; i< N/2 - 1; i++) {
+	aa[ix1*(N-2)+ 2*i] = v[i+1].real();
+	aa[ix1*(N-2)+ 2*i + 1] = v[i+1].imag();
+      }
+      ix1++;
+    }
+
+    if((i+1)%nqr == 0){
+      for(int i = 0; i < N - 2; i++){
+	for(int j = 0; j < N/2 -1; j++){
+	  // reading from v starts from second row  and second column. 
+	  daa[ix2*(N-2)*(N-2) + i * (N - 2) + 2*j] = v[(N/2+1)*(i+1) + j+1].real();
+	  daa[ix2*(N-2)*(N-2) + i * (N - 2) + 2*j + 1] = v[(N/2+1)*(i+1) + j+1].imag();
+	  }
+      }
+      ix2++;
+      initJ(v, N); // Initialize Jacobian again.
+    }
+  }
+  for(int i = 0; i < N - 1; i++) freeFFT(p[i]);
+  for(int i = 0; i < N - 1; i++) freeFFT(rp[i]);
+
+  //fftw_cleanup frees heap reservation of FFTW. It may not affect this C++
+  //program, but it can cause unpredictable behavior in MEX and Ctypes,
+  //so just keep it.
+  fftw_cleanup();
+}
+
 
 void 
 ksfM1(double *a0, double d, double h, int nstp, int np, double *aa, double *tt){
@@ -399,7 +459,7 @@ ksfM1(double *a0, double d, double h, int nstp, int np, double *aa, double *tt){
   initFFT(p, N, 1);
   
   // the size of aa should be (N-3)*(nstp/np)
-  for(int i = 0; i<N-2; ++i) aa[i] = a0[i];
+  for(int i = 0; i<N-3; ++i) aa[i] = a0[i];
   tt[0] = 0;
   size_t ix = 1;
 

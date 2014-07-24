@@ -2,20 +2,21 @@
 CC = g++
 ifeq ($(CC),g++) 
 	CPP = g++
-	CFLAGS = -O3 
+	OPTIM = -O3 
 else 
 	CPP=icpc
-	CFLAGS = -O3 -xSSE4.2 
+	OPTIM = -O3 -xSSE4.2 
 endif
 
-OBJ= libkssolve.so
-SOURCE = kssolve.o
+OBJ = libkssolve.so
+SOURCE = kssolve.cc kssolveM1.cc
+
+INCPATH = ../../include
+CFLAGS = -shared -fpic -lm -lfftw3 -std=c++11
 
 $(OBJ): $(SOURCE)
-	$(CPP) $(CFLAGS) -shared -lm -lfftw3   $^ -o $@ 
+	$(CPP) $(CFLAGS) $(OPTIM) -I$(INCPATH)   $^ -o $@ 
 
-%.o: %.cc
-	$(CPP) $(CFLAGS) -fpic -o $@ -c $^
 
 clean:
-	rm -f *.o 
+	rm -f *.so *.o 

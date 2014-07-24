@@ -2,143 +2,62 @@
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
-#include <complex>
-#include <fftw3.h>
+//#include <complex>
+//#include <fftw3.h>
 //#include <omp.h>
 
-/****    global variable definition.   *****/
-const double PI=3.14159265358979323;
-
-/*****    structure definition.        ******/
-typedef std::complex<double> dcomp;
-
-/**
-   Structure for convenience of rfft.
-   For forward real Fourier transform, 'in' is real
-   and 'out' is complex.
-   For inverse real Fourier transform, the situation reverses.
-*/
-typedef struct{
-  fftw_plan p;
-  fftw_complex *c; // complex array.
-  double *r; // real array
-} FFT;
-
-/**************         function declaration       *****************/
-void
-initFFT(FFT &p, const int N, int a);
-void
-freeFFT(FFT &p);
-void
-dot(double* a, double* b, int N);
-void 
-rfft(double *u, int N, const FFT &p);
-void 
-irfft(const dcomp *u, int N, const FFT &rp);
-void 
-calNL(dcomp *g, dcomp *u, dcomp *Nv, int N, const FFT &p, const FFT &rp);
-void
-calNL(dcomp *g, dcomp *u, dcomp *Nv, int N, const FFT *p, const FFT *rp );
-void  
-onestep(dcomp *g, dcomp *v, double *E,  double *E2,  double *Q, double *f1, double *f2, double *f3, int N, FFT &p, FFT &rp);
-void  
-onestep(dcomp *g, dcomp *v, double *E, double *E2, double *Q, double *f1, double *f2, double *f3, int N, FFT *p, FFT *rp);
-void
-calcoe(double h, double d,  double *E, double *E2, dcomp *g, double *Q, double *f1, double *f2, double *f3, int N, const int M = 16);
-void
-initJ(dcomp *v, int N);
-/*----------------      for 1st mode slice     ------------------------------*/
-void
-calNLM1(dcomp* g, dcomp*u, dcomp *Nv, double *L, int N, const FFT &p, const FFT &rp);
-void  
-onestepM1(dcomp *g, dcomp *v, double *E, double *E2, double *Q, double *f1, double *f2,
-	  double *f3, double *L, int N, FFT &p, FFT &rp);
-void
-calL(double d, double *L);
-
-
-//////////////////////////////////////////////////////////////////////
-void
-ksfj(double *a0, double d, double h, int nstp, int np, int nqr, double *aa, double *daa){
-
-  double E[N/2+1], E2[N/2+1], Q[N/2+1],f1[N/2+1],f2[N/2+1],f3[N/2+1];
-  dcomp g[N/2+1];
-  calcoe(h,d,E,E2,g,Q,f1,f2,f3,N);
   
-  FFT rp[N-1], p[N-1];
-  for(int i = 0; i < N-1; i++) initFFT(rp[i], N, -1);
-  for(int i = 0; i < N-1; i++) initFFT(p[i], N, 1);
-    
-  // the size of aa should be (N-2)*(nstp/np)
-  for(int i = 0; i < N - 2; ++i) aa[i]=a0[i];
-  int ix1 = 1; // index counter for aa.
-  // the size of daa should be (N-2)^2 * nstp/nqr
-  int ix2 = 0; // index counter for daa.
 
-  // initialize initial data.
-  dcomp v[(N/2+1) * (N-1)]; // wave mode 0 and N/2 are both zero.
-  v[0] = dcomp(0, 0);
-  v[N/2] = dcomp(0, 0);
-  for(int i = 0; i < N/2 - 1; i++) v[i+1] = dcomp(a0[2*i], a0[2*i+1]);
-  initJ(v, N);
+/* ==========================================================================
+ *                              Class Ks
+ * ==========================================================================*/
+/*------------------          constructors and destructor  ---------------- */
 
-  for (int i = 0; i < nstp; ++i){
-    
-    onestep(g, v, E, E2, Q, f1, f2, f3, N, p, rp);
-    
-    if( (i+1)%np == 0 && i != nstp - 1) {
-      for(int i = 0; i< N/2 - 1; i++) {
-	aa[ix1*(N-2)+ 2*i] = v[i+1].real();
-	aa[ix1*(N-2)+ 2*i + 1] = v[i+1].imag();
-      }
-      ix1++;
-    }
-
-    if((i+1)%nqr == 0){
-      for(int i = 0; i < N - 2; i++){
-	for(int j = 0; j < N/2 -1; j++){
-	  // reading from v starts from second row  and second column. 
-	  daa[ix2*(N-2)*(N-2) + i * (N - 2) + 2*j] = v[(N/2+1)*(i+1) + j+1].real();
-	  daa[ix2*(N-2)*(N-2) + i * (N - 2) + 2*j + 1] = v[(N/2+1)*(i+1) + j+1].imag();
-	  }
-      }
-      ix2++;
-      initJ(v, N); // Initialize Jacobian again.
-    }
-  }
-  for(int i = 0; i < N - 1; i++) freeFFT(p[i]);
-  for(int i = 0; i < N - 1; i++) freeFFT(rp[i]);
-
-  //fftw_cleanup frees heap reservation of FFTW. It may not affect this C++
-  //program, but it can cause unpredictable behavior in MEX and Ctypes,
-  //so just keep it.
-  fftw_cleanup();
+Ks::Ks(int N, double d, double h) : N(N), d(d), h(h){
+  /* allocation of coefficients and initialize them to be zero. */
+  coe.E = new double[N/2+1]();
+  coe.E2 = new double[N/2+1]();
+  coe.k = new double[N/2+1]();
+  coe.L = new double[N/2+1]();
+  coe.Q = new double[N/2+1]();
+  coe.f1 = new double[N/2+1]();
+  coe.f2 = new double[N/2+1]();
+  coe.f3 = new double[N/2+1]();
+  coe.g = new dcomp[N/2+1](); 
+  /* calculate coefficients */
+  calcoe();
 }
 
+Ks::Ks(const Ks &x) : N(x.N), d(x.d), h(x.h){}
 
-void
-ksf(double *a0, double d, double h, int nstp, int np, double *aa){
+Ks::~Ks(){
+  delete[] coe.E;
+  delete[] coe.E2;
+  delete[] coe.k;
+  delete[] coe.L;
+  delete[] coe.Q;
+  delete[] coe.f1;
+  delete[] coe.f2;
+  delete[] coe.f3;
+  delete[] coe.g;
+}
 
-  double E[N/2+1], E2[N/2+1], Q[N/2+1],f1[N/2+1],f2[N/2+1],f3[N/2+1];
-  dcomp g[N/2+1];
-  calcoe(h,d,E,E2,g,Q,f1,f2,f3,N);
-  
-  FFT rp, p;
-  initFFT(rp, N, -1);
-  initFFT(p, N, 1);
-    
-  // the size of aa should be (N-2)*(nstp/np)
-  for(int i = 0; i < N-2; ++i) aa[i]=a0[i];
-  int ix = 1;
-  
-  // initialize initial data.
-  dcomp v[N/2+1]; // wave mode 0 and N/2 are both zero.
-  v[0] = dcomp(0, 0);
-  v[N/2] = dcomp(0, 0);
-  for(int i = 0; i < N/2 - 1; i++) v[i+1] = dcomp(a0[2*i], a0[2*i+1]);
-  
+/* assignment changes nothing. */
+Ks & Ks::operator=(const Ks &x){
+  return *this;
+}
+
+/*---------------              member functions         --------------------*/
+
+void Ks::kssolve(double *a0, int nstp, int np, double *aa){
+
+  FFT rp, p; 
+  dcomp v[N/2+1]; // wave mode 0 and N/2 are both zero.   
+  initKs(a0, v, aa, rp, p);
+
+  int ix = 1; 
   for (int i=0; i<nstp; ++i){
-    onestep(g, v, E, E2, Q, f1, f2, f3, N, p, rp);
+    onestep(v, p, rp);
     if( (i+1)%np == 0 && i != nstp - 1) {
       for(int i = 0; i< N/2 - 1; i++) {
 	aa[ix*(N-2)+ 2*i] = v[i+1].real();
@@ -147,18 +66,84 @@ ksf(double *a0, double d, double h, int nstp, int np, double *aa){
       ix++;
     }
   }
-  freeFFT(p);
-  freeFFT(rp);
-  fftw_cleanup();
+  cleanKs(rp, p);
 }
 
-/**
-   @brief initialize the Jacobian matrix for KS.
-
-   @param[out] v [N-1, N/2+1] dimensional complex array.
-*/
 void
-initJ(dcomp *v, int N){
+Ks::kssolve(double *a0, int nstp, int np, int nqr, double *aa, double *daa){
+
+  FFT rp[N-1], p[N-1];
+  dcomp v[(N/2+1) * (N-1)]; // wave mode 0 and N/2 are both zero.
+  initKs(a0, v, aa, rp, p);
+
+  int ix1 = 1; // index counter for aa.
+  // the size of daa should be (N-2)^2 * nstp/nqr
+  int ix2 = 0; // index counter for daa.
+  for (int i = 0; i < nstp; ++i){
+    onestep(v, p, rp);
+    if( (i+1)%np == 0 && i != nstp - 1) {
+      for(int i = 0; i< N/2 - 1; i++) {
+	aa[ix1*(N-2)+ 2*i] = v[i+1].real();
+	aa[ix1*(N-2)+ 2*i + 1] = v[i+1].imag();
+      }
+      ix1++;
+    }
+    
+    if((i+1)%nqr == 0){
+      for(int i = 0; i < N - 2; i++){
+	for(int j = 0; j < N/2 -1; j++){
+	  // reading from v starts from second row  and second column. 
+	  daa[ix2*(N-2)*(N-2) + i * (N - 2) + 2*j] = v[(N/2+1)*(i+1) + j+1].real();
+	  daa[ix2*(N-2)*(N-2) + i * (N - 2) + 2*j + 1] = v[(N/2+1)*(i+1) + j+1].imag();
+	}
+      }
+      ix2++;
+      initJ(v); // Initialize Jacobian again.
+    }
+  }
+  cleanKs(rp, p);
+}
+
+
+/** @brief Initialize the KS system without Jacobian
+ *  
+ */
+
+void Ks::initKs(double *a0, dcomp *v, double *aa, FFT &rp, FFT &p){
+  // the size of aa should be (N-2)*(nstp/np)
+  for(int i = 0; i < N-2; i++) aa[i] = a0[i];
+  
+  // initialize initial data.
+  v[0] = dcomp(0, 0);
+  v[N/2] = dcomp(0, 0);
+  for(int i = 0; i < N/2 - 1; i++) v[i+1] = dcomp(a0[2*i], a0[2*i+1]);
+  
+  /* FFT initiate. */
+  initFFT(rp, -1);
+  initFFT(p, 1);
+  
+}
+
+/** @brief Initialize the KS system with calculating Jacobian */
+void Ks::initKs(double *a0, dcomp *v, double *aa, FFT *rp, FFT *p){
+  // the size of aa should be (N-2)*(nstp/np)
+  for(int i = 0; i < N-2; i++) aa[i] = a0[i];
+
+  //initialize initial data.
+  v[0] = dcomp(0, 0);
+  v[N/2] = dcomp(0, 0);
+  for(int i = 0; i < N/2 - 1; i++) v[i+1] = dcomp(a0[2*i], a0[2*i+1]);
+  initJ(v);
+  
+  for(int i = 0; i < N-1; i++) initFFT(rp[i], -1);
+  for(int i = 0; i < N-1; i++) initFFT(p[i], 1);
+}
+
+
+/** @brief initialize the Jacobian matrix for KS.
+ * 
+ * @param[out] v [N-1, N/2+1] dimensional complex array. */
+void Ks::initJ(dcomp *v){
   memset(v + N/2 + 1, 0, (N-2) * (N/2+1)*sizeof(dcomp)); //set the 2nd to (N-1)th row to be zero.
   for(int i = 0; i < N/2 - 1; i++){
     v[(2*i+1)*(N/2+1) + i + 1] = dcomp(1.0, 0);
@@ -166,32 +151,42 @@ initJ(dcomp *v, int N){
   }
 }
 
-void
-calcoe(double h, double d,  double *E, double *E2, dcomp *g, double *Q, double *f1, double *f2, double *f3, int N, const int M /* = 16 */){
+void Ks::cleanKs(FFT &rp, FFT &p){
+  /* free the FFT resource. */
+  freeFFT(p);
+  freeFFT(rp);
+  fftw_cleanup();
+}
 
-  double k[N/2+1], L[N/2+1];
+void Ks::cleanKs(FFT *rp, FFT *p){
+  for(int i = 0; i < N - 1; i++) freeFFT(p[i]);
+  for(int i = 0; i < N - 1; i++) freeFFT(rp[i]);
+  
+  //fftw_cleanup frees heap reservation of FFTW. It may not affect this C++
+  //program, but it can cause unpredictable behavior in MEX and Ctypes,
+  //so just keep it.
+  fftw_cleanup();
+}
+
+void Ks::calcoe(const int M /* = 16 */){
+
   for(int i = 0; i < N/2 + 1; i++){
-    k[i] = i * 2 * PI / d;
-    L[i] = k[i]*k[i] - k[i]*k[i]*k[i]*k[i];    
-    E[i] = exp(L[i] * h);
-    E2[i] = exp(L[i] * h / 2);    
-    g[i] = 0.5 * N * dcomp(0, 1) * k[i] ;
+    coe.k[i] = i * 2 * PI / d;
+    coe.L[i] = coe.k[i]*coe.k[i] - coe.k[i]*coe.k[i]*coe.k[i]*coe.k[i];    
+    coe.E[i] = exp(coe.L[i] * h);
+    coe.E2[i] = exp(coe.L[i] * h / 2);    
+    coe.g[i] = 0.5 * N * dcomp(0, 1) * coe.k[i] ;
   }
-  g[N/2] = dcomp(0, 0); // the N/2 mode has zero first derivative at grid point.
+  coe.g[N/2] = dcomp(0, 0); // the N/2 mode has zero first derivative at grid point.
   dcomp r[M];
   for(int i = 0; i < M; i++) r[i] = exp(dcomp(0, PI*(i+0.5)/M)); 
     
   dcomp LR, LR3, cf1, cf2, cf3, cQ;
-  // first initiate Q, f1, f2, f3
-  memset(Q, 0, (N/2+1) * sizeof(double));
-  memset(f1, 0, (N/2+1) * sizeof(double));
-  memset(f2, 0, (N/2+1) * sizeof(double));
-  memset(f3, 0, (N/2+1) * sizeof(double));
   // In the equiverlent matlab code, LR is a matrix, and then 
   // Q, f1, f2, f3 are all column vectors after averaging over matrix rows. 
   for(int i = 0; i < N/2 + 1; ++i){ // iteration over column
     for(int j = 0; j < M; ++j){ // iteration over row
-      LR = h * L[i] + r[j]; // each row element of LR;
+      LR = h * coe.L[i] + r[j]; // each row element of LR;
       LR3 = LR * LR * LR;
       // each element of the matrix
       cQ = h * ( exp(LR/2.0) - 1.0 ) / LR;
@@ -199,127 +194,120 @@ calcoe(double h, double d,  double *E, double *E2, dcomp *g, double *Q, double *
       cf2 = h * (2.0 + LR + exp(LR)*(LR-2.0)) / LR3;
       cf3 = h * (-4.0 - 3.0*LR -LR*LR + exp(LR)*(4.0 - LR)) / LR3;
       // sum over the row
-      Q[i] += cQ.real();
-      f1[i] += cf1.real();
-      f2[i] += cf2.real();
-      f3[i] += cf3.real();
+      coe.Q[i] += cQ.real();
+      coe.f1[i] += cf1.real();
+      coe.f2[i] += cf2.real();
+      coe.f3[i] += cf3.real();
     }
   }
   
   // calculate the averarge.
   for(int i = 0; i < N/2 +1; ++i){
-    Q[i] = Q[i] / M;
-    f1[i] = f1[i] / M;
-    f2[i] = f2[i] / M;
-    f3[i] = f3[i] / M;
+    coe.Q[i] = coe.Q[i] / M;
+    coe.f1[i] = coe.f1[i] / M;
+    coe.f2[i] = coe.f2[i] / M;
+    coe.f3[i] = coe.f3[i] / M;
   }
 }
 
 /**
-   @brief one time step integration when Jacobian is also desired.
-
-   @parameter[in,out] v [N-1, N/2+1] row-wise complex array.
+   @parameter[in, out] v state vector, [N/2+1,1] complex array
 */
-void  
-onestep(dcomp *g, dcomp *v, double *E, double *E2, double *Q, double *f1, double *f2, double *f3, int N, FFT *p, FFT *rp){
+void Ks::onestep(dcomp *v, FFT &p, FFT &rp){
+
+  dcomp Nv[N/2+1], a[N/2+1], Na[N/2+1], b[N/2+1], Nb[N/2+1], c[N/2+1], Nc[N/2+1];
+	
+  calNL( v, Nv, p, rp);	
+  for (int i = 0; i < N/2 + 1; i++) a[i] = coe.E2[i]*v[i] + coe.Q[i]*Nv[i];
+  calNL( a, Na, p, rp);	
+	
+  for (int i = 0; i < N/2 + 1; i++) b[i] = coe.E2[i]*v[i] + coe.Q[i]*Na[i];
+  calNL( b, Nb, p, rp);
+	
+  for (int i = 0; i < N/2 + 1; i++) c[i] = coe.E2[i]*a[i] + coe.Q[i]*(Nb[i]*2.0-Nv[i]);
+  calNL( c, Nc, p, rp);
+	
+  for (int i = 0; i < N/2 + 1; i++) v[i] = coe.E[i]*v[i] + Nv[i]*coe.f1[i] + 2.0*coe.f2[i]
+				      *(Na[i]+Nb[i]) + Nc[i]*coe.f3[i];
+  
+}
+
+
+/** @brief one time step integration when Jacobian is also desired.
+ * 
+ * @parameter[in,out] v [N-1, N/2+1] row-wise complex array. */
+void Ks::onestep(dcomp *v, FFT *p, FFT *rp){
   const int size = (N - 1) * (N/2 + 1); 
   dcomp Nv[size], Na[size], Nb[size], Nc[size];
   dcomp a[N-1][N/2+1], b[N-1][N/2+1],  c[N-1][N/2+1];
 	
-  calNL(g, v, Nv, N, p, rp);
+  calNL( v, Nv, p, rp);
   for( int i = 0; i < N - 1; i++)
     for(int j = 0; j < N/2+1; j++)
-      a[i][j] = E2[j]*v[i*(N/2+1) + j] + Q[j]*Nv[i*(N/2+1) + j];
-  calNL(g, a[0], Na, N, p, rp);
+      a[i][j] = coe.E2[j]*v[i*(N/2+1) + j] + coe.Q[j]*Nv[i*(N/2+1) + j];
+  calNL( a[0], Na, p, rp);
   
   for( int i = 0; i < N - 1; i++)
     for(int j = 0; j < N/2+1; j++)
-      b[i][j] = E2[j]*v[i*(N/2+1) + j] + Q[j]*Na[i*(N/2+1) + j];
-  calNL(g, b[0], Nb, N, p, rp);
+      b[i][j] = coe.E2[j]*v[i*(N/2+1) + j] + coe.Q[j]*Na[i*(N/2+1) + j];
+  calNL( b[0], Nb, p, rp);
   
   for( int i = 0; i < N - 1; i++)
     for(int j = 0; j < N/2+1; j++)
-      c[i][j] = E2[j]*a[i][j] + Q[j]*(2.0*Nb[i*(N/2+1) + j]
-					       - Nv[i*(N/2+1) + j]);
-  calNL(g, c[0], Nc, N, p, rp);
+      c[i][j] = coe.E2[j]*a[i][j] + coe.Q[j]*(2.0*Nb[i*(N/2+1) + j]
+				      - Nv[i*(N/2+1) + j]);
+  calNL(c[0], Nc, p, rp);
   
   for( int i = 0; i < N - 1; i++)
     for(int j =0; j< N/2+1; j++)
-      v[i*(N/2+1) + j] = E[j]*v[i*(N/2+1) + j] + Nv[i*(N/2+1) + j]*f1[j] + 2.0*f2[j]
-	*(Na[i*(N/2+1) + j]+Nb[i*(N/2+1) + j]) + Nc[i*(N/2+1) + j]*f3[j];
+      v[i*(N/2+1) + j] = coe.E[j]*v[i*(N/2+1) + j] + Nv[i*(N/2+1) + j]*coe.f1[j] + 2.0*coe.f2[j]
+	*(Na[i*(N/2+1) + j]+Nb[i*(N/2+1) + j]) + Nc[i*(N/2+1) + j]*coe.f3[j];
 }
 
-
-
-/**
-   @parameter[in, out] v state vector, [N/2+1,1] complex array
-*/
-void  
-onestep(dcomp *g, dcomp *v, double *E, double *E2, double *Q, double *f1, double *f2, double *f3, int N, FFT &p, FFT &rp){
-  dcomp Nv[N/2+1], a[N/2+1], Na[N/2+1], b[N/2+1], Nb[N/2+1], c[N/2+1], Nc[N/2+1];
-	
-  calNL(g, v, Nv, N, p, rp);	
-  for (int i = 0; i < N/2 + 1; i++) a[i] = E2[i]*v[i] + Q[i]*Nv[i];
-  calNL(g, a, Na, N, p, rp);	
-	
-  for (int i = 0; i < N/2 + 1; i++) b[i] = E2[i]*v[i] + Q[i]*Na[i];
-  calNL(g, b, Nb, N, p, rp);
-	
-  for (int i = 0; i < N/2 + 1; i++) c[i] = E2[i]*a[i] + Q[i]*(Nb[i]*2.0-Nv[i]);
-  calNL(g, c, Nc, N, p, rp);
-	
-  for (int i = 0; i < N/2 + 1; i++) v[i] = E[i]*v[i] + Nv[i]*f1[i] + 2.0*f2[i]
-				      *(Na[i]+Nb[i]) + Nc[i]*f3[i];
+/** @brief calculate the nonliear term for one dimensional array.
+ * 
+ * @parameter[out] Nv [N/2+1,1] complex array */ 
+void Ks::calNL(dcomp *u, dcomp *Nv, const FFT &p, const FFT &rp){
   
-}
-
-/**
-   @brief calculate the nonliear term for one dimensional array.
-   
-   @parameter[out] Nv [N/2+1,1] complex array
-*/
-void 
-calNL(dcomp *g, dcomp *u, dcomp *Nv, int N, const FFT &p, const FFT &rp){
-  
-  irfft(u, N, rp); // F^{-1}
+  irfft(u, rp); // F^{-1}
   for(int i = 0; i < N; i++) rp.r[i] = rp.r[i] * rp.r[i]; // get (F^{-1})^2 
-  rfft(rp.r, N, p); 
+  rfft(rp.r, p); 
   
   for (int i = 0; i < N/2 + 1; i++) 
-    Nv[i] =  g[i] * dcomp(p.c[i][0], p.c[i][1]);
+    Nv[i] =  coe.g[i] * dcomp(p.c[i][0], p.c[i][1]);
   
 }
 
-/**
-   @brief calculate the nonlinear term when the Jabobian is also desired.
-   
-   @parameter[out] Nv returned nonliear term. [N-1, N/2+1] row-wise complex array.
-   @parameter[in]  u  input data. [N-1, N/2+1] row-wise complex array
-*/
-void
-calNL(dcomp *g, dcomp *u, dcomp *Nv, int N, const FFT *p, const FFT *rp ){
 
-	// split the irfft part since operations that follows depend on 
-	// result of rp[0].
-	for(int i = 0; i < N - 1; i++) irfft(u+i*(N/2+1), N, rp[i]);
+/* @brief calculate the nonlinear term when the Jabobian is also desired.
+ * 
+ * @parameter[out] Nv returned nonliear term. [N-1, N/2+1] row-wise complex array.
+ *                 the last row is all zeros. 
+ * @parameter[in]  u  input data. [N-1, N/2+1] row-wise complex array
+ *                 the last row is all zeros.*/
+void Ks::calNL(dcomp *u, dcomp *Nv, const FFT *p, const FFT *rp ){
+
+  // split the irfft part since operations that follows depend on 
+  // result of rp[0]. 
+  for(int i = 0; i < N - 2; i++) irfft(u+i*(N/2+1), rp[i]); /* only N-2 vectors.
+							     */
 	
-	// make a copy of the first transformed vector since the square 
-	// operation is inline, it will destroy rp[0].r[j].
-	double tmp[N];
-	memcpy(tmp, rp[0].r, N * sizeof(double));
+  // make a copy of the first transformed vector since the square 
+  // operation is inline, it will destroy rp[0].r[j].
+  double tmp[N];
+  memcpy(tmp, rp[0].r, N * sizeof(double));
 
-	for(int i = 0; i < N - 1; i++){
-	  for( int j = 0; j < N; j++) 
-	    rp[i].r[j] = tmp[j] *rp[i].r[j];
-		
-	  rfft(rp[i].r, N, p[i]);
-	  for(int j = 0; j < N/2 + 1; j++){
-	    if(i == 0) Nv[i*(N/2+1) + j] = g[j] * dcomp(p[i].c[j][0], p[i].c[j][1]); 
-	    else Nv[i*(N/2+1) + j] = 2.0 * g[j] * dcomp(p[i].c[j][0], p[i].c[j][1]); 
-	  }
-	}
+  for(int i = 0; i < N - 1; i++){
+    for(int j = 0; j < N; j++)
+      rp[i].r[j] = tmp[j] * rp[i].r[j];
+    
+    rfft(rp[i].r, p[i]);
+    for(int j = 0; j < N/2 + 1; j++){
+      if(i == 0) Nv[i*(N/2+1) + j] = coe.g[j] * dcomp(p[i].c[j][0], p[i].c[j][1]); 
+      else Nv[i*(N/2+1) + j] = 2.0 * coe.g[j] * dcomp(p[i].c[j][0], p[i].c[j][1]); 
+    }
+  }
 }
-
 
 /**
    inverse real fft for one dimensional array.
@@ -328,39 +316,26 @@ calNL(dcomp *g, dcomp *u, dcomp *Nv, int N, const FFT *p, const FFT *rp ){
    so we need to normalize the result explicitly.
 */
 void 
-irfft(const dcomp *u, int N, const FFT &rp){
+Ks::irfft(const dcomp *u, const FFT &rp){
   memcpy(rp.c, u, (N/2+1) * sizeof(fftw_complex));
 
   fftw_execute(rp.p);
   for(int i = 0; i < N; i++) rp.r[i] /= N;
 }
 
-/**
-   r2c transform will destroy input data, so must assign new array double in[N]
-   
-*/
-void 
-rfft(double *u, int N, const FFT &p){
+
+/** r2c transform will destroy input data, so must assign new array double in[N] */
+void Ks::rfft(double *u, const FFT &p){
   
   memcpy(p.r, u, N * sizeof(double));
   fftw_execute(p.p);
 }
 
-/**
-   dot product of two arrays.
-*/
-void
-dot(double* a, double* b, int N){
-	for(int i=0; i<N; ++i) b[i] *= a[i];
-}
+/** @brief construction of rfft/irfft plan.
+ *    
+ * @parameter a indicator the direction of fft. a = 1 : forward; a = -1 : backward. */
 
-/**
-   @brief construction of rfft/irfft plan.
-   
-   @parameter a indicator the direction of fft. a = 1 : forward; a = -1 : backward.
-*/
-void
-initFFT(FFT &p, const int N, int a){
+void Ks::initFFT(FFT &p, int a){
   p.r = (double*) fftw_malloc(sizeof(double) * N);
   p.c= (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (N/2+1));
   if(a == 1)
@@ -374,164 +349,14 @@ initFFT(FFT &p, const int N, int a){
 }
 
 /**
-   destroy rfft/irfft plan.
-*/
+ * @brief destroy rfft/irfft plan. 
+ */
+
 void
-freeFFT(FFT &p){
+Ks::freeFFT(FFT &p){
   fftw_destroy_plan(p.p);
   fftw_free(p.c);
   fftw_free(p.r);
 }
 
-//////////////////////////////////////////////////////////////////////
-/*  1st mode part  */
-void
-ksfjM1(double *a0, double d, double h, int nstp, int np, int nqr, double *aa, double *daa){
 
-  double E[N/2+1], E2[N/2+1], Q[N/2+1],f1[N/2+1],f2[N/2+1],f3[N/2+1];
-  dcomp g[N/2+1];
-  calcoe(h,d,E,E2,g,Q,f1,f2,f3,N);
-  double L[N/2+1];
-  calL(d,L);
-  
-  FFT rp[N-1], p[N-1];
-  for(int i = 0; i < N-1; i++) initFFT(rp[i], N, -1);
-  for(int i = 0; i < N-1; i++) initFFT(p[i], N, 1);
-    
-  // the size of aa should be (N-3)*(nstp/np)
-  for(int i = 0; i < N - 3; ++i) aa[i]=a0[i];
-  tt[0] = 0;	
-  int ix1 = 1; // index counter for aa.
-  // the size of daa should be (N-2)^2 * nstp/nqr
-  int ix2 = 0; // index counter for daa.
-
-  // initialize initial data.
-  dcomp v[(N/2+1) * (N-1)]; // wave mode 0 and N/2 are both zero.
-  v[0] = dcomp(0, 0);
-  v[N/2] = dcomp(0, 0);
-  for(int i = 0; i < N/2 - 1; i++) v[i+1] = dcomp(a0[2*i], a0[2*i+1]);
-  initJ(v, N);
-
-  for (int i = 0; i < nstp; ++i){
-    
-    onestep(g, v, E, E2, Q, f1, f2, f3, N, p, rp);
-    
-    if( (i+1)%np == 0 && i != nstp - 1) {
-      for(int i = 0; i< N/2 - 1; i++) {
-	aa[ix1*(N-2)+ 2*i] = v[i+1].real();
-	aa[ix1*(N-2)+ 2*i + 1] = v[i+1].imag();
-      }
-      ix1++;
-    }
-
-    if((i+1)%nqr == 0){
-      for(int i = 0; i < N - 2; i++){
-	for(int j = 0; j < N/2 -1; j++){
-	  // reading from v starts from second row  and second column. 
-	  daa[ix2*(N-2)*(N-2) + i * (N - 2) + 2*j] = v[(N/2+1)*(i+1) + j+1].real();
-	  daa[ix2*(N-2)*(N-2) + i * (N - 2) + 2*j + 1] = v[(N/2+1)*(i+1) + j+1].imag();
-	  }
-      }
-      ix2++;
-      initJ(v, N); // Initialize Jacobian again.
-    }
-  }
-  for(int i = 0; i < N - 1; i++) freeFFT(p[i]);
-  for(int i = 0; i < N - 1; i++) freeFFT(rp[i]);
-
-  //fftw_cleanup frees heap reservation of FFTW. It may not affect this C++
-  //program, but it can cause unpredictable behavior in MEX and Ctypes,
-  //so just keep it.
-  fftw_cleanup();
-}
-
-
-void 
-ksfM1(double *a0, double d, double h, int nstp, int np, double *aa, double *tt){
-  double E[N/2+1], E2[N/2+1], Q[N/2+1],f1[N/2+1],f2[N/2+1],f3[N/2+1];
-  dcomp g[N/2+1];
-  calcoe(h,d,E,E2,g,Q,f1,f2,f3,N);
-  double L[N/2+1];
-  calL(d,L);
-
-  FFT rp, p;
-  initFFT(rp, N, -1);
-  initFFT(p, N, 1);
-  
-  // the size of aa should be (N-3)*(nstp/np)
-  for(int i = 0; i<N-3; ++i) aa[i] = a0[i];
-  tt[0] = 0;
-  size_t ix = 1;
-
-  //initialize initial data.
-  dcomp v[N/2+1]; 
-  v[0] =dcomp(0,0); 
-  v[N/2] = dcomp(0,0); 
-  v[1] = dcomp(a0[0], 0);
-  for(int i = 0; i<N/2-2; i++) v[i+2] = dcomp(a0[2*i+1], a0[2*i+2]);
-
-  for(int i=0; i<nstp; ++i){
-    onestepM1(g, v, E, E2, Q, f1, f2, f3, L, N, p, rp);
-    if((i+1)%np ==0 && i != nstp - 1){
-      aa[ix*(N-3)] = v[1].real();
-      for(int i = 0; i < N/2 - 2; i++){
-	aa[ix*(N-3) + 2*i + 1] = v[i+2].real();
-	aa[ix*(N-3) + 2*i + 2] = v[i+2].imag();
-      }
-      tt[ix] = tt[ix-1] + (aa[ix * (N-3)] + aa[(ix-1) * (N-3)]) * h / 2;
-      ix++;
-    }
-  }
-  freeFFT(p);
-  freeFFT(rp);
-  fftw_cleanup();
-}
-
-/**
-   @brief calculte the nonlinear term for the 1st mode slice without Jacobian.
-*/
-void
-calNLM1(dcomp* g, dcomp*u, dcomp *Nv, double *L, int N, const FFT &p, const FFT &rp){
-
-  irfft(u, N, rp);
-  for(int i = 0; i < N; i++) rp.r[i] = rp.r[i] * rp.r[i];
-  rfft(rp.r, N, p);
-  
-  double a1 = u[1].real();
-  for(int i = 0; i < N/2 + 1; i++)
-    Nv[i] = (a1-1) * L[i] * u[i] + a1 * g[i] * dcomp(p.c[i][0], p.c[i][1])
-      - p.c[1][0] * g[i] * u[i];
-
-}
-
-/**
-   @brief calculate linear coeffient  L.
-*/
-void
-calL(double d, double *L){
-  double k[N/2+1];
-  for(int i = 0; i< N/2 + 1; i++){
-    k[i] = i * 2 * PI / d;
-    L[i] = k[i]*k[i] - k[i]*k[i]*k[i]*k[i];    
-  }
-}
-
-void  
-onestepM1(dcomp *g, dcomp *v, double *E, double *E2, double *Q, double *f1, double *f2,
-	  double *f3, double *L, int N, FFT &p, FFT &rp){
-  dcomp Nv[N/2+1], a[N/2+1], Na[N/2+1], b[N/2+1], Nb[N/2+1], c[N/2+1], Nc[N/2+1];
-	
-  calNLM1(g, v, Nv, L, N, p, rp);	
-  for (int i = 0; i < N/2 + 1; i++) a[i] = E2[i]*v[i] + Q[i]*Nv[i];
-  calNLM1(g, a, Na, L, N, p, rp);	
-	
-  for (int i = 0; i < N/2 + 1; i++) b[i] = E2[i]*v[i] + Q[i]*Na[i];
-  calNLM1(g, b, Nb, L, N, p, rp);
-	
-  for (int i = 0; i < N/2 + 1; i++) c[i] = E2[i]*a[i] + Q[i]*(Nb[i]*2.0-Nv[i]);
-  calNLM1(g, c, Nc, L, N, p, rp);
-	
-  for (int i = 0; i < N/2 + 1; i++) v[i] = E[i]*v[i] + Nv[i]*f1[i] + 2.0*f2[i]
-				      *(Na[i]+Nb[i]) + Nc[i]*f3[i];
-  
-}

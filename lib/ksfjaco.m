@@ -9,9 +9,9 @@ if nargin < 5, np = 1; end
 if nargin < 4, d = 22; end
 
 if nargout == 2,
-    [aa, daa] = MEXkssolve(a0, d, h, nstp, np, nqr, 1); 
+    [aa, daa] = MEXkssolve(a0, d, h, nstp, np, nqr, 1, 0); 
 elseif nargout == 1,
-    aa = MEXkssolve(a0, d, h, nstp, np, 1, 1);
+    aa = MEXkssolve(a0, d, h, nstp, np, nqr, 0, 0);
 else
     fprintf(1, 'the number of output is wrong. \n');
 end

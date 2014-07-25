@@ -14,3 +14,9 @@ To use the python interface, "kssolve.py" mush be in the same folder as
 The shared library "libkssolve.so" is tested on my PC and the Mint machine.
 It works on Matlab 2013a/b, but not Matlab 2009b. If it does not work 
 in your platform, please compile the library from the source code.
+
+
+Caution:
+
+No guarantee that the C++ code is correct, you need to varify the result of mex 
+file with the original Matlab code in the backup folder.

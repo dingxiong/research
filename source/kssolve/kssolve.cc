@@ -282,14 +282,13 @@ void Ks::calNL(dcomp *u, dcomp *Nv, const FFT &p, const FFT &rp){
 /* @brief calculate the nonlinear term when the Jabobian is also desired.
  * 
  * @parameter[out] Nv returned nonliear term. [N-1, N/2+1] row-wise complex array.
- *                 the last row is all zeros. 
  * @parameter[in]  u  input data. [N-1, N/2+1] row-wise complex array
- *                 the last row is all zeros.*/
+ */
 void Ks::calNL(dcomp *u, dcomp *Nv, const FFT *p, const FFT *rp ){
 
   // split the irfft part since operations that follows depend on 
   // result of rp[0]. 
-  for(int i = 0; i < N - 2; i++) irfft(u+i*(N/2+1), rp[i]); /* only N-2 vectors.
+  for(int i = 0; i < N - 1; i++) irfft(u+i*(N/2+1), rp[i]); /* only N-2 vectors.
 							     */
 	
   // make a copy of the first transformed vector since the square 

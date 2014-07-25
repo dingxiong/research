@@ -101,10 +101,13 @@ void KsM1::calNL(dcomp*u, dcomp *Nv, const FFT &p, const FFT &rp){
 
 }
 
-/* @brief calculate the nonlinear term when the Jabobian is also desired.
+/** @brief calculate the nonlinear term when the Jabobian is also desired.
  * 
  * @parameter[out] Nv returned nonliear term. [N-1, N/2+1] row-wise complex array.
- * @parameter[in]  u  input data. [N-1, N/2+1] row-wise complex array */
+ *                 The last row is all zeros.
+ * @parameter[in]  u  input data. [N-1, N/2+1] row-wise complex array
+ *                 The last row is all zeros.        
+ */
 void KsM1::calNL(dcomp *u, dcomp *Nv, const FFT *p, const FFT *rp ){
 
   

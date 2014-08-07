@@ -2,12 +2,15 @@
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
+#include <boost/numeric/odeint.hpp>
+
+using boost::numeric::odeint::integrate;
 
 /*===============             Class KsM1            =================*/
 
 /*----------               constructors and destructor            ------------*/
-KsM1::KsM1(int N, double d, double h) : Ks(N, d, h){}
-KsM1::KsM1(const KsM1 &x) :  Ks(x){};
+KsM1::KsM1(int N, double d, double h) : Ks(N, d, h), int2p(*this){}
+KsM1::KsM1(const KsM1 &x) :  Ks(x), int2p(x.int2p){};
 //KsM1::~KsM1() : ~Ks(){}
 KsM1 & KsM1::operator=(const KsM1 &x){
   return *this;
@@ -195,4 +198,63 @@ void KsM1::initJ(dcomp *v){
     v[(2*i+2)*(N/2+1) + i + 2] = dcomp(1.0, 0);
     v[(2*i+3)*(N/2+1) + i + 2] = dcomp(0, 1.0);
   }
+}
+
+KsM1::dvec KsM1::velo(dvec &a0){
+  dvec aa(N-3); 		/* not used, just in orde to use function initKs() */
+  dcvec v(N/2+1), Nv(N/2+1);
+  FFT rp, p;
+  initKs(&a0[0], &v[0], &aa[0], rp, p);
+  calNL(&v[0], &Nv[0], p, rp); 	/* calculate the nonlinear term */
+  
+  for(int i = 0; i < Nv.size(); i++) Nv[i] += coe.L[i] * v[i]; /* add the linear term */
+  
+  dvec velo(cv2rv(Nv));
+
+  cleanKs(rp, p);
+  
+  return velo;
+}
+
+/** @brief convert the complex vector to real and imaginary part for M1 slice.
+ *  
+ *  @param[in] a0 state complex vector of size N/2+1
+ *  @return real vector of size N-3
+ * */
+KsM1::dvec KsM1::cv2rv(const dcvec &a0){
+  dvec v(N-3);
+  v[0] = a0[1].real();
+  for(int i = 0; i < N/2 - 2; i++){
+    v[2*i+1] = a0[i+2].real();
+    v[2*i+2] = a0[i+2].imag();
+  }
+  
+  return v;
+}
+
+/**
+ * @param[in] x0 template point chosen for Poincare section.
+ * @param[in] a0 staring point, should be close to poincare section.
+ */
+KsM1::dvec KsM1::ks2poinc(dvec &x0, dvec &a0){
+  dvec v0(velo(x0));
+  int2p.v0 = v0;
+  dvec a(a0);
+  a.push_back(0.0);
+  double u0 = 0;
+  for(int i = 0; i < a0.size(); i++) u0 += v0[i] * (a0[i] - x0[i]);
+  size_t steps = integrate(int2p, a, u0, 0.0, fabs(u0)/100);
+  a.push_back(steps);
+  return a;
+}
+/* --------------------------------------------------------- */
+
+
+void KsM1::Int2p::operator() (const dvec &x, dvec &dxdt, const double /* u */){
+  dvec a(x.begin(), x.end()-1); // the first N-3 elements.
+  dvec va(ks.velo(a)); // velocity of state point.
+  double nor = 0;
+  for(int i = 0; i < va.size(); i++) nor += va[i] * v0[i];
+  for(int i = 0; i< va.size(); i++) dxdt[i] = va[i]/nor;
+  dxdt[ks.N-3] = 1.0/nor;
 }

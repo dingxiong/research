@@ -54,8 +54,8 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
       ksf(a0, d, h, nstp, np, aa);
   }
   else{
-    plhs[0] = mxCreateDoubleMatrix( floor((nstp-1)/np), 1, mxREAL);
-    plhs[1] = mxCreateDoubleMatrix(N-3, floor((nstp-1)/np), mxREAL);
+    plhs[0] = mxCreateDoubleMatrix( floor((nstp-1)/np) + 1 , 1, mxREAL);
+    plhs[1] = mxCreateDoubleMatrix(N-3, floor((nstp-1)/np) + 1, mxREAL);
     double *tt = mxGetPr(plhs[0]);
     double *aa = mxGetPr(plhs[1]);
 

@@ -11,7 +11,10 @@ public:
   typedef std::vector<double> dvec;
   typedef std::vector<dcomp> dcvec;
 
-  /** @brief KS solver in the 1st mode slice without Jacobian. */
+  /** @brief KS solver in the 1st mode slice without Jacobian.
+   *
+   *  If np != 1, the time sequence is not accurate.
+   *  */
   void kssolve(double *a0, int nstp, int np, double *aa, double *tt);
   void kssolve(double *a0, int nstp, int np, int nqr, double *aa,
 	       double *daa, double *tt);
@@ -25,11 +28,14 @@ public:
 
   /** @brief integrate point a0 to poincare section defined by x0
    * 
+   * with its velocity filed. a0 should be below the section which means the
+   * direction of the poincare section is parallel to the velocity field.
+   * 
    * @param[in] x0 template point of the Poincare section 
    *            U(x) = v0 * (x - x0)
    * @param[in] a0 state point that needed to be integrated onto
    *            Poincare section.
-   * @return 
+   * @return  N-1 vector with last two elements be the time and error
    */
   dvec ks2poinc(dvec &x0, dvec &a0);
 

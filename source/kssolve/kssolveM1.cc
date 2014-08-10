@@ -5,6 +5,8 @@
 #include <boost/numeric/odeint.hpp>
 
 using boost::numeric::odeint::integrate;
+using boost::numeric::odeint::integrate_const;
+using boost::numeric::odeint::runge_kutta4;
 
 /*===============             Class KsM1            =================*/
 
@@ -37,7 +39,7 @@ KsM1::kssolve(double *a0, int nstp, int np, int nqr, double *aa, double *daa, do
 	aa[ix1*(N-3)+ 2*i + 1] = v[i+2].real();
 	aa[ix1*(N-3)+ 2*i + 2] = v[i+2].imag();
       }
-      tt[ix1] = tt[ix1-1] + (aa[ix1 * (N-3)] + aa[(ix1-1) * (N-3)]) * h / 2;
+      tt[ix1] = tt[ix1-1] + (aa[ix1 * (N-3)] + aa[(ix1-1) * (N-3)]) * np * h / 2;
       ix1++;
     }
 
@@ -80,7 +82,7 @@ KsM1::kssolve(double *a0, int nstp, int np, double *aa, double *tt){
 	aa[ix*(N-3) + 2*i + 2] = v[i+2].imag();
       }
       /* update time. */
-      tt[ix] = tt[ix-1] + (aa[ix * (N-3)] + aa[(ix-1) * (N-3)]) * h / 2;
+      tt[ix] = tt[ix-1] + (aa[ix * (N-3)] + aa[(ix-1) * (N-3)]) * np *h / 2;
       ix++;
     }
   }
@@ -232,29 +234,39 @@ KsM1::dvec KsM1::cv2rv(const dcvec &a0){
   return v;
 }
 
-/**
- * @param[in] x0 template point chosen for Poincare section.
- * @param[in] a0 staring point, should be close to poincare section.
- */
+
 KsM1::dvec KsM1::ks2poinc(dvec &x0, dvec &a0){
-  dvec v0(velo(x0));
-  int2p.v0 = v0;
-  dvec a(a0);
-  a.push_back(0.0);
+  dvec v0(velo(x0)); // get the volocity.
+  int2p.v0 = v0;     
+  dvec a(a0);        
+  a.push_back(0.0);  // a is vector with last element be the time.
   double u0 = 0;
   for(int i = 0; i < a0.size(); i++) u0 += v0[i] * (a0[i] - x0[i]);
-  size_t steps = integrate(int2p, a, u0, 0.0, fabs(u0)/100);
-  a.push_back(steps);
+
+  /* u0 is the starting value of Poincare section. */
+
+  //size_t steps = integrate(int2p, a, u0, 0.0, fabs(u0)/100);
+  /* choose to use uncontroled RK4 routine because sometimes the controled
+  *  vertion takes forever to finish.
+  */
+  runge_kutta4<dvec> stepper;
+  integrate_const(stepper, int2p, a, u0, 0.0, fabs(u0)/50);
+  
+  // calculate error
+  double err = 0;
+  for(int i = 0; i < v0.size(); i++) err += v0[i]*(a[i] - x0[i]);
+  a.push_back(err);
+
   return a;
 }
 /* --------------------------------------------------------- */
 
-
+/** @brief  the RK4 kernerl function. */
 void KsM1::Int2p::operator() (const dvec &x, dvec &dxdt, const double /* u */){
   dvec a(x.begin(), x.end()-1); // the first N-3 elements.
   dvec va(ks.velo(a)); // velocity of state point.
   double nor = 0;
-  for(int i = 0; i < va.size(); i++) nor += va[i] * v0[i];
-  for(int i = 0; i< va.size(); i++) dxdt[i] = va[i]/nor;
-  dxdt[ks.N-3] = 1.0/nor;
+  for(int i = 0; i < va.size(); i++) nor += va[i] * v0[i]; /* v0 * va */
+  for(int i = 0; i< va.size(); i++) dxdt[i] = va[i]/nor;   /* va / (v0 * va) */
+  dxdt[ks.N-3] = 1.0/nor;				   /* 1 / (v0 * va) */
 }

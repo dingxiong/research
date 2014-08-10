@@ -8,11 +8,11 @@ else
 	OPTIM = -O3 -xSSE4.2 
 endif
 
-OBJ = libkssolve.so
-SOURCE = kssolve.cc kssolveM1.cc
+OBJ = libkssym.so
+SOURCE = kssym.cc
 
 INCPATH = ../../include
-CFLAGS = -shared -fpic -lm -lfftw3 -std=c++11
+CFLAGS = -shared -fpic -lm 
 
 $(OBJ): $(SOURCE)
 	$(CPP) $(CFLAGS) $(OPTIM) -I$(INCPATH)   $^ -o $@ 

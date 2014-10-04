@@ -10,9 +10,9 @@ int main(){
   double h=0.1; 
   double d=22;
 
-  int nstp=2;
-  int np=1;
-  int nqr =1;
+  int nstp=10000;
+  int np=1000;
+  int nqr =1000;
   double a0[N-2]; 
 
   double *tt = (double *)malloc((nstp/np)*sizeof(double));
@@ -25,7 +25,7 @@ int main(){
   
   int k1=0; int k2=0;
   //for(int i = 0; i < 30; i++) cout<<daa[900*k1+30*k2+i] <<endl;
-  for(int i = 30*30*1 ; i < 30*30*1+30; i++) cout<<daa[i]<<endl;
+  //for(int i = 30*30*1 ; i < 30*30*1+30; i++) cout<<daa[i]<<endl;
     
   free(aa);
   free(daa);

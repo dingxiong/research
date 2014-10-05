@@ -1,4 +1,4 @@
-/** To compile this class, you need to have >= g++4.6
+/** To compile this class, you need to have g++ >= 4.6, eigen >= 3.1
  * g++ ksint.cc -march=corei7 -O3 -msse4.2 -I/usr/include/eigen3
  * -lm -lfftw3 -std=c++0x
  *  */
@@ -33,7 +33,6 @@ public:
   const double d;
   const double h;  
   ArrayXd K, L, E, E2, Q, f1, f2, f3;
-  ArrayXXd jE, jE2, jQ, jf1, jf2, jf3;
   ArrayXcd G;
   ArrayXXcd jG;
   

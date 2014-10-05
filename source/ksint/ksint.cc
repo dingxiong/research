@@ -50,19 +50,14 @@ void KS::ksInit(){
   f3 = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean().real();
   G = 0.5 * dcp(0,1) * K * N; 
   
-  jE = E.replicate(1, N-1);
-  jE2 = E2.replicate(1, N-1);
-  jQ = Q.replicate(1, N-1);
-  jf1 = f1.replicate(1, N-1);
-  jf2 = f2.replicate(1, N-1);
-  jf3 = f3.replicate(1, N-1);
-  jG = ArrayXXcd::Zero(G.rows(), N-1); jG << G, 2.0*G.replicate(1, N-2);
+  jG = ArrayXXcd::Zero(G.rows(), N-1); jG << G, 2.0*G.replicate(1, N-2); 
 }
 
 ArrayXXd KS::intg(const ArrayXd &a0, size_t nstp, size_t np){
   if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);}  
   Fv.vc1 = R2C(a0);
-  ArrayXXd aa(N-2, floor(nstp/np)+1); aa.col(0) = a0;
+  ArrayXXd aa(N-2, nstp/np + 1);
+  aa.col(0) = a0;
   
   for(size_t i = 1; i < nstp +1; i++){
     NL(Fv); Fa.vc1 = E2*Fv.vc1 + Q*Fv.vc3;
@@ -82,14 +77,20 @@ KS::KSaj KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
   ArrayXXd v0(N-2, N-1); 
   v0 << a0, MatrixXd::Identity(N-2, N-2);
   jFv.vc1 = R2C(v0);
-  ArrayXXd aa(N-2, floor(nstp/np)+1); aa.col(0) = a0;
-  ArrayXXd daa((N-2)*(N-2), floor(nstp/nqr));
-  for(size_t i = 1; i < nstp + 1; i++){
-    jNL(jFv); jFa.vc1 = jE2*jFv.vc1 + jQ*jFv.vc3;
-    jNL(jFa); jFb.vc1 = jE2*jFv.vc1 + jQ*jFa.vc3;
-    jNL(jFb); jFc.vc1 = jE2*jFa.vc1 + jQ*(2.0*jFb.vc3 - jFv.vc3);
+  ArrayXXd aa(N-2, nstp/np+1); aa.col(0) = a0;
+  ArrayXXd daa((N-2)*(N-2), nstp/nqr);
+  for(size_t i = 1; i < nstp + 1; i++){ // diagonal trick 
+    jNL(jFv); jFa.vc1 = E2.matrix().asDiagonal()*jFv.vc1.matrix() +
+		Q.matrix().asDiagonal()*jFv.vc3.matrix();
+    jNL(jFa); jFb.vc1 = E2.matrix().asDiagonal()*jFv.vc1.matrix() + 
+		Q.matrix().asDiagonal()*jFa.vc3.matrix();
+    jNL(jFb); jFc.vc1 = E2.matrix().asDiagonal()*jFa.vc1.matrix() + 
+		Q.matrix().asDiagonal()*(2.0*jFb.vc3 - jFv.vc3).matrix();
     jNL(jFc);
-    jFv.vc1 = jE*jFv.vc1 + jFv.vc3*jf1 + 2.0*(jFa.vc3+jFb.vc3)*jf2 + jFc.vc3*jf3;
+    jFv.vc1 = E.matrix().asDiagonal()*jFv.vc1.matrix() 
+      + f1.matrix().asDiagonal()*jFv.vc3.matrix() 
+      + 2.0*f2.matrix().asDiagonal()*(jFa.vc3+jFb.vc3).matrix()
+      + f3.matrix().asDiagonal()*jFc.vc3.matrix();
     
     if ( 0 == i%np ) aa.col(i/np) = C2R(jFv.vc1.col(0));
     if ( 0 == i%nqr){
@@ -114,8 +115,8 @@ void KS::NL(KSfft &f){
 
 void KS::jNL(KSfft &f){
   ifft(f); 
-  ArrayXXd tmp = f.vr2.col(0).replicate(1, N-1);
-  f.vr2 *= tmp;
+  ArrayXd tmp = f.vr2.col(0);
+  f.vr2.colwise() *= tmp;
   fft(f);
   f.vc3 *= jG;
 }

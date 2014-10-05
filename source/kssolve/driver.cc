@@ -21,6 +21,7 @@ int main(){
   for(i=0; i<N-2; i++) a0[i]=0.1;
   Ks ks;
   ks.kssolve(a0,nstp,np,nqr,aa,daa);
+  // for(int i = 0; i < 100; i++) ks.kssolve(a0, nstp, np, aa);
   // ksfM1(a0, d, h, nstp, np, aa, tt);
   
   int k1=0; int k2=0;

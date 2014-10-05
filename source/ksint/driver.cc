@@ -8,8 +8,9 @@ int main(){
   #if 0
   ArrayXd a0 = ArrayXd::Ones(30) * 0.1;
   KS ks(32, 0.1, 22);
-  ArrayXXd aa = ks.intg(a0, 2);
-  cout << aa.col(200) << endl << endl;
+  ArrayXXd aa;
+  for(int i = 0; i < 100; i++) aa = ks.intg(a0, 20000,1000);
+  //cout << aa.col(200) << endl << endl;
   #endif
   
   /* ------------------------------------------------------- */

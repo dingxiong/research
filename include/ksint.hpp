@@ -70,8 +70,8 @@ protected:
   KSfft jFv, jFa, jFb, jFc;
   
   void ksInit();
-  void NL(KSfft &f);
-  void jNL(KSfft &f);
+  virtual void NL(KSfft &f);
+  virtual void jNL(KSfft &f);
   void initFFT(KSfft &f, int M);
   void freeFFT(KSfft &f);
   void fft(KSfft &f);

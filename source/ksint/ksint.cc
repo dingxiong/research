@@ -31,6 +31,7 @@ KS::~KS(){
 /*------------------- member methods ------------------ */
 void KS::ksInit(){
   K = ArrayXd::LinSpaced(N/2+1, 0, N/2) * 2 * M_PI / d; //2*PI/d*[0, 1, 2,...,N/2]
+  K(N/2) = 0;
   L = K*K - K*K*K*K;
   E = (h*L).exp();
   E2 = (h/2*L).exp();
@@ -166,6 +167,11 @@ void KS::ifft(KSfft &f){
   f.vr2 /= N;
 }
 
+/* @brief complex matrix to the corresponding real matrix.
+ * [N/2+1, M] --> [N-2, M]
+ * Since the Map is not address continous, the performance is
+ * not good enough.
+ */
 ArrayXXd KS::C2R(const ArrayXXcd &v){
   int n = v.rows();
   int m = v.cols();

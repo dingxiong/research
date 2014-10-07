@@ -7,9 +7,9 @@ int main(){
   /// -----------------------------------------------------
   //#if 0
   ArrayXd a0 = ArrayXd::Ones(30) * 0.1;
-  KS ks(32, 0.02, 22);
+  KS ks(32, 0.1, 22);
   ArrayXXd aa;
-  aa = ks.intg(a0, 2000,1000);
+  aa = ks.intg(a0, 2,1);
   cout << aa << endl << endl;
   //#endif
   

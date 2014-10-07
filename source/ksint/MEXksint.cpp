@@ -16,6 +16,7 @@ const int N = 32;
 static ArrayXXd ksf(double *a0, double d,  double h, int nstp, int np){
   KS ks(N, h, d);
   Map<ArrayXd> v0(a0, N-2);
+  //ArrayXd v0(N-2); for(int i = 0 ; i < N-2; i++) v0(i) = a0[i];
   ArrayXXd aa = ks.intg(v0, nstp, np);
   return aa;
 }
@@ -23,6 +24,7 @@ static ArrayXXd ksf(double *a0, double d,  double h, int nstp, int np){
 static KSM1::KSat ksfM1(double *a0, double d,  double h, int nstp, int np){
   KSM1 ks(N, h, d);
   Map<ArrayXd> v0(a0, N-2);
+  //ArrayXd v0(N-2); for(int i = 0 ; i < N-2; i++) v0(i) = a0[i];
   KSM1::KSat aa = ks.intg(v0, nstp, np);
   return aa;
 }
@@ -30,6 +32,7 @@ static KSM1::KSat ksfM1(double *a0, double d,  double h, int nstp, int np){
 static KSM1::KSat ksf2M1(double *a0, double d,  double h, double T, int np){
   KSM1 ks(N, h, d);
   Map<ArrayXd> v0(a0, N-2);
+  //ArrayXd v0(N-2); for(int i = 0 ; i < N-2; i++) v0(i) = a0[i];
   KSM1::KSat aa = ks.intg2(v0, T, np);
   return aa;
 }

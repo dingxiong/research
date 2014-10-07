@@ -38,7 +38,7 @@ void KS::ksInit(){
   
   ArrayXd tmp = ArrayXd::LinSpaced(M, 1, M); // 1,2,3,...,M 
   ArrayXXcd r = ((tmp-0.5)/M * dcp(0,M_PI)).exp().transpose();
-  ArrayXXcd Lc(N/2+1, 1); 
+  ArrayXXcd Lc = ArrayXXcd::Zero(N/2+1, 1); 
   Lc.real() = L;
   ArrayXXcd LR = h*Lc.replicate(1, M) + r.replicate(N/2+1, 1);
   ArrayXXcd LR2 = LR.square();
@@ -66,7 +66,7 @@ ArrayXXd KS::intg(const ArrayXd &a0, size_t nstp, size_t np){
     NL(Fb); Fc.vc1 = E2*Fa.vc1 + Q*(2.0*Fb.vc3 - Fv.vc3);
     NL(Fc);
     Fv.vc1 = E*Fv.vc1 + Fv.vc3*f1 + 2.0*(Fa.vc3+Fb.vc3)*f2 + Fc.vc3*f3;
-
+    
     if( 0 == i%np ) aa.col(i/np) = C2R(Fv.vc1);
   }
   

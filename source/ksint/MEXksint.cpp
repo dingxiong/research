@@ -1,5 +1,6 @@
 /* compile command: 
- * mex CXXFLAGS='-std=c++0x -fPIC -O3' MEXksint.cpp -I../../include -L../../lib -lksintm1
+ * mex CXXFLAGS='-std=c++0x -fPIC -O3' MEXksint.cpp ksint.cc ksintM1.cc
+ * -I../../include -L../../lib -lksintm1
  * -I/usr/include/eigen3 
  * */
 #include "ksintM1.hpp"

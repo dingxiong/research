@@ -135,13 +135,13 @@ void KS::initFFT(KSfft &f, int M) {
   
   if (1 == M){
     f.p = fftw_plan_dft_r2c_1d(N, f.r2, f.c3, FFTW_MEASURE);
-    f.rp = fftw_plan_dft_c2r_1d(N, f.c1, f.r2, FFTW_MEASURE);
+    f.rp = fftw_plan_dft_c2r_1d(N, f.c1, f.r2, FFTW_MEASURE|FFTW_PRESERVE_INPUT);
   } else{
     int n[]={N};
     f.p = fftw_plan_many_dft_r2c(1, n, N-1, f.r2, n, 1, N, 
 				 f.c3, n, 1, N/2+1, FFTW_MEASURE);
     f.rp = fftw_plan_many_dft_c2r(1, n, N-1, f.c1, n, 1, N/2+1,
-				  f.r2, n, 1, N, FFTW_MEASURE);
+				  f.r2, n, 1, N, FFTW_MEASURE|FFTW_PRESERVE_INPUT);
   }
       
 }
@@ -164,11 +164,8 @@ void KS::fft(KSfft &f){
 }
 
 void KS::ifft(KSfft &f){
-  //c2r transform destroys its input
-  ArrayXcd tmp = f.vc1;
   fftw_execute(f.rp); 
   f.vr2 /= N;
-  f.vc1 = tmp;
 }
 
 /* @brief complex matrix to the corresponding real matrix.

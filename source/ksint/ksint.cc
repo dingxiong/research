@@ -56,12 +56,12 @@ void KS::ksInit(){
 
 ArrayXXd KS::intg(const ArrayXd &a0, size_t nstp, size_t np){
   if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);}  
-  Fv.vc1 = R2C(a0);
+  Fv.vc1 = R2C(a0);  
   ArrayXXd aa(N-2, nstp/np + 1);
   aa.col(0) = a0;
-  
+
   for(size_t i = 1; i < nstp +1; i++){
-    NL(Fv); Fa.vc1 = E2*Fv.vc1 + Q*Fv.vc3;
+    NL(Fv); Fa.vc1 = E2*Fv.vc1 + Q*Fv.vc3; 
     NL(Fa); Fb.vc1 = E2*Fv.vc1 + Q*Fa.vc3;
     NL(Fb); Fc.vc1 = E2*Fa.vc1 + Q*(2.0*Fb.vc3 - Fv.vc3);
     NL(Fc);
@@ -90,7 +90,7 @@ KS::KSaj KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
     jNL(jFc);
     jFv.vc1 = E.matrix().asDiagonal()*jFv.vc1.matrix() 
       + f1.matrix().asDiagonal()*jFv.vc3.matrix() 
-      + 2.0*f2.matrix().asDiagonal()*(jFa.vc3+jFb.vc3).matrix()
+      + (2.0*f2).matrix().asDiagonal()*(jFa.vc3+jFb.vc3).matrix()
       + f3.matrix().asDiagonal()*jFc.vc3.matrix();
     
     if ( 0 == i%np ) aa.col(i/np) = C2R(jFv.vc1.col(0));
@@ -117,7 +117,8 @@ void KS::NL(KSfft &f){
 void KS::jNL(KSfft &f){
   ifft(f); 
   ArrayXd tmp = f.vr2.col(0);
-  f.vr2.colwise() *= tmp;
+  // f.vr2.colwise() *= tmp;
+  f.vr2 = tmp.matrix().asDiagonal()*f.vr2.matrix();
   fft(f);
   f.vc3 *= jG;
 }
@@ -159,12 +160,15 @@ void KS::freeFFT(KSfft &f){
 }
 
 void KS::fft(KSfft &f){
-  fftw_execute(f.p);
+  fftw_execute(f.p); 
 }
 
 void KS::ifft(KSfft &f){
-  fftw_execute(f.rp);
+  //c2r transform destroys its input
+  ArrayXcd tmp = f.vc1;
+  fftw_execute(f.rp); 
   f.vr2 /= N;
+  f.vc1 = tmp;
 }
 
 /* @brief complex matrix to the corresponding real matrix.

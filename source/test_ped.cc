@@ -2,13 +2,16 @@
 #include "ped.hpp"
 #include <Eigen/Dense>
 #include <cstdlib>
+#include <complex>
 #include <ctime>
 using namespace std;
 using namespace Eigen;
+typedef Eigen::SparseMatrix<double> SpMat;
+typedef Eigen::Triplet<double> Tri;
 int main(){
   //----------------------------------------
 
-  switch(5){
+  switch(13){
     
   case 1 : 
     {
@@ -193,10 +196,124 @@ int main(){
       cout << sd << endl;
       break;
     }
+    
+  case 6 : // test realIndex() function
+    {
+      vector<int> a{0, 3, 7, 9};
+      PED ped;
+      vector<int> b = ped.realIndex(a, 14);
+      for(vector<int>::iterator it = b.begin(); it != b.end(); it++) 
+	cout << *it << endl; 
+      
+      break;
+    }
 
+  case 7 : //tese eigsMat2() function
+    {
+      Matrix2d A;
+      A << 1, -1, 1, 1;
+      PED ped;
+      pair<Vector2d, Matrix2d> tmp = ped.complexEigsMat2(A); 
+      cout << tmp.first << endl;
+      cout << tmp.second << endl;
+      
+      break;
+    }
+
+  case 8 : // small test EigVals() function
+    {
+      const int N = 10;
+      const int M = 40;
+      srand(time(NULL));
+
+      PED ped;
+      MatrixXd J = MatrixXd::Random(N, M*N);
+      MatrixXd J0 = MatrixXd::Identity(N,N);
+      for(size_t i = 0; i < M; i++) J0 = J0*J.middleCols(i*N,N);
+  
+      MatrixXd eigs = ped.EigVals(J, 5000, 1e-16, true);
+      cout << eigs << endl << endl;
+
+      EigenSolver<MatrixXd> eg(J0);
+      MatrixXd tmp(N, 2);
+      VectorXcd eigs2 = eg.eigenvalues();
+      cout << eigs2 << endl << endl;
+      tmp << eigs2.cwiseAbs().array().log(),  eigs2.imag().array() / eigs2.real().array() ;
+      cout << tmp << endl;
+      
+      break;
+
+    }
+
+  case 9 : // test the sparse matrix function triDenseMat()
+    {
+      srand(time(NULL));
+      MatrixXd A = MatrixXd::Random(4,3);
+      PED ped;
+      vector<Tri> nz = ped.triDenseMat(A, 2, 1);
+      SpMat B(8,8);
+      B.setFromTriplets(nz.begin(), nz.end());
+      cout << B << endl;
+      break;
+    }
+
+  case 10 : // test the sparse matrix function triDenseMatKron()
+    {
+      srand(time(NULL));
+      MatrixXd A = MatrixXd::Random(3,2);
+      PED ped;
+      vector<Tri> nz = ped.triDenseMatKron(2, A, 2, 1);
+      SpMat B(10,10);
+      B.setFromTriplets(nz.begin(), nz.end());
+      cout << B << endl;
+      break;
+    }
+
+  case 11 : // test the sparse matrix function triDiagMat()
+    {
+      srand(time(NULL));
+      MatrixXd A = MatrixXd::Random(3,2);
+      PED ped;
+      vector<Tri> nz = ped.triDiagMat(3, 1.2, 2, 1);
+      SpMat B(10,10);
+      B.setFromTriplets(nz.begin(), nz.end());
+      cout << B << endl;
+      break;
+    }
+
+  case 12 : // test the sparse matrix function triDiagMatKron()
+    {
+      srand(time(NULL));
+      MatrixXd A = MatrixXd::Random(3,2);
+      PED ped;
+      vector<Tri> nz = ped.triDiagMatKron(2, A, 2, 1);
+      SpMat B(10,10);
+      B.setFromTriplets(nz.begin(), nz.end());
+      cout << MatrixXd(B) << endl;
+      break;
+    }
+
+  case 13 : // small test EigVals() function
+    {
+      const int N = 5;
+      const int M = 3;
+      srand(time(NULL));
+
+      PED ped;
+      MatrixXd J = MatrixXd::Random(N, M*N);
+      pair<SpMat, VectorXd> tmp = ped.PerSylvester(J, 2, false, true);
+      
+      cout << J << endl << endl;
+      cout << MatrixXd(tmp.first) << endl << endl;
+      cout << tmp.second << endl << endl;
+      break;
+
+    }
 
   default : 
     cout << "please indicate the block to be tested!"<< endl;
 
   }
+
+
 }

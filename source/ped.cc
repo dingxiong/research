@@ -1,6 +1,10 @@
 #include "ped.hpp"
 #include <cmath>
+#include <complex>
 #include <iostream>
+typedef Eigen::SparseMatrix<double> SpMat;
+typedef Eigen::Triplet<double> Tri;
+
 using std::cout; using std::endl;
 /*============================================================*
  *            Class : periodic Eigendecomposition             *
@@ -10,14 +14,33 @@ using std::cout; using std::endl;
 
 /*---------------        member methods          --------------- */
 
-VectorXd PED::EigVals(MatrixXd &J, const int MaxN /* = 100 */,
+MatrixXd PED::EigVals(MatrixXd &J, const int MaxN /* = 100 */,
 		      const double tol/* = 1e-16 */, bool Print /* = true */){ 
   const int N = J.rows();
   pair<MatrixXd, vector<int> > tmp = PerSchur(J, MaxN, tol, Print);
-  MatrixXd Q = tmp.first;
-  vector<int> v = tmp.second;
+  vector<int> complex_index = tmp.second;
+  vector<int> real_index = realIndex(complex_index, N);
+  MatrixXd eigVals(N, 2);
   
-  
+  // get the real eigenvalues
+  for(vector<int>::iterator it = real_index.begin(); it != real_index.end(); it++){
+    pair<double, int> tmp = product1dDiag(J, *it);
+    eigVals(*it, 0) = tmp.first;
+    eigVals(*it, 1) = tmp.second;
+  }
+
+  // get the complex eigenvalues
+  for(vector<int>::iterator it = complex_index.begin(); it != complex_index.end(); it++){
+    pair<Matrix2d, double> tmp = product2dDiag(J, *it);
+    pair<Vector2d, Matrix2d> tmp2 = complexEigsMat2(tmp.first);
+    
+    eigVals(*it, 0) = tmp.second + tmp2.first(0);
+    eigVals(*it, 1) = tmp2.first(1);
+
+    eigVals(*it+1, 0) = tmp.second + tmp2.first(0);
+    eigVals(*it+1, 1) = -tmp2.first(1);
+  }
+  return eigVals;
 }
 
 /** @brief Periodic Schur decomposition of a sequence of matrix stored in J
@@ -73,7 +96,6 @@ MatrixXd PED::HessTrian(MatrixXd &J){
  */
 vector<int> PED::PeriodicQR(MatrixXd &J, MatrixXd &Q, const int L, const int U,
 			    const int MaxN, const double tol, bool Print){
-  
   const int N = J.rows(); 
   const int M = J.cols() / N;
   
@@ -84,6 +106,7 @@ vector<int> PED::PeriodicQR(MatrixXd &J, MatrixXd &Q, const int L, const int U,
      */
   case 0 :
     {
+      if(Print) printf("1x1 matrix at L = U = %d \n", L);
       return vector<int>();
     }
 
@@ -128,7 +151,18 @@ vector<int> PED::PeriodicQR(MatrixXd &J, MatrixXd &Q, const int L, const int U,
 	vector<int> padZeroID = padEnds(zeroID, L-1, U); // pad L-1 and U at ends.
 	const int Nz = padZeroID.size();
 	if( Nz > 2 ){
+
+	  //////////////////////////////////////////////////////
+	  // print out divide conquer information.
 	  if(Print) printf("subproblem L = %d, U = %d uses iteration %zd\n", L, U, np);
+	  if(Print){
+	    printf("divide position: ");
+	    for(vector<int>::iterator it = zeroID.begin(); it != zeroID.end(); it++)
+	      printf("%d ", *it);
+	    printf("\n");
+	  }
+	  /////////////////////////////////////////////////////
+
 	  for(size_t i = 0; i < Nz-1; i++){ 	
 	    vector<int> tmp = PeriodicQR(J, Q, padZeroID[i]+1, padZeroID[i+1], MaxN, tol, Print);
 	    cp.insert(cp.end(), tmp.begin(), tmp.end());
@@ -138,8 +172,11 @@ vector<int> PED::PeriodicQR(MatrixXd &J, MatrixXd &Q, const int L, const int U,
     
       }
       //print out the information if not converged.
-      if( np == MaxN-1)
+      if( np == MaxN){
+	printf("**********************\n");
 	printf("subproblem L = %d, U = %d does not converge in %d iterations!\n", L, U, MaxN);
+	printf("**********************\n");
+      }
       return cp;
     }
 
@@ -260,6 +297,30 @@ vector<int> PED::padEnds(const vector<int> &v, const int &left, const int &right
   return vp;
 }
 
+/** @brief realIndex() gets the positions of the real eigenvelues from the positions
+ *         of complex eigenvalues.
+ *
+ *  Denote the sequence of complex positions: [a_0, a_1,...a_s], then the real
+ *  positions between [a_i, a_{i+1}] is from a_i + 2 to a_{i+1} - 1.
+ *  Example:
+ *          Complex positions :  3, 7, 9
+ *          Dimension : N = 12
+ *      ==> Real positions : 0, 1, 2, 5, 6, 11   
+ */
+vector<int> PED::realIndex(const vector<int> &complexIndex, const int N){
+  vector<int> padComplexIndex = padEnds(complexIndex, -2, N);
+  vector<int> a;
+  a.reserve(N);
+  for(vector<int>::iterator it = padComplexIndex.begin(); 
+      it != padComplexIndex.end()-1; it++){ // note : -1 here.
+    for(int i = *it+2; i < *(it+1); i++) {
+      a.push_back(i);
+    }
+  }
+  
+  return a;
+}
+
 /** @brief return the delta of a 2x2 matrix :
  *  for [a, b
  *       c, d]
@@ -286,6 +347,41 @@ Vector2d PED::vecMat2(const Matrix2d &A){
   return tmp;
 }
 
+/** @brief get the eigenvalues and eigenvectors of 2x2 matrix
+ *
+ *  Eigenvalue is stored in exponential way : e^{mu + i*omega}.
+ *  Here, omega is guarantted to be positive in [0, PI].
+ *  The real and imaginary parts are splitted for eigenvector:
+ *  [real(v), imag(v)]
+ *  Only one eigenvalue and corresponding eigenvector are return.
+ *  The other one is the conjugate.
+ *  
+ *  Example:
+ *         for matrix  [1, -1
+ *                      1,  1],
+ *         it returns [ 0.346,  
+ *                      0.785]
+ *                and [-0.707,    0
+ *                       0     0.707 ]
+ *  Note : make sure that the input matrix has COMPLEX eigenvalues. 
+ */
+pair<Vector2d, Matrix2d> PED::complexEigsMat2(const Matrix2d &A){
+  EigenSolver<Matrix2d> eig(A);
+  Vector2cd val = eig.eigenvalues();
+  Matrix2cd vec = eig.eigenvectors();
+
+  Vector2d eigvals;
+  Matrix2d eigvecs;
+  eigvals(0) = log( abs(val(0)) );
+  eigvals(1) = fabs( arg(val(0)) );
+  int i = 0;
+  if(arg(val(0)) < 0) i = 1;
+  eigvecs.col(0) = vec.col(i).real();
+  eigvecs.col(1) = vec.col(i).imag();
+
+  return make_pair(eigvals, eigvecs);
+}
+
 pair<double, int> PED::product1dDiag(const MatrixXd &J, const int k){
   const int N = J.rows();
   const int M = J.cols() / N;
@@ -303,7 +399,8 @@ pair<Matrix2d, double> PED::product2dDiag(const MatrixXd &J, const int k){
   const int N = J.rows();
   const int M = J.cols() / N;
   double logProduct = 0;
-  Matrix2d A = MatrixXd::Identity<2,2>();
+  Matrix2d A = MatrixXd::Identity(2,2);
+
   for(size_t i = 0; i < M; i++){
     A *= J.block<2,2>(k, i*N+k);
     double norm = A.cwiseAbs().maxCoeff();
@@ -348,5 +445,172 @@ void PED::HouseHolder(Ref<MatrixXd> A, Ref<MatrixXd> B, Ref<MatrixXd> C,
 /** @brief return the sign of double precision number.
  */
 int PED::sgn(const double &num){
-  return (0 < val) - (val < 0);
+  return (0 < num) - (num < 0);
+}
+
+
+
+/** @brief triDenseMat() creates the triplets of a dense matrix
+ *  
+ */
+vector<Tri> PED::triDenseMat(const Ref<const MatrixXd> &A, const size_t M /* = 0 */, 
+			     const size_t N /* = 0 */){
+  size_t m = A.rows();
+  size_t n = A.cols();
+
+  vector<Tri> tri; 
+
+  tri.reserve(m*n);
+  for(size_t i = 0; i < n; i++) // cols
+    for(size_t j = 0; j < m; j++) // rows
+      tri.push_back( Tri(M+j, N+i, A(j,i) ));
+
+  return tri;
+}
+
+/** @brief triDenseMat() creates the triplets of the Kroneck product of
+ *         an IxI identity matrix and a dense matrix: Identity x R
+ *  
+ */
+vector<Tri> PED::triDenseMatKron(const size_t I, const Ref<const MatrixXd> &A, 
+				 const size_t M /* = 0 */, const size_t N /* = 0 */){
+  size_t m = A.rows();
+  size_t n = A.cols();
+  
+  vector<Tri> nz; 
+  nz.reserve(m*n*I);
+  
+  for(size_t i = 0; i < I; i++){
+    vector<Tri> tri = triDenseMat(A, M+i*m, N+i*n);
+    nz.insert(nz.end(), tri.begin(), tri.end());
+  }
+  
+  return nz;
+}
+
+/** @brief triDiagMat() creates the triplets of a diagonal matrix.
+ *
+ */
+vector<Tri> PED::triDiagMat(const size_t n, const double x, 
+			    const size_t M /* = 0 */, const size_t N /* = 0 */ ){
+  vector<Tri> tri;
+  tri.reserve(n);
+  for(size_t i = 0; i < n; i++) tri.push_back( Tri(M+i, N+i, x) );
+  return tri;
+}
+
+/** @brief triDiagMat() creates the triplets of the product
+ *         of a matrix and an IxI indentity matrix.
+ *
+ */
+vector<Tri> PED::triDiagMatKron(const size_t I, const Ref<const MatrixXd> &A,
+				const size_t M /* = 0 */, const size_t N /* = 0 */ ){
+  size_t m = A.rows();
+  size_t n = A.cols();
+  
+  vector<Tri> nz;
+  nz.reserve(m*n*I);
+
+  for(size_t i = 0; i < n; i++){
+    for(size_t j = 0; j < m; j++){      
+      vector<Tri> tri = triDiagMat(I, A(j,i), M+j*n, N+i*n);
+      nz.insert(nz.end(), tri.begin(), tri.end());
+    }
+  }
+  
+  return nz;
+}
+
+/** @brief perSylvester() create the periodic Sylvester sparse matrix and the
+ *         dense vector for the reordering algorithm.
+ *
+ *  @param P the position of the eigenvalue
+ *  @param isReal for real eigenvector or complex eigenvector
+ */
+pair<SpMat, VectorXd> PED::PerSylvester(const MatrixXd &J, const int &P, 
+					const bool &isReal, const bool &Print){
+  const int N = J.rows();
+  const int M = J.cols() / N;
+  if(isReal)
+    {
+      // real case. only need to switch 1x1 matrix on the diagoanl
+      if(Print) printf("Forming periodic Sylvester matrix for a real eigenvalue:");
+      SpMat per_Sylvester(M*P, M*P);
+      VectorXd t12(M*P);
+      vector<Tri> nz; nz.reserve(2*M*P*P);
+      for(size_t i = 0; i < M; i++){
+	if(Print) printf("%zd ", i);
+	t12.segment(i*P, P) = -J.block(0, i*N+P, P, 1); // vector -R^{12}
+	vector<Tri> triR11 = triDenseMat( J.block(0, i*N, P, P), i*P, i*P );
+	vector<Tri> triR22 = triDiagMat(P, -J(P, i*N+P), i*P, ((i+1)%M)*P);
+	nz.insert(nz.end(), triR11.begin(), triR11.end());
+	nz.insert(nz.end(), triR22.begin(), triR22.end());
+      }
+      if(Print) printf("\n");
+      per_Sylvester.setFromTriplets(nz.begin(), nz.end());
+      
+      return make_pair(per_Sylvester, t12);
+    }  
+  else
+    {
+      // complex case. Need to switch the 2x2 matrix on the diagonal.
+      if(Print) printf("Forming periodic Sylvester matrix for a complex eigenvalue:");
+      SpMat per_Sylvester(2*M*P, 2*M*P);
+      VectorXd t12(2*M*P);
+      vector<Tri> nz; nz.reserve(2*2*M*P*P);
+      for(size_t i = 0; i < M; i++){
+	if(Print) printf("%zd ", i);
+	MatrixXd tmp = -J.block(0, i*N+P, P, 2); tmp.resize(2*P,1);
+	t12.segment(i*2*P, 2*P) = tmp;
+	vector<Tri> triR11 = triDenseMatKron(2, J.block(0, i*N, P, P), i*2*P, i*2*P);
+	vector<Tri> triR22 = triDiagMatKron(2, -J.block(P, i*N+P, 2, 2), i*2*P, ((i+1)%M)*2*P);
+	nz.insert(nz.end(), triR11.begin(), triR11.end());
+	nz.insert(nz.end(), triR22.begin(), triR22.end());
+      }      
+      if(Print) printf("\n");
+      per_Sylvester.setFromTriplets(nz.begin(), nz.end());
+      
+      return make_pair(per_Sylvester, t12);    
+    }
+
+
+}
+/** @brief calculate eigenvector corresponding to the eigenvalue at 
+ *         postion P given the Periodic Real Schur Form.
+ *         
+ */
+MatrixXd oneEigVec(const MatrixXd &J, const int &P, 
+	       const bool &isReal, const bool &Print){
+  const int N = J.rows();
+  const int M = J.cols() / N;
+  if(isReal)
+    {
+      MatrixXd ve = MatrixXd::Zero(N, M);
+      if(P == 0){
+	ve.row(0) = MatrixXd::Identity(1, M);
+      } 
+      else{
+	pair<SpMat, VectorXd> tmp = PerSylvester(J, P, isReal, Print);
+	VectorXd x = tmp.first.fullPivLu().solve(tmp.second);
+	x.resize(P, M);
+	ve.topRows(P) = x; ve.row(P) = MatrixXd::Identity(1, M); 
+      }
+      ve.resize(N*M,1);
+      return ve;
+    }
+  else
+    {
+      MatrixXd ve = MatrixXd::Zero(N, 2*M);
+      if(P == 0){
+      }
+      else{
+	pair<Matrix2d, double> tmp = product2dDiag(J, P);
+	pair<Vector2d, Matrix2d> tmp2 = complexEigsMat2(tmp.first);
+	pair<SpMat, VectorXd> tmp3 = PerSylvester(J, P, isReal, Print);
+	VectorXd x = tmp3.first.fullPivLu().solve(tmp3.second);
+	x.resize(P, 2*M);
+      }
+      
+    }
+
 }

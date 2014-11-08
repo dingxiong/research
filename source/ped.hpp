@@ -5,17 +5,23 @@
 #define PED_H
 
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
 #include <Eigen/Eigenvalues>
+#include <Eigen/LU>
 #include <vector> 
 #include <utility>
 
+
 using std::vector;
-using std::pair;
+using std::pair; using std::make_pair;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::Matrix2d; using Eigen::Vector2d;
+using Eigen::Matrix2cd; using Eigen::Vector2cd;
 using Eigen::Map; using Eigen::Ref;
 using Eigen::EigenSolver;
+using Eigen::Triplet;
+using Eigen::SparseMatrix;
 
 /*============================================================ *
  *                 Class : periodic Eigendecomposition         *
@@ -23,7 +29,7 @@ using Eigen::EigenSolver;
 class PED{
   
 public:
-  VectorXd EigVals(MatrixXd &J, const int MaxN  = 100,
+  MatrixXd EigVals(MatrixXd &J, const int MaxN  = 100,
   		   const double tol = 1e-16 , bool Print  = true);
   pair<MatrixXd, vector<int> > PerSchur(MatrixXd &J, const int MaxN = 100,
 		    const double tol = 1e-16, bool Print = true);
@@ -46,9 +52,25 @@ public:
   vector<int> padEnds(const vector<int> &v, const int &left, const int &right);
   double deltaMat2(const Matrix2d &A);
   Vector2d vecMat2(const Matrix2d &A);
+  pair<Vector2d, Matrix2d> complexEigsMat2(const Matrix2d &A);
   int sgn(const double &num);
   pair<double, int> product1dDiag(const MatrixXd &J, const int k);
   pair<Matrix2d, double> product2dDiag(const MatrixXd &J, const int k);
+  vector<int> realIndex(const vector<int> &complexIndex, const int N);
+  vector<Triplet<double> > triDenseMat(const Ref<const MatrixXd> &A, const size_t M = 0, 
+			     const size_t N = 0);
+  vector<Triplet<double> > 
+  triDenseMatKron(const size_t I, const Ref<const MatrixXd> &A, 
+		  const size_t M = 0, const size_t N = 0);
+  vector<Triplet<double> > 
+  triDiagMat(const size_t n, const double x, 
+	     const size_t M = 0, const size_t N = 0 );
+  vector<Triplet<double> > 
+  triDiagMatKron(const size_t I, const Ref<const MatrixXd> &A,
+		 const size_t M = 0, const size_t N = 0 );
+  pair<SparseMatrix<double>, VectorXd> 
+  PerSylvester(const MatrixXd &J, const int &P, 
+	       const bool &isReal, const bool &Print);
 };
 
 #endif	/* PED_H */

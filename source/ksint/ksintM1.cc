@@ -44,7 +44,13 @@ void KSM1::jNL(KSfft &f){
   f.vc3.col(0) = a1*f.vc3.col(0) - L*f.vc1.col(0) -fv1(0)*G*f.vc1;
 }
 
-KSM1::KSat KSM1::intg(const ArrayXd &a0, size_t nstp, size_t np){
+/** @brief Integrator on the 1st mode slice.
+ *
+ *  @return the trajectory (first element of the return pair) and the time
+ *          in the full state space (second element of the return pair)
+ */
+pair<ArrayXXd, ArrayXd>
+KSM1::intg(const ArrayXd &a0, size_t nstp, size_t np){
   if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);} 
   Fv.vc1 = R2C(a0); 
   Fv.vc1(1) = dcp(Fv.vc1(1).real(), 0.0); //force the imag of 1st mode to be zero
@@ -66,13 +72,11 @@ KSM1::KSat KSM1::intg(const ArrayXd &a0, size_t nstp, size_t np){
     }
   }
   
-  KSat at; 
-  at.aa = aa; at.tt = tt;
-
-  return at;
+  return std::make_pair(aa, tt);
 }
 
-KSM1::KSat KSM1::intg2(const ArrayXd &a0, double T, size_t np){
+pair<ArrayXXd, ArrayXd>
+KSM1::intg2(const ArrayXd &a0, double T, size_t np){
   const size_t cell = 1000;
   if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);} 
   Fv.vc1 = R2C(a0); 
@@ -107,10 +111,10 @@ KSM1::KSat KSM1::intg2(const ArrayXd &a0, double T, size_t np){
     i++;
   }
   
-  KSat at; 
-  at.aa = aa.leftCols(ix); at.tt = tt.head(ix);
-
-  return at;
+  // KSat at; 
+  // at.aa = aa.leftCols(ix); at.tt = tt.head(ix);
+  
+  return std::make_pair(aa.leftCols(ix), tt.head(ix));
 }
 
 KSM1::intgj(const ArrayXd a0,  size_t nstp, size_t np, size_t nqr){

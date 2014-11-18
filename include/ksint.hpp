@@ -7,6 +7,7 @@
 
 #include <fftw3.h>
 #include <complex>
+#include <utility>
 #include <Eigen/Dense>
 
 using Eigen::ArrayXXcd; 
@@ -23,11 +24,7 @@ class KS{
   
 public:
   typedef std::complex<double> dcp;
-  typedef struct{
-    ArrayXXd aa;
-    ArrayXXd daa;
-  } KSaj;
-  
+
   /* member variables */
   const int N;
   const double d;
@@ -43,10 +40,14 @@ public:
   ~KS();
   
   /* member functions */
-  ArrayXXd intg(const ArrayXd &a0, size_t nstp, size_t np = 1);
-  KSaj intgj(const ArrayXd &a0, size_t nstp, size_t np = 1, size_t nqr = 1);
-  ArrayXXd C2R(const ArrayXXcd &v);
-  ArrayXXcd R2C(const ArrayXXd &v);
+  ArrayXXd 
+  intg(const ArrayXd &a0, size_t nstp, size_t np = 1);
+  std::pair<ArrayXXd, ArrayXXd>
+  intgj(const ArrayXd &a0, size_t nstp, size_t np = 1, size_t nqr = 1);
+  ArrayXXd 
+  C2R(const ArrayXXcd &v);
+  ArrayXXcd 
+  R2C(const ArrayXXd &v);
 
 protected:
   enum { M = 16 }; // number used to approximate the complex integral.

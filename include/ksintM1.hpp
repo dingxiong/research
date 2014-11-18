@@ -12,14 +12,12 @@
 class KSM1 : public KS {
 
 public:
-  typedef struct{
-    ArrayXXd aa;
-    ArrayXd tt;
-  } KSat;
   
   /* member functions */
-  KSat intg(const ArrayXd &a0, size_t nstp, size_t np);
-  KSat intg2(const ArrayXd &a0, double T, size_t np);
+  std::pair<ArrayXXd, ArrayXd> 
+  intg(const ArrayXd &a0, size_t nstp, size_t np);
+  std::pair<ArrayXXd, ArrayXd> 
+  intg2(const ArrayXd &a0, double T, size_t np);
 
   /* constructors */
   KSM1(int N = 32, double h = 0.25, double d = 22);

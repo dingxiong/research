@@ -73,7 +73,15 @@ ArrayXXd KS::intg(const ArrayXd &a0, size_t nstp, size_t np){
   return aa;
 }
 
-KS::KSaj KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
+/** @brief intgj() integrate KS system and calculate Jacobian along this orbit.
+ *
+ * @param[in] a0 Initial condition of the orbit. Size [N-2,1]
+ * @param[in] nstp Number of steps to integrate.
+ * @return Pair value. The first element is the trajectory.
+ *         The second element is the Jacobian along the trajectory.
+ */
+std::pair<ArrayXXd, ArrayXXd>
+KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
   if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);}  
   ArrayXXd v0(N-2, N-1); 
   v0 << a0, MatrixXd::Identity(N-2, N-2);
@@ -101,10 +109,7 @@ KS::KSaj KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
     }
   }
   
-  KSaj aj; 
-  aj.aa = aa; aj.daa = daa;
-  
-  return aj;
+  return std::make_pair(aa, daa);
 }
 
 void KS::NL(KSfft &f){

@@ -11,7 +11,7 @@ typedef Eigen::Triplet<double> Tri;
 int main(){
   //----------------------------------------
 
-  switch(13){
+  switch(14){
     
   case 1 : 
     {
@@ -286,14 +286,14 @@ int main(){
       srand(time(NULL));
       MatrixXd A = MatrixXd::Random(3,2);
       PED ped;
-      vector<Tri> nz = ped.triDiagMatKron(2, A, 2, 1);
-      SpMat B(10,10);
+      vector<Tri> nz = ped.triDiagMatKron(3, A, 2, 1);
+      SpMat B(12,12);
       B.setFromTriplets(nz.begin(), nz.end());
       cout << MatrixXd(B) << endl;
       break;
     }
 
-  case 13 : // small test EigVals() function
+  case 13 : // small test PerSylvester() function
     {
       const int N = 5;
       const int M = 3;
@@ -301,13 +301,49 @@ int main(){
 
       PED ped;
       MatrixXd J = MatrixXd::Random(N, M*N);
-      pair<SpMat, VectorXd> tmp = ped.PerSylvester(J, 2, false, true);
-      
       cout << J << endl << endl;
+      pair<SpMat, VectorXd> tmp = ped.PerSylvester(J, 1, false, true);
+      
+ 
       cout << MatrixXd(tmp.first) << endl << endl;
       cout << tmp.second << endl << endl;
       break;
 
+    }
+
+  case 14 : // small test of EigVecs() function
+    {
+      const int N = 5;
+      const int M = 3;
+      srand(time(NULL));
+
+      PED ped;
+      MatrixXd J = MatrixXd::Random(N, M*N);
+      for(size_t j = 0; j < M; j++){
+	MatrixXd J0 = MatrixXd::Identity(N,N);
+	for(size_t i = 0; i < M; i++) J0 = J0*J.middleCols( ((i+M-j)%M)*N, N );
+	EigenSolver<MatrixXd> eg(J0);
+	MatrixXd tmp(N, 2);
+	VectorXcd eigs2 = eg.eigenvalues();
+	tmp << eigs2.cwiseAbs().array().log(),  eigs2.imag().array() / eigs2.real().array() ;
+	cout << tmp << endl;
+	MatrixXcd vec = eg.eigenvectors();
+	for(size_t i = 0; i < N; i++){ // make the first element of each vector to be real.
+	  complex<double> a = vec(0,i);
+	  vec.col(i) = vec.col(i).array() * conj(a)/abs(a);
+	}
+	cout << vec << endl;
+	
+      }
+      // MatrixXd eigs = ped.EigVals(J, 5000, 1e-16, true);
+      pair<MatrixXd, MatrixXd> ve = ped.EigVecs(J, 1000, 1e-16, true);
+      MatrixXd &EigVals = ve.first;
+      MatrixXd &EigVecs = ve.second;
+      ped.fixPhase(EigVecs, EigVals.col(2));
+      cout << EigVals << endl << endl;
+      cout << EigVecs << endl << endl;
+      break;
+ 
     }
 
   default : 

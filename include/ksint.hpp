@@ -15,7 +15,7 @@ using Eigen::ArrayXXd;
 using Eigen::ArrayXcd;
 using Eigen::ArrayXd;
 using Eigen::MatrixXd;
-using Eigen::Map;
+using Eigen::Map; using Eigen::Ref;
 
 /*============================================================
  *                       Class : KS integrator
@@ -48,6 +48,8 @@ public:
   C2R(const ArrayXXcd &v);
   ArrayXXcd 
   R2C(const ArrayXXd &v);
+  ArrayXXd 
+  Reflection(const Ref<const ArrayXXd> &aa);
 
 protected:
   enum { M = 16 }; // number used to approximate the complex integral.

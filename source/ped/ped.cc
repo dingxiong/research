@@ -250,12 +250,16 @@ vector<int> PED::PeriodicQR(MatrixXd &J, MatrixXd &Q, const int L, const int U,
 	}
     
       }
+      ////////////////////////////////////////////////////////////
       //print out the information if not converged.
       if( np == MaxN){
 	printf("!!!!!!!!!!!!!!!!!!!!!!!\n");
 	printf("subproblem L = %d, U = %d does not converge in %d iterations!\n", L, U, MaxN);
-	printf("!!!!!!!!!!!!!!!!!!!!!!!\n");
+	printf("subdiagonal elements are :");
+	for(size_t i = L; i < U; i++) printf("%g ", J(i+1,i));
+	printf("\n!!!!!!!!!!!!!!!!!!!!!!!\n");
       }
+      ////////////////////////////////////////////////////////////
       return cp;
     }
 
@@ -726,6 +730,18 @@ MatrixXd PED::oneEigVec(const MatrixXd &J, const int &P,
   
 }
 
+/** @brief fix the phase the complex eigenvectors
+ *
+ *  The complex eigenvectors got from periodic eigendecompostion 
+ *  are not fixed becuase of the phase invariance. This method will 
+ *  make the first element of each complex eigenvector be real.
+ *
+ *  @param[in,out] EigVecs Sequence of eigenvectors got from periodic
+ *                 eigendecomposition
+ *  @param[in] realCompelxIndex A vector indicating whether a vector is
+ *             real or complex (third column of eigenvalues got fromx
+ *             periodic eigendecomposition).
+ */
 void PED::fixPhase(MatrixXd &EigVecs, const VectorXd &realComplexIndex){
   const int N = sqrt(EigVecs.rows());
   const int M = EigVecs.cols();
@@ -743,4 +759,23 @@ void PED::fixPhase(MatrixXd &EigVecs, const VectorXd &realComplexIndex){
       }
       
     }
+}
+
+void PED::reverseOrder(MatrixXd &J){
+  const int N = J.rows();
+  const int M = J.cols();
+  VectorXd tmp(N);
+  for(size_t i = 0; i < M/2; i++){
+    tmp = J.col(i);
+    J.col(i) = J.col(M-i-1);
+    J.col(M-i-1) = tmp;
+  }
+}
+
+void PED::reverseOrderSize(MatrixXd &J){
+  const int N = J.rows();
+  const int M = J.cols();
+  const int N2 = sqrt(N);
+  reverseOrder(J);
+  J.resize(N2, N2*M);
 }

@@ -100,7 +100,10 @@ public:
 	    const bool &isReal, const bool &Print);
   void
   fixPhase(MatrixXd &EigVecs, const VectorXd &realComplexIndex);
-
+  void 
+  reverseOrder(MatrixXd &J);
+  void 
+  reverseOrderSize(MatrixXd &J);
 };
 
 #endif	/* PED_H */

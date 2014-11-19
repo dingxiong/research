@@ -200,3 +200,21 @@ ArrayXXcd KS::R2C(const ArrayXXd &v){
 
   return vp;
 }
+
+/*************************************************** 
+ *           Symmetry related                      *
+ ***************************************************/
+ArrayXXd KS::Reflection(const Ref<const ArrayXXd> &aa){
+  int n = aa.rows();
+  int m = aa.cols();
+  assert( 0 == n%2 );
+  
+  ArrayXd R(n);
+  for(size_t i = 0; i < n/2; i++) {
+    R(2*i) = -1;
+    R(2*i+1) = 1;
+  }
+  
+  ArrayXXd Raa = aa.colwise() * R;
+  return Raa;
+}

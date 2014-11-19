@@ -15,6 +15,7 @@ using Eigen::ArrayXXd;
 using Eigen::ArrayXcd;
 using Eigen::ArrayXd;
 using Eigen::MatrixXd;
+using Eigen::Matrix2d;
 using Eigen::Map; using Eigen::Ref;
 
 /*============================================================
@@ -50,6 +51,8 @@ public:
   R2C(const ArrayXXd &v);
   ArrayXXd 
   Reflection(const Ref<const ArrayXXd> &aa);
+  ArrayXXd 
+  Rotation(const Ref<const ArrayXXd> &aa, const double th);
 
 protected:
   enum { M = 16 }; // number used to approximate the complex integral.

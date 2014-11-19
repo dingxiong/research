@@ -218,3 +218,23 @@ ArrayXXd KS::Reflection(const Ref<const ArrayXXd> &aa){
   ArrayXXd Raa = aa.colwise() * R;
   return Raa;
 }
+
+ArrayXXd KS::Rotation(const Ref<const ArrayXXd> &aa, const double th){
+  int n = aa.rows();
+  int m = aa.cols();
+  assert( 0 == n%2);
+  ArrayXXd raa(n, m);
+  
+  for(size_t i = 0; i < n/2; i++){
+    Matrix2d R;
+    double c = cos(th*(i+1));
+    double s = sin(th*(i+1));
+    R << 
+      c, -s,
+      s,  c;  // SO(2) matrix
+
+    raa.middleRows(2*i, 2) = R * aa.middleRows(2*i, 2).matrix();
+  }
+  
+  return raa;
+}

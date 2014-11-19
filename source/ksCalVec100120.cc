@@ -9,18 +9,25 @@
 #include <tuple>
 #include <string>
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 using namespace H5;
 using namespace Eigen;
 
-
+/** @brief read initial conditons of KS system.
+ *
+ *  @param[in] fileName hdf5 file which stores the initial conditon
+ *                      structure
+ *  @param[in] ppType periodic type: ppo/rpo
+ *  @param[in] ppId  id of the orbit
+ */
 std::tuple<ArrayXd, double, double, double, double>
 readKSinit(const string &fileName, const string &ppType,
-       const int k){
+       const int ppId){
   const int N = 30;
   H5File file(fileName, H5F_ACC_RDONLY);
-  string DS = "/" + ppType + "/" + to_string(k) + "/";
+  string DS = "/" + ppType + "/" + to_string(ppId) + "/";
   
   string DS_a = DS + "a";
   DataSet a = file.openDataSet(DS_a);
@@ -56,12 +63,12 @@ readKSinit(const string &fileName, const string &ppType,
 /** @brief write the Floquet exponents  */
 void 
 writeKSe(const string &fileName, const string &ppType,
-	 const int k, const MatrixXd &eigvals){
+	 const int ppId, const MatrixXd &eigvals){
   const int N = eigvals.rows();
   const int M = eigvals.cols();
 
   H5File file(fileName, H5F_ACC_RDWR);
-  string DS = "/" + ppType + "/" + to_string(k) + "/";
+  string DS = "/" + ppType + "/" + to_string(ppId) + "/";
   
   string DS_e = DS + "e";
   hsize_t dims[] = {M, N};
@@ -73,13 +80,13 @@ writeKSe(const string &fileName, const string &ppType,
 /** @brief write the Floquet exponents and Floquet vectors  */
 void 
 writeKSev(const string &fileName, const string &ppType,
-	 const int k, const MatrixXd &eigvals, const MatrixXd &eigvecs){
+	 const int ppId, const MatrixXd &eigvals, const MatrixXd &eigvecs){
   const int N = eigvals.rows();
   const int M1 = eigvals.cols();
   const int M2 = eigvecs.cols();
 
   H5File file(fileName, H5F_ACC_RDWR);
-  string DS = "/" + ppType + "/" + to_string(k) + "/";
+  string DS = "/" + ppType + "/" + to_string(ppId) + "/";
   
   string DS_e = DS + "e";
   hsize_t dims[] = {M1, N};
@@ -104,48 +111,68 @@ int main(){
     {
     case 1: // calculate only one orbit and write it.
       {
+	string fileName("../data/ks22h02t100.h5");
+	string fileName2("../data/ks22h02t100E.h5");
+	string fileName3("../data/ks22h02t100EV.h5");
+	string ppType("rpo");
+	const int ppId = 1;
+	
+
 	tuple<ArrayXd, double, double, double, double> 
-	  pp = readKSinit("../data/ks22h02t100120.h5", "ppo", 2);
+	  pp = readKSinit(fileName, ppType, ppId);
 	ArrayXd &a = get<0>(pp); 
 	double T = get<1>(pp);
 	int nstp = (int)get<2>(pp);
+	double r = get<3>(pp);
+	double s = get<4>(pp);
   
 	KS ks(Nks, T/nstp, L);
 	pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp);
 	MatrixXd daa = tmp.second;
-  
-
+	
 	PED ped;
 	ped.reverseOrderSize(daa); 
-	daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	if(ppType.compare("ppo") == 0)
+	  daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	else // R*J for rpo
+	  daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
 	pair<MatrixXd, MatrixXd> eigv = ped.EigVecs(daa, 5000, 1e-15, false);
 	MatrixXd &eigvals = eigv.first; 
 	eigvals.col(0) = eigvals.col(0).array()/T;
 	MatrixXd &eigvecs = eigv.second;
-  
-	writeKSe("../data/ks22h02t100120E.h5", "ppo", 2, eigvals);
-	writeKSev("../data/ks22h02t100120EV.h5", "ppo", 2, eigvals, eigvecs);
+	
+	writeKSe(fileName2, ppType, ppId, eigvals);
+	writeKSev(fileName3, ppType, ppId, eigvals, eigvecs);
 	
 	break;
       }
 
-    case 2:
+    case 2: // calculate all the orbits that converged
       {
 	const double tolErr = 1e-8; // tolerance of the error of orbits
 	const int MaxN = 5000;  // maximal iteration number for PED
 	const double tol = 1e-15; // torlearance for PED
 	
-	const int NN = 600; // number of ppo
-	for(size_t i = 1; i < NN+1; i++){
+	string fileName("../data/ks22h02t100120.h5");
+	string fileName2("../data/ks22h02t100120E.h5");
+	string fileName3("../data/ks22h02t100120EV.h5");
+	string ppType("rpo");
+	
+	int NN;
+	if(ppType.compare("ppo") == 0) NN = 600; // number of ppo
+	else NN = 595; // number of rpo
+	
+	for(size_t ppId = 1; ppId < NN+1; ppId++){
 	  tuple<ArrayXd, double, double, double, double> 
-	    pp = readKSinit("../data/ks22h02t100120.h5", "ppo", i);
+	    pp = readKSinit(fileName, ppType, ppId);
 	  ArrayXd &a = get<0>(pp); 
 	  double T = get<1>(pp);
 	  int nstp = (int)get<2>(pp);
 	  double r = get<3>(pp);
+	  double s = get<4>(pp);
 	  
 	  if (r < tolErr){  
-	    printf("********* i = %zd ***********\n", i);
+	    printf("********* ppId = %zd ***********\n", ppId);
 
 	    KS ks(Nks, T/nstp, L);
 	    pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp);
@@ -154,14 +181,17 @@ int main(){
 
 	    PED ped;
 	    ped.reverseOrderSize(daa); 
-	    daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	    if(ppType.compare("ppo") == 0)
+	      daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	    else // R*J for rpo
+	      daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
 	    pair<MatrixXd, MatrixXd> eigv = ped.EigVecs(daa, MaxN, tol, false);
 	    MatrixXd &eigvals = eigv.first; 
 	    eigvals.col(0) = eigvals.col(0).array()/T;
 	    MatrixXd &eigvecs = eigv.second;
   
-	    writeKSe("../data/ks22h02t100120E.h5", "ppo", i, eigvals);
-	    writeKSev("../data/ks22h02t100120EV.h5", "ppo", i, eigvals, eigvecs);
+	    writeKSe(fileName2, ppType, ppId, eigvals);
+	    writeKSev(fileName3, ppType, ppId, eigvals, eigvecs);
 	  }
 	}
 	

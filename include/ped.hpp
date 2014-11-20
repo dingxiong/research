@@ -1,6 +1,13 @@
-/** This class require c++0x or c++11 support.
- *
+/** @file
+ *  @brief Header file for periodic eigendecomposition algorithm.
  */
+
+/** @class PED
+ *  @brief A class to calculate the periodic eigendecomposition of
+ *         the product of a sequence of matrices.
+ *  @note This class require c++0x or c++11 support.
+ */
+
 #ifndef PED_H
 #define PED_H
 
@@ -108,3 +115,43 @@ public:
 
 #endif	/* PED_H */
 
+/** \mainpage Periodic Eigendecomposition
+ *
+ * \section sec_intro Introduction 
+ * This package contains the source file of implementing periodic 
+ * eigendecomposition. 
+ *
+ * Suppose there are M matrices \f$J_M, J_{M-1},\cdots, J_1\f$, each of
+ * which has dimension [N, N]. We are interested in the eigenvalues and
+ * eigenvectors of their products:
+ * \f[
+ *  J_M J_{M-1}\cdots J_1\,, \quad, J_1J_M\cdots,J_2\,,\quad
+ *  J_2J_1J_M\cdots J_3\,,\quad \cdots
+ * \f]
+ * Note all of these products have same eigenvalues and their
+ * eigenvectors are related by similarity transformation.
+ * This package is designed to solve this problem.
+ * 
+ * There is only one class PED which has only
+ * member functions, no member variables. For the detailed usage,
+ * please go to the documentation of two functions PED::EigVals()
+ * and PED::EigVecs().
+ * 
+ * \section sec_usage How to compile
+ * This package is developed under template library
+ * <a href="http://eigen.tuxfamily.org/index.php?title=Main_Page"><b>Eigen</b></a>.
+ * In order to use this package, make sure you have Eigen3.2 or above,
+ * and your C++ compiler support C++11.
+ *
+ * For example, the command line compilation in linux is
+ *
+ * \code
+ *  g++ ped.cc yourcode.cc -std=c++0x -O3 -I/path/to/eigen/header
+ * \endcode
+ *
+ * \section sec_ack Acknowledgment
+ * This is one project for my PhD study. I sincerely thank my adviser
+ * <a href="https://www.physics.gatech.edu/user/predrag-cvitanovic">
+ * Prof. Predrag Cvitanovic </a>
+ * for his patient guidance.
+ */	

@@ -1,3 +1,8 @@
+/** @file
+ *  @brief Source file for the periodic eigendecomposition algorithm.
+ */
+
+
 #include "ped.hpp"
 #include <cmath>
 #include <complex>
@@ -10,16 +15,40 @@ using std::cout; using std::endl;
  *            Class : periodic Eigendecomposition             *
  *============================================================*/
 
-/*--------------------  constructor, desctructor --------------- */
+/*--------------------  constructor, destructor --------------- */
 
 /*---------------        member methods          --------------- */
 
 /** @brief Eigvals() calculate the eigenvalues of the product of a sequence of
- *         matrices in the form of e^{\mu+i\omega}.
+ *         matrices in the form of \f$ \exp(\mu+i\omega)\f$.
  *
- *  @return Matrix of size [N,3]. First colomn stores \mu. Second column stores
- *          \pm 1 for real eigenvalues or \omega for complex eigenvalues. Third
- *          column states whether the eigenvalue is real (0) or complex (1).
+ * It returns a
+ * [N,3] matrix, with the first column  stores \f$ \mu \f$, the second
+ * column stores
+ * \f$\pm 1\f$ for real eigenvalues or \f$\omega\f$ for complex
+ * eigenvalues, and the third column states whether the eigenvalue
+ * is real (0) or complex (1).
+ *
+ * Example usage:
+ * \code
+ * MatrixXd J3 = MatrixXd::Random(5,5);
+ * MatrixXd J2 = MatrixXd::Random(5,5); 
+ * MatrixXd J1 = MatrixXd::Random(5,5);
+ * MatrixXd J(5,15);
+ * J << J3, J2, J1;
+ * PED ped;
+ * MatrixXd eigvals = ped.Eigvals(J, 1000, 1e-16, false);
+ * cout << eigvals << endl << endl;
+ * \endcode
+ * The above code return the eigenvalues of \f$ J_3J_2J1\f$ in the format of
+ * \f$ \exp(\mu+i\omega)\f$.
+ * 
+ *  @param[in] MaxN Maximal number of periodic QR iteration.
+ *  @param[in] J a sequence of matrices. Dimension [N, N*M].
+ *  @param[in] tol Tolerance used to check the convergence of the iteration
+ *                 process.
+ *  @param[in] Print Indicate whether to print the intermediate information.
+ *  @return Matrix of size [N,3]. 
  *
  */
 MatrixXd PED::EigVals(MatrixXd &J, const int MaxN /* = 100 */,
@@ -30,8 +59,48 @@ MatrixXd PED::EigVals(MatrixXd &J, const int MaxN /* = 100 */,
 }
 
 /** @brief calculate the eigenvectors of the product of a sequence of matrices
- *
  *  
+ *  Suppose Input matrix \f$J\f$ is a sequence of matrices with the same dimension
+ *  [N,N]: \f$[J_M, J_{M-1}, \cdots, J_1]\f$. Function PED::EigVecs() will return
+ *  you two matrices.
+ *
+ *  The first one is the eigen-matrix, for the specific format, see
+ *  PED::EigVals(). The second matrix has dimension
+ *  [N*N, M]. The first column stores the eigenvectors of product
+ *  \f$J_M J_{M-1}\cdots J_1\f$ stacked up-down 
+ *  \f$[v_1, v_2,\cdots,v_M]^{\top}\f$. The second column stores the eigenvectors
+ *  of product \f$J_1 J_{M}\cdots J_2\f$, and similarly, for the remaining
+ *  columns. 
+ *
+ *  @note For complex eigenvectors, they always appear in complex conjugate pairs.
+ *  So, the real and imaginary parts are stored separately. For example, if the
+ *  \f$i_{th}\f$ and \f$(i+1)_{th}\f$ vectors are complex pair, then elements
+ *  from \f$N(i-1)+1\f$ to \f$Ni\f$ is the real part, and elements from
+ *  \f$Ni+1\f$ to \f$N(i+1)\f$ is the imaginary part. They are stored in this way
+ *  for better usage of memory.
+ *
+ * Example usage:
+ * \code
+ * MatrixXd J3 = MatrixXd::Random(5,5);
+ * MatrixXd J2 = MatrixXd::Random(5,5); 
+ * MatrixXd J1 = MatrixXd::Random(5,5);
+ * MatrixXd J(5,15);
+ * J << J3, J2, J1;
+ * PED ped;
+ * std::pair<MatrixXd, MatrixXd> eigs = ped.Eigvals(J, 1000, 1e-16, false);
+ * cout << eigs.first << endl << endl; // print eigenvalues
+ * cout << eigs.second << endl << endl; // print eigenvectors.
+ * \endcode
+ * The above code return the eigenvalues (in the format of
+ * \f$ \exp(\mu+i\omega)\f$) and
+ * eigenvectors of \f$ J_3J_2J1\f$, \f$ J_1J_3J2\f$, \f$ J_2J_1J3\f$. 
+ * 
+ *  @param[in] MaxN Maximal number of periodic QR iteration.
+ *  @param[in] J a sequence of matrices. Dimension [N, N*M].
+ *  @param[in] tol Tolerance used to check the convergence of the iteration
+ *                 process.
+ *  @param[in] Print Indicate whether to print the intermediate information.
+ *  @return a pair of matrices storing eigenvalues and eigenvectors. 
  */
 
 pair<MatrixXd, MatrixXd> PED::EigVecs(MatrixXd &J, const int MaxN /* = 100 */,
@@ -761,6 +830,12 @@ void PED::fixPhase(MatrixXd &EigVecs, const VectorXd &realComplexIndex){
     }
 }
 
+/** @brief Reverse the order of columns of a matrix.
+ *
+ *  J = [j1,j2,...jm] => [Jm, jm-1, ..., j1]
+ *  @param[in,out] the matrix that need to be reversed in place.
+ *  @see reverseOrderSize()
+ */
 void PED::reverseOrder(MatrixXd &J){
   const int N = J.rows();
   const int M = J.cols();
@@ -772,6 +847,17 @@ void PED::reverseOrder(MatrixXd &J){
   }
 }
 
+/** @brief Reverse the order of a matrix and also resize it.
+ *
+ *  We usually squeeze the input such that each column represents
+ *  one of the members of a sequence of matrices. reverseOrderSize()
+ *  will first reverse the order and then resize it to the right format.
+ *  Eg: [j1,j2,...jm] => [jm jm-1,...j1] with dimension [N^2, M]
+ *  => dimension[N,N*M]
+ *  @param[in,out] J The matrix that need to be reversed and
+ *                   re-sized in place.
+ *  @see reverseOrder()
+ */
 void PED::reverseOrderSize(MatrixXd &J){
   const int N = J.rows();
   const int M = J.cols();

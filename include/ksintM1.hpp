@@ -26,7 +26,8 @@ public:
 
 protected:
 
-  void NL(KSfft &f) override;
+  virtual void NL(KSfft &f);
+  virtual void jNL(KSfft &f);
 };
 
 #endif	/* KSINTM1_H */

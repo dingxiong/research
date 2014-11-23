@@ -14,7 +14,7 @@ using Eigen::ArrayXXcd;
 using Eigen::ArrayXXd;
 using Eigen::ArrayXcd;
 using Eigen::ArrayXd;
-using Eigen::MatrixXd;
+using Eigen::MatrixXd; using Eigen::VectorXd;
 using Eigen::Matrix2d;
 using Eigen::Map; using Eigen::Ref;
 
@@ -53,7 +53,12 @@ public:
   Reflection(const Ref<const ArrayXXd> &aa);
   ArrayXXd 
   Rotation(const Ref<const ArrayXXd> &aa, const double th);
-
+  MatrixXd 
+  gTangent(const MatrixXd &x);
+  std::pair<MatrixXd, VectorXd> 
+  orbitToSlice(const Ref<const MatrixXd> &aa);
+  MatrixXd 
+  veToSlice(const MatrixXd &ve, const Ref<const VectorXd> &x);
 protected:
   enum { M = 16 }; // number used to approximate the complex integral.
   

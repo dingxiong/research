@@ -204,6 +204,8 @@ ArrayXXcd KS::R2C(const ArrayXXd &v){
 /*************************************************** 
  *           Symmetry related                      *
  ***************************************************/
+
+/** @brief apply reflection on each column of input  */
 ArrayXXd KS::Reflection(const Ref<const ArrayXXd> &aa){
   int n = aa.rows();
   int m = aa.cols();
@@ -219,6 +221,10 @@ ArrayXXd KS::Reflection(const Ref<const ArrayXXd> &aa){
   return Raa;
 }
 
+/** @brief apply rotation to each column of input with the
+ *    same angle specified
+ *
+ */
 ArrayXXd KS::Rotation(const Ref<const ArrayXXd> &aa, const double th){
   int n = aa.rows();
   int m = aa.cols();
@@ -238,3 +244,64 @@ ArrayXXd KS::Rotation(const Ref<const ArrayXXd> &aa, const double th){
   
   return raa;
 }
+
+/** @brief group tangent of SO(2)
+ *
+ *  x=(b1, c1, b2, c2, ...) ==> tx=(-c1, b1, -2c2, 2b2, ...)
+ */
+MatrixXd KS::gTangent(const MatrixXd &x){
+  int n = x.rows();
+  int m = x.cols();
+  assert( 0 == n%2);
+  MatrixXd tx(n, m);
+  for(int i = 0; i < n/2; i++){
+    tx.row(2*i) = -(i+1) * x.row(2*i+1).array();
+    tx.row(2*i+1) = (i+1) * x.row(2*i).array(); 
+  }
+
+  return tx;
+}
+
+/** @brief rotate the KS trajectory to the 1st mode slice.
+ *
+ * @return the angle is the transform angle from slice to orginal point.
+ */
+std::pair<MatrixXd, VectorXd> KS::orbitToSlice(const Ref<const MatrixXd> &aa){
+  int n = aa.rows();
+  int m = aa.cols();
+  assert( 0 == n%2);
+  MatrixXd raa(n, m);
+  VectorXd ang(m);
+
+  for(size_t i = 0; i < m; i++){
+    double th = atan2(aa(1,i), aa(0,i));
+    ang(i) = th;
+    raa.col(i) = Rotation(aa.col(i), -th);
+  }
+  return std::make_pair(raa, ang);
+}
+
+/** @brief project covariant vectors to 1st mode slice
+ *
+ * projection matrix is h= (I - |tx><tp|/<tx|tp>) * g(-th), so eigenvector |ve> is
+ * projected to |ve> - |tx>*(<tp|ve>|/<tx|tp>), before which, g(-th) is 
+ * performed.
+ *
+ * In 1st mode slice, template point is |xp>=(1,0,0,...,0) ==> |tp>=(0,1,0,0,...,0)
+ * <tp|ve> = ve.row(1) // second row
+ * group tangent is |tx>=(-c1, b1, -2c2, 2b2,...) ==> <tx|tp> = b1
+ */
+MatrixXd KS::veToSlice(const MatrixXd &ve, const Ref<const VectorXd> &x){
+  std::pair<MatrixXd, VectorXd> tmp = orbitToSlice(x);
+  MatrixXd &xhat =  tmp.first; // dimension [N, 1]
+  double th = tmp.second(0);
+  VectorXd tx = gTangent(xhat);
+
+  MatrixXd vep = Rotation(ve, -th);
+  MatrixXd dot = vep.row(1)/xhat(0); //dimension [1, N]
+  vep = vep - tx * dot;
+  
+  return vep;
+}
+
+

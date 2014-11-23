@@ -1,0 +1,647 @@
+********* ppId = 1 ***********
+********* ppId = 2 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-4.24105e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 3 ***********
+********* ppId = 4 ***********
+********* ppId = 5 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.25576e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 6 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :3.18422e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 7 ***********
+********* ppId = 8 ***********
+********* ppId = 9 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.56631e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 10 ***********
+********* ppId = 11 ***********
+********* ppId = 12 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.76802e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 13 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.05357e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 14 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :2.25577e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 15 ***********
+********* ppId = 16 ***********
+********* ppId = 17 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.32909e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 18 ***********
+********* ppId = 19 ***********
+********* ppId = 20 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :2.14369e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 21 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.49187e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 22 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.86584e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 23 ***********
+********* ppId = 24 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.94616e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 25 ***********
+********* ppId = 26 ***********
+********* ppId = 27 ***********
+********* ppId = 28 ***********
+********* ppId = 29 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.27562e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 30 ***********
+********* ppId = 31 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :2.15742e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 32 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :5.20073e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 33 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :6.72023e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 34 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-3.96886e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 35 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.87543e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 36 ***********
+********* ppId = 37 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :3.37048e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 38 ***********
+********* ppId = 39 ***********
+********* ppId = 40 ***********
+********* ppId = 41 ***********
+********* ppId = 42 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.13207e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 43 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :1.33061e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 44 ***********
+********* ppId = 45 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :1.85008e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 46 ***********
+********* ppId = 47 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-3.96892e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 48 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :1.34669e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 49 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-4.07366e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 50 ***********
+********* ppId = 51 ***********
+********* ppId = 52 ***********
+********* ppId = 53 ***********
+********* ppId = 54 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-2.49437e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 55 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :1.80124e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 56 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-7.89783e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 57 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-3.36182e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 58 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.37439e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 59 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-5.86914e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 60 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-3.21239e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 61 ***********
+********* ppId = 62 ***********
+********* ppId = 63 ***********
+********* ppId = 64 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :1.26711e-14 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 65 ***********
+********* ppId = 66 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-3.60488e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 67 ***********
+********* ppId = 68 ***********
+********* ppId = 69 ***********
+********* ppId = 70 ***********
+********* ppId = 71 ***********
+********* ppId = 72 ***********
+********* ppId = 73 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.46839e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 74 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :4.69343e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 75 ***********
+********* ppId = 76 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :3.55617e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 77 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.84373e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 78 ***********
+********* ppId = 79 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :4.85428e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 80 ***********
+********* ppId = 81 ***********
+********* ppId = 82 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :3.10113e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 83 ***********
+********* ppId = 84 ***********
+********* ppId = 85 ***********
+********* ppId = 86 ***********
+********* ppId = 87 ***********
+********* ppId = 88 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-3.30675e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 89 ***********
+********* ppId = 90 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-2.93261e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 91 ***********
+********* ppId = 92 ***********
+********* ppId = 93 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.9926e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 94 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-1.72094e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 95 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.95493e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 96 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.52829e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 97 ***********
+********* ppId = 98 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-6.50936e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 99 ***********
+********* ppId = 100 ***********
+********* ppId = 101 ***********
+********* ppId = 102 ***********
+********* ppId = 103 ***********
+********* ppId = 104 ***********
+********* ppId = 105 ***********
+********* ppId = 106 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-2.9209e-14 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 107 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :3.43729e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 108 ***********
+********* ppId = 109 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :2.80897e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 110 ***********
+********* ppId = 111 ***********
+********* ppId = 112 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-2.79351e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 113 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-1.45433e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 114 ***********
+********* ppId = 115 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :2.09286e-14 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 116 ***********
+********* ppId = 117 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :1.67539e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 118 ***********
+********* ppId = 119 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :2.84668e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 120 ***********
+********* ppId = 121 ***********
+********* ppId = 122 ***********
+********* ppId = 123 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-1.15785e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 124 ***********
+********* ppId = 125 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.21576e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 126 ***********
+********* ppId = 127 ***********
+********* ppId = 128 ***********
+********* ppId = 129 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-5.88411e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 130 ***********
+********* ppId = 131 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.58317e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 132 ***********
+********* ppId = 133 ***********
+********* ppId = 134 ***********
+********* ppId = 135 ***********
+********* ppId = 136 ***********
+********* ppId = 137 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :1.44949e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 138 ***********
+********* ppId = 139 ***********
+********* ppId = 140 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.18558e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 141 ***********
+********* ppId = 142 ***********
+********* ppId = 143 ***********
+********* ppId = 144 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.29679e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 145 ***********
+********* ppId = 146 ***********
+********* ppId = 147 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.17121e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 148 ***********
+********* ppId = 149 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :1.88126e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 150 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :9.44157e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 151 ***********
+********* ppId = 152 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-3.17869e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 153 ***********
+********* ppId = 154 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-3.20519e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 155 ***********
+********* ppId = 156 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-1.78933e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 157 ***********
+********* ppId = 158 ***********
+********* ppId = 159 ***********
+********* ppId = 160 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :1.92411e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 161 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :3.48366e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 162 ***********
+********* ppId = 163 ***********
+********* ppId = 164 ***********
+********* ppId = 165 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-1.90158e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 166 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.43526e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 167 ***********
+********* ppId = 168 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :8.79899e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 169 ***********
+********* ppId = 170 ***********
+********* ppId = 171 ***********
+********* ppId = 172 ***********
+********* ppId = 173 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :2.80765e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 174 ***********
+********* ppId = 175 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.57119e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 176 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.15063e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 177 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :2.69394e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 178 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :5.99213e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 179 ***********
+********* ppId = 180 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.36413e-14 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 181 ***********
+********* ppId = 182 ***********
+********* ppId = 183 ***********
+********* ppId = 184 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.04585e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 185 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :2.43043e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 186 ***********
+********* ppId = 187 ***********
+********* ppId = 188 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.11725e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 189 ***********
+********* ppId = 190 ***********
+********* ppId = 191 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-3.42262e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 192 ***********
+********* ppId = 193 ***********
+********* ppId = 194 ***********
+********* ppId = 195 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :2.70551e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 196 ***********
+********* ppId = 197 ***********
+********* ppId = 198 ***********
+********* ppId = 199 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.12493e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 200 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-1.54302e-14 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 201 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.46118e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 202 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :3.17394e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 203 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :2.61798e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 204 ***********
+********* ppId = 205 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-3.89473e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 206 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.13564e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 207 ***********
+********* ppId = 208 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :1.24309e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 209 ***********
+********* ppId = 210 ***********
+********* ppId = 211 ***********
+********* ppId = 212 ***********
+********* ppId = 213 ***********
+********* ppId = 214 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-1.02089e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 215 ***********
+********* ppId = 216 ***********
+********* ppId = 217 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :2.64961e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 218 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-2.72036e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 219 ***********
+********* ppId = 220 ***********
+********* ppId = 221 ***********
+********* ppId = 222 ***********
+********* ppId = 223 ***********
+********* ppId = 224 ***********
+********* ppId = 225 ***********
+********* ppId = 226 ***********
+********* ppId = 227 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :7.38729e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 228 ***********
+********* ppId = 229 ***********
+********* ppId = 230 ***********
+********* ppId = 231 ***********
+********* ppId = 232 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-4.08002e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 233 ***********
+********* ppId = 234 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-6.74625e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 235 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :1.63172e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 236 ***********
+********* ppId = 237 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 1, U = 2 does not converge in 5000 iterations!
+subdiagonal elements are :-2.28712e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 238 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-2.8759e-15 
+!!!!!!!!!!!!!!!!!!!!!!!
+********* ppId = 239 ***********
+!!!!!!!!!!!!!!!!!!!!!!!
+subproblem L = 2, U = 3 does not converge in 5000 iterations!
+subdiagonal elements are :-5.40027e-15 
+!!!!!!!!!!!!!!!!!!!!!!!

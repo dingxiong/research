@@ -1,6 +1,7 @@
 /* How to compile this program:
  * h5c++ ksCalVec100120.cc ./ksint/ksint.cc ./ped/ped.cc
  * -std=c++0x -I$XDAPPS/eigen/include/eigen3 -I../include/ -lfftw3 -O3 -march=corei7
+ * -msse4
  */
 #include "ksint.hpp"
 #include "ped.hpp"
@@ -249,6 +250,8 @@ MatrixXi indexSubspace(const Ref<const VectorXd> &RCP){
 /** @brief  calculate the actual subspace bound and the indicator whether the actual
  *          bound is the same as specified.
  *
+ * @param[in] subspDim subspace bounds. Each column is a 4-vector storing dimension of
+ *                     two subspaces.
  * @return a pair of integer matrix. The first one is actual subspace bound.
  *         The second one indicate whether the bounds are the same as specified.
  */
@@ -266,7 +269,7 @@ std::pair<MatrixXi, MatrixXi> subspBound(const MatrixXi subspDim, const MatrixXi
     if(L1 == subspDim(0,i)) boundStrict(0,i) = 1;
     if(R1 == subspDim(1,i)) boundStrict(1,i) = 1;
     if(L2 == subspDim(2,i)) boundStrict(2,i) = 1;
-    if(L2 == subspDim(3,i)) boundStrict(3,i) = 1;
+    if(R2 == subspDim(3,i)) boundStrict(3,i) = 1;
   }
   
   return std::make_pair(bound, boundStrict);
@@ -305,21 +308,101 @@ std::pair<MatrixXd, MatrixXi> anglePO(const string fileName, const string ppType
   return std::make_pair(ang_po, boundStrict);
 }
 
+void normc(MatrixXd &A){
+  int m = A.cols();
+  for(size_t i = 0; i < m; i++) 
+    A.col(i).array() = A.col(i).array() / A.col(i).norm();
+}
+
+std::tuple<MatrixXd, VectorXi, VectorXd>
+minDistance(const MatrixXd &ergodic, const MatrixXd &aa, const int tolClose){
+  const int n = ergodic.rows();
+  const int m = ergodic.cols();
+  const int n2 = aa.rows();
+  const int m2 = aa.cols();
+  assert(n2 == n);
+  
+  VectorXi minIndex(m);
+  VectorXd minDis(m);
+  MatrixXd minDifv(n, m);
+
+  size_t tracker = 0;
+  for(size_t i = 0; i < m; i++){
+    MatrixXd dif = aa.colwise() - ergodic.col(i);// relation is inversed.
+    VectorXd colNorm(m2);
+    for(size_t j = 0; j < m2; j++) colNorm(j) = dif.col(j).norm();
+    int r, c;
+    double closest = colNorm.minCoeff(&r, &c);
+    if(closest < tolClose){
+      minIndex(tracker) = r;
+      minDis(tracker) = closest;
+      minDif.col(tracker++) = -dif.col(closest);
+    }
+  }
+
+  return std::make_tuple(minDif.leftCols(tracker), minIndex.head(tracker), minDis.head(tracker));
+}
+
+MatrixXd veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa, const KS &ks){
+  const int m = eigVecs.cols();
+  const int n = sqrt(eigVecs.rows());
+  const int m2 = aa.cols();
+  const int n2 = aa.rows();
+  
+  assert(m == m2 && n == n2);
+  MatrixXd newVe(n, n*m);
+  for(size_t i = 0; i < m; i++){
+    MatrixXd ve = eigVecs.col(i);
+    ve.resize(n, n);
+    newVe.middleCols(i*n, n) = ks.veToSlice(ve, aa.col(i));
+  }
+
+  return newVe;
+}
+
+MatrixXd veTrunc(const MatrixXd ve, const int pos){
+  assert(ve.cols()%N == 0);
+  const int N = ve.rows();
+  const int M = ve.cols() / N;
+  MatrixXd newVe(N, (N-1)*M);
+  for(size_t i = 0; i < M; i++){
+    newVe.middleCols(i*(N-1), pos) = ve.middleCols(i*N, pos);
+    newVe.middleCols(i*(N-1)+pos, N-1-pos) = ve.middleCols(i*N+pos+1, N-1-pos);
+  }
+  return newVe;
+}
+
+MatrixXd difAngle(const MatrixXd &minDifv, const VectorXi &minIx, const VectorXi &subsp, 
+		  const MatrixXd &ve_trunc, const int truncN){
+  assert(minDifv.cols() == minIx.size());
+  const int N = minDifv.rows();
+  const int M = minDifv.cols();
+  const int M2 = subsp.size();
+  
+  MatrixXd angle(M2, M);
+  for(size_t i = 0; i < M; i++){
+    int ix = minIx(i);
+    for(size_t j = 0; j < M2; j++)
+      angle(j, i) = angleSubspace(ve_trunc(truncN*ix, subsp), minDifv.col(i));
+  }
+  return angle;
+}
+
 int main(){
   cout.precision(16);
   const int Nks = 32;
   const int N = Nks - 2;
   const double L = 22;
 
-  switch (5)
+  switch (7)
     {
     case 1: // calculate only one orbit and write it.
       {
-	string fileName("../data/ks22h02t100120.h5");
-	string fileName2("../data/ks22h02t100120E.h5");
-	string fileName3("../data/ks22h02t100120EV.h5");
-	string ppType("rpo");
-	const int ppId = 333;
+	string fileName("../data/ks22h02t100.h5");
+	string fileName2("../data/ks22h02t100E.h5");
+	string fileName3("../data/ks22h02t100EV.h5");
+	string ppType("ppo");
+	const int ppId = 173;
 	const bool rewrite = true;
 
 	tuple<ArrayXd, double, double, double, double> 
@@ -340,7 +423,7 @@ int main(){
 	  daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
 	else // R*J for rpo
 	  daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
-	pair<MatrixXd, MatrixXd> eigv = ped.EigVecs(daa, 3000, 1e-14, false);
+	pair<MatrixXd, MatrixXd> eigv = ped.EigVecs(daa, 80000, 1e-14, false);
 	MatrixXd &eigvals = eigv.first; 
 	eigvals.col(0) = eigvals.col(0).array()/T;
 	MatrixXd &eigvecs = eigv.second;
@@ -351,7 +434,7 @@ int main(){
 	break;
       }
 
-    case 2: // calculate all the orbits that converged
+    case 2: // calculate all the orbits that converged for 100 - 120
       {
 	const double tolErr = 1e-8; // tolerance of the error of orbits
 	const int MaxN = 8000;  // maximal iteration number for PED
@@ -403,7 +486,56 @@ int main(){
 	break;
       }
 
-    case 3: // test the existance of e/ve 
+    case 3: // calculate all the orbits that converged for 0-100
+      {
+	const int MaxN = 10000;  // maximal iteration number for PED
+	const double tol = 1e-14; // torlearance for PED
+	
+	string fileName("../data/ks22h02t100.h5");
+	string fileName2("../data/ks22h02t100E.h5");
+	string fileName3("../data/ks22h02t100EV.h5");
+	string ppType("ppo");
+	const bool rewrite = true;
+
+	int NN;
+	if(ppType.compare("ppo") == 0) NN = 240; // number of ppo
+	else NN = 239; // number of rpo
+	
+	for(size_t ppId = 1; ppId < NN+1; ppId++){
+	  printf("********* ppId = %zd ***********\n", ppId);
+	  tuple<ArrayXd, double, double, double, double> 
+	    pp = readKSinit(fileName, ppType, ppId);
+	  ArrayXd &a = get<0>(pp); 
+	  double T = get<1>(pp);
+	  int nstp = (int)get<2>(pp);
+	  double r = get<3>(pp);
+	  double s = get<4>(pp);
+
+	  KS ks(Nks, T/nstp, L);
+	  pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp);
+	  MatrixXd daa = tmp.second;
+  
+	  
+	  PED ped;
+	  ped.reverseOrderSize(daa); 
+	  if(ppType.compare("ppo") == 0)
+	    daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	  else // R*J for rpo
+	    daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
+	  pair<MatrixXd, MatrixXd> eigv = ped.EigVecs(daa, MaxN, tol, false);
+	  MatrixXd &eigvals = eigv.first; 
+	  eigvals.col(0) = eigvals.col(0).array()/T;
+	  MatrixXd &eigvecs = eigv.second;
+  
+	  writeKSe(fileName2, ppType, ppId, eigvals, rewrite);
+	  writeKSev(fileName3, ppType, ppId, eigvals, eigvecs, rewrite);
+
+	}
+	
+	break;
+      }
+
+    case 4: // test the existance of e/ve 
       {
 	string fileName("../data/ks22h02t100120EV.h5");
 	string ppType("rpo");	
@@ -417,60 +549,170 @@ int main(){
 	break;
       }
       
-    case 4: // small test for angle calculation.
+    case 5: // small test for angle calculation.
       {
-	VectorXi subspDim(3); 
-	subspDim << 6, 7, 8; // 0-6, 0-7, 0-8;
+	MatrixXi subspDim(4,3); 
+	subspDim << 
+	  3, 0, 0,
+	  3, 7, 8,
+	  4, 8, 9,
+	  4,29,29; // (0-6,7-29), (0-7,8-29), (0-8,9-29)
+	cout << subspDim << endl;
 	string fileName("../data/ks22h02t100120EV.h5");
 	string ppType("rpo");	
 	int ppId = 1;
-	MatrixXd ang = anglePO(fileName, ppType, ppId, subspDim);
+	std::pair<MatrixXd, MatrixXi> ang = 
+	  anglePO(fileName, ppType, ppId, subspDim);
+	
+	cout << ang.second << endl;
 	
 	ofstream file;
 	file.precision(16);
-	file.open("good.txt");
-	file << ang << endl;
+	file.open("good.txt", ios::trunc);
+	file << ang.first << endl;
 	file.close();
 
 	break;
       }
- 
-    case 5: // calculate the angle, output to stdout.
+
+    case 6: // calculate the angle, output to files.
+	    // This the MAIN experiments I am doing.
       {
-	VectorXi subspDim(3); subspDim << 6, 7, 9; // 0-6, 0-7, 0-8;
+	/////////////////////////////////////////////////////////////////
 	string fileName("../data/ks22h02t100120EV.h5");
-	string ppType("rpo");	
+	string ppType("ppo");	
 	int NN;
 	if(ppType.compare("ppo") == 0) NN = 600; // number of ppo
 	else NN = 595; // number of rpo
-	MatrixXd statisAngle;
+	/////////////////////////////////////////////////////////////////
+
+	/////////////////////////////////////////////////////////////////
+	MatrixXi subspDim(4,4);
+	subspDim << 
+	  5,  6,  7,  8,
+	  5,  7,  7,  8,
+	  6,  8,  8,  9,
+	  6,  9,  9,  9; // (0-6,7-29), (0-7,8-29), (0-8,9-29)
+	const int M = subspDim.cols();
+	ofstream file[M];
+	string angName("ang");
+	for(size_t i = 0; i < M; i++){
+	  file[i].open(angName + to_string(i) + ".txt", ios::trunc);
+	  file[i].precision(16);
+	}
+	/////////////////////////////////////////////////////////////////
 	
-	ofstream file("ang.txt", ios::trunc);
-	file.precision(16);
-	
+	/////////////////////////////////////////////////////////////////
 	// get the index of POs which converge.
 	MatrixXd status = checkExistEV(fileName, ppType, NN);
 	for(size_t i = 0; i < NN; i++)
 	  {
 	    if( 1 == (int)status(i,0) ){
-	      int ppId = i + 1;
-	      
-	      std::tuple<ArrayXd, double, double, double, double, MatrixXd, MatrixXd>
-		pp = readKSve(fileName, ppType, ppId);
-	      MatrixXd eigVals = get<5>(pp);
-	      VectorXi ixSp = indexSubspace(eigVals.col(2));
-	      
+	      int ppId = i + 1;	      
 	      cout << "==========  i = " << i << "   =========" << endl;
-	      MatrixXd ang = anglePO(fileName, ppType, ppId, subspDim);
-	      file << ang << endl;
+	      std::pair<MatrixXd, MatrixXi> tmp =
+		anglePO(fileName, ppType, ppId, subspDim);
+	      MatrixXd &ang = tmp.first;
+	      MatrixXi &boundStrict = tmp.second; cout << boundStrict << endl;
+	      MatrixXi pro = boundStrict.row(0).array() *  boundStrict.row(1).array() *
+		boundStrict.row(2).array() * boundStrict.row(3).array();
+	      if(pro(0,0) == 1) file[0] << ang.col(0) << endl;
+	      if(pro(0,1) == 1) file[1] << ang.col(1) << endl;
+	      if(pro(0,2) == 1) file[2] << ang.col(2) << endl;
+	      if(pro(0,3) == 1) file[3] << ang.col(3) << endl;
+	      
+	      //if(boundStrict(1,0) == 1) file[0] << ang.col(0) << endl;
+	      //if(boundStrict(1,1) == 1) file[1] << ang.col(1) << endl;
+	      //if(boundStrict(1,2) == 1) file[2] << ang.col(2) << endl;
+	      //if(boundStrict(2,3) == 1) file[3] << ang.col(3) << endl;
 	    }
 	  }
-	file.close();
+	for(size_t i = 0; i < M; i++) file[i].close();
+	/////////////////////////////////////////////////////////////////
 	
 	break;
       }
+      
+    case 7 : // small test of the covariant vector projection process. 
+      {
+	string fileName("../data/ks22h02t100EV.h5");
+	string ppType("ppo");
+	const int ppId = 10;
+
+	std::tuple<ArrayXd, double, double, double, double, MatrixXd, MatrixXd>
+	  pp = readKSve(fileName, ppType, ppId);	
+	ArrayXd &a = get<0>(pp); 
+	double T = get<1>(pp);
+	int nstp = (int)get<2>(pp);
+	double r = get<3>(pp);
+	double s = get<4>(pp);
+  	MatrixXd eigVals = get<5>(pp);
+	MatrixXd eigVecs = get<6>(pp);
+
+	KS ks(Nks, T/nstp, L);
+	ArrayXXd aa = ks.intg(a, nstp);
+	std::pair<MatrixXd, VectorXd> tmp = ks.orbitToSlice(aa); 
+	MatrixXd &aahat = tmp.first; 
+	MatrixXd ve = eigVecs.col(0);
+	ve.resize(N,N); cout << ve.middleCols(0,4) << endl << endl;
+	MatrixXd vep = ks.veToSlice(ve, aa.col(0));
+	//normc(vep);
+	cout << vep.middleCols(0,4) << endl;
+	//cout << aahat.row(1).cwiseAbs().maxCoeff() << endl;
+	//cout << aa.col(0) << endl << endl;
+	//cout << aahat.col(0) << endl << endl;
+	//cout << tmp.second(0) << endl;
 
 
+	
+	break;
+      }
+      
+    case 8 : // ergodic orbit approache rpo/ppo
+      {
+	string fileName("../data/ks22h02t100EV.h5");
+	string ppType("rpo");
+	const int ppId = 1;
+	const int gTpos = 2;
+	const VectorXi subsp(4); subsp << 6, 7, 8, 28;
+	
+	std::tuple<ArrayXd, double, double, double, double, MatrixXd, MatrixXd>
+	  pp = readKSve(fileName, ppType, ppId);	
+	ArrayXd &a = get<0>(pp); 
+	double T = get<1>(pp);
+	int nstp = (int)get<2>(pp);
+	double r = get<3>(pp);
+	double s = get<4>(pp);
+  	MatrixXd eigVals = get<5>(pp);
+	MatrixXd eigVecs = get<6>(pp);
+	
+	KS ks(Nks, T/nstp, L);
+	ArrayXXd aa = ks.intg(a, nstp);
+	std::pair<MatrixXd, VectorXd> tmp = ks.orbitToSlice(aa); 
+	MatrixXd &aaHat = tmp.first; 
+	MatrixXd veSlice = veToSliceAll(eigVecs, aa, ks);
+	MatrixXd ve_trunc = veTrunc(ve, gTpos);
+
+	
+	double h = 0.1; 
+	double tolClose = 0.1;
+	int MaxSteps = floor(1000/h);
+	int MaxT = 100;
+	KS ks2(Nks, h, L); 
+	ArrayXd a0(0.1 * ArrayXd::Random(N));
+	for(size_t i = 0; i < MaxT; i++){
+	  ArrayXXd ergodic = ks2.intg(a0, MaxSteps); a0 = ergodic.rightCols(1);
+	  std::pair<MatrixXd, VectorXd> tmp = ks2.orbitToSlice(ergodic);
+	  MatrixXd &ergodicHat = tmp.first;
+	  std::tuple<MatrixXd, VectorXi, VectorXd> dis = minDistance(ergodicHat, aaHat, tolClose);
+	  MatrixXd &minDifv = std::get<0>(dis);
+	  VectorXi &minIx = std::get<1>(dis);
+	  VectorXd &minDis = std::get<2>(dis);
+	  MatrixXd angle = difAngle(minDifv, minIx, subsp, ve_trunc, N-1);
+	}
+	
+      }
+      
     default:
       {
 	printf("please indicate the index of problem !\n");
@@ -479,3 +721,4 @@ int main(){
   return 0;
 
 }
+ 

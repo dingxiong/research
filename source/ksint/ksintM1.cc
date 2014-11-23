@@ -117,6 +117,7 @@ KSM1::intg2(const ArrayXd &a0, double T, size_t np){
   return std::make_pair(aa.leftCols(ix), tt.head(ix));
 }
 
+#if 0
 KSM1::intgj(const ArrayXd a0,  size_t nstp, size_t np, size_t nqr){
   if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);}
   ArrayXXd v0(N-2, N-1);
@@ -128,3 +129,5 @@ KSM1::intgj(const ArrayXd a0,  size_t nstp, size_t np, size_t nqr){
     
   }
 }
+
+#endif

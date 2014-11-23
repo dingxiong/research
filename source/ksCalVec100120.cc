@@ -12,6 +12,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <ctime>
 
 using namespace std;
 using namespace H5;
@@ -314,8 +315,17 @@ void normc(MatrixXd &A){
     A.col(i).array() = A.col(i).array() / A.col(i).norm();
 }
 
+/** @brief calculate the minimal distance between an ergodic
+ *         trajectory and one ppo/rpo.
+ * @note the cols of ppo/rpo should be the same as its corresponding
+ *       Flqouet vectors, otherwise, there maybe index flow when calling
+ *       difAngle(). For example, you can do it in the following way:
+ *       \code
+ *        minDistance(ergodicHat, aaHat.leftCols(aaHat.cols()-1), tolClose)
+ *       \endcode
+ */
 std::tuple<MatrixXd, VectorXi, VectorXd>
-minDistance(const MatrixXd &ergodic, const MatrixXd &aa, const int tolClose){
+minDistance(const MatrixXd &ergodic, const MatrixXd &aa, const double tolClose){
   const int n = ergodic.rows();
   const int m = ergodic.cols();
   const int n2 = aa.rows();
@@ -332,38 +342,22 @@ minDistance(const MatrixXd &ergodic, const MatrixXd &aa, const int tolClose){
     VectorXd colNorm(m2);
     for(size_t j = 0; j < m2; j++) colNorm(j) = dif.col(j).norm();
     int r, c;
-    double closest = colNorm.minCoeff(&r, &c);
+    double closest = colNorm.minCoeff(&r, &c); 
     if(closest < tolClose){
       minIndex(tracker) = r;
       minDis(tracker) = closest;
-      minDif.col(tracker++) = -dif.col(closest);
+      minDifv.col(tracker++) = -dif.col(r);
     }
   }
-
-  return std::make_tuple(minDif.leftCols(tracker), minIndex.head(tracker), minDis.head(tracker));
+  return std::make_tuple(minDifv.leftCols(tracker), minIndex.head(tracker), minDis.head(tracker));
 }
 
-MatrixXd veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa, const KS &ks){
-  const int m = eigVecs.cols();
-  const int n = sqrt(eigVecs.rows());
-  const int m2 = aa.cols();
-  const int n2 = aa.rows();
-  
-  assert(m == m2 && n == n2);
-  MatrixXd newVe(n, n*m);
-  for(size_t i = 0; i < m; i++){
-    MatrixXd ve = eigVecs.col(i);
-    ve.resize(n, n);
-    newVe.middleCols(i*n, n) = ks.veToSlice(ve, aa.col(i));
-  }
-
-  return newVe;
-}
 
 MatrixXd veTrunc(const MatrixXd ve, const int pos){
-  assert(ve.cols()%N == 0);
   const int N = ve.rows();
   const int M = ve.cols() / N;
+  assert(ve.cols()%N == 0);
+  
   MatrixXd newVe(N, (N-1)*M);
   for(size_t i = 0; i < M; i++){
     newVe.middleCols(i*(N-1), pos) = ve.middleCols(i*N, pos);
@@ -383,7 +377,9 @@ MatrixXd difAngle(const MatrixXd &minDifv, const VectorXi &minIx, const VectorXi
   for(size_t i = 0; i < M; i++){
     int ix = minIx(i);
     for(size_t j = 0; j < M2; j++)
-      angle(j, i) = angleSubspace(ve_trunc(truncN*ix, subsp), minDifv.col(i));
+      // calculate the angle between the different vector and Floquet subspace.
+      angle(j, i) = angleSubspace(ve_trunc.middleCols(truncN*ix, subsp(j)),
+				  minDifv.col(i));
   }
   return angle;
 }
@@ -394,7 +390,7 @@ int main(){
   const int N = Nks - 2;
   const double L = 22;
 
-  switch (7)
+  switch (8)
     {
     case 1: // calculate only one orbit and write it.
       {
@@ -637,7 +633,8 @@ int main(){
       {
 	string fileName("../data/ks22h02t100EV.h5");
 	string ppType("ppo");
-	const int ppId = 10;
+	const int ppId = 1;
+	const int gTpos = 3;
 
 	std::tuple<ArrayXd, double, double, double, double, MatrixXd, MatrixXd>
 	  pp = readKSve(fileName, ppType, ppId);	
@@ -652,30 +649,31 @@ int main(){
 	KS ks(Nks, T/nstp, L);
 	ArrayXXd aa = ks.intg(a, nstp);
 	std::pair<MatrixXd, VectorXd> tmp = ks.orbitToSlice(aa); 
-	MatrixXd &aahat = tmp.first; 
-	MatrixXd ve = eigVecs.col(0);
-	ve.resize(N,N); cout << ve.middleCols(0,4) << endl << endl;
-	MatrixXd vep = ks.veToSlice(ve, aa.col(0));
-	//normc(vep);
-	cout << vep.middleCols(0,4) << endl;
-	//cout << aahat.row(1).cwiseAbs().maxCoeff() << endl;
-	//cout << aa.col(0) << endl << endl;
-	//cout << aahat.col(0) << endl << endl;
-	//cout << tmp.second(0) << endl;
-
-
+	MatrixXd &aaHat = tmp.first; 
+	MatrixXd veSlice = ks.veToSliceAll( eigVecs, aa.leftCols(aa.cols()-1) );
+	MatrixXd ve_trunc = veTrunc(veSlice, gTpos);
+	
+	cout << veSlice.middleCols(2,3) << endl << endl;
+	cout << veSlice.middleCols(2+30*100,3) << endl << endl;
+	cout << ve_trunc.middleCols(2,2) << endl << endl;
+	cout << ve_trunc.middleCols(2+29*100,2) << endl << endl;
 	
 	break;
       }
       
     case 8 : // ergodic orbit approache rpo/ppo
       {
+	////////////////////////////////////////////////////////////
+	// set up the system
 	string fileName("../data/ks22h02t100EV.h5");
 	string ppType("rpo");
-	const int ppId = 1;
-	const int gTpos = 2;
-	const VectorXi subsp(4); subsp << 6, 7, 8, 28;
-	
+	const int ppId = 1; 
+	const int gTpos = 2; // position of group tangent marginal vector 
+	VectorXi subsp(4); subsp << 6, 7, 9, 28; // subspace indices.
+	////////////////////////////////////////////////////////////
+
+	////////////////////////////////////////////////////////////
+	// prepare orbit, vectors
 	std::tuple<ArrayXd, double, double, double, double, MatrixXd, MatrixXd>
 	  pp = readKSve(fileName, ppType, ppId);	
 	ArrayXd &a = get<0>(pp); 
@@ -690,27 +688,46 @@ int main(){
 	ArrayXXd aa = ks.intg(a, nstp);
 	std::pair<MatrixXd, VectorXd> tmp = ks.orbitToSlice(aa); 
 	MatrixXd &aaHat = tmp.first; 
-	MatrixXd veSlice = veToSliceAll(eigVecs, aa, ks);
-	MatrixXd ve_trunc = veTrunc(ve, gTpos);
-
+	// note here aa has one more column the the Floquet vectors
+	MatrixXd veSlice = ks.veToSliceAll( eigVecs, aa.leftCols(aa.cols()-1) );
+	MatrixXd ve_trunc = veTrunc(veSlice, gTpos);
+	////////////////////////////////////////////////////////////
 	
+	////////////////////////////////////////////////////////////
+	// choose experiment parameters & do experiment
 	double h = 0.1; 
-	double tolClose = 0.1;
+	double tolClose = 0.01;
 	int MaxSteps = floor(1000/h);
-	int MaxT = 100;
+	int MaxT = 5000;
 	KS ks2(Nks, h, L); 
+	srand(time(NULL));
 	ArrayXd a0(0.1 * ArrayXd::Random(N));
+	ofstream fang("angle.txt", ios::trunc);
+	fang.precision(16);
+	ofstream fdis("dis.txt", ios::trunc);
+	fdis.precision(16);
 	for(size_t i = 0; i < MaxT; i++){
+	  std::cout << "********** i = " << i << "**********"<< std::endl;
 	  ArrayXXd ergodic = ks2.intg(a0, MaxSteps); a0 = ergodic.rightCols(1);
 	  std::pair<MatrixXd, VectorXd> tmp = ks2.orbitToSlice(ergodic);
 	  MatrixXd &ergodicHat = tmp.first;
-	  std::tuple<MatrixXd, VectorXi, VectorXd> dis = minDistance(ergodicHat, aaHat, tolClose);
-	  MatrixXd &minDifv = std::get<0>(dis);
-	  VectorXi &minIx = std::get<1>(dis);
+	  std::tuple<MatrixXd, VectorXi, VectorXd> // be careful about the size of aaHat
+	    dis = minDistance(ergodicHat, aaHat.leftCols(aaHat.cols()-1), tolClose);
+	  MatrixXd &minDifv = std::get<0>(dis); 
+	  VectorXi &minIx = std::get<1>(dis); 
 	  VectorXd &minDis = std::get<2>(dis);
 	  MatrixXd angle = difAngle(minDifv, minIx, subsp, ve_trunc, N-1);
+	  std::cout << "angle size = " << angle.rows() << 'x' << angle.cols() << std::endl;
+
+	  if(angle.cols() != 0) {
+	    fang << angle.transpose() << endl;
+	    fdis << minDis << std::endl;
+	  }
 	}
+	fang.close();	fdis.close();
+	////////////////////////////////////////////////////////////
 	
+	break;
       }
       
     default:

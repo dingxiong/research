@@ -290,6 +290,8 @@ std::pair<MatrixXd, VectorXd> KS::orbitToSlice(const Ref<const MatrixXd> &aa){
  * In 1st mode slice, template point is |xp>=(1,0,0,...,0) ==> |tp>=(0,1,0,0,...,0)
  * <tp|ve> = ve.row(1) // second row
  * group tangent is |tx>=(-c1, b1, -2c2, 2b2,...) ==> <tx|tp> = b1
+ *
+ * @note vectors are not normalized
  */
 MatrixXd KS::veToSlice(const MatrixXd &ve, const Ref<const VectorXd> &x){
   std::pair<MatrixXd, VectorXd> tmp = orbitToSlice(x);
@@ -304,4 +306,32 @@ MatrixXd KS::veToSlice(const MatrixXd &ve, const Ref<const VectorXd> &x){
   return vep;
 }
 
+/** @beief project the sequence of Floquet vectors to 1st mode slice
+ *
+ *  Usaully, aa has one more column the the Floquet vectors, so you can
+ *  call this function like:
+ *  \code
+ *      veToSliceAll(eigVecs, aa.leftCols(aa.cols()-1))
+ *  \endcode
+ *  
+ *  @param[in] eigVecs Floquet vectors along the orbit. Dimension: [N^2, M]
+ *  @param[in] aa the orbit
+ *
+ *  @note vectors are not normalized
+ */
+MatrixXd KS::veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa){
+  const int n = sqrt(eigVecs.rows());  
+  const int m = eigVecs.cols();
+  const int n2 = aa.rows();
+  const int m2 = aa.cols();
 
+  assert(m == m2 && n == n2);
+  MatrixXd newVe(n, n*m);
+  for(size_t i = 0; i < m; i++){
+    MatrixXd ve = eigVecs.col(i);
+    ve.resize(n, n);
+    newVe.middleCols(i*n, n) = veToSlice(ve, aa.col(i));
+  }
+
+  return newVe;
+}

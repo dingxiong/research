@@ -59,6 +59,9 @@ public:
   orbitToSlice(const Ref<const MatrixXd> &aa);
   MatrixXd 
   veToSlice(const MatrixXd &ve, const Ref<const VectorXd> &x);
+  MatrixXd 
+  veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa);
+
 protected:
   enum { M = 16 }; // number used to approximate the complex integral.
   

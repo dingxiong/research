@@ -735,10 +735,10 @@ int main(){
 	////////////////////////////////////////////////////////////
 	// set up the system
 	string fileName("../data/ks22h02t100EV.h5");
-	string ppType("ppo");
-	const int ppId = 4; 
+	string ppType("rpo");
+	const int ppId = 3; 
 	const int gTpos = 3; // position of group tangent marginal vector 
-	VectorXi subsp(12); subsp << 3, 4, 5, 6, 7, 8, 9, 11, 13, 15, 21, 28; // subspace indices.
+	VectorXi subsp(10); subsp << 3, 4, 5, 7, 9, 11, 13, 15, 21, 28; // subspace indices.
 	////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////
@@ -765,10 +765,10 @@ int main(){
 	////////////////////////////////////////////////////////////
 	// choose experiment parameters & do experiment
 	const double h = 0.1;
-	const double sT = 25;
+	const double sT = 30;
 	const double tolClose = 0.1;
 	const int MaxSteps = floor(2000/h);
-	const int MaxT = 10000;
+	const int MaxT = 20000;
 	KS ks2(Nks, h, L); 
 	srand(time(NULL));
 	ArrayXd a0(0.1 * ArrayXd::Random(N));

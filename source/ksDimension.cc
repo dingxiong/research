@@ -324,7 +324,7 @@ void normc(MatrixXd &A){
  *        minDistance(ergodicHat, aaHat.leftCols(aaHat.cols()-1), tolClose)
  *       \endcode
  */
-std::tuple<MatrixXd, VectorXi, VectorXd>
+std::tuple<MatrixXd, VectorXi, VectorXi, VectorXd>
 minDistance(const MatrixXd &ergodic, const MatrixXd &aa, const double tolClose){
   const int n = ergodic.rows();
   const int m = ergodic.cols();
@@ -332,7 +332,8 @@ minDistance(const MatrixXd &ergodic, const MatrixXd &aa, const double tolClose){
   const int m2 = aa.cols();
   assert(n2 == n);
   
-  VectorXi minIndex(m);
+  VectorXi minIndexPo(m);
+  VectorXi minIndexErgodic(m);
   VectorXd minDis(m);
   MatrixXd minDifv(n, m);
 
@@ -344,13 +345,74 @@ minDistance(const MatrixXd &ergodic, const MatrixXd &aa, const double tolClose){
     int r, c;
     double closest = colNorm.minCoeff(&r, &c); 
     if(closest < tolClose){
-      minIndex(tracker) = r;
+      minIndexPo(tracker) = r;
+      minIndexErgodic(tracker) = i;
       minDis(tracker) = closest;
       minDifv.col(tracker++) = -dif.col(r);
     }
   }
-  return std::make_tuple(minDifv.leftCols(tracker), minIndex.head(tracker), minDis.head(tracker));
+  return std::make_tuple(minDifv.leftCols(tracker), minIndexErgodic.head(tracker),
+			 minIndexPo.head(tracker), minDis.head(tracker));
 }
+
+std::pair<std::vector<int>, std::vector<int> >
+consecutiveWindow(const VectorXi &index, const int window){
+  const int n = index.size();
+  std::vector<int> start, dur;
+
+  int pos = 0;
+  while (pos < n-1) {
+    int span = 0;
+    for (size_t i = pos; i < n-1; i++) { // note i < n-1
+      if(index(i) == index(i+1)-1) span++;
+      else break;
+    }
+    if(span >= window){
+      start.push_back(pos);
+      dur.push_back(span);
+    }
+    if(span > 0) pos += span;
+    else pos++;
+  }
+  return make_pair(start, dur);
+}
+
+std::tuple<MatrixXd, VectorXi, VectorXi, VectorXd>
+minDistance(const MatrixXd &ergodic, const MatrixXd &aa, const double tolClose, const int window){
+
+  std::tuple<MatrixXd, VectorXi, VectorXi, VectorXd> min_distance = minDistance(ergodic, aa, tolClose); 
+  MatrixXd &minDifv = std::get<0>(min_distance); 
+  VectorXi &minIndexErgodic = std::get<1>(min_distance);  
+  VectorXi &minIndexPo = std::get<2>(min_distance);
+  VectorXd &minDis = std::get<3>(min_distance);
+
+  std::pair<std::vector<int>, std::vector<int> > consecutive =
+    consecutiveWindow(minIndexErgodic, window);   
+  std::vector<int> &start = consecutive.first;
+  std::vector<int> &dur = consecutive.second;
+  int sum = 0;
+  for (std::vector<int>::iterator i = dur.begin(); i != dur.end(); i++) {
+    sum += *i;
+  }
+
+  MatrixXd minDifv2(minDifv.rows(), sum);
+  VectorXi minIndexErgodic2(sum);
+  VectorXi minIndexPo2(sum);
+  VectorXd minDis2(sum);
+  
+  size_t pos = 0;
+  for(size_t i = 0; i < dur.size(); i++){ 
+    minDifv2.middleCols(pos, dur[i]) = minDifv.middleCols(start[i], dur[i]);
+    minIndexErgodic2.segment(pos, dur[i]) = minIndexErgodic.segment(start[i], dur[i]);
+    minIndexPo2.segment(pos, dur[i]) = minIndexPo.segment(start[i], dur[i]);
+    minDis2.segment(pos, dur[i]) = minDis.segment(start[i], dur[i]);
+
+    pos += dur[i];
+  }
+
+  return std::make_tuple(minDifv2, minIndexErgodic2, minIndexPo2, minDis2);
+}
+
 
 
 MatrixXd veTrunc(const MatrixXd ve, const int pos){
@@ -366,6 +428,13 @@ MatrixXd veTrunc(const MatrixXd ve, const int pos){
   return newVe;
 }
 
+/** @brief calculate the angle between difference vectors and the subspaces spanned
+ *  by Flqouet vectors.
+ *
+ *  @param[in] subsp number of Floquet vectors to span subspace
+ *
+ *  @note subsp does not stores the indices of the subspace cut. 
+ */
 MatrixXd difAngle(const MatrixXd &minDifv, const VectorXi &minIx, const VectorXi &subsp, 
 		  const MatrixXd &ve_trunc, const int truncN){
   assert(minDifv.cols() == minIx.size());
@@ -666,10 +735,10 @@ int main(){
 	////////////////////////////////////////////////////////////
 	// set up the system
 	string fileName("../data/ks22h02t100EV.h5");
-	string ppType("rpo");
-	const int ppId = 1; 
-	const int gTpos = 2; // position of group tangent marginal vector 
-	VectorXi subsp(4); subsp << 6, 7, 9, 28; // subspace indices.
+	string ppType("ppo");
+	const int ppId = 4; 
+	const int gTpos = 3; // position of group tangent marginal vector 
+	VectorXi subsp(12); subsp << 3, 4, 5, 6, 7, 8, 9, 11, 13, 15, 21, 28; // subspace indices.
 	////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////
@@ -695,40 +764,52 @@ int main(){
 	
 	////////////////////////////////////////////////////////////
 	// choose experiment parameters & do experiment
-	double h = 0.1; 
-	double tolClose = 0.01;
-	int MaxSteps = floor(1000/h);
-	int MaxT = 5000;
+	const double h = 0.1;
+	const double sT = 25;
+	const double tolClose = 0.1;
+	const int MaxSteps = floor(2000/h);
+	const int MaxT = 10000;
 	KS ks2(Nks, h, L); 
 	srand(time(NULL));
 	ArrayXd a0(0.1 * ArrayXd::Random(N));
-	ofstream fang("angle.txt", ios::trunc);
-	fang.precision(16);
-	ofstream fdis("dis.txt", ios::trunc);
-	fdis.precision(16);
+	
+	const int fileNum = 5;
+	string strf[fileNum] = {"angle_", "dis_", "difv_", "indexPo_", "No_"};
+	ofstream saveName[fileNum];	
+	for (size_t i = 0; i < fileNum; i++) {
+	  saveName[i].open(strf[i] + ppType + to_string(ppId), ios::trunc);
+	  saveName[i].precision(16);
+	} 
+
 	for(size_t i = 0; i < MaxT; i++){
 	  std::cout << "********** i = " << i << "**********"<< std::endl;
 	  ArrayXXd ergodic = ks2.intg(a0, MaxSteps); a0 = ergodic.rightCols(1);
 	  std::pair<MatrixXd, VectorXd> tmp = ks2.orbitToSlice(ergodic);
 	  MatrixXd &ergodicHat = tmp.first;
-	  std::tuple<MatrixXd, VectorXi, VectorXd> // be careful about the size of aaHat
-	    dis = minDistance(ergodicHat, aaHat.leftCols(aaHat.cols()-1), tolClose);
+	  std::tuple<MatrixXd, VectorXi, VectorXi, VectorXd> // be careful about the size of aaHat
+	    dis = minDistance(ergodicHat, aaHat.leftCols(aaHat.cols()-1), tolClose, (int)(sT/h) );
 	  MatrixXd &minDifv = std::get<0>(dis); 
-	  VectorXi &minIx = std::get<1>(dis); 
-	  VectorXd &minDis = std::get<2>(dis);
-	  MatrixXd angle = difAngle(minDifv, minIx, subsp, ve_trunc, N-1);
-	  std::cout << "angle size = " << angle.rows() << 'x' << angle.cols() << std::endl;
+	  VectorXi &minIndexErgodic = std::get<1>(dis);
+	  VectorXi &minIndexPo = std::get<2>(dis); 
+	  VectorXd &minDis = std::get<3>(dis);
+	  MatrixXd angle = difAngle(minDifv, minIndexPo, subsp, ve_trunc, N-1);
+	  if(angle.cols() > 0) printf("angle size = %ld x %ld\n", angle.rows(), angle.cols());
 
 	  if(angle.cols() != 0) {
-	    fang << angle.transpose() << endl;
-	    fdis << minDis << std::endl;
+	    saveName[0] << angle.transpose() << endl;
+	    saveName[1] << minDis << std::endl;
+	    saveName[2] << minDifv.transpose() << std::endl;
+	    saveName[3] << minIndexPo << std::endl;
+	    saveName[4] << angle.cols() << std::endl;
 	  }
 	}
-	fang.close();	fdis.close();
+	for (size_t i = 0; i < fileNum; i++)  saveName[i].close();
 	////////////////////////////////////////////////////////////
 	
 	break;
       }
+      
+
       
     default:
       {

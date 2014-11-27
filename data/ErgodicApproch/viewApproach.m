@@ -1,4 +1,4 @@
-str = 'ppo4'; path = './ppo4/'; Col = 5; MaxN = 350;
+str = 'ppo4'; path = './ppo4_old2/'; Col = 5; MaxN = 350;
 
 ang = dlmread([path 'angle_' str]); ang = sin(acos(ang));
 dis = dlmread([path 'dis_' str]); 

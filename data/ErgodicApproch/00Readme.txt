@@ -15,7 +15,7 @@ are projected onto the slice, so
 
 
 ----------------------------------------
-Details:
+Folder details:
 
 'ppo4': distance - angle distribution data for ppo4.
 	numbers of FVs used to span subspaces are:
@@ -35,6 +35,9 @@ Details:
 	    MaxT = 20000;
 	    MaxT = 30;
 
+----------------------------------------
+File details:
+
 'angle_*': cosine of the angles, each column corresponds to a 
 	   specific subspace.
 'difv_*': each row represents one recorded difference vector. 
@@ -44,3 +47,15 @@ Details:
 'No_*' : number of close points for each approach. The summation
        of these numbers should be the number of rows in the
        corresponding 'angle_*'
+
+disAng.mat:
+	Pos: the start, end, start, end postion for shadowing part in each
+	     incidence.
+	Sdis: the real shadowing distance extracted from experimental data
+	Sang: the real shadowing angles extracted from experimental data.
+
+angAver.mat:
+	x: the distance coordiate window.
+	angleAverage: the average angle in each window
+Note: for ppo4, average angles from ppo4 and ppo4_old2 are combined.
+

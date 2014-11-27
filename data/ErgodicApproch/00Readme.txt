@@ -33,8 +33,20 @@ Details:
 	    subspaces:
 	    6 7 8 15 28
 	    MaxT = 20000;
-	    MaxT = 30;
+	    sT = 30;
 
+'rpo1' : distance - angle distribution data for rpo1. 
+       numbers of FVs used to span subspaces are:
+       2, 3, 5, 6, 7, 9, 11, 13, 15, 21, 28
+       MaxT = 20000
+       sT = 30
+
+'rpo3' : distance - angle distribution data for rpo1. 
+       numbers of FVs used to span subspaces are:
+       3, 4, 5, 7, 9, 11, 13, 15, 21, 28
+       MaxT = 90000
+       sT = 22
+       
 'angle_*': cosine of the angles, each column corresponds to a 
 	   specific subspace.
 'difv_*': each row represents one recorded difference vector. 

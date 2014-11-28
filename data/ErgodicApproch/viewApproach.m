@@ -1,4 +1,4 @@
-str = 'ppo4'; path = './ppo4_old2/'; Col = 5; MaxN = 350;
+str = 'rpo3'; path = './rpo3/'; Col = 4; MaxN = 350;
 
 ang = dlmread([path 'angle_' str]); ang = sin(acos(ang));
 dis = dlmread([path 'dis_' str]); 
@@ -8,7 +8,7 @@ N = min(length(No), MaxN); sum = 1;
 Pos = [];
 Sang = []; Sdis =[]; % really shadowing incidences.
 scrsz = get(groot,'ScreenSize'); XL = scrsz(3); YL = scrsz(4);
-for i = 1:N,
+for i = 31:N,
     disp(i);
     S = 'n';
     while strcmpi(S, 'n'),

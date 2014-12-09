@@ -54,6 +54,12 @@ void KS::ksInit(){
   jG = ArrayXXcd::Zero(G.rows(), N-1); jG << G, 2.0*G.replicate(1, N-2); 
 }
 
+/** @brief intg() integrate KS system without calculating Jacobian
+ *
+ *  @param[in] a0 Initial condition of the orbit
+ *  @param[in] nstp Number of steps to integrate
+ *  @return the orbit, each column is one point
+ */
 ArrayXXd KS::intg(const ArrayXd &a0, size_t nstp, size_t np){
   if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);}  
   Fv.vc1 = R2C(a0);  

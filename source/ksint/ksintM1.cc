@@ -26,6 +26,7 @@ void KSM1::NL(KSfft &f){
   f.vc3 = (a1hat - 1)*L*f.vc1 + a1hat*G*f.vc3 - f.vc3(1).real()*G*f.vc1;
 }
 
+#if 0
 void KSM1::jNL(KSfft &f){
   double a1 = f.vc1(1,0).real();
   ArrayXd y1 = f.vc1.block(1,1,1,N-2).real();
@@ -43,13 +44,14 @@ void KSM1::jNL(KSfft &f){
     +y1*f.vr3.col(0) - 2.0*G*fv1.tail(N-2);
   f.vc3.col(0) = a1*f.vc3.col(0) - L*f.vc1.col(0) -fv1(0)*G*f.vc1;
 }
+#endif
 
 /** @brief Integrator on the 1st mode slice.
  *
  *  @return the trajectory (first element of the return pair) and the time
  *          in the full state space (second element of the return pair)
  */
-pair<ArrayXXd, ArrayXd>
+std::pair<ArrayXXd, ArrayXd>
 KSM1::intg(const ArrayXd &a0, size_t nstp, size_t np){
   if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);} 
   Fv.vc1 = R2C(a0); 
@@ -75,7 +77,14 @@ KSM1::intg(const ArrayXd &a0, size_t nstp, size_t np){
   return std::make_pair(aa, tt);
 }
 
-pair<ArrayXXd, ArrayXd>
+/** @brief Integrator on the 1st mode slice. It will integrate KS on slice
+ *         until the corresponding time lapse in full state is approximate T.
+ *         Therefore, the result's dimension depends.
+ *
+ * @param[in] T time to be integrated in the full state space.
+ *
+ */
+std::pair<ArrayXXd, ArrayXd>
 KSM1::intg2(const ArrayXd &a0, double T, size_t np){
   const size_t cell = 1000;
   if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);} 
@@ -100,7 +109,7 @@ KSM1::intg2(const ArrayXd &a0, double T, size_t np){
     if( 0 == i%np ) {
       int m = aa.cols();
       if(i/np > m - 1) {
-	aa.conservativeResize(NoChange, m+cell);
+	aa.conservativeResize(NoChange, m+cell); // rows not change, just extend cols
 	tt.conservativeResize(m+cell);
       }
       aa.col(i/np) = C2R(Fv.vc1);
@@ -110,9 +119,6 @@ KSM1::intg2(const ArrayXd &a0, double T, size_t np){
     
     i++;
   }
-  
-  // KSat at; 
-  // at.aa = aa.leftCols(ix); at.tt = tt.head(ix);
   
   return std::make_pair(aa.leftCols(ix), tt.head(ix));
 }

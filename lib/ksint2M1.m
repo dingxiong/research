@@ -10,7 +10,7 @@ function [tt,aa] = ksint2M1(a0, h, T, np, d)
 %      tt : time in the full state space 
 %      aa : trajectory on the 1st mode slice
 % exmple usage:
-%   aa = ksfjaco(a0, 0.25, 1000);
+%   [tt,aa] = ksint2M1(a0, 0.25, 1000);
 
 if nargin < 5, d = 22; end
 if nargin < 4, np = 1; end

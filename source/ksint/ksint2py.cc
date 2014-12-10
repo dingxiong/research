@@ -40,14 +40,16 @@ void ksfM1(double *aa, double *tt, double *a0, double d, double h,
 
 extern "C"
 int ksf2M1(at *at, double *a0, double d, double h,
-	    int nstp, int np){
+	    double T, int np){
   KSM1 ks(N, h, d);
   Map<ArrayXd> v0(a0, N-2);
-  std::pair<ArrayXXd, ArrayXd> vv = ks.intg2(v0, nstp, np);
+  std::pair<ArrayXXd, ArrayXd> vv = ks.intg2(v0, T, np);
   int m = vv.first.cols();
   
   double *aa = new double[m*(N-2)];
   double *tt = new double[m];
+  memcpy(aa, &(vv.first(0,0)), m*(N-2)*sizeof(double));
+  memcpy(tt, &(vv.second(0)), m*sizeof(double));
   
   at->aa = aa;
   at->tt = tt;
@@ -55,6 +57,7 @@ int ksf2M1(at *at, double *a0, double d, double h,
   return m;
 }
 
+extern "C"
 void freeks(at *at){
   delete[] at->aa;
   delete[] at->tt;

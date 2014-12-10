@@ -9,7 +9,7 @@ function aa = ksint(a0, h, nstp, np, d)
 % output:
 %      aa : the orbit.  size [30, nstp/np+1]
 % exmple usage:
-%   aa = ksfjaco(a0, 0.25, 1000);
+%   aa = ksint(a0, 0.25, 1000);
 
 if nargin < 5, d = 22; end
 if nargin < 4, np = 1; end

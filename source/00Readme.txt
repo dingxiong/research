@@ -8,6 +8,7 @@ Tue Nov 25 19:35:09 EST 2014
 'ksint': 
 	 new verison of KS integrator, developed with template 
 	 libarary Eigen.
+	 There are also bindings to python and matlab.
 	 integrator on the 1st mode slice with Jacobian is not
 	 finished yet.
 'symm': 

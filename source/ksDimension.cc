@@ -1,7 +1,7 @@
 /* How to compile this program:
- * h5c++ ksCalVec100120.cc ./ksint/ksint.cc ./ped/ped.cc
+ * h5c++ ksDimension.cc ./ksint/ksint.cc ./ped/ped.cc
  * -std=c++0x -I$XDAPPS/eigen/include/eigen3 -I../include/ -lfftw3 -O3 -march=corei7
- * -msse4
+ * -msse4 -msse2
  */
 #include "ksint.hpp"
 #include "ped.hpp"
@@ -13,11 +13,20 @@
 #include <fstream>
 #include <cmath>
 #include <ctime>
+#include <algorithm>
+#include <vector>
 
 using namespace std;
 using namespace H5;
 using namespace Eigen;
 
+/** @brief check the existence of Floquet vectors.
+ *
+ *  Some orbits with 100 < T < 120 fail to converge, so
+ *  their Flqouet spectrum is not availble. The function
+ *  uses exception handling, though ugly but the only method
+ *  I could think of right now.
+ */
 MatrixXd checkExistEV(const string &fileName, const string &ppType, 
 		      const int NN){
   H5File file(fileName, H5F_ACC_RDONLY);
@@ -225,22 +234,62 @@ double angleSubspace(const Ref<const MatrixXd> &A,
   return sv.maxCoeff();
 }
 
+/** @brief find the marginal exponents and their position.
+ *
+ *  This function tries to find the two smallest absolute
+ *  value of the exponents, and assume they are marginal.
+ *  
+ *  @return a two element vector. Each element is a pair of
+ *          the marginal exponent and its corresponding postion
+ */
+std::vector< std::pair<double, int> > 
+findMarginal(const Ref<const VectorXd> &Exponent){
+  const int N = Exponent.size();
+  std::vector<std::pair<double, int> > var;
+  for (size_t i = 0; i < N; i++) {
+    var.push_back( std::make_pair(Exponent(i), i) );
+  }
+  // sort the exponent from large to small by absolute value
+  std::sort(var.begin(), var.end(), 
+	    [](std::pair<double, int> i , std::pair<double, int> j)
+	    {return fabs(i.first) < fabs(j.first);}
+	    );
+  
+  return std::vector<std::pair<double, int> >(var.begin(), var.begin()+2);
+
+}
+
+
 /** @brief Get the supspace index.
  *
  * For each index, it has a Left value (L) and a Right value (R), which
  * denote when this index is used as the left bound or right bound
  * for a subspace. For real eigenvalues, L = index = R. For complex
- * eigenvalues, L1, L2 = index1, R1, R2 = index1+1; 
+ * eigenvalues, L1, L2 = index1, R1, R2 = index1+1;
+ *
+ * @param[in] RCP real/complex position, usually it is the third
+ *                column of the Floquet exponents matrix.
+ * @param[in] Exponent Floquet exponents used to get the marginal position
+ * @return a Nx2 matrix
  */
-MatrixXi indexSubspace(const Ref<const VectorXd> &RCP){
+MatrixXi indexSubspace(const Ref<const VectorXd> &RCP, 
+		       const Ref<const VectorXd> &Exponent){
+  assert(RCP.size() == Exponent.size());
   const int N = RCP.size();
+  std::vector< std::pair<double, int> > 
+    marginal = findMarginal(Exponent);
+
+  // create a new real/complex position vector whose marginal
+  // will be considered to complex.
+  VectorXd RCP2(RCP);
+  RCP2(marginal[0].second) = 1.0; RCP2(marginal[1].second) = 1.0;
   MatrixXi index_sub(N, 2);
   for(size_t i = 0; i < N; i++){
-    if(RCP(i) == 0){
+    if(RCP2(i) == 0){ // real case
       index_sub(i, 0) = i;
       index_sub(i, 1) = i;
     }
-    else{
+    else{ // complex case
       index_sub(i, 0) = i; index_sub(i, 1) = i+1;
       index_sub(i+1, 0) = i; index_sub(i+1,1) = i+1;
       i++;
@@ -253,10 +302,13 @@ MatrixXi indexSubspace(const Ref<const VectorXd> &RCP){
  *
  * @param[in] subspDim subspace bounds. Each column is a 4-vector storing dimension of
  *                     two subspaces.
+ * @param[in] ixSp subspace index, i.e the left and right bounds
+ * @see indexSubspace
  * @return a pair of integer matrix. The first one is actual subspace bound.
  *         The second one indicate whether the bounds are the same as specified.
  */
-std::pair<MatrixXi, MatrixXi> subspBound(const MatrixXi subspDim, const MatrixXi ixSp){
+std::pair<MatrixXi, MatrixXi> 
+subspBound(const MatrixXi subspDim, const MatrixXi ixSp){
   assert(subspDim.rows() == 4); // two subspaces have 4 indices.
   const int M = subspDim.cols();
   MatrixXi boundStrict(MatrixXi::Zero(4,M));
@@ -277,14 +329,26 @@ std::pair<MatrixXi, MatrixXi> subspBound(const MatrixXi subspDim, const MatrixXi
   
 }
 
-std::pair<MatrixXd, MatrixXi> anglePO(const string fileName, const string ppType,
-				      const int ppId, const MatrixXi subspDim){
+/** @brief calculate angle between two subspaces along an upo
+ *
+ *  @param[in] fileName file that stores the ppo/rpo information
+ *  @param[in] ppType ppo or rpo
+ *  @param[in] ppId id of the periodic orbit
+ *  @param[in] subspDim 4xM2  matrix storing the bounds of subspaces
+ *  @return first matrix : each row stores the angles at one point
+ *          second matrix: matrix indicating whether bounds are the
+ *          same as specified
+ *  @see subspBound
+ */
+std::pair<MatrixXd, MatrixXi> 
+anglePO(const string fileName, const string ppType,
+	const int ppId, const MatrixXi subspDim){
   assert(subspDim.rows() == 4);
   std::tuple<ArrayXd, double, double, double, double, MatrixXd, MatrixXd>
-    pp = readKSve(fileName, ppType, ppId);
-  MatrixXd eigVals = get<5>(pp);
-  MatrixXd eigVecs = get<6>(pp);
-  MatrixXi ixSp = indexSubspace(eigVals.col(2));
+    pp = readKSve(fileName, ppType, ppId); // read KS Flouqet spectrum
+  MatrixXd &eigVals = get<5>(pp); // Floquet exponents
+  MatrixXd &eigVecs = get<6>(pp); // Floquet vectors
+  MatrixXi ixSp = indexSubspace(eigVals.col(2), eigVals.col(0)); // left and right bounds
   
   const int N = sqrt(eigVecs.rows());
   const int M = eigVecs.cols();
@@ -300,8 +364,8 @@ std::pair<MatrixXd, MatrixXi> anglePO(const string fileName, const string ppType
     MatrixXd ve = eigVecs.col(i);
     ve.resize(N, N);
     for(size_t j = 0; j < M2; j++){      
-      double ang =  angleSubspace(ve.middleCols(bound(0, j), bound(1,j)-bound(0,j)+1), 
-				  ve.middleCols(bound(2, j), bound(3,j)-bound(2,j)+1) );
+      double ang = angleSubspace(ve.middleCols(bound(0, j), bound(1,j)-bound(0,j)+1), 
+				 ve.middleCols(bound(2, j), bound(3,j)-bound(2,j)+1) );
       ang_po(i, j) = ang;
     }
   }
@@ -309,6 +373,7 @@ std::pair<MatrixXd, MatrixXi> anglePO(const string fileName, const string ppType
   return std::make_pair(ang_po, boundStrict);
 }
 
+/** @brief normalize each row of a matrix  */
 void normc(MatrixXd &A){
   int m = A.cols();
   for(size_t i = 0; i < m; i++) 
@@ -640,29 +705,84 @@ int main(){
 	break;
       }
 
-    case 6: // calculate the angle, output to files.
+    case 6: // test marginalPos()
+      {
+	string fileName("../data/ks22h02t100120EV.h5");
+	string ppType("ppo");
+	int NN = 600;
+	MatrixXd status = checkExistEV(fileName, ppType, NN);
+	std::vector<double> sm;
+	for(size_t i = 0; i < NN; i++)
+	  {
+	    if( 1 == (int)status(i,0) ){
+	      int ppId = i + 1;	      
+	      printf("========= i = %zd ========\n", i);
+	      std::tuple<ArrayXd, double, double, double, double, MatrixXd, MatrixXd>
+		pp = readKSve(fileName, ppType, ppId);
+	      MatrixXd &eigVals = get<5>(pp);
+	      std::vector< std::pair<double, int> >  
+		marginal = findMarginal(eigVals.col(0));
+	      sm.push_back(fabs(marginal[0].first));
+	      sm.push_back(fabs(marginal[1].first));
+	      // std::cout << marginal[0].first << ' '<< marginal[0].second << std::endl;
+	      // std::cout << marginal[1].first << ' '<< marginal[1].second << std::endl;
+	    }
+	    
+	  }
+	cout << *std::max_element(sm.begin(), sm.end()); // about 1e-6
+	break;
+      }
+
+    case 7: // test indexSubspace()
+      {
+	string fileName("../data/ks22h02t100120EV.h5");
+	string ppType("ppo");
+	int ppId = 2;
+	std::tuple<ArrayXd, double, double, double, double, MatrixXd, MatrixXd>
+	  pp = readKSve(fileName, ppType, ppId);
+	MatrixXd &eigVals = get<5>(pp);
+	MatrixXi x = indexSubspace(eigVals.col(2), eigVals.col(0));
+	cout << x << endl;
+	
+	break;
+      }
+      
+    case 8: // calculate the angle, output to files.
 	    // This the MAIN experiments I am doing.
       {
 	/////////////////////////////////////////////////////////////////
-	string fileName("../data/ks22h02t100120EV.h5");
-	string ppType("ppo");	
+	string fileName("../data/ks22h02t120EV.h5");
+	string ppType("rpo");
+	string spType("vector");
+	string folder("./case4/");
 	int NN;
-	if(ppType.compare("ppo") == 0) NN = 600; // number of ppo
-	else NN = 595; // number of rpo
+	if(fileName.compare("../data/ks22h02t120EV.h5") ==0 ){	  
+	  if(ppType.compare("ppo") == 0) NN = 840; // number of ppo
+	  else NN = 834; // number of rpo
+	}
+	else if(fileName.compare("../data/ks22h02t100EV.h5") ==0 ) {
+	  if(ppType.compare("ppo") == 0) NN = 240; // number of ppo
+	  else NN = 239; // number of rpo
+	}
+	else{ 
+	  printf("invalid file name !\n");
+	}
 	/////////////////////////////////////////////////////////////////
 
 	/////////////////////////////////////////////////////////////////
-	MatrixXi subspDim(4,4);
-	subspDim << 
-	  5,  6,  7,  8,
-	  5,  7,  7,  8,
-	  6,  8,  8,  9,
-	  6,  9,  9,  9; // (0-6,7-29), (0-7,8-29), (0-8,9-29)
+	MatrixXi subspDim(4,29);
+	if(spType.compare("vector") == 0)
+	  for (size_t i = 0; i < 29; i++) subspDim.col(i) << i, i, i+1, i+1;
+	else if(spType.compare("space") == 0)
+	  for (size_t i = 0; i < 29; i++) subspDim.col(i) << 0, i, i+1, 29;
+	else {
+	  printf("invalid spType.\n");
+	}
 	const int M = subspDim.cols();
 	ofstream file[M];
 	string angName("ang");
 	for(size_t i = 0; i < M; i++){
-	  file[i].open(angName + to_string(i) + ".txt", ios::trunc);
+	  file[i].open(folder + angName + to_string(i) + ".txt", ios::trunc);
 	  file[i].precision(16);
 	}
 	/////////////////////////////////////////////////////////////////
@@ -674,22 +794,18 @@ int main(){
 	  {
 	    if( 1 == (int)status(i,0) ){
 	      int ppId = i + 1;	      
-	      cout << "==========  i = " << i << "   =========" << endl;
+	      printf("========= i = %zd ========\n", i);
 	      std::pair<MatrixXd, MatrixXi> tmp =
 		anglePO(fileName, ppType, ppId, subspDim);
 	      MatrixXd &ang = tmp.first;
 	      MatrixXi &boundStrict = tmp.second; cout << boundStrict << endl;
+	      // check whether there are degeneracy
 	      MatrixXi pro = boundStrict.row(0).array() *  boundStrict.row(1).array() *
 		boundStrict.row(2).array() * boundStrict.row(3).array();
-	      if(pro(0,0) == 1) file[0] << ang.col(0) << endl;
-	      if(pro(0,1) == 1) file[1] << ang.col(1) << endl;
-	      if(pro(0,2) == 1) file[2] << ang.col(2) << endl;
-	      if(pro(0,3) == 1) file[3] << ang.col(3) << endl;
-	      
-	      //if(boundStrict(1,0) == 1) file[0] << ang.col(0) << endl;
-	      //if(boundStrict(1,1) == 1) file[1] << ang.col(1) << endl;
-	      //if(boundStrict(1,2) == 1) file[2] << ang.col(2) << endl;
-	      //if(boundStrict(2,3) == 1) file[3] << ang.col(3) << endl;
+	      for(size_t i = 0; i < M; i++){
+		// only keep the orbits whose 4 bounds are not degenerate
+		if(pro(0, i) == 1) file[i] << ang.col(i) << endl;
+	      }
 	    }
 	  }
 	for(size_t i = 0; i < M; i++) file[i].close();
@@ -698,7 +814,7 @@ int main(){
 	break;
       }
       
-    case 7 : // small test of the covariant vector projection process. 
+    case 9 : // small test of the covariant vector projection process. 
       {
 	string fileName("../data/ks22h02t100EV.h5");
 	string ppType("ppo");
@@ -730,7 +846,7 @@ int main(){
 	break;
       }
       
-    case 8 : // ergodic orbit approache rpo/ppo
+    case 10 : // ergodic orbit approache rpo/ppo
       {
 	////////////////////////////////////////////////////////////
 	// set up the system

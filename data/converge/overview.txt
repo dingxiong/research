@@ -23,7 +23,7 @@ ppoConvergeResult100120.txt:
 	are calculated with MaxN = 40000.
 
 MaxN = 10000, tol = 1e-14
-ppoConvergeResult100120.txt:
+ppoConvergeResult100.txt:
 	the convergence status of ppo with T < 100
 	Note: 44 95 102 111 155 163 173
 	are calculated with MaxN = 80000.

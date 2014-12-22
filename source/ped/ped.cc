@@ -322,11 +322,11 @@ vector<int> PED::PeriodicQR(MatrixXd &J, MatrixXd &Q, const int L, const int U,
       ////////////////////////////////////////////////////////////
       //print out the information if not converged.
       if( np == MaxN){
-	printf("!!!!!!!!!!!!!!!!!!!!!!!\n");
-	printf("subproblem L = %d, U = %d does not converge in %d iterations!\n", L, U, MaxN);
-	printf("subdiagonal elements are :");
-	for(size_t i = L; i < U; i++) printf("%g ", J(i+1,i));
-	printf("\n!!!!!!!!!!!!!!!!!!!!!!!\n");
+	fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!\n");
+	fprintf(stderr, "subproblem L = %d, U = %d does not converge in %d iterations!\n", L, U, MaxN);
+	fprintf(stderr, "subdiagonal elements are :");
+	for(size_t i = L; i < U; i++) fprintf(stderr, "%g ", J(i+1,i));
+	fprintf(stderr, "\n!!!!!!!!!!!!!!!!!!!!!!!\n");
       }
       ////////////////////////////////////////////////////////////
       return cp;

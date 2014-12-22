@@ -52,6 +52,8 @@ public:
   ArrayXXd 
   Reflection(const Ref<const ArrayXXd> &aa);
   ArrayXXd 
+  half2whole(const Ref<const ArrayXXd> &aa);
+  ArrayXXd 
   Rotation(const Ref<const ArrayXXd> &aa, const double th);
   MatrixXd 
   gTangent(const MatrixXd &x);

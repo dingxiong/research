@@ -20,3 +20,13 @@ Caution:
 
 No guarantee that the C++ code is correct, you need to varify the result of mex 
 file with the original Matlab code in the backup folder.
+
+------------------------------
+Thu Dec 18 11:05:46 EST 2014
+
+file details:
+     
+libksint.so/.a : new KS integrator based on library Eigen3. Both KS and KSM1 
+	       classes are included. 
+libped.so/.a : Periodic eigendecompostion.
+libreaks.a : read h5 file

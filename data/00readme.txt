@@ -6,3 +6,5 @@ converge:
 	  contains the information about convergence of PED on 
 	  upos.
 120 : angle distriubtion for T < 120
+
+Note: in the H5 files, nstp is double.

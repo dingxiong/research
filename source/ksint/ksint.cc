@@ -227,6 +227,17 @@ ArrayXXd KS::Reflection(const Ref<const ArrayXXd> &aa){
   return Raa;
 }
 
+ArrayXXd KS::half2whole(const Ref<const ArrayXXd> &aa){
+  int n = aa.rows();
+  int m = aa.cols();
+  
+  ArrayXXd raa = Reflection(aa);
+  ArrayXXd aaWhole(n, 2*m);
+  aaWhole << aa, raa;
+  
+  return aaWhole;
+}
+
 /** @brief apply rotation to each column of input with the
  *    same angle specified
  *

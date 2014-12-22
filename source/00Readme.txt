@@ -11,6 +11,8 @@ Tue Nov 25 19:35:09 EST 2014
 	 There are also bindings to python and matlab.
 	 integrator on the 1st mode slice with Jacobian is not
 	 finished yet.
+'ped' : 
+       periodic eigendecompostion
 'symm': 
 	symmetry functions of KS system. ==> will be absorbed into
 	'ksint'.

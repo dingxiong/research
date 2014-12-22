@@ -9,9 +9,9 @@ int main(){
   //#if 0
   ArrayXd a0 = ArrayXd::Ones(30) * 0.1; a0(1) = 0.0;
   KSM1 ks(32, 0.1, 22);
-  KSM1::KSat at = ks.intg(a0, 20000, 1);
-  cout << at.tt.rows() << endl;
-  cout << at.aa.cols() << endl;
+  std::pair<ArrayXXd, ArrayXd> at = ks.intg(a0, 20000, 1);
+  cout << at.first.rows() << endl;
+  cout << at.first.cols() << endl;
   //#endif
 
   return 0;

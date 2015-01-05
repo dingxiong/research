@@ -286,9 +286,11 @@ int main(){
   cout.precision(16);
   const int Nks = 32;
   const int N = Nks - 2;
+  const int N64 = 64;
+  const int N62 = 62;
   const double L = 22;
 
-  switch (7)
+  switch (8)
     {
     case 1: // small test for angle calculation.
       {
@@ -715,7 +717,9 @@ int main(){
 	break;
       }
 
-    case 7: // test rotated initial condition 
+    case 7: // test rotated initial condition
+	    // When I divided the time step by 10, the
+	    // po does not close any longer.
       {
 	string fileName("../data/ks22h02t100");
 	string ppType("ppo");
@@ -742,6 +746,137 @@ int main(){
       }
       
       
+    case 8: // test the linear relation of OVs
+	    // the result is bad 1e-5. 
+      {
+	//////////////////////////////////////////////////
+#if 0
+	string fileName("../data/ks22h02t100");
+	string ppType("ppo");
+	const int ppId = 1; 
+	
+	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5");
+	std::tuple<ArrayXd, double, double, double, double>
+	  pp = readks.readKSinit(ppType, ppId);	
+	ArrayXd &a = get<0>(pp); 
+	double T = get<1>(pp);
+	int nstp = (int)get<2>(pp);
+	double r = get<3>(pp);
+	double s = get<4>(pp);
+
+	KS ks(Nks, T/nstp, L);
+# endif			
+	string fileName("../data/kstmp");
+	string ppType("ppo");
+	const int ppId = 1;
+	
+	ReadKS readks(fileName+".h5", fileName+".h5", fileName+".h5", N62, N64);
+	std::tuple<ArrayXd, double, double, double, double>
+	  pp = readks.readKSinit(ppType, ppId);
+	ArrayXd &a = get<0>(pp); 
+	double T = get<1>(pp);
+	int nstp = (int)get<2>(pp);
+	double r = get<3>(pp);
+	double s = get<4>(pp);
+	
+	KS ks(N64, T/nstp, L);
+	//////////////////////////////////////////////////
+	
+	pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp, 200, 200);
+	MatrixXd aa = tmp.first;
+	MatrixXd daa = tmp.second;
+	PED ped;
+	ped.reverseOrderSize(daa); // reverse order.
+	if(ppType.compare("ppo") == 0)
+	  daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	else // R*J for rpo
+	  daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
+
+
+	switch (2) {
+	case 1:
+	  {
+	    pair<MatrixXd, vector<int> > psd = ped.PerSchur(daa, 3000, 1e-15, true);
+	    MatrixXd &Q1 = psd.first;
+	    int n1 = Q1.rows();
+	    int m1 = Q1.cols() / n1;
+	    MatrixXd Q2(n1*n1, m1);
+	    for(size_t i = 0; i < m1; i++) {
+	      MatrixXd tmp = Q1.middleCols(n1*((m1-i)%m1), n1);
+	      tmp.resize(n1*n1,1);
+	      Q2.col(i) = tmp;
+	    }
+	    MatrixXd Q = ks.veToSliceAll( Q2, aa.leftCols(aa.cols()-1) );
+	    cout << Q.rows() << 'x' << Q.cols() << endl;
+
+	    ColPivHouseholderQR<MatrixXd> qr(Q.leftCols(5));
+	    MatrixXd R = qr.matrixQR().triangularView<Upper>();
+	    cout << R.rows() << 'x' << R.cols() << endl;
+	    cout << R.topRows<5>() << endl;
+
+	    break;
+	  }
+	  
+	case 2 :
+	  {
+	    const int N = daa.rows();
+	    const int M = daa.cols() / N;
+	    MatrixXd J(N, N*M);
+	    for (size_t i = 0; i < M; i++) {
+	      J.middleCols(i*N, N) = daa.middleCols((M-i-1)*N, N);
+	    }
+	    
+	    HouseholderQR<MatrixXd> qr;
+	    MatrixXd Q(MatrixXd::Identity(N,N));
+	    MatrixXd Qp(N, N);
+	    for (size_t i = 0; i < 3000; i++) {
+	      if(i%10 == 0) cout << i << endl;
+	      for (size_t i = 0; i < M; i++) {
+		Qp = J.middleCols(i*N, N) * Q;
+		qr.compute(Qp);
+		Q = qr.householderQ();
+	      }
+	    }
+	    Q.resize(N*N,1);
+	    MatrixXd rQ = ks.veToSliceAll(Q, aa.col(0));
+	    qr.compute(rQ.leftCols(5));
+	    MatrixXd R = qr.matrixQR().triangularView<Upper>();
+	    cout << R.rows() << 'x' << R.cols() << endl;
+	    cout << R.topRows<5>() << endl;
+	  }
+	}
+	
+	break;
+      }
+
+    case 9 : // test the 64 modes ppo1 initial condition 
+      {
+	string fileName("../data/kstmp");
+	string ppType("ppo");
+	const int ppId = 1;
+	ReadKS readks(fileName+".h5", fileName+".h5", fileName+".h5", N62, N64);
+	std::tuple<ArrayXd, double, double, double, double>
+	  pp = readks.readKSinit(ppType, ppId);
+	ArrayXd &a = get<0>(pp); 
+	double T = get<1>(pp);
+	int nstp = (int)get<2>(pp);
+	double r = get<3>(pp);
+	double s = get<4>(pp);
+	
+	KS ks(N64, T/nstp, L);
+	MatrixXd daa = ks.intgj(a, nstp, 20, 20).second;
+	
+	PED ped ;
+	ped.reverseOrderSize(daa);
+	daa.leftCols(N) = ks.Reflection(daa.leftCols(N));
+	MatrixXd eigVals = ped.EigVals(daa, 3000, 1e-15, true);
+	
+	MatrixXd FloquetE(eigVals.rows(), eigVals.cols());
+	FloquetE << eigVals.col(0).array()/T, eigVals.rightCols(2);
+	cout << FloquetE << endl;
+
+	break;
+      }
     default:
       {
 	printf("please indicate the index of problem !\n");

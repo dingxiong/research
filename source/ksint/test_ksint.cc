@@ -1,11 +1,16 @@
+/* to compile:
+ * g++ text_ksint.cc -std=c++0x -lksint -lfftw3
+ * -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3
+ */
+
 #include "ksint.hpp"
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <iostream>
 using namespace std;
 using namespace Eigen;
 int main(){
   /// -----------------------------------------------------
-  switch (1){
+  switch (3){
     
   case 1:
     {
@@ -20,8 +25,21 @@ int main(){
     {
       ArrayXd a0 = ArrayXd::Ones(30) * 0.1;
       KS ks(32, 0.1, 22);
-      KS::KSaj aj = ks.intgj(a0, 20000,10000,10000);
+      pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a0, 20000,10000,10000);
       //cout << aj.aa << endl;
+      break;
+    }
+  case 3: // test velocity
+    {
+      
+      ArrayXd a0(ArrayXd::Ones(30)*0.1);
+      KS ks(32, 0.1, 22); 
+      cout << ks.velocity(a0) << endl;
+      /*
+      ArrayXd a0(ArrayXd::Ones(62)*0.1);
+      KS ks(64, 0.1, 22);
+      cout << ks.velocity(a0) << endl;
+      */
       break;
     }
   default :

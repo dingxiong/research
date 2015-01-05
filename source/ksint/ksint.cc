@@ -25,7 +25,9 @@ KS & KS::operator=(const KS &x){
 KS::~KS(){
   freeFFT(Fv); freeFFT(Fa); freeFFT(Fb); freeFFT(Fc);
   freeFFT(jFv); freeFFT(jFa); freeFFT(jFb); freeFFT(jFc);
-  fftw_cleanup();
+  // comment out when trying to compile interface for Matlab/Python 
+  //fftw_cleanup(); 
+  
 }
 
 /*------------------- member methods ------------------ */
@@ -117,6 +119,22 @@ KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
   
   return std::make_pair(aa, daa);
 }
+
+/** @brief calculate the velocity 
+ *
+ * @param[in] a0 state vector
+ * @return velocity field at a0
+ */
+VectorXd 
+KS::velocity(const Ref<const ArrayXd> &a0){
+  assert(a0.rows() == N-2);
+  Fv.vc1 = R2C(a0);
+  NL(Fv); 
+  Fv.vc1 = L * Fv.vc1 + Fv.vc3;
+  
+  return C2R(Fv.vc1);
+}
+
 
 void KS::NL(KSfft &f){
   ifft(f);

@@ -218,37 +218,38 @@ KSrefine::multishoot(KS &ks, const ArrayXXd &x, const int nstp,
  * @param[in] tol tolerance of convergence
  *
  */
-VectorXd
+tuple<VectorXd, double, double>
 KSrefine::findPO(const ArrayXd &a0, const double T, const int Norbit, 
-		 const int M, const string ppType, const double hinit,
-		 const double th0,
-		 const int MaxN, const double tol, 
-		 const bool isSingle,
-		 const bool Print /* = false */){
+		 const int M, const string ppType,
+		 const double hinit /* = 0.1*/,
+		 const double th0 /* = 0 */,
+		 const int MaxN /* = 100 */, 
+		 const double tol /* = 1e-14*/, 
+		 const bool Print /* = false */,
+		 const bool isSingle /* = false */){ 
   bool Terminate = false;
   assert(a0.rows() == N - 2 && Norbit % M == 0);
   const int nstp = Norbit/M;
   double h = T/Norbit;
   double th = th0;
   double lam = 1;
-  
+  SparseLU<SpMat> solver; // used in the pre-CG method
+
   // prepare the initial state sequence
   KS ks0(N, hinit, L);
   ArrayXXd x = ks0.intg(a0, (int)ceil(T/hinit), 
 			(int)floor(T/hinit/M));
   x = x.leftCols(M); 
   
-  ConjugateGradient<SpMat> CG;
-  
   for(size_t i = 0; i < MaxN; i++){
-    if(Print) printf("********  i = %zd/%d   ******** \n", i, MaxN);
+    if(Print && i%10 == 0) printf("******  i = %zd/%d  ****** \n", i, MaxN);
     KS ks(N, h, L);
     VectorXd F;
     if(!isSingle) F = multiF(ks, x, nstp, ppType, th);
     else F = multiF(ks, x.col(0), Norbit, ppType, th);
     double err = F.norm(); 
     if(err < tol){
-      if(Print) printf("stop at norm(F)=%g for iteration %zd\n", err, i);
+      fprintf(stderr, "stop at norm(F)=%g for iteration %zd\n", err, i);
       break;
     }
    
@@ -257,20 +258,23 @@ KSrefine::findPO(const ArrayXd &a0, const double T, const int Norbit,
     VectorXd JF = p.first.transpose() * p.second;
     SpMat Dia = JJ; 
     Dia.prune(KeepDiag());
-    
+
     for(size_t j = 0; j < 20; j++){
+      ////////////////////////////////////////
+      // solve the update
       SpMat H = JJ + lam * Dia; 
-      //CG.compute(H);     
-      //VectorXd dF = CG.solve(-JF);
-      SparseLU<SpMat> solver;
-      pair<VectorXd, vector<double> > 
-	cg = iterMethod::ConjGradSSOR<SpMat>(H, -JF, solver, VectorXd::Zero(H.rows()),
-					  H.rows(), 1e-8);
+      pair<VectorXd, vector<double> > cg = iterMethod::ConjGradSSOR<SpMat>
+	(H, -JF, solver, VectorXd::Zero(H.rows()), H.rows(), 1e-6);
       VectorXd &dF = cg.first;
-      printf("CG error %g, number of iteration %d \n",
-	     cg.second[cg.second.size()-1], (int)cg.second.size());
-      //if(Print) 
-      //	printf("CG error %g, iteration number %d\n", CG.error(), CG.iterations());
+      
+      ////////////////////////////////////////
+      // print the CG infomation
+      if(Print)
+	printf("CG error %g after %lu iterations.\n", 
+	       cg.second.back(), cg.second.size());
+
+      ////////////////////////////////////////
+      // update the state
       ArrayXXd xnew = x + Map<ArrayXXd>(&dF(0), N-2, M);
       double hnew = h + dF((N-2)*M)/nstp; // be careful here.
       double thnew = th;
@@ -287,14 +291,15 @@ KSrefine::findPO(const ArrayXd &a0, const double T, const int Norbit,
       VectorXd newF;
       if(!isSingle) newF = multiF(ks1, xnew, nstp, ppType, thnew); 
       else newF = multiF(ks1, xnew.col(0), Norbit, ppType, thnew); 
-      cout << "err = " << newF.norm() << endl;
+      if(Print) printf("err = %g \n", newF.norm());
       if (newF.norm() < err){
 	x = xnew; h = hnew; th = thnew; 
 	lam = lam/10; 
 	break;
       }
       else{
-	lam *= 10; cout << "lam = "<< lam << endl;
+	lam *= 10; 
+	if(Print) printf("lam = %g \n", lam);
 	if( lam > 1e10) {
 	  fprintf(stderr, "lam = %g too large.\n", lam); 
 	  Terminate = true;
@@ -307,10 +312,7 @@ KSrefine::findPO(const ArrayXd &a0, const double T, const int Norbit,
     if( Terminate )  break;
   }
   
-  VectorXd po(N-2+2);
-  po << x.col(0), h, th;
-  
-  return po;
+  return make_tuple(x.col(0), h, th);
 }
 
 

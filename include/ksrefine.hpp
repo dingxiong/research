@@ -9,6 +9,7 @@
 
 #include "ksint.hpp"
 #include <vector>
+#include <tuple>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
@@ -21,15 +22,15 @@ public:
   const double L;		/* L = 22 */
 
   //////////////////////////////////////////////////
-  Eigen::VectorXd
+  std::tuple<VectorXd, double, double>
   findPO(const Eigen::ArrayXd &a0, const double T, const int Norbit, 
 	 const int M, const std::string ppType,
 	 const double hinit = 0.1,
 	 const double th0 = 0, 
 	 const int MaxN = 100, 
-	 const double tol = 5e-15, 
-	 const bool isSingle = false,
-	 const bool Print = true);
+	 const double tol = 1e-14, 
+	 const bool Print = false,
+	 const bool isSingle = false);
   Eigen::VectorXd 
   multiF(KS &ks, const Eigen::ArrayXXd &x, const int nstp, 
 	 const std::string ppType, const double th = 0.0);

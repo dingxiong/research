@@ -717,15 +717,15 @@ int main(){
 	break;
       }
 
-    case 7: // test rotated initial condition
-	    // When I divided the time step by 10, the
-	    // po does not close any longer.
+    case 7: // test rotated initial condition for N = 64
+	    // after rotation, the result looks good.
       {
-	string fileName("../data/ks22h02t100");
+
+	string fileName("../data/ks22h001t120x64");
 	string ppType("ppo");
-	const int ppId = 1; 
-	
-	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5");
+	const int ppId = 13; 
+
+	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N62, N64);
 	std::tuple<ArrayXd, double, double, double, double>
 	  pp = readks.readKSinit(ppType, ppId);	
 	ArrayXd &a = get<0>(pp); 
@@ -733,9 +733,9 @@ int main(){
 	int nstp = (int)get<2>(pp);
 	double r = get<3>(pp);
 	double s = get<4>(pp);
-	
-	const int div = 20;
-	KS ks(Nks, T/nstp/div, L);
+
+	const int div = 1;
+	KS ks(N64, T/nstp/div, L);
 	MatrixXd aa = ks.intg(a, 2*div*nstp);
 	MatrixXd aaHat = ks.orbitToSlice(aa).first;
 	cout << (aa.rightCols(1) - aa.col(0)).norm() << endl;
@@ -766,9 +766,9 @@ int main(){
 
 	KS ks(Nks, T/nstp, L);
 # endif			
-	string fileName("../data/kstmp");
+	string fileName("../data/ks22h001t120x64");
 	string ppType("ppo");
-	const int ppId = 1;
+	const int ppId = 4;
 	
 	ReadKS readks(fileName+".h5", fileName+".h5", fileName+".h5", N62, N64);
 	std::tuple<ArrayXd, double, double, double, double>
@@ -782,7 +782,7 @@ int main(){
 	KS ks(N64, T/nstp, L);
 	//////////////////////////////////////////////////
 	
-	pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp, 200, 200);
+	pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp, 5, 5);
 	MatrixXd aa = tmp.first;
 	MatrixXd daa = tmp.second;
 	PED ped;
@@ -793,7 +793,7 @@ int main(){
 	  daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
 
 
-	switch (2) {
+	switch (1) {
 	case 1:
 	  {
 	    pair<MatrixXd, vector<int> > psd = ped.PerSchur(daa, 3000, 1e-15, true);
@@ -849,9 +849,9 @@ int main(){
 	break;
       }
 
-    case 9 : // test the 64 modes ppo1 initial condition 
+    case 9 : // test the 32 modes initial condition 
       {
-	string fileName("../data/kstmp");
+	string fileName("../data/ks22h001t120x64");
 	string ppType("ppo");
 	const int ppId = 1;
 	ReadKS readks(fileName+".h5", fileName+".h5", fileName+".h5", N62, N64);
@@ -864,7 +864,7 @@ int main(){
 	double s = get<4>(pp);
 	
 	KS ks(N64, T/nstp, L);
-	MatrixXd daa = ks.intgj(a, nstp, 20, 20).second;
+	MatrixXd daa = ks.intgj(a, nstp, 10, 10).second;
 	
 	PED ped ;
 	ped.reverseOrderSize(daa);

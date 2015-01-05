@@ -1,3 +1,25 @@
+/** \mainpage iterative methods to solve linear problems
+ *
+ *  \section sec_intro Introduction
+ *  This file contains the iterative methods to solve linear problems. It
+ *  mainly contains the congugate gradient method w/wo preconditioning and
+ *  provide SSOR as one choice of precondition method, which is thought to
+ *  perform better than Jacobi and G-S. The reason that I insist writing
+ *  these routines by myself is that the corresponding libraries in Eigen
+ *  seem not to give the desired accuracy when I use them to refine POs for
+ *  KS system. I suggest you using the libraries shipped with Eigen, but if
+ *  you want to use my routines, I welcome !
+ *
+ *  \section sec_use usage
+ *  This file is assembly of template functions, which means that all function
+ *  implementations are in this header file, and there is no .cc file.
+ *  You only need to include this file when compiling your code.
+ *  Example:
+ *  \code
+ *  g++ yourfile.cc -I/path/to/iterMethod.hpp -I/path/to/eigen -std=c++0x
+ *  \endcode
+ */
+
 #ifndef ITERMETHOD_H
 #define ITERMETHOD_H
 

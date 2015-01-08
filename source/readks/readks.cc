@@ -2,6 +2,7 @@
 #include <H5Cpp.h>
 #include <algorithm>
 #include <vector>
+#include <iostream>
 using namespace std;
 using namespace H5;
 using namespace Eigen;
@@ -267,17 +268,18 @@ ReadKS::writeKSe(const string &ppType, const int ppId,
 /** @brief write the Floquet exponents and Floquet vectors  */
 void 
 ReadKS::writeKSev(const string &ppType, const int ppId,
-		  const MatrixXd &eigvals, const MatrixXd &eigvecs, 
+		  const MatrixXd &eigvals, const MatrixXd &eigvecs,
 		  const bool rewrite /* = false */){
-  const int N = eigvals.rows();
+  const int N1 = eigvals.rows();
   const int M1 = eigvals.cols();
+  const int N2 = eigvecs.rows();
   const int M2 = eigvecs.cols();
 
   H5File file(fileNameEV, H5F_ACC_RDWR);
   string DS = "/" + ppType + "/" + to_string(ppId) + "/";
   
   string DS_e = DS + "e";
-  hsize_t dims[] = {M1, N};
+  hsize_t dims[] = {M1, N1};
   DataSpace dsp(2, dims);
   DataSet e;
   if(rewrite) e = file.openDataSet(DS_e);
@@ -285,7 +287,7 @@ ReadKS::writeKSev(const string &ppType, const int ppId,
   e.write(&eigvals(0,0), PredType::NATIVE_DOUBLE);
   
   string DS_ve = DS + "ve";
-  hsize_t dims2[] = {M2, N*N};
+  hsize_t dims2[] = {M2, N2};
   DataSpace dsp2(2, dims2);
   DataSet ve;
   if(rewrite) ve = file.openDataSet(DS_ve);
@@ -293,21 +295,21 @@ ReadKS::writeKSev(const string &ppType, const int ppId,
   ve.write(&eigvecs(0,0), PredType::NATIVE_DOUBLE);
 }
 
-/** @brief write Floquet vectors of KS system.
+/** @brief calculate Floquet exponents and Floquet vectors of KS system.
  *
  *  @param[in] ppType periodic type: ppo/rpo
  *  @param[in] ppId  id of the orbit
  *  @param[in] MaxN maximal number of PED iteration
  *  @param[in] tol tolerance of PED
- *  @param[in] rewrite rewrite the data or not. default is not.
- *  @return vectors
+ *  @param[in] nqr spacing
+ *  @return FE and FV
  */
-
-void 
-ReadKS::calKSOneOrbit( const string ppType, const int ppId,
-			 const int MaxN /* = 80000 */,
-			 const double tol /* = 1e-15 */,
-			 const bool rewrite /* = false */){
+pair<MatrixXd, MatrixXd>
+ReadKS::calKSFloquet(const string ppType, const int ppId, 
+		     const int MaxN /* = 80000 */,
+		     const double tol /* = 1e-15 */,
+		     const int nqr /* = 1 */,
+		     const int trunc /* = 0 */){
   // get the initla condition of the orbit
   tuple<ArrayXd, double, double, double, double> 
     pp = readKSinit(ppType, ppId);
@@ -319,7 +321,7 @@ ReadKS::calKSOneOrbit( const string ppType, const int ppId,
   
   // solve the Jacobian of this po.
   KS ks(Nks, T/nstp, L);
-  pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp);
+  pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp, nqr, nqr);
   MatrixXd daa = tmp.second;
   
   // calculate the Flqouet exponents and vectors.
@@ -329,11 +331,26 @@ ReadKS::calKSOneOrbit( const string ppType, const int ppId,
     daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
   else // R*J for rpo
     daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
-  pair<MatrixXd, MatrixXd> eigv = ped.EigVecs(daa, MaxN, tol, false);
+  pair<MatrixXd, MatrixXd> eigv = ped.EigVecs(daa, MaxN, tol, false, trunc);
   MatrixXd &eigvals = eigv.first; 
   eigvals.col(0) = eigvals.col(0).array()/T;
   MatrixXd &eigvecs = eigv.second;
-	
+
+  return make_pair(eigvals, eigvecs);
+}
+
+
+void 
+ReadKS::calKSOneOrbit( const string ppType, const int ppId,
+		       const int MaxN /* = 80000 */,
+		       const double tol /* = 1e-15 */,
+		       const bool rewrite /* = false */,
+		       const int nqr /* = 1 */,
+		       const int trunc /* = 0 */){
+  pair<MatrixXd, MatrixXd> eigv = calKSFloquet(ppType, ppId, MaxN, tol, nqr, trunc);
+  MatrixXd &eigvals = eigv.first;
+  MatrixXd &eigvecs = eigv.second; 
+  
   writeKSe(ppType, ppId, eigvals, rewrite);
   writeKSev(ppType, ppId, eigvals, eigvecs, rewrite);
 	

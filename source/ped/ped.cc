@@ -100,23 +100,34 @@ MatrixXd PED::EigVals(MatrixXd &J, const int MaxN /* = 100 */,
  *  @param[in] tol Tolerance used to check the convergence of the iteration
  *                 process.
  *  @param[in] Print Indicate whether to print the intermediate information.
+ *  @param[in] trunc indicate the subset of eigenvectors to get
  *  @return a pair of matrices storing eigenvalues and eigenvectors. 
  */
 
 pair<MatrixXd, MatrixXd> PED::EigVecs(MatrixXd &J, const int MaxN /* = 100 */,
-		      const double tol /* = 1e-16 */, bool Print /* = true*/){
+				      const double tol /* = 1e-16 */, 
+				      bool Print /* = true*/, 
+				      const int trunc /* = 0 */){
   const int N = J.rows();
   const int M = J.cols() / N;
+  int Trunc = trunc;
+  if(Trunc == 0) Trunc = N; // set to full
+
   std::tuple<MatrixXd, vector<int>, MatrixXd> tmp = eigenvalues(J, MaxN, tol, Print);
   MatrixXd &Eig_vals = std::get<0>(tmp);
   vector<int> &complex_index = std::get<1>(tmp);
   MatrixXd &Q = std::get<2>(tmp);
   vector<int> real_index = realIndex(complex_index, N);
+
+  // get trunction indices. Note the special treatment of complex indices.
+  vector<int> real_index_trunc = truncVec(real_index, Trunc - 1);
+  vector<int> complex_index_trunc = truncVec(complex_index, Trunc - 2);
   
-  MatrixXd eigVecs(N*N, M);
+  MatrixXd eigVecs(N*Trunc, M);
   
   // get the real eigenvectors
-  for(vector<int>::iterator it = real_index.begin(); it != real_index.end(); it++)
+  for(vector<int>::iterator it = real_index_trunc.begin(); 
+      it != real_index_trunc.end(); it++)
     {
       MatrixXd vec = oneEigVec(J, *it, true, Print); 
       for(size_t i = 0; i < M; i++){
@@ -130,7 +141,8 @@ pair<MatrixXd, MatrixXd> PED::EigVecs(MatrixXd &J, const int MaxN /* = 100 */,
     }
   
   // get the complex eigenvectors
-  for(vector<int>::iterator it = complex_index.begin(); it != complex_index.end(); it++){
+  for(vector<int>::iterator it = complex_index_trunc.begin(); 
+      it != complex_index_trunc.end(); it++){
     MatrixXd vec = oneEigVec(J, *it, false, Print);
     for(size_t i = 0; i < M; i++){
       eigVecs.block((*it)*N, i, N, 1) = Q.middleCols(((M-i)%M)*N, N) * vec.col(2*i);
@@ -864,4 +876,16 @@ void PED::reverseOrderSize(MatrixXd &J){
   const int N2 = sqrt(N);
   reverseOrder(J);
   J.resize(N2, N2*M);
+}
+
+vector<int> 
+PED::truncVec(const vector<int> &v, const int trunc){
+  const int n = v.size();
+  vector<int> v_trunc;
+  v_trunc.reserve(n);
+  for (int i = 0; i < n; i++) {
+    if(v[i] <= trunc) v_trunc.push_back(v[i]);
+  }
+  
+  return v_trunc;
 }

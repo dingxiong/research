@@ -45,7 +45,7 @@ public:
 	  const double tol = 1e-16 , bool Print  = true);
   pair<MatrixXd, MatrixXd>
   EigVecs(MatrixXd &J, const int MaxN  = 100,
-	  const double tol = 1e-16, bool Print = true);
+	  const double tol = 1e-16, bool Print = true, const int trunc = 0);
   std::tuple<MatrixXd, vector<int>, MatrixXd> 
   eigenvalues(MatrixXd &J, const int MaxN = 100,
 	      const double tol = 1e-16, bool Print = true);
@@ -111,6 +111,8 @@ public:
   reverseOrder(MatrixXd &J);
   void 
   reverseOrderSize(MatrixXd &J);
+  vector<int> 
+  truncVec(const vector<int> &v, const int trunc);
 };
 
 #endif	/* PED_H */

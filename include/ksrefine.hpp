@@ -1,7 +1,7 @@
 /* to comiple:
  * g++ ksrefine.cc std=c++0x -O3 -march=corei7 -msse2 -msse4
  * -L ../../lib -I ../../include -I $XDAPPS/eigen/include/eigen3
- * -std=c++0x -lksint -lfftw3 -lm
+ * -lksint -lfftw3 -lm
  */
 
 #ifndef KSREFINE_H

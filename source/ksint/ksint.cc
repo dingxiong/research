@@ -354,18 +354,23 @@ MatrixXd KS::veToSlice(const MatrixXd &ve, const Ref<const VectorXd> &x){
  *
  *  @note vectors are not normalized
  */
-MatrixXd KS::veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa){
-  const int n = sqrt(eigVecs.rows());  
+MatrixXd KS::veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa,
+			  const int trunc /* = 0*/){
+  int Trunc = trunc;
+  if(trunc == 0) Trunc = sqrt(eigVecs.rows());
+
+  assert(eigVecs.rows() % Trunc == 0);
+  const int n = eigVecs.rows() / Trunc ;  
   const int m = eigVecs.cols();
   const int n2 = aa.rows();
   const int m2 = aa.cols();
 
   assert(m == m2 && n == n2);
-  MatrixXd newVe(n, n*m);
+  MatrixXd newVe(n, Trunc*m);
   for(size_t i = 0; i < m; i++){
     MatrixXd ve = eigVecs.col(i);
-    ve.resize(n, n);
-    newVe.middleCols(i*n, n) = veToSlice(ve, aa.col(i));
+    ve.resize(n, Trunc);
+    newVe.middleCols(i*Trunc, Trunc) = veToSlice(ve, aa.col(i));
   }
 
   return newVe;

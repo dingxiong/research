@@ -185,7 +185,7 @@ ReadKS::writeKSinit(const string fileName, const string ppType,
     item.write(&(get<3>(ksinit)), PredType::NATIVE_DOUBLE);
   }
 
-  if(ppType.compare("rpo") == 0) { // write s
+  if(ppType.compare("rpo") == 0) { // rewrite s
     string DSitem = DS + "s";
     DataSet item = file.openDataSet(DSitem);
     item.write(&(get<4>(ksinit)), PredType::NATIVE_DOUBLE);
@@ -222,19 +222,19 @@ ReadKS::readKSe(const string &ppType, const int ppId){
  */
 MatrixXd
 ReadKS::readKSve(const string &ppType, const int ppId){
-  // const int N = 30;
   H5File file(fileNameEV, H5F_ACC_RDONLY);
   string DS = "/" + ppType + "/" + to_string(ppId) + "/";
 
-  // need nstp to define the size of ve.
-  string DS_nstp = DS + "nstp";
-  DataSet nstp = file.openDataSet(DS_nstp);
-  double nstp0(0);
-  nstp.read(&nstp0, PredType::NATIVE_DOUBLE);
-
   string DS_ve = DS + "ve";
   DataSet ve = file.openDataSet(DS_ve);
-  MatrixXd ve0(N*N, (int)nstp0);
+  DataSpace ds = ve.getSpace();
+  // check whether the dimension is 2
+  assert(ds.getSimpleExtentNdims() == 2);
+  // get the size of each dimension
+  hsize_t dims[2];
+  int ndims = ds.getSimpleExtentDims(dims, NULL);
+  // copy out the vectors. Note that the order is reversed intentionally.
+  MatrixXd ve0(dims[1], dims[0]);
   ve.read(&ve0(0,0), PredType::NATIVE_DOUBLE);
   
   return ve0;

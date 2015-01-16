@@ -6,8 +6,8 @@
  * or (Note : libreadks.a is static library, so the following order is important)
  *
  * h5c++ test_readks.cc -std=c++0x -I$XDAPPS/eigen/include/eigen3 -I../../include
- * -L../../lib -lreadks -lksint -lped
- * -lfftw3 -O3 -march=corei7 -msse4 -msse2
+ * -L../../lib -lreadks -lksint -lped -lfftw3
+ * -O3 -march=corei7 -msse4 -msse2
  */
 #include "readks.hpp"
 #include <iostream>
@@ -17,7 +17,7 @@ using namespace Eigen;
 int main()
 {
 
-  
+  cout.precision(16);
   switch (6)
     {
       
@@ -118,14 +118,14 @@ int main()
 	string fileName("../../data/ks22h001t120x64");
 	string ppType("ppo");
 	const int ppId = 1;
+	const int nqr = 1;
 	
-	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks);
-	// calculate Floquet exponents and vectors and only keep vectors
-	MatrixXd FVs = readks.calKSFloquet(ppType, ppId, 1000, 1e-15).second;
-	const int M = FVs.cols();
+	ReadKS readks(fileName+".h5",
+		      fileName+"Ex"+to_string(nqr)+".h5", 
+		      fileName+"EVx"+to_string(nqr)+".h5", N, Nks);
+	MatrixXd FVs = readks.readKSve(ppType, ppId);
+	//cout << FVs.rows() << 'x' << FVs.cols() << endl;
 
-	cout << FVs.rows() << 'x' <<  FVs.cols() << endl;
-	
 	tuple<ArrayXd, double, double, double, double> 
 	  pp = readks.readKSinit(ppType, ppId);
 	ArrayXd &a = get<0>(pp); 
@@ -134,42 +134,66 @@ int main()
 	double r = get<3>(pp);
 	double s = get<4>(pp);
 	KS ks(Nks, T/nstp, L);
-	ArrayXXd aa = ks.intg(a, nstp);
+	ArrayXXd aa = ks.intg(a, nstp, nqr);
+	const int M = aa.cols()-1;
 	
-	cout << aa.rows() << 'x' << FVs.cols() << endl;
-
-	// compare the velocity with marginal Floquet vectors
-	MatrixXd marg1 = FVs.middleRows(N*2, N); // the 3rd is the velocity
-	for(int i = 0; i < M; i++){
-	  VectorXd v = ks.velocity(aa.col(i));
-	  cout << v.norm() << endl;
-	  cout << v.rows() << endl;
-	  v = v.array() / v.norm(); 
-	  cout << (marg1.col(i) - v).norm() << endl;
-	}
+	switch (2)
+	  {
+	  case 1:
+	    {
+	      // compare the velocity with marginal Floquet vectors
+	      MatrixXd marg1 = FVs.middleRows(N*2, N); // the 3rd is the velocity
+	      for(int i = 0; i < M; i++){
+		VectorXd v = ks.velocity(aa.col(i));
+		v = v.array() / v.norm();
+		double dv1 = (marg1.col(i) - v).norm();
+		double dv2 = (marg1.col(i) + v).norm();
+		cout << min(dv1, dv2) << endl;
+	      }
+	      
+	      break;
+	    }
+	    
+	  case 2: // compare the group tangent with marginal Floquet vectors
+	    {
+	      MatrixXd marg = FVs.middleRows(N*3, N);
+	      for(int i = 0; i < M; i++){
+		VectorXd tx = ks.gTangent(aa.col(i));
+		tx = tx.array() / tx.norm();
+		double dv1 = (marg.col(i) - tx).norm();
+		double dv2 = (marg.col(i) + tx).norm();
+		cout << min(dv1, dv2) << endl;
+	      }
+	      
+	      break;
+	    }
+	  }
+	
 
 	break;
       }
 
-   case 6: // calculate the first 10 ppos for N = 64
+   case 6: // calculate the first 50 ppos/rpos for N = 64
+	   // for diffferent spacing
       {
-
 	const double L = 22;
 	const int Nks = 64;
 	const int N = Nks - 2;
-	string fileName("../../data/ks22h001t120x64");
-	string ppType("ppo");
-	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks);
+	// string fileName("../../data/ks22h001t120x64");
+	string fileName("../../data/ks22h001t50x64");
+	string ppType("rpo");
+	const int nqr = 5;
+	ReadKS readks(fileName+".h5", fileName+"xxEx"+to_string(nqr)+".h5",
+		      fileName+"xxEVx"+to_string(nqr)+".h5", N, Nks, L);
 	
-	const int MaxN = 1000;  // maximal iteration number for PED
-	const double tol = 1e-15; // torlearance for PED	
+	const int MaxN = 8000;  // maximal iteration number for PED
+	const double tol = 1e-14; // torlearance for PED	
 	const bool rewrite = false;
-	const int nqr = 10;
 	const int trunc = 10;
 
-	int NN = 4;
+	int NN = 50;
 
-	for(size_t ppId = NN; ppId < NN+1; ppId++){
+	for(size_t ppId = 33; ppId < NN+1; ppId++){
 	  printf("********* ppId = %zd ***********\n", ppId);
 	  readks.calKSOneOrbit(ppType, ppId, MaxN, tol, rewrite, nqr, trunc);
 	}
@@ -177,6 +201,30 @@ int main()
 	break;
       }
 
+    case 7: // calculate the Floquet exponents of ppo1 for different spacing
+      {
+	const double L = 22;
+	const int Nks = 64;
+	const int N = Nks - 2;
+	// string fileName("../../data/ks22h001t120x64");
+	string fileName("../../data/ks22h001t50x64");
+	string ppType("rpo");
+	const int ppId = 22;
+	vector<double> nqr{15, 18, 20, 30, 60, 90};
+	
+	const int MaxN = 5000;
+	const double tol = 1e-15;
+	const int trunc = 2;
+	ReadKS readks(fileName+".h5", fileName+".h5", fileName+".h5", N, Nks);
+
+	for (size_t i = 0; i < nqr.size(); i++) {
+	  MatrixXd eigvals = readks.calKSFloquet(ppType, ppId, MaxN, tol, nqr[i], trunc).first;
+	  cout << eigvals << endl;
+	}
+
+	
+	break;
+      }
     default:
       {
 	cout << "Please indicate the right #" << endl;

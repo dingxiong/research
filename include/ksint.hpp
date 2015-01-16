@@ -64,7 +64,8 @@ public:
   MatrixXd 
   veToSlice(const MatrixXd &ve, const Ref<const VectorXd> &x);
   MatrixXd 
-  veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa);
+  veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa,
+	       const int trunc = 0);
 
 protected:
   enum { M = 16 }; // number used to approximate the complex integral.

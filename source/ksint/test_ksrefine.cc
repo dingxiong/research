@@ -84,28 +84,28 @@ int main()
 	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
 	
 	int NN(0);
-	if(ppType.compare("ppo")) NN = 840;
+	if(ppType.compare("ppo") == 0) NN = 840;
 	else NN = 834;
 
 	const int MaxN = 25;
 	const double tol = 1e-14;
 	const int M = 10;
 
-	for(int i = 50; i < NN; i++){
+	for(int i = 0; i < NN; i++){
 	  const int ppId = i+1; 
 	  printf("\n****   ppId = %d   ****** \n", ppId); 
 	  std::tuple<ArrayXd, double, double>
 	    pp = readks.readKSorigin(ppType, ppId);	
 	  ArrayXd &a = get<0>(pp); 
 	  double T = get<1>(pp);
-	  double s = get<2>(pp);
+	  double s = get<2>(pp); 
 
-	  const int nstp = ceil(ceil(T/0.001)/M)*M;
+	  const int nstp = ceil(ceil(T/0.005)/M)*M;
 	  KSrefine ksrefine(Nks, L);
 	  tuple<VectorXd, double, double> 
 	    p = ksrefine.findPO(a, T, nstp, M, ppType,
-				0.1, -s/L*2*M_PI, MaxN, tol, false, false);
-	  KS ks(Nks, get<1>(p), L);
+				0.1, -s/L*2*M_PI, MaxN, tol, true, false);
+	  KS ks(Nks, get<1>(p), L); 
 	  ArrayXXd aa = ks.intg(get<0>(p), nstp);
 	  double r(0);
 	  if(ppType.compare("ppo") == 0)

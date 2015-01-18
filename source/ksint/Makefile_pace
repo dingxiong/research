@@ -1,9 +1,10 @@
+# run command : make -f Makefile_pace 
 CC = g++
 AR = ar
 
-OPTIM = -O3 -msse2 -msse4 -march=corei7
+OPTIM = -O3 # -msse2  -msse4 -march=corei7
 INCLUDE = ../../include
-EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
+#EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 
 CFLAGS = -lm -lfftw3 -std=c++0x 
 
@@ -19,17 +20,17 @@ REFINE_STATIC = libksrefine.a
 all : $(SHARED) $(STATIC) $(REFINE_SHARED) $(REFINE_STATIC)
 
 $(SHARED): $(SOURCE)
-	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
+	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) $^ -o $@
 $(SOURCE:.cc=.o) : $(SOURCE)
-	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
+	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE)  $^
 $(STATIC): $(SOURCE:.cc=.o)
 	$(AR) crs $@ $^
 
 $(REFINE_SHARED)$ : $(REFINE_SOURCE)
-	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) \
+	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) \
 	-L../../lib -lksint $^ -o $@
 $(REFINE_SOURCE:.cc=.o) : $(REFINE_SOURCE)
-	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
+	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) $^
 $(REFINE_STATIC) : $(REFINE_SOURCE:.cc=.o)
 	$(AR) crs $@ $^
 clean:

@@ -237,9 +237,9 @@ KSrefine::findPO(const ArrayXd &a0, const double T, const int Norbit,
 
   // prepare the initial state sequence
   KS ks0(N, hinit, L);
-  ArrayXXd x = ks0.intg(a0, (int)ceil(T/hinit), 
+  ArrayXXd tmpx = ks0.intg(a0, (int)ceil(T/hinit), 
 			(int)floor(T/hinit/M));
-  x = x.leftCols(M); 
+  ArrayXXd x = tmpx.leftCols(M); 
   
   for(size_t i = 0; i < MaxN; i++){
     if(Print && i%10 == 0) printf("******  i = %zd/%d  ****** \n", i, MaxN);

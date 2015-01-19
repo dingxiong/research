@@ -3,13 +3,14 @@
 #include "readks.hpp"
 #include <iostream>
 #include <cmath>
+#include <mpi.h>
 using namespace std;
 using namespace Eigen;
 
-int main()
+int main(int argc, char **argv)
 {
   cout.precision(16);
-  switch (3) 
+  switch (4) 
     {
     case 1: // test multiF(). For rpo, the shift should be reversed.
       {
@@ -80,18 +81,18 @@ int main()
 	const int N = Nks - 2;
 	const double L = 22;
 	string fileName("../../data/ks22h1t120x64");
-	string ppType("rpo");
+	string ppType("ppo");
 	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
 	
 	int NN(0);
 	if(ppType.compare("ppo") == 0) NN = 840;
 	else NN = 834;
 
-	const int MaxN = 300;
+	const int MaxN = 1500;
 	const double tol = 1e-14;
 	const int M = 10;
-#pragma omp parallel for
-	for(int i = 0; i < NN; i++){
+
+	for(int i = 790; i < 791; i++){
 	  const int ppId = i+1; 
 	  printf("\n****   ppId = %d   ****** \n", ppId); 
 	  std::tuple<ArrayXd, double, double>
@@ -114,14 +115,80 @@ int main()
 	    r = (ks.Rotation(aa.rightCols(1), get<2>(p)) - aa.col(0)).matrix().norm();
 	  
 	  printf("r = %g\n", r);
-	  readks.writeKSinit("../../data/ks22h001t120x64_v3.h5", ppType, ppId, 
+	  readks.writeKSinit("../../data/ks22h001t120x64_v4.h5", ppType, ppId, 
 			     make_tuple(get<0>(p), get<1>(p)*nstp, nstp, r, -L/(2*M_PI)*get<2>(p))
 			     );
 	}
 	
 	break;
       }
-  
+      
+    case 4 : // refine step by step
+      {
+	const int Nks = 64;
+	const int N = Nks - 2;
+	const double L = 22;
+	string fileName("../../data/ks22h1t120x64_v2");
+	string ppType("rpo");
+	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
+	
+	int NN(0);
+	if(ppType.compare("ppo") == 0) NN = 840;
+	else NN = 834;
+
+	const int MaxN = 300;
+	const double tol = 1e-14;
+	const int M = 10;
+
+	////////////////////////////////////////////////////////////
+	// mpi part 
+	MPI_Init(&argc, &argv);
+	int rank, num;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &num);
+	printf("MPI : %d \/ %d \n", rank, num);
+	int inc = ceil( (double)NN / num);
+	int istart = rank * inc;
+	int iend = min( (rank+1) * inc, NN);
+	////////////////////////////////////////////////////////////
+
+	for(int i = istart; i < iend; i++){
+	  const int ppId = i+1; 
+	  cout<< ppType; printf("\n****  ppId = %d   ****** \n", ppId); 
+	  std::tuple<ArrayXd, double, double, double, double>
+	    pp = readks.readKSinit(ppType, ppId);	
+	  ArrayXd &a = get<0>(pp); 
+	  double T = get<1>(pp);
+	  int nstp = (int) get<2>(pp);
+	  double r = get<3>(pp);  printf("r = %g\n", r);
+	  double s = get<4>(pp); 
+
+	  double hinit = T / nstp;
+	  nstp *= 5;
+	  KSrefine ksrefine(Nks, L);
+	  tuple<VectorXd, double, double> 
+	    p = ksrefine.findPO(a, T, nstp, M, ppType,
+				hinit, -s/L*2*M_PI, MaxN, tol, false, false);
+	  KS ks(Nks, get<1>(p), L); 
+	  ArrayXXd aa = ks.intg(get<0>(p), nstp);
+	  // double r(0);
+	  if(ppType.compare("ppo") == 0)
+	    r = (ks.Reflection(aa.rightCols(1)) - aa.col(0)).matrix().norm();
+	  else
+	    r = (ks.Rotation(aa.rightCols(1), get<2>(p)) - aa.col(0)).matrix().norm();
+	  
+	  printf("r = %g\n", r);
+	  readks.writeKSinit("../../data/ks22h001t120x64_v3.h5", ppType, ppId, 
+			     make_tuple(get<0>(p), get<1>(p)*nstp, nstp, r, -L/(2*M_PI)*get<2>(p))
+			     );
+	}
+	
+	////////////////////////////////////////////////////////////
+	MPI_Finalize();
+	////////////////////////////////////////////////////////////
+
+	break;
+      }
       
     }
   return 0;

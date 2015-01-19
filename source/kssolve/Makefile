@@ -6,7 +6,7 @@ ifeq ($(CC),g++)
 else 
 	CPP=icpc
 	OPTIM = -O3 -xSSE4.2 
-endif
+endifd
 
 OBJ = libkssolve.so
 SOURCE = kssolve.cc kssolveM1.cc

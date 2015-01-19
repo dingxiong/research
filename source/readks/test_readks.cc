@@ -187,7 +187,7 @@ int main()
 		      fileName+"xxEVx"+to_string(nqr)+".h5", N, Nks, L);
 	
 	const int MaxN = 8000;  // maximal iteration number for PED
-	const double tol = 1e-14; // torlearance for PED	
+	const double tol = 1e-13; // torlearance for PED	
 	const bool rewrite = false;
 	const int trunc = 10;
 

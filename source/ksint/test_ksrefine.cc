@@ -87,11 +87,11 @@ int main()
 	if(ppType.compare("ppo") == 0) NN = 840;
 	else NN = 834;
 
-	const int MaxN = 25;
+	const int MaxN = 300;
 	const double tol = 1e-14;
 	const int M = 10;
 
-	for(int i = 0; i < NN; i++){
+	for(int i = 56; i < NN; i++){
 	  const int ppId = i+1; 
 	  printf("\n****   ppId = %d   ****** \n", ppId); 
 	  std::tuple<ArrayXd, double, double>
@@ -100,11 +100,11 @@ int main()
 	  double T = get<1>(pp);
 	  double s = get<2>(pp); 
 
-	  const int nstp = ceil(ceil(T/0.005)/M)*M;
+	  const int nstp = round(T/0.1/M)*M;
 	  KSrefine ksrefine(Nks, L);
 	  tuple<VectorXd, double, double> 
 	    p = ksrefine.findPO(a, T, nstp, M, ppType,
-				0.1, -s/L*2*M_PI, MaxN, tol, true, false);
+				0.1, -s/L*2*M_PI, MaxN, tol, false, false);
 	  KS ks(Nks, get<1>(p), L); 
 	  ArrayXXd aa = ks.intg(get<0>(p), nstp);
 	  double r(0);

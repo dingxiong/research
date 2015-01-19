@@ -146,15 +146,15 @@ int main(int argc, char **argv)
 	int rank, num;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num);
-	printf("MPI : %d \/ %d \n", rank, num);
 	int inc = ceil( (double)NN / num);
 	int istart = rank * inc;
 	int iend = min( (rank+1) * inc, NN);
+	printf("MPI : %d / %d; range : %d - %d \n", rank, num, istart, iend);
 	////////////////////////////////////////////////////////////
 
 	for(int i = istart; i < iend; i++){
 	  const int ppId = i+1; 
-	  cout<< ppType; printf("\n****  ppId = %d   ****** \n", ppId); 
+	  printf("\n****  ppId = %d   ****** \n", ppId); 
 	  std::tuple<ArrayXd, double, double, double, double>
 	    pp = readks.readKSinit(ppType, ppId);	
 	  ArrayXd &a = get<0>(pp); 
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 	  else
 	    r = (ks.Rotation(aa.rightCols(1), get<2>(p)) - aa.col(0)).matrix().norm();
 	  
-	  printf("r = %g\n", r);
+	  printf("r = %g for %s ppId = %d \n", r, ppType.c_str(), ppId);
 	  readks.writeKSinit("../../data/ks22h001t120x64_v3.h5", ppType, ppId, 
 			     make_tuple(get<0>(p), get<1>(p)*nstp, nstp, r, -L/(2*M_PI)*get<2>(p))
 			     );

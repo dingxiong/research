@@ -1,10 +1,10 @@
-CC = ~/data/hdf5/bin/h5c++
+CC = /nv/hp16/xding35/data/apps/hdf5/bin/h5c++
 AR = ar
 
-OPTIM = -O3 # -msse2 -msse4 # -march=corei7
+OPTIM = -O3 -march=native  -msse2 #-msse4 # -march=corei7
 INCLUDE = ../../include
 LD = ../../lib
-#EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
+EIGEN = /nv/hp16/xding35/data/apps/eigen/include/eigen3
 
 CFLAGS = -std=c++0x
 LINK = -lksint -lped -lfftw3 -lm
@@ -17,10 +17,10 @@ STATIC = $(addprefix lib, $(SRC:.cc=.a))
 #all : $(SHARED) $(STATIC)
 all : $(STATIC)
 $(SHARED): $(SRC)
-	$(CC) -shared -fPIC $(CFLAGS) $(OPTIM) -I$(INCLUDE) \
+	$(CC) -shared -fPIC $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) \
 	-L$(LD) $^ -o $@ $(LINK)
 $(SRC:.cc=.o) : $(SRC)
-	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) $^ \
+	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ \
 	$(LINK)
 $(STATIC): $(SRC:.cc=.o)
 	$(AR) crs $@ $^

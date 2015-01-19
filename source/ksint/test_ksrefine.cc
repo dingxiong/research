@@ -90,8 +90,8 @@ int main()
 	const int MaxN = 300;
 	const double tol = 1e-14;
 	const int M = 10;
-
-	for(int i = 56; i < NN; i++){
+#pragma omp parallel for
+	for(int i = 0; i < NN; i++){
 	  const int ppId = i+1; 
 	  printf("\n****   ppId = %d   ****** \n", ppId); 
 	  std::tuple<ArrayXd, double, double>

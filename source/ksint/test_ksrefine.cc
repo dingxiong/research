@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     case 1: // test multiF(). For rpo, the shift should be reversed.
       {
 	string fileName("../../data/ks22h02t100");
-	string ppType("rpo");
+	string ppType("ppo");
 	const int ppId = 1;
 
 	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5");
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 	const int Nks = 64;
 	const int N = Nks - 2;
 	const double L = 22;
-	string fileName("../../data/ks22h1t120x64_v2");
+	string fileName("../../data/ks22h02t120x64");
 	string ppType("rpo");
 	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
 	
@@ -154,17 +154,17 @@ int main(int argc, char **argv)
 
 	for(int i = istart; i < iend; i++){
 	  const int ppId = i+1; 
-	  printf("\n****  ppId = %d   ****** \n", ppId); 
+	  // printf("\n****  ppId = %d   ****** \n", ppId); 
 	  std::tuple<ArrayXd, double, double, double, double>
 	    pp = readks.readKSinit(ppType, ppId);	
 	  ArrayXd &a = get<0>(pp); 
 	  double T = get<1>(pp);
 	  int nstp = (int) get<2>(pp);
-	  double r = get<3>(pp);  printf("r = %g\n", r);
+	  double r = get<3>(pp);  // printf("r = %g\n", r);
 	  double s = get<4>(pp); 
 
 	  double hinit = T / nstp;
-	  nstp *= 5;
+	  nstp *= 4;
 	  KSrefine ksrefine(Nks, L);
 	  tuple<VectorXd, double, double> 
 	    p = ksrefine.findPO(a, T, nstp, M, ppType,
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 	    r = (ks.Rotation(aa.rightCols(1), get<2>(p)) - aa.col(0)).matrix().norm();
 	  
 	  printf("r = %g for %s ppId = %d \n", r, ppType.c_str(), ppId);
-	  readks.writeKSinit("../../data/ks22h001t120x64_v3.h5", ppType, ppId, 
+	  readks.writeKSinit("../../data/ks22h001t120x64_v5.h5", ppType, ppId, 
 			     make_tuple(get<0>(p), get<1>(p)*nstp, nstp, r, -L/(2*M_PI)*get<2>(p))
 			     );
 	}

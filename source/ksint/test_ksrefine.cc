@@ -128,8 +128,8 @@ int main(int argc, char **argv)
 	const int Nks = 64;
 	const int N = Nks - 2;
 	const double L = 22;
-	string fileName("../../data/ks22h02t120x64");
-	string ppType("rpo");
+	string fileName("../../data/ks22h001t120x64_v1");
+	string ppType("ppo");
 	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
 	
 	int NN(0);
@@ -142,13 +142,16 @@ int main(int argc, char **argv)
 
 	////////////////////////////////////////////////////////////
 	// mpi part 
+	int left = 601;
+	int right = NN;
+	
 	MPI_Init(&argc, &argv);
 	int rank, num;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num);
-	int inc = ceil( (double)NN / num);
-	int istart = rank * inc;
-	int iend = min( (rank+1) * inc, NN);
+	int inc = ceil( (double)(right - left) / num);
+	int istart = left + rank * inc;
+	int iend = min( left + (rank+1) * inc, right);
 	printf("MPI : %d / %d; range : %d - %d \n", rank, num, istart, iend);
 	////////////////////////////////////////////////////////////
 
@@ -164,7 +167,7 @@ int main(int argc, char **argv)
 	  double s = get<4>(pp); 
 
 	  double hinit = T / nstp;
-	  nstp *= 4;
+	  // nstp *= 5;
 	  KSrefine ksrefine(Nks, L);
 	  tuple<VectorXd, double, double> 
 	    p = ksrefine.findPO(a, T, nstp, M, ppType,
@@ -178,7 +181,7 @@ int main(int argc, char **argv)
 	    r = (ks.Rotation(aa.rightCols(1), get<2>(p)) - aa.col(0)).matrix().norm();
 	  
 	  printf("r = %g for %s ppId = %d \n", r, ppType.c_str(), ppId);
-	  readks.writeKSinit("../../data/ks22h001t120x64_v5.h5", ppType, ppId, 
+	  readks.writeKSinit("../../data/ks22h001t120x64_v3.h5", ppType, ppId, 
 			     make_tuple(get<0>(p), get<1>(p)*nstp, nstp, r, -L/(2*M_PI)*get<2>(p))
 			     );
 	}

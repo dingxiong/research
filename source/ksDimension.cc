@@ -241,16 +241,22 @@ minDistance(const MatrixXd &ergodic, const MatrixXd &aa, const double tolClose, 
 }
 
 
+/** @brief
+ * ve has dimension [N, M*trunc]
+ */
+MatrixXd veTrunc(const MatrixXd ve, const int pos, const int trunc = 0){
+  int Trunc = trunc;
+  if(trunc == 0) Trunc = ve.rows();
 
-MatrixXd veTrunc(const MatrixXd ve, const int pos){
   const int N = ve.rows();
-  const int M = ve.cols() / N;
-  assert(ve.cols()%N == 0);
+  const int M = ve.cols() / Trunc;
+  assert(ve.cols()%M == 0);
   
-  MatrixXd newVe(N, (N-1)*M);
+  MatrixXd newVe(N, (Trunc-1)*M);
   for(size_t i = 0; i < M; i++){
-    newVe.middleCols(i*(N-1), pos) = ve.middleCols(i*N, pos);
-    newVe.middleCols(i*(N-1)+pos, N-1-pos) = ve.middleCols(i*N+pos+1, N-1-pos);
+    newVe.middleCols(i*(Trunc-1), pos) = ve.middleCols(i*Trunc, pos);
+    newVe.middleCols(i*(Trunc-1)+pos, Trunc-1-pos) = 
+      ve.middleCols(i*Trunc+pos+1, Trunc-1-pos);
   }
   return newVe;
 }
@@ -274,17 +280,17 @@ MatrixXd difAngle(const MatrixXd &minDifv, const VectorXi &minIx, const VectorXi
     int ix = minIx(i);
     for(size_t j = 0; j < M2; j++)
       // calculate the angle between the different vector and Floquet subspace.
-      //angle(j, i) = angleSubspace(ve_trunc.middleCols(truncN*ix, subsp(j)),
-      //				  minDifv.col(i));
-      angle(j, i) = angleSpaceVector(ve_trunc.middleCols(truncN*ix, subsp(j)),
-				     minDifv.col(i));
+      angle(j, i) = angleSubspace(ve_trunc.middleCols(truncN*ix, subsp(j)),
+      				  minDifv.col(i));
+    // angle(j, i) = angleSpaceVector(ve_trunc.middleCols(truncN*ix, subsp(j)),
+    // minDifv.col(i));
   }
   return angle;
 }
 
 int main(){
   cout.precision(16);
-  const int Nks = 32;
+  const int Nks = 64;
   const int N = Nks - 2;
   const int N64 = 64;
   const int N62 = 62;
@@ -424,19 +430,25 @@ int main(){
       }
       
     case 4 : // ergodic orbit approache rpo/ppo
+	     // fields need to be changed: ppType ppId, nqr, gTpos, sT, folder
       {
 	////////////////////////////////////////////////////////////
 	// set up the system
-	string fileName("../data/ks22h02t100");
+	string fileName("../data/ks22h001t120x64");
 	string ppType("ppo");
-	const int ppId = 4; 
+	const int ppId = 3; 
+	const int nqr = 10;
+	const int Trunc = 10;
 	const int gTpos = 3; // position of group tangent marginal vector 
-	VectorXi subsp(10); subsp << 3, 4, 5, 7, 9, 11, 13, 15, 21, 28; // subspace indices.
+	VectorXi subsp(7); subsp << 3, 4, 5, 6, 7, 8, 9; // subspace indices.
 	////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////
 	// prepare orbit, vectors
-	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5");
+	ReadKS readks(fileName+".h5",
+		      fileName+"Ex"+to_string(nqr)+".h5", 
+		      fileName+"EVx"+to_string(nqr)+".h5", N, Nks);
+	// ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5");
 	std::tuple<ArrayXd, double, double, double, double>
 	  pp = readks.readKSinit(ppType, ppId);	
 	ArrayXd &a = get<0>(pp); 
@@ -446,36 +458,46 @@ int main(){
 	double s = get<4>(pp);
   	MatrixXd eigVals = readks.readKSe(ppType, ppId); 
 	MatrixXd eigVecs = readks.readKSve(ppType, ppId);
-	
+
 	KS ks(Nks, T/nstp, L);
-	ArrayXXd aa = ks.intg(a, nstp);
-	std::pair<MatrixXd, VectorXd> tmp = ks.orbitToSlice(aa); 
-	MatrixXd &aaHat = tmp.first; 
+	ArrayXXd aa = ks.intg(a, nstp, nqr); 
+	ArrayXXd aaWhole, eigVecsWhole;
+	if(ppType.compare("ppo") == 0) {
+	  aaWhole = ks.half2whole(aa.leftCols(aa.cols()-1));
+	  eigVecsWhole = ks.half2whole(eigVecs); // this is correct. Think carefully.
+	} else {
+	  aaWhole = aa.leftCols(aa.cols()-1); // one less
+	  eigVecsWhole = eigVecs;
+	}
+	assert(aaWhole.cols() == eigVecsWhole.cols());
+	std::pair<MatrixXd, VectorXd> tmp = ks.orbitToSlice(aaWhole); 
+	MatrixXd &aaHat = tmp.first;
 	// note here aa has one more column the the Floquet vectors
-	MatrixXd veSlice = ks.veToSliceAll( eigVecs, aa.leftCols(aa.cols()-1) );
-	MatrixXd ve_trunc = veTrunc(veSlice, gTpos);
+	MatrixXd veSlice = ks.veToSliceAll( eigVecsWhole, aaWhole, Trunc);
+	MatrixXd ve_trunc = veTrunc(veSlice, gTpos, Trunc);
 	////////////////////////////////////////////////////////////
 	
 	////////////////////////////////////////////////////////////
 	// choose experiment parameters & do experiment
 	const double h = 0.1;
-
 	const double sT = 30;
 	const double tolClose = 0.1;
 	const int MaxSteps = floor(2000/h);
 	const int MaxT = 10000;
+	string folder = "./case4ppo3x10sT30/";
 	KS ks2(Nks, h, L); 
 	srand(time(NULL));
 	ArrayXd a0(0.1 * ArrayXd::Random(N));
 	
 	const int fileNum = 5;
-	string strf[fileNum] = {"angle_", "dis_", "difv_", "indexPo_", "No_"};
+	string strf[fileNum] = {"angle", "dis", "difv", "indexPo", "No"};
 	ofstream saveName[fileNum];	
 	for (size_t i = 0; i < fileNum; i++) {
-	  saveName[i].open(strf[i] + ppType + to_string(ppId), ios::trunc);
+	  saveName[i].open(folder + strf[i], ios::trunc);
 	  saveName[i].precision(16);
 	} 
-
+	
+	int accum = 0;
 	for(size_t i = 0; i < MaxT; i++){
 	  std::cout << "********** i = " << i << "**********"<< std::endl;
 	  ArrayXXd ergodic = ks2.intg(a0, MaxSteps); a0 = ergodic.rightCols(1);
@@ -483,15 +505,14 @@ int main(){
 	  MatrixXd &ergodicHat = tmp.first;
 	  // be careful about the size of aaHat
 	  std::tuple<MatrixXd, VectorXi, VectorXi, VectorXd> 
-	    dis = minDistance(ergodicHat, aaHat.leftCols(aaHat.cols()-1), tolClose,
-			      (int)(sT/h) );
+	    dis = minDistance(ergodicHat, aaHat, tolClose, (int)(sT/h) );
 	  MatrixXd &minDifv = std::get<0>(dis); 
 	  VectorXi &minIndexErgodic = std::get<1>(dis);
 	  VectorXi &minIndexPo = std::get<2>(dis); 
 	  VectorXd &minDis = std::get<3>(dis);
-	  MatrixXd angle = difAngle(minDifv, minIndexPo, subsp, ve_trunc, N-1);
-	  if(angle.cols() > 0) printf("angle size = %ld x %ld\n", angle.rows(),
-				      angle.cols());
+	  MatrixXd angle = difAngle(minDifv, minIndexPo, subsp, ve_trunc, Trunc-1);
+	  if(angle.cols() > 0) printf("angle size = %ld x %ld, instance %d \n", 
+				      angle.rows(), angle.cols(), ++accum);
 
 	  if(angle.cols() != 0) {
 	    saveName[0] << angle.transpose() << endl;
@@ -503,7 +524,6 @@ int main(){
 	}
 	for (size_t i = 0; i < fileNum; i++)  saveName[i].close();
 	////////////////////////////////////////////////////////////
-	
 	break;
       }
       
@@ -511,14 +531,14 @@ int main(){
 	    // not using FVs, but OVs. OVs is rotated to slice.
       {
 	//////////////////////////////////////////////////
-	string fileName("../data/ks22h02t100");
+	string fileName("../data/ks22h001t120x64");
 	string ppType("ppo");
 	const int ppId = 4; 
 	VectorXi subsp(10); subsp << 4, 5, 6, 7, 8, 9, 10, 12, 16, 28;
 
 	//////////////////////////////////////////////////
 	// prepare orbit, vectors
-	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5");
+	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks);
 	std::tuple<ArrayXd, double, double, double, double>
 	  pp = readks.readKSinit(ppType, ppId);	
 	ArrayXd &a = get<0>(pp); 
@@ -528,7 +548,7 @@ int main(){
 	double s = get<4>(pp);
 	
 	KS ks(Nks, T/nstp, L);
-	pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp);
+	pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp, 5, 5);
 	ArrayXXd aaWhole;
 	if(ppType.compare("ppo") == 0)
 	  aaWhole = ks.half2whole(tmp.first.leftCols(tmp.first.cols()-1));
@@ -546,7 +566,7 @@ int main(){
 	  daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
 	else // R*J for rpo
 	  daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
-	pair<MatrixXd, vector<int> > psd = ped.PerSchur(daa, 10000, 1e-15, false);
+	pair<MatrixXd, vector<int> > psd = ped.PerSchur(daa, 1000, 1e-15, false);
 	MatrixXd &Q1 = psd.first;
 	int n1 = Q1.rows();
 	int m1 = Q1.cols() / n1;
@@ -575,15 +595,16 @@ int main(){
 	const double tolClose = 0.1;
 	const int MaxSteps = floor(2000/h);
 	const int MaxT = 10000;
+	string folder = "./case7/";
 	KS ks2(Nks, h, L); 
 	srand(time(NULL));
 	ArrayXd a0(0.1 * ArrayXd::Random(N));
 	
 	const int fileNum = 5;
-	string strf[fileNum] = {"angle_", "dis_", "difv_", "indexPo_", "No_"};
+	string strf[fileNum] = {"angle", "dis", "difv", "indexPo", "No"};
 	ofstream saveName[fileNum];	
 	for (size_t i = 0; i < fileNum; i++) {
-	  saveName[i].open(strf[i] + ppType + to_string(ppId), ios::trunc);
+	  saveName[i].open(folder + strf[i], ios::trunc);
 	  saveName[i].precision(16);
 	} 
 
@@ -594,8 +615,7 @@ int main(){
 	  MatrixXd &ergodicHat = tmp.first;
 	  // be careful about the size of aaHat
 	  std::tuple<MatrixXd, VectorXi, VectorXi, VectorXd> 
-	    dis = minDistance(ergodicHat, aaHat, tolClose,
-			      (int)(sT/h) );
+	    dis = minDistance(ergodicHat, aaHat, tolClose, (int)(sT/h) );
 	  MatrixXd &minDifv = std::get<0>(dis); 
 	  VectorXi &minIndexErgodic = std::get<1>(dis);
 	  VectorXi &minIndexPo = std::get<2>(dis); 
@@ -752,8 +772,8 @@ int main(){
 	//////////////////////////////////////////////////
 #if 0
 	string fileName("../data/ks22h02t100");
-	string ppType("ppo");
-	const int ppId = 1; 
+	string ppType("rpo");
+	const int ppId = 3; 
 	
 	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5");
 	std::tuple<ArrayXd, double, double, double, double>
@@ -767,8 +787,8 @@ int main(){
 	KS ks(Nks, T/nstp, L);
 # endif			
 	string fileName("../data/ks22h001t120x64");
-	string ppType("ppo");
-	const int ppId = 4;
+	string ppType("rpo");
+	const int ppId = 8;
 	
 	ReadKS readks(fileName+".h5", fileName+".h5", fileName+".h5", N62, N64);
 	std::tuple<ArrayXd, double, double, double, double>
@@ -793,7 +813,7 @@ int main(){
 	  daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
 
 
-	switch (1) {
+	switch (2) {
 	case 1:
 	  {
 	    pair<MatrixXd, vector<int> > psd = ped.PerSchur(daa, 3000, 1e-15, true);

@@ -321,7 +321,7 @@ ReadKS::calKSFloquet(const string ppType, const int ppId,
   
   // solve the Jacobian of this po.
   KS ks(Nks, T/nstp, L);
-  pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp, nqr, nqr);
+  pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp, 1, nqr);
   MatrixXd daa = tmp.second;
   
   // calculate the Flqouet exponents and vectors.

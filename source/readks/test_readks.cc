@@ -10,11 +10,13 @@
  * -O3 -march=corei7 -msse4 -msse2
  */
 #include "readks.hpp"
+#include <mpi.h>
 #include <iostream>
+#include <cstdio>
 using namespace std;
 using namespace Eigen;
 
-int main()
+int main(int argc, char **argv)
 {
 
   cout.precision(16);
@@ -173,31 +175,54 @@ int main()
 	break;
       }
 
-   case 6: // calculate the first 50 ppos/rpos for N = 64
-	   // for diffferent spacing
+   case 6: // calculate the  Floquet vectors/spectrum ppos/rpos for N = 64
       {
 	const double L = 22;
 	const int Nks = 64;
 	const int N = Nks - 2;
-	// string fileName("../../data/ks22h001t120x64");
-	string fileName("../../data/ks22h001t50x64");
-	string ppType("rpo");
-	const int nqr = 5;
-	ReadKS readks(fileName+".h5", fileName+"xxEx"+to_string(nqr)+".h5",
-		      fileName+"xxEVx"+to_string(nqr)+".h5", N, Nks, L);
+	string fileName("../../data/ks22h001t120x64");
+	string ppType("ppo");
+	const int nqr = 5; // spacing 
+	ReadKS readks(fileName+".h5", fileName+"E.h5",
+		      fileName+"EV.h5", N, Nks, L);
 	
 	const int MaxN = 8000;  // maximal iteration number for PED
-	const double tol = 1e-13; // torlearance for PED	
-	const bool rewrite = false;
-	const int trunc = 10;
+	const double tol = 1e-15; // torlearance for PED	
+	const bool rewrite = false; 
+	const int trunc = 30; // number of vectors
 
-	int NN = 50;
-
-	for(size_t ppId = 33; ppId < NN+1; ppId++){
-	  printf("********* ppId = %zd ***********\n", ppId);
+	int NN(0);
+	if(ppType.compare("ppo") == 0) NN = 840;
+	else NN = 834;
+	
+	////////////////////////////////////////////////////////////
+	// mpi part 
+	int left = 0;
+	int right = 3;
+	 
+	MPI_Init(&argc, &argv);
+	int rank, num;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &num);
+	int inc = ceil( (double)(right - left) / num);
+	int istart = left + rank * inc;
+	int iend = min( left + (rank+1) * inc, right);
+	printf("MPI : %d / %d; range : %d - %d \n", rank, num, istart, iend); 
+	string output = ppType + to_string(rank);
+	////////////////////////////////////////////////////////////
+	
+	for(size_t i = istart; i < iend; i++){
+	  const size_t ppId = i+1;
+	  freopen (output.c_str(), "w", stderr);
+	  fprintf(stderr, "********* ppId = %zd ***********\n", ppId);
 	  readks.calKSOneOrbit(ppType, ppId, MaxN, tol, rewrite, nqr, trunc);
+	  fclose(stderr);
 	}
 	
+	////////////////////////////////////////////////////////////
+	MPI_Finalize();
+	////////////////////////////////////////////////////////////
+
 	break;
       }
 
@@ -207,10 +232,10 @@ int main()
 	const int Nks = 64;
 	const int N = Nks - 2;
 	// string fileName("../../data/ks22h001t120x64");
-	string fileName("../../data/ks22h001t50x64");
-	string ppType("rpo");
-	const int ppId = 22;
-	vector<double> nqr{15, 18, 20, 30, 60, 90};
+	string fileName("../../data/ks22h005t120x64");
+	string ppType("ppo");
+	const int ppId = 1;
+	vector<double> nqr{1, 5, 10};
 	
 	const int MaxN = 5000;
 	const double tol = 1e-15;

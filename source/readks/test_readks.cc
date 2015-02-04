@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 	const int Nks = 64;
 	const int N = Nks - 2;
 	string fileName("../../data/ks22h001t120x64");
-	string ppType("ppo");
+	string ppType("rpo");
 	const int nqr = 5; // spacing 
 	ReadKS readks(fileName+".h5", fileName+"E.h5",
 		      fileName+"EV.h5", N, Nks, L);
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 	////////////////////////////////////////////////////////////
 	// mpi part 
 	int left = 0;
-	int right = 3;
+	int right = 2;
 	 
 	MPI_Init(&argc, &argv);
 	int rank, num;
@@ -208,14 +208,15 @@ int main(int argc, char **argv)
 	int istart = left + rank * inc;
 	int iend = min( left + (rank+1) * inc, right);
 	printf("MPI : %d / %d; range : %d - %d \n", rank, num, istart, iend); 
-	string output = ppType + to_string(rank);
 	////////////////////////////////////////////////////////////
 	
 	for(size_t i = istart; i < iend; i++){
 	  const size_t ppId = i+1;
+	  string output = ppType + to_string(ppId);
 	  freopen (output.c_str(), "w", stderr);
 	  fprintf(stderr, "********* ppId = %zd ***********\n", ppId);
-	  readks.calKSOneOrbit(ppType, ppId, MaxN, tol, rewrite, nqr, trunc);
+	  // readks.calKSOneOrbit(ppType, ppId, MaxN, tol, rewrite, nqr, trunc);
+	  readks.calKSOneOrbitOnlyE(ppType, ppId, MaxN, tol, rewrite, nqr);
 	  fclose(stderr);
 	}
 	

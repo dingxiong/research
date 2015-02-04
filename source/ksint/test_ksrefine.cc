@@ -128,8 +128,8 @@ int main(int argc, char **argv)
 	const int Nks = 64;
 	const int N = Nks - 2;
 	const double L = 22;
-	string fileName("../../data/ks22h001t120x64_v1");
-	string ppType("ppo");
+	string fileName("../../data/ks22h001t120x64_v2");
+	string ppType("rpo");
 	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
 	
 	int NN(0);
@@ -142,8 +142,8 @@ int main(int argc, char **argv)
 
 	////////////////////////////////////////////////////////////
 	// mpi part 
-	int left = 601;
-	int right = NN;
+	int left = 0;
+	int right = 500;
 	
 	MPI_Init(&argc, &argv);
 	int rank, num;
@@ -171,7 +171,7 @@ int main(int argc, char **argv)
 	  KSrefine ksrefine(Nks, L);
 	  tuple<VectorXd, double, double> 
 	    p = ksrefine.findPO(a, T, nstp, M, ppType,
-				hinit, -s/L*2*M_PI, MaxN, tol, false, false);
+				hinit, -s/L*2*M_PI, MaxN, tol, false, true);
 	  KS ks(Nks, get<1>(p), L); 
 	  ArrayXXd aa = ks.intg(get<0>(p), nstp);
 	  // double r(0);

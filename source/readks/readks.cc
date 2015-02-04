@@ -339,6 +339,49 @@ ReadKS::calKSFloquet(const string ppType, const int ppId,
   return make_pair(eigvals, eigvecs);
 }
 
+MatrixXd
+ReadKS::calKSFloquetOnlyE(const string ppType, const int ppId, 
+			  const int MaxN /* = 80000 */,
+			  const double tol /* = 1e-15 */,
+			  const int nqr /* = 1 */){
+  // get the initla condition of the orbit
+  tuple<ArrayXd, double, double, double, double> 
+    pp = readKSinit(ppType, ppId);
+  ArrayXd &a = get<0>(pp); 
+  double T = get<1>(pp);
+  int nstp = (int)get<2>(pp);
+  double r = get<3>(pp);
+  double s = get<4>(pp);
+  
+  // solve the Jacobian of this po.
+  KS ks(Nks, T/nstp, L);
+  pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a, nstp, 1, nqr);
+  MatrixXd daa = tmp.second;
+  
+  // calculate the Flqouet exponents and vectors.
+  PED ped;
+  ped.reverseOrderSize(daa); // reverse order.
+  if(ppType.compare("ppo") == 0)
+    daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+  else // R*J for rpo
+    daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
+  MatrixXd eigvals = ped.EigVals(daa, MaxN, tol, false);
+  eigvals.col(0) = eigvals.col(0).array()/T;
+
+  return eigvals;
+}
+
+void 
+ReadKS::calKSOneOrbitOnlyE( const string ppType, const int ppId,
+			    const int MaxN /* = 80000 */,
+			    const double tol /* = 1e-15 */,
+			    const bool rewrite /* = false */,
+			    const int nqr /* = 1 */){
+  MatrixXd eigvals = calKSFloquetOnlyE(ppType, ppId, MaxN, tol, nqr);
+  
+  writeKSe(ppType, ppId, eigvals, rewrite);
+  	
+}
 
 void 
 ReadKS::calKSOneOrbit( const string ppType, const int ppId,

@@ -878,6 +878,24 @@ void PED::reverseOrderSize(MatrixXd &J){
   J.resize(N2, N2*M);
 }
 
+void PED::Trans(MatrixXd &J){
+  const int N = J.rows();
+  const int M = J.cols() / N;
+  assert (M*N == J.cols());
+  
+  for(size_t i = 0; i < M/2; i++){
+    MatrixXd tmp = J.middleCols(i*N, N);
+    J.middleCols(i*N, N) = J.middleCols((M-i-1)*N, N).transpose();
+    J.middleCols((M-i-1)*N, N) = tmp.transpose();
+  }
+  
+  if(M % 2 == 1) { // deal with the middle matrix
+    const int i = M / 2;
+    MatrixXd tmp = J.middleCols(i*N, N);
+    J.middleCols(i*N, N) = tmp.transpose();
+  }
+}
+
 vector<int> 
 PED::truncVec(const vector<int> &v, const int trunc){
   const int n = v.size();

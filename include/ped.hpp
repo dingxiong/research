@@ -111,6 +111,8 @@ public:
   reverseOrder(MatrixXd &J);
   void 
   reverseOrderSize(MatrixXd &J);
+  void 
+  Trans(MatrixXd &J);
   vector<int> 
   truncVec(const vector<int> &v, const int trunc);
 };

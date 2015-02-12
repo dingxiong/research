@@ -190,6 +190,7 @@ int main(int argc, char **argv)
 	const double tol = 1e-15; // torlearance for PED	
 	const bool rewrite = false; 
 	const int trunc = 30; // number of vectors
+	const bool onlyE = true;
 
 	int NN(0);
 	if(ppType.compare("ppo") == 0) NN = 840;
@@ -198,7 +199,7 @@ int main(int argc, char **argv)
 	////////////////////////////////////////////////////////////
 	// mpi part 
 	int left = 0;
-	int right = 2;
+	int right = NN;
 	 
 	MPI_Init(&argc, &argv);
 	int rank, num;
@@ -215,8 +216,11 @@ int main(int argc, char **argv)
 	  string output = ppType + to_string(ppId);
 	  freopen (output.c_str(), "w", stderr);
 	  fprintf(stderr, "********* ppId = %zd ***********\n", ppId);
-	  // readks.calKSOneOrbit(ppType, ppId, MaxN, tol, rewrite, nqr, trunc);
-	  readks.calKSOneOrbitOnlyE(ppType, ppId, MaxN, tol, rewrite, nqr);
+	  if(onlyE)
+	    readks.calKSOneOrbitOnlyE(ppType, ppId, MaxN, tol, rewrite, nqr);
+	  else
+	    readks.calKSOneOrbit(ppType, ppId, MaxN, tol, rewrite, nqr, trunc);
+	  
 	  fclose(stderr);
 	}
 	

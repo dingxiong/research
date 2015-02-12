@@ -11,7 +11,7 @@ typedef Eigen::Triplet<double> Tri;
 int main(){
   //----------------------------------------
 
-  switch(14){
+  switch(15){
     
   case 1 : 
     {
@@ -307,6 +307,7 @@ int main(){
  
       cout << MatrixXd(tmp.first) << endl << endl;
       cout << tmp.second << endl << endl;
+
       break;
 
     }
@@ -344,6 +345,33 @@ int main(){
       cout << EigVecs << endl << endl;
       break;
  
+    }
+    
+  case 15: // test Trans() function
+    {
+      srand(time(NULL));
+      MatrixXd A, B, C, D;
+      A = MatrixXd::Random(4,4);
+      B = MatrixXd::Random(4,4);
+      C = MatrixXd::Random(4,4);
+      D = MatrixXd::Random(4,4); 
+
+      cout << A << endl << endl;
+      cout << B << endl << endl;
+      cout << C << endl << endl;
+      cout << D << endl << endl;
+
+      PED ped;
+      MatrixXd J(4,16);
+      J << A, B, C, D;
+      ped.Trans(J);
+
+      cout << J.leftCols(4) << endl << endl;
+      cout << J.middleCols(4,4) << endl << endl;
+      cout << J.middleCols(8,4) << endl << endl;
+      cout << J.rightCols(4) << endl << endl;
+      
+      break;
     }
 
   default : 

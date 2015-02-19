@@ -39,11 +39,18 @@ public:
   readKSorigin(const std::string &ppType, const int ppId);
   std::tuple<Eigen::ArrayXd, double, double, double, double>
   readKSinit(const std::string &ppType, const int ppId);
+  std::tuple<MatrixXd, double, double, double, double>
+  readKSinitMulti(const std::string fileName, const std::string &ppType, const int ppId);
   void 
   writeKSinit(const std::string fileName, const std::string ppType, 
 	      const int ppId,
 	      const std::tuple<ArrayXd, double, double, double, double> ksinit
 	      );
+  void 
+  writeKSinitMulti(const std::string fileName, const std::string ppType, 
+		   const int ppId,
+		   const std::tuple<MatrixXd, double, double, double, double> ksinit
+		   );
   Eigen::MatrixXd
   readKSe(const std::string &ppType, const int ppId);
   Eigen::MatrixXd

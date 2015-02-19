@@ -141,6 +141,51 @@ ReadKS::readKSinit(const string &ppType, const int ppId){
   
 }
 
+/* @brief read the initial conditions of an orbit which comes out of mutlishooting method  
+ * The difference betwee readKSinitMulti and readKSinit is that
+ * later only read the first point of the orbit.
+ */
+std::tuple<MatrixXd, double, double, double, double>
+ReadKS::readKSinitMulti(const string fileName, const string &ppType, const int ppId){
+  
+  H5File file(fileName, H5F_ACC_RDONLY);
+  string DS = "/" + ppType + "/" + to_string(ppId) + "/";
+
+  string DS_a = DS + "a";
+  DataSet a = file.openDataSet(DS_a);
+  DataSpace ds = a.getSpace();
+  assert(ds.getSimpleExtentNdims() == 2);
+  hsize_t dims[2];
+  int ndims = ds.getSimpleExtentDims(dims, NULL);
+  MatrixXd a0(dims[1], dims[0]);
+  a.read(&a0(0,0), PredType::NATIVE_DOUBLE);
+
+  string DS_T = DS + "T"; 
+  DataSet T = file.openDataSet(DS_T);
+  double T0(0);
+  T.read(&T0, PredType::NATIVE_DOUBLE);
+ 
+  string DS_nstp = DS + "nstp";
+  DataSet nstp = file.openDataSet(DS_nstp);
+  double nstp0(0);
+  nstp.read(&nstp0, PredType::NATIVE_DOUBLE);
+
+  string DS_r = DS + "r";
+  DataSet r = file.openDataSet(DS_r);
+  double r0(0);
+  r.read(&r0, PredType::NATIVE_DOUBLE);
+
+  double s0(0);
+  if(ppType.compare("rpo") == 0){
+    string DS_s = DS + "s";
+    DataSet s = file.openDataSet(DS_s);
+    s.read(&s0, PredType::NATIVE_DOUBLE);    
+  }
+
+  return make_tuple(a0, T0, nstp0, r0, s0);
+  
+}
+
 /** @brief rewrite the refined initial condition
  *
  *  Originally, Ruslan's file has a, T, r for ppo and a, T, r, s for rpo.
@@ -192,6 +237,74 @@ ReadKS::writeKSinit(const string fileName, const string ppType,
   }
 
 }
+
+/** @brief rewrite the refined initial condition from multishooting
+ *
+ * The difference between writeKSinitMulti and writeKSinit is that
+ * the latter only writes the first point on the orbit, but the
+ * former writes all the multishooting points. Also writeKSinitMulti
+ * writes to a total new file.
+ * 
+ *  @param[in] ksinit the update data in order: a, T, nstp, r, s
+ */
+void 
+ReadKS::writeKSinitMulti(const string fileName, const string ppType, 
+			 const int ppId,
+			 const tuple<MatrixXd, double, double, double, double> ksinit
+			 ){
+  const int N = get<0>(ksinit).rows();
+  const int M = get<0>(ksinit).cols();
+  
+  H5File file(fileName, H5F_ACC_RDWR);
+  //check the existence of group "/rpo" ("/ppo")
+  int status = H5Lexists(file.getId(), ("/"+ppType).c_str(), H5P_DEFAULT); 
+  // if not exist, then create it
+  if (status == false) Group gbase(file.createGroup("/"+ppType));
+  Group group(file.createGroup("/"+ppType+"/"+to_string(ppId)));
+  string DS = "/" + ppType + "/" + to_string(ppId) + "/";
+  
+  { // create a
+    string DSitem = DS + "a";
+    hsize_t dim[] = {M, N};
+    DataSpace dsp(2, dim);
+    DataSet item = file.createDataSet(DSitem, PredType::NATIVE_DOUBLE, dsp);
+    item.write(&(get<0>(ksinit)(0,0)), PredType::NATIVE_DOUBLE);
+  }
+  
+  { // create T
+    string DSitem = DS + "T";
+    hsize_t dim[] = {1};
+    DataSpace dsp(1, dim);
+    DataSet item = file.createDataSet(DSitem, PredType::NATIVE_DOUBLE, dsp);
+    item.write(&(get<1>(ksinit)), PredType::NATIVE_DOUBLE);
+  }
+  
+  { // create nstp
+    string DSitem = DS + "nstp";
+    hsize_t dim[] = {1};
+    DataSpace dsp(1, dim);
+    DataSet item = file.createDataSet(DSitem, PredType::NATIVE_DOUBLE, dsp);
+    item.write(&(get<2>(ksinit)), PredType::NATIVE_DOUBLE);
+  }
+
+  { // create r
+    string DSitem = DS + "r";
+    hsize_t dim[] = {1};
+    DataSpace dsp(1, dim);
+    DataSet item = file.createDataSet(DSitem, PredType::NATIVE_DOUBLE, dsp);
+    item.write(&(get<3>(ksinit)), PredType::NATIVE_DOUBLE);
+  }
+
+  if(ppType.compare("rpo") == 0) { // create s
+    string DSitem = DS + "s";
+    hsize_t dim[] = {1};
+    DataSpace dsp(1, dim);
+    DataSet item = file.createDataSet(DSitem, PredType::NATIVE_DOUBLE, dsp);
+    item.write(&(get<4>(ksinit)), PredType::NATIVE_DOUBLE);
+  }
+
+}
+
 /** @brief read Floquet exponents of KS system.
  *
  *  @param[in] ppType periodic type: ppo/rpo

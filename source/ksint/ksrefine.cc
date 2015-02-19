@@ -216,17 +216,18 @@ KSrefine::multishoot(KS &ks, const ArrayXXd &x, const int nstp,
  * @param[in] hinit: the initial time step to get a good starting guess.
  * @param[in] MaxN maximal number of iteration
  * @param[in] tol tolerance of convergence
+ * @return initial condition along the orbit, time step, shift, error
  *
  */
-tuple<VectorXd, double, double>
-KSrefine::findPO(const ArrayXd &a0, const double T, const int Norbit, 
-		 const int M, const string ppType,
-		 const double hinit /* = 0.1*/,
-		 const double th0 /* = 0 */,
-		 const int MaxN /* = 100 */, 
-		 const double tol /* = 1e-14*/, 
-		 const bool Print /* = false */,
-		 const bool isSingle /* = false */){ 
+tuple<MatrixXd, double, double, double>
+KSrefine::findPOmulti(const ArrayXd &a0, const double T, const int Norbit, 
+		      const int M, const string ppType,
+		      const double hinit /* = 0.1*/,
+		      const double th0 /* = 0 */,
+		      const int MaxN /* = 100 */, 
+		      const double tol /* = 1e-14*/, 
+		      const bool Print /* = false */,
+		      const bool isSingle /* = false */){ 
   bool Terminate = false;
   assert(a0.rows() == N - 2 && Norbit % M == 0);
   const int nstp = Norbit/M;
@@ -240,6 +241,7 @@ KSrefine::findPO(const ArrayXd &a0, const double T, const int Norbit,
   ArrayXXd tmpx = ks0.intg(a0, (int)ceil(T/hinit), 
 			(int)floor(T/hinit/M));
   ArrayXXd x = tmpx.leftCols(M); 
+  double err = 0; // error 
   
   for(size_t i = 0; i < MaxN; i++){
     if(Print && i%10 == 0) printf("******  i = %zd/%d  ****** \n", i, MaxN);
@@ -247,7 +249,7 @@ KSrefine::findPO(const ArrayXd &a0, const double T, const int Norbit,
     VectorXd F;
     if(!isSingle) F = multiF(ks, x, nstp, ppType, th);
     else F = multiF(ks, x.col(0), Norbit, ppType, th);
-    double err = F.norm(); 
+    err = F.norm(); 
     if(err < tol){
       fprintf(stderr, "stop at norm(F)=%g for iteration %zd\n", err, i);
       break;
@@ -312,9 +314,22 @@ KSrefine::findPO(const ArrayXd &a0, const double T, const int Norbit,
     if( Terminate )  break;
   }
   
-  return make_tuple(x.col(0), h, th);
+  return make_tuple(x, h, th, err);
 }
 
+std::tuple<VectorXd, double, double>
+KSrefine::findPO(const Eigen::ArrayXd &a0, const double T, const int Norbit, 
+		 const int M, const std::string ppType,
+		 const double hinit /* = 0.1 */,
+		 const double th0 /* = 0 */, 
+		 const int MaxN /* = 100 */, 
+		 const double tol /* = 1e-14 */, 
+		 const bool Print /* = false */,
+		 const bool isSingle /* = false */){
+  tuple<MatrixXd, double, double, double> 
+    tmp = findPOmulti(a0, T, Norbit, M, ppType, hinit, th0, MaxN, tol, Print, isSingle);
+  return make_tuple(std::get<0>(tmp).col(0), std::get<1>(tmp), std::get<2>(tmp));
+}
 
 /*
 pair<MatrixXd, VectorXd> newtonReq(Cqcgl1d &cgl, const ArrayXd &a0, const double w1, const double w2){

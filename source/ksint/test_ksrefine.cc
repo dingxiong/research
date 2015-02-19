@@ -1,3 +1,8 @@
+/* How to compile:
+ * mpicxx test_ksrefine.cc -cxx=h5c++ -O3  -L ../../lib -I ../../include
+ * -I $XDAPPS/eigen/include/eigen3 -std=c++0x
+ * -lreadks -lksrefine -lped -lksint -lfftw3 -lm -std=c++0x
+ * */
 #include "ksrefine.hpp"
 #include "ksint.hpp"
 #include "readks.hpp"
@@ -10,7 +15,7 @@ using namespace Eigen;
 int main(int argc, char **argv)
 {
   cout.precision(16);
-  switch (4) 
+  switch (3) 
     {
     case 1: // test multiF(). For rpo, the shift should be reversed.
       {
@@ -44,7 +49,7 @@ int main(int argc, char **argv)
 	const double L = 22;
 	string fileName("../../data/ks22h1t120x64");
 	string ppType("rpo");
-	const int ppId = 15;
+	const int ppId = 23;
 
 	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
 	std::tuple<ArrayXd, double, double>
@@ -55,22 +60,19 @@ int main(int argc, char **argv)
 
 	const int nstp = ceil(ceil(T/0.001)/10)*10; cout << nstp << endl;
 	KSrefine ksrefine(Nks, L);
-	tuple<VectorXd, double, double> 
-	  p = ksrefine.findPO(a, T, nstp, 10, ppType,
-			      0.1, -s/L*2*M_PI, 30, 1e-14, true, false);
-	cout << get<0>(p) << endl;
+	tuple<MatrixXd, double, double, double> 
+	  p = ksrefine.findPOmulti(a, T, nstp, 10, ppType,
+				   0.1, -s/L*2*M_PI, 20, 1e-14, true, false);
+	cout << get<0>(p).cols() << endl;
+	cout << get<1>(p) * nstp << endl;
 	cout << get<2>(p) << endl;
+	cout << get<3>(p) << endl;
 
 	KS ks(Nks, get<1>(p), L);
-	ArrayXXd aa = ks.intg(get<0>(p), nstp);
-	double r(0);
-	if(ppType.compare("ppo") == 0)
-	  r = (ks.Reflection(aa.rightCols(1)) - aa.col(0)).matrix().norm();
-	else
-	  r = (ks.Rotation(aa.rightCols(1), get<2>(p)) - aa.col(0)).matrix().norm();
-	
-	cout << r << endl;
-
+	VectorXd df = ksrefine.multiF(ks, get<0>(p), nstp/10, ppType, get<2>(p));
+	VectorXd df2 = ksrefine.multiF(ks, get<0>(p).col(0), nstp, ppType, get<2>(p));
+	cout << df.norm() << endl;
+	cout << df2.norm() << endl;
 	break;
 	  
       }
@@ -81,18 +83,18 @@ int main(int argc, char **argv)
 	const int N = Nks - 2;
 	const double L = 22;
 	string fileName("../../data/ks22h1t120x64");
-	string ppType("ppo");
+	string ppType("rpo");
 	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
 	
 	int NN(0);
 	if(ppType.compare("ppo") == 0) NN = 840;
 	else NN = 834;
 
-	const int MaxN = 1500;
+	const int MaxN = 30;
 	const double tol = 1e-14;
 	const int M = 10;
 
-	for(int i = 790; i < 791; i++){
+	for(int i = 0; i < NN; i++){
 	  const int ppId = i+1; 
 	  printf("\n****   ppId = %d   ****** \n", ppId); 
 	  std::tuple<ArrayXd, double, double>
@@ -101,23 +103,17 @@ int main(int argc, char **argv)
 	  double T = get<1>(pp);
 	  double s = get<2>(pp); 
 
-	  const int nstp = round(T/0.1/M)*M;
+	  const int nstp = ceil(ceil(T/0.001)/10)*10;
 	  KSrefine ksrefine(Nks, L);
-	  tuple<VectorXd, double, double> 
-	    p = ksrefine.findPO(a, T, nstp, M, ppType,
-				0.1, -s/L*2*M_PI, MaxN, tol, false, false);
-	  KS ks(Nks, get<1>(p), L); 
-	  ArrayXXd aa = ks.intg(get<0>(p), nstp);
-	  double r(0);
-	  if(ppType.compare("ppo") == 0)
-	    r = (ks.Reflection(aa.rightCols(1)) - aa.col(0)).matrix().norm();
-	  else
-	    r = (ks.Rotation(aa.rightCols(1), get<2>(p)) - aa.col(0)).matrix().norm();
+	  tuple<MatrixXd, double, double, double> 
+	    p = ksrefine.findPOmulti(a, T, nstp, M, ppType,
+				     0.1, -s/L*2*M_PI, MaxN, tol, false, false);
 	  
-	  printf("r = %g\n", r);
-	  readks.writeKSinit("../../data/ks22h001t120x64_v4.h5", ppType, ppId, 
-			     make_tuple(get<0>(p), get<1>(p)*nstp, nstp, r, -L/(2*M_PI)*get<2>(p))
-			     );
+	  printf("r = %g for %s ppId = %d \n", get<3>(p), ppType.c_str(), ppId);
+	  readks.writeKSinitMulti("../../data/tmp.h5", ppType, ppId, 
+				  make_tuple(get<0>(p), get<1>(p)*nstp, nstp, 
+					     get<3>(p), -L/(2*M_PI)*get<2>(p))
+				  );
 	}
 	
 	break;
@@ -128,7 +124,7 @@ int main(int argc, char **argv)
 	const int Nks = 64;
 	const int N = Nks - 2;
 	const double L = 22;
-	string fileName("../../data/ks22h001t120x64_v2");
+	string fileName("../../data/ks22h001t120x64");
 	string ppType("rpo");
 	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
 	
@@ -136,14 +132,14 @@ int main(int argc, char **argv)
 	if(ppType.compare("ppo") == 0) NN = 840;
 	else NN = 834;
 
-	const int MaxN = 300;
+	const int MaxN = 100;
 	const double tol = 1e-14;
 	const int M = 10;
 
 	////////////////////////////////////////////////////////////
 	// mpi part 
 	int left = 0;
-	int right = 500;
+	int right = NN;
 	
 	MPI_Init(&argc, &argv);
 	int rank, num;
@@ -169,21 +165,15 @@ int main(int argc, char **argv)
 	  double hinit = T / nstp;
 	  // nstp *= 5;
 	  KSrefine ksrefine(Nks, L);
-	  tuple<VectorXd, double, double> 
-	    p = ksrefine.findPO(a, T, nstp, M, ppType,
-				hinit, -s/L*2*M_PI, MaxN, tol, false, true);
-	  KS ks(Nks, get<1>(p), L); 
-	  ArrayXXd aa = ks.intg(get<0>(p), nstp);
-	  // double r(0);
-	  if(ppType.compare("ppo") == 0)
-	    r = (ks.Reflection(aa.rightCols(1)) - aa.col(0)).matrix().norm();
-	  else
-	    r = (ks.Rotation(aa.rightCols(1), get<2>(p)) - aa.col(0)).matrix().norm();
+	  tuple<MatrixXd, double, double, double> 
+	    p = ksrefine.findPOmulti(a, T, nstp, M, ppType,
+				     hinit, -s/L*2*M_PI, MaxN, tol, false, true);
 	  
-	  printf("r = %g for %s ppId = %d \n", r, ppType.c_str(), ppId);
-	  readks.writeKSinit("../../data/ks22h001t120x64_v3.h5", ppType, ppId, 
-			     make_tuple(get<0>(p), get<1>(p)*nstp, nstp, r, -L/(2*M_PI)*get<2>(p))
-			     );
+	  printf("r = %g for %s ppId = %d \n", get<3>(p), ppType.c_str(), ppId);
+	  readks.writeKSinitMulti("../../data/tmp.h5", ppType, ppId, 
+				  make_tuple(get<0>(p), get<1>(p)*nstp, nstp, 
+					     get<3>(p), -L/(2*M_PI)*get<2>(p))
+				  );
 	}
 	
 	////////////////////////////////////////////////////////////

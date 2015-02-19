@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 {
 
   cout.precision(16);
-  switch (6)
+  switch (8)
     {
       
     case 1: // calculate all the orbits that converged for 100 - 120
@@ -255,6 +255,16 @@ int main(int argc, char **argv)
 	
 	break;
       }
+      
+    case 8: // test writeKSinitMulti()
+      {
+	ReadKS readks("a", "b", "c", 10,10);
+	MatrixXd a = MatrixXd::Random(10, 10);
+	readks.writeKSinitMulti("tmp.h5", "rpo", 1, 
+				make_tuple(a, 1, 3, 4, 6));
+	break;
+      }
+
     default:
       {
 	cout << "Please indicate the right #" << endl;

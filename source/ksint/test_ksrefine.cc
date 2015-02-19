@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 	const int N = Nks - 2;
 	const double L = 22;
 	string fileName("../../data/ks22h1t120x64");
-	string ppType("rpo");
+	string ppType("ppo");
 	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
 	
 	int NN(0);
@@ -94,9 +94,23 @@ int main(int argc, char **argv)
 	const double tol = 1e-14;
 	const int M = 10;
 
-	for(int i = 0; i < NN; i++){
+	////////////////////////////////////////////////////////////
+	// mpi part 
+	int left = 0;
+	int right = NN;
+	
+	MPI_Init(&argc, &argv);
+	int rank, num;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &num);
+	int inc = ceil( (double)(right - left) / num);
+	int istart = left + rank * inc;
+	int iend = min( left + (rank+1) * inc, right);
+	printf("MPI : %d / %d; range : %d - %d \n", rank, num, istart, iend);
+	////////////////////////////////////////////////////////////
+
+	for(int i = istart; i < iend; i++){
 	  const int ppId = i+1; 
-	  printf("\n****   ppId = %d   ****** \n", ppId); 
 	  std::tuple<ArrayXd, double, double>
 	    pp = readks.readKSorigin(ppType, ppId);	
 	  ArrayXd &a = get<0>(pp); 
@@ -115,6 +129,10 @@ int main(int argc, char **argv)
 					     get<3>(p), -L/(2*M_PI)*get<2>(p))
 				  );
 	}
+
+	////////////////////////////////////////////////////////////
+	MPI_Finalize();
+	////////////////////////////////////////////////////////////
 	
 	break;
       }

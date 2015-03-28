@@ -452,6 +452,49 @@ ReadKS::calKSFloquet(const string ppType, const int ppId,
   return make_pair(eigvals, eigvecs);
 }
 
+pair<MatrixXd, MatrixXd>
+ReadKS::calKSFloquetMulti(const string fileName, 
+			  const string ppType, const int ppId, 
+			  const int MaxN /* = 80000 */,
+			  const double tol /* = 1e-15 */,
+			  const int nqr /* = 1 */,
+			  const int trunc /* = 0 */){
+  tuple<MatrixXd, double, double, double, double>
+    pp = readKSinitMulti(fileName, ppType, ppId);
+  MatrixXd &a = get<0>(pp);
+  double T = get<1>(pp);
+  int nstp = (int)get<2>(pp);
+  double r = get<3>(pp);
+  double s = get<4>(pp);
+  
+  const int N = a.rows();
+  const int M = a.cols();
+  const int nstp1 = nstp / M;
+  assert(nstp1*M == nstp && nstp1%nqr == 0);
+
+  // solve the Jacobian of this po.
+  KS ks(N+2, T/nstp, L);
+  MatrixXd daa(N*N, nstp/nqr);
+  for (int i = 0; i < M; i++) {
+    pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a.col(i), nstp1, nstp1, nqr);
+    daa.middleCols(nstp1/nqr * i, nstp1/nqr) = tmp.second;
+  }
+  
+  // calculate the Floquet exponents and vectors.
+  PED ped;
+  ped.reverseOrderSize(daa);
+  if(ppType.compare("ppo") == 0)
+    daa.leftCols(N) = ks.Reflection(daa.leftCols(N));
+  else
+    daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
+  pair<MatrixXd, MatrixXd> eigv = ped.EigVecs(daa, MaxN, tol, false, trunc);
+  MatrixXd &eigvals = eigv.first;
+  eigvals.col(0) = eigvals.col(0).array()/T;
+  MatrixXd &eigvecs = eigv.second;
+
+  return make_pair(eigvals, eigvecs);
+}
+			  
 MatrixXd
 ReadKS::calKSFloquetOnlyE(const string ppType, const int ppId, 
 			  const int MaxN /* = 80000 */,

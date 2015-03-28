@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 {
 
   cout.precision(16);
-  switch (8)
+  switch (9)
     {
       
     case 1: // calculate all the orbits that converged for 100 - 120
@@ -265,6 +265,67 @@ int main(int argc, char **argv)
 	break;
       }
 
+    case 9: // calculate the FE for multishooting initial data
+      {
+	const double L = 22;
+	const int Nks = 64;
+	const int N = Nks - 2;
+	string fileName("../../data/ks22h001t120x64");
+	string ppType("rpo");
+	const int nqr = 4; // spacing 
+	ReadKS readks(fileName+".h5", fileName+"E.h5",
+		      fileName+"EV.h5", N, Nks, L);
+	
+	const int MaxN = 8000;  // maximal iteration number for PED
+	const double tol = 1e-15; // torlearance for PED	
+	const bool rewrite = false; 
+	const int trunc = 30; // number of vectors
+	const bool onlyE = false;
+
+	int NN(0);
+	if(ppType.compare("ppo") == 0) NN = 840;
+	else NN = 834;
+	
+	////////////////////////////////////////////////////////////
+	// mpi part 
+	int left = 0;
+	int right = NN;
+	 
+	MPI_Init(&argc, &argv);
+	int rank, num;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &num);
+	int inc = ceil( (double)(right - left) / num);
+	int istart = left + rank * inc;
+	int iend = min( left + (rank+1) * inc, right);
+	printf("MPI : %d / %d; range : %d - %d \n", rank, num, istart, iend); 
+	////////////////////////////////////////////////////////////
+	
+	for(size_t i = istart; i < iend; i++){
+	  const size_t ppId = i+1;
+	  //string output = ppType + to_string(ppId);
+	  //freopen (output.c_str(), "w", stderr);
+	  fprintf(stderr, "********* ppId = %zd ***********\n", ppId);
+	  if(onlyE)
+	    readks.calKSOneOrbitOnlyE(ppType, ppId, MaxN, tol, rewrite, nqr);
+	  else
+	    //readks.calKSOneOrbit(ppType, ppId, MaxN, tol, rewrite, nqr, trunc);
+	    {
+	    pair<MatrixXd, MatrixXd> eiv = 
+	      readks.calKSFloquetMulti("../../data/tmp.h5", ppType, ppId, MaxN, tol, nqr, trunc);
+	    
+	    cout << eiv.first << endl;
+	    }
+	  //fclose(stderr);
+	}
+	
+	////////////////////////////////////////////////////////////
+	MPI_Finalize();
+	////////////////////////////////////////////////////////////
+
+	break;
+      }
+      
     default:
       {
 	cout << "Please indicate the right #" << endl;

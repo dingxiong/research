@@ -81,6 +81,54 @@ ArrayXXd KS::intg(const ArrayXd &a0, size_t nstp, size_t np){
   return aa;
 }
 
+/** @brief intg() integrate KS system without calculating Jacobian
+ *
+ *  @param[in] a0 Initial condition of the orbit
+ *  @param[in] nstp Number of steps to integrate
+ *  @return the orbit, each column is one point
+ */
+std::tuple<ArrayXXd, VectorXd, VectorXd> 
+KS::intgDP(const ArrayXd &a0, size_t nstp, size_t np){
+  if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);}  
+  Fv.vc1 = R2C(a0);  
+  ArrayXXd aa(N-2, nstp/np + 1);
+  aa.col(0) = a0;
+  
+  /* define the total dissipation and pumping */
+  VectorXd DD(nstp/np + 1), PP(nstp/np + 1);
+  double D, P, D1, D2, D3, D4, P1, P2, P3, P4;
+  D = 0; P = 0;
+  DD(0) = D; PP(0) = P;
+
+
+  for(size_t i = 1; i < nstp +1; i++){
+    D1 = disspation(Fv.vc1); P1 = pump(Fv.vc1);
+    NL(Fv); Fa.vc1 = E2*Fv.vc1 + Q*Fv.vc3; 
+
+    D2 = disspation(Fa.vc1); P2 = pump(Fa.vc1);
+    NL(Fa); Fb.vc1 = E2*Fv.vc1 + Q*Fa.vc3;
+
+    D3 = disspation(Fb.vc1); P3 = pump(Fb.vc1);
+    NL(Fb); Fc.vc1 = E2*Fa.vc1 + Q*(2.0*Fb.vc3 - Fv.vc3);
+
+    D4 = disspation(Fc.vc1); P4 = pump(Fc.vc1);
+    NL(Fc);
+
+    Fv.vc1 = E*Fv.vc1 + Fv.vc3*f1 + 2.0*(Fa.vc3+Fb.vc3)*f2 + Fc.vc3*f3;
+    D = D + h/6 * (D1 + 2*D2 + 2*D3 + D4); 
+    P = P + h/6 * (P1 + 2*P2 + 2*P3 + P4);
+    
+    if( 0 == i%np ) {
+      aa.col(i/np) = C2R(Fv.vc1);
+      DD(i/np) = D;
+      PP(i/np) = P;
+    }
+  }
+  
+  return std::make_tuple(aa, DD, PP);
+}
+
+
 /** @brief intgj() integrate KS system and calculate Jacobian along this orbit.
  *
  * @param[in] a0 Initial condition of the orbit. Size [N-2,1]
@@ -223,6 +271,19 @@ ArrayXXcd KS::R2C(const ArrayXXd &v){
   vp.middleRows(1, n/2) = Map<ArrayXXcd>((dcp*)&v(0,0), n/2, m);
 
   return vp;
+}
+
+/*************************************************** 
+ *           energe ralated                        *
+ ***************************************************/
+double KS::pump(const ArrayXcd &vc){
+  VectorXcd tmp = vc * K;
+  return tmp.squaredNorm();
+}
+
+double KS::disspation(const ArrayXcd &vc){
+  VectorXcd tmp = vc * K * K;
+  return tmp.squaredNorm();
 }
 
 /*************************************************** 

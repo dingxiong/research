@@ -66,6 +66,11 @@ public:
   calKSFloquet(const std::string ppType, const int ppId, 
 	       const int MaxN = 80000, const double tol = 1e-15,
 	       const int nqr = 1, const int trunc = 0);
+  std::pair<MatrixXd, MatrixXd>
+  calKSFloquetMulti(const std::string fileName, 
+		    const std::string ppType, const int ppId, 
+		    const int MaxN = 80000, const double tol = 1e-15,
+		    const int nqr = 1, const int trunc = 0);
   MatrixXd
   calKSFloquetOnlyE(const std::string ppType, const int ppId, 
 		    const int MaxN = 80000, const double tol = 1e-15,

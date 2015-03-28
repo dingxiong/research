@@ -1,5 +1,5 @@
 /* to compile:
- * g++ text_ksint.cc -std=c++0x -lksint -lfftw3
+ * g++ test_ksint.cc -std=c++0x -lksint -lfftw3
  * -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3
  */
 
@@ -10,7 +10,7 @@ using namespace std;
 using namespace Eigen;
 int main(){
   /// -----------------------------------------------------
-  switch (2){
+  switch (4){
     
   case 1:
     {
@@ -40,6 +40,17 @@ int main(){
       KS ks(64, 0.1, 22);
       cout << ks.velocity(a0) << endl;
       */
+      break;
+    }
+
+  case 4: // test disspation
+    {
+      ArrayXd a0(ArrayXd::Ones(30)*0.1);
+      KS ks(32, 0.1, 22);
+      tuple<ArrayXXd, VectorXd, VectorXd> tmp = ks.intgDP(a0, 10000, 1);
+      cout << get<1>(tmp).tail(1) << endl << endl;
+      cout << get<2>(tmp).tail(1) << endl;
+
       break;
     }
   default :

@@ -7,6 +7,7 @@
 
 #include <fftw3.h>
 #include <complex>
+#include <tuple>
 #include <utility>
 #include <Eigen/Dense>
 
@@ -15,6 +16,7 @@ using Eigen::ArrayXXd;
 using Eigen::ArrayXcd;
 using Eigen::ArrayXd;
 using Eigen::MatrixXd; using Eigen::VectorXd;
+using Eigen::VectorXcd;
 using Eigen::Matrix2d;
 using Eigen::Map; using Eigen::Ref;
 
@@ -51,6 +53,10 @@ public:
   C2R(const ArrayXXcd &v);
   ArrayXXcd 
   R2C(const ArrayXXd &v);
+  double pump(const ArrayXcd &vc);
+  double disspation(const ArrayXcd &vc);
+  std::tuple<ArrayXXd, VectorXd, VectorXd> 
+  intgDP(const ArrayXd &a0, size_t nstp, size_t np);
   ArrayXXd 
   Reflection(const Ref<const ArrayXXd> &aa);
   ArrayXXd 

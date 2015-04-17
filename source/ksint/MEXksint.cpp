@@ -13,12 +13,21 @@ using Eigen::Map;
 
 const int N = 32; 
 
+/* ks full state space integrator without Jacobian */
 static ArrayXXd ksf(double *a0, double d,  double h, int nstp, int np){
   KS ks(N, h, d);
   Map<ArrayXd> v0(a0, N-2);
   //ArrayXd v0(N-2); for(int i = 0 ; i < N-2; i++) v0(i) = a0[i];
   ArrayXXd aa = ks.intg(v0, nstp, np);
   return aa;
+}
+
+/* ks full state space integrator with Jacobian */
+static std::pair<ArrayXXd, ArrayXXd>
+ksfj(double *a0, double d,  double h, int nstp, int np){
+  KS ks(N, h, d);
+  Map<ArrayXd> v0(a0, N-2);
+  return ks.intgj(v0, nstp, np);
 }
 
 static std::tuple<ArrayXXd, VectorXd, VectorXd>
@@ -59,16 +68,26 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
 					state space. */
   double T = mxGetScalar(prhs[8]);
   mwSize isDP = mxGetScalar(prhs[9]); /* isDp = 1: integrate D and P too */
+  mwSize Jacob = mxGetScalar(prhs[10]); /* Jacob = 1: integrate with Jacobian */
 
   if(isM1 == 0){
-    if(isDP == 0){
-      plhs[0] = mxCreateDoubleMatrix(N-2, nstp/np + 1, mxREAL);
-      //Map<ArrayXXd> aa(mxGetPr(plhs[0]), N-2, nstp/np + 1);
-      //aa = ksf(a0, d, h, nstp, np);
-      ArrayXXd aa = ksf(a0, d, h, nstp, np);
-      memcpy(mxGetPr(plhs[0]), &aa(0,0), (nstp/np+1)*(N-2)*sizeof(double));
-    }
-    else{
+      if(isDP == 0){
+	  if(Jacob == 0){
+	      plhs[0] = mxCreateDoubleMatrix(N-2, nstp/np + 1, mxREAL);
+	      //Map<ArrayXXd> aa(mxGetPr(plhs[0]), N-2, nstp/np + 1);
+	      //aa = ksf(a0, d, h, nstp, np);
+	      ArrayXXd aa = ksf(a0, d, h, nstp, np);
+	      memcpy(mxGetPr(plhs[0]), &aa(0,0), (nstp/np+1)*(N-2)*sizeof(double));
+	  }
+	  else{ // integration with Jacobian
+	      plhs[0] = mxCreateDoubleMatrix(N-2, nstp/np + 1, mxREAL);
+	      plhs[1] = mxCreateDoubleMatrix((N-2)*(N-2), nstp/np, mxREAL);
+	      std::pair<ArrayXXd, ArrayXXd> aada = ksfj(a0, d, h, nstp, np);
+	      memcpy(mxGetPr(plhs[0]), &(aada.first(0, 0)), (nstp/np+1)*(N-2)*sizeof(double));
+	      memcpy(mxGetPr(plhs[1]), &(aada.second(0, 0)), (nstp/np)*(N-2)*(N-2)*sizeof(double));
+	  }
+      }
+    else{			/* dispation integration */
       plhs[0] = mxCreateDoubleMatrix(N-2, nstp/np + 1, mxREAL);
       plhs[1] = mxCreateDoubleMatrix(nstp/np+1, 1, mxREAL);
       plhs[2] = mxCreateDoubleMatrix(nstp/np+1, 1, mxREAL);

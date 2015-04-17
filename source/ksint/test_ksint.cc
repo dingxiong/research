@@ -10,7 +10,7 @@ using namespace std;
 using namespace Eigen;
 int main(){
   /// -----------------------------------------------------
-  switch (4){
+  switch (2){
     
   case 1:
     {
@@ -24,9 +24,9 @@ int main(){
   case 2 :
     {
       ArrayXd a0 = ArrayXd::Ones(30) * 0.1;
-      KS ks(32, 0.1, 22);
-      pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a0, 20000,10000,10000);
-      cout << tmp.first << endl;
+      KS ks(32, 0.01, 22);
+      pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a0, 2000, 2000,2000);
+      cout << tmp.second.col(0).tail(30) << endl;
       break;
     }
   case 3: // test velocity

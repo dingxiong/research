@@ -16,6 +16,6 @@ function [aa, D, P] = ksintDP(a0, h, nstp, np, d)
 if nargin < 5, d = 22; end
 if nargin < 4, np = 1; end
 
-[aa, D, P] = MEXksint(a0, d, h, nstp, np, 1, 0, 0, 0, 1); 
+[aa, D, P] = MEXksint(a0, d, h, nstp, np, 1, 0, 0, 0, 1, 0); 
 
 end

@@ -26,7 +26,7 @@ KS::~KS(){
   freeFFT(Fv); freeFFT(Fa); freeFFT(Fb); freeFFT(Fc);
   freeFFT(jFv); freeFFT(jFa); freeFFT(jFb); freeFFT(jFc);
   // comment out when trying to compile interface for Matlab/Python 
-  fftw_cleanup(); 
+  //fftw_cleanup(); 
   
 }
 

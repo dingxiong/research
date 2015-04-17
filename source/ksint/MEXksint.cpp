@@ -24,10 +24,10 @@ static ArrayXXd ksf(double *a0, double d,  double h, int nstp, int np){
 
 /* ks full state space integrator with Jacobian */
 static std::pair<ArrayXXd, ArrayXXd>
-ksfj(double *a0, double d,  double h, int nstp, int np){
+ksfj(double *a0, double d,  double h, int nstp, int np, int nqr){
   KS ks(N, h, d);
   Map<ArrayXd> v0(a0, N-2);
-  return ks.intgj(v0, nstp, np);
+  return ks.intgj(v0, nstp, np, nqr);
 }
 
 static std::tuple<ArrayXXd, VectorXd, VectorXd>
@@ -82,7 +82,7 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
 	  else{ // integration with Jacobian
 	      plhs[0] = mxCreateDoubleMatrix(N-2, nstp/np + 1, mxREAL);
 	      plhs[1] = mxCreateDoubleMatrix((N-2)*(N-2), nstp/np, mxREAL);
-	      std::pair<ArrayXXd, ArrayXXd> aada = ksfj(a0, d, h, nstp, np);
+	      std::pair<ArrayXXd, ArrayXXd> aada = ksfj(a0, d, h, nstp, np, nqr);
 	      memcpy(mxGetPr(plhs[0]), &(aada.first(0, 0)), (nstp/np+1)*(N-2)*sizeof(double));
 	      memcpy(mxGetPr(plhs[1]), &(aada.second(0, 0)), (nstp/np)*(N-2)*(N-2)*sizeof(double));
 	  }

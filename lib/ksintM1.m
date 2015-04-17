@@ -15,6 +15,6 @@ function [tt,aa] = ksintM1(a0, h, nstp, np, d)
 if nargin < 5, d = 22; end
 if nargin < 4, np = 1; end
 
-[tt,aa] = MEXksint(a0, d, h, nstp, np, 1, 1, 0, 0, 0); 
+[tt,aa] = MEXksint(a0, d, h, nstp, np, 1, 1, 0, 0, 0, 0); 
 
 end

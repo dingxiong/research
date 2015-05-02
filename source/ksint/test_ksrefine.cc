@@ -77,7 +77,61 @@ int main(int argc, char **argv)
 	  
       }
 
-    case 3: // refine the inital condition for N=32
+    case 3: // distiguish rpo5 and rpo6
+      {
+	const int Nks = 32;
+	const int N = Nks - 2;
+	const double L = 22;
+	string fileName("../../data/ks22h1t120");
+	string ppType("rpo");
+	const int ppId = 17;
+
+	ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
+	std::tuple<ArrayXd, double, double>
+	  pp = readks.readKSorigin(ppType, ppId);	
+	ArrayXd &a = get<0>(pp); 
+	double T = get<1>(pp);
+	double s = get<2>(pp); cout << s << endl;
+
+	const int nstp = ceil(ceil(T/0.02)/10)*10; cout << nstp << endl;
+	KSrefine ksrefine(Nks, L);
+	tuple<MatrixXd, double, double, double> 
+	  p = ksrefine.findPOmulti(a, T, nstp, 10, ppType,
+				   0.25, -s/L*2*M_PI, 100, 1e-15, true, false);
+	double th = get<2>(p); cout << th << endl;
+	double Tnew = get<1>(p) * nstp; std::cout << Tnew << std::endl;
+	cout << get<0>(p).cols() << endl;
+	cout << get<3>(p) << endl;
+
+	// calculate the Flqouet exponents 
+	KS ks(Nks, get<1>(p), L);
+	MatrixXd daa = ks.intgjMulti(get<0>(p), nstp/10, 1, 1).second;
+	PED ped;
+	ped.reverseOrderSize(daa); // reverse order.
+	if(ppType.compare("ppo") == 0)
+	    daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	else // R*J for rpo
+	    daa.leftCols(N) = ks.Rotation(daa.leftCols(N), th);
+	//MatrixXd eigvals = ped.EigVals(daa, 1000, 1e-15, true);
+	//eigvals.col(0) = eigvals.col(0).array()/Tnew;
+
+	//cout << eigvals << endl;
+	
+	// write data
+	/*
+	fileName = "../../data/ks22h02t100";
+	ReadKS readks2(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
+	readks2.writeKSinit("../../data/ks22h1t120.h5",  ppType, ppId,
+			   make_tuple(get<0>(p).col(0), get<1>(p)*nstp, nstp, 
+				      get<3>(p), -L/(2*M_PI)*get<2>(p))
+			   );
+	readks2.calKSOneOrbit(ppType, ppId, 1000, 1e-15, false);
+	*/
+	break;
+	  
+      }
+
+    case 4: // refine the inital condition for N=32
       {
 	const int Nks = 64;
 	const int N = Nks - 2;
@@ -137,7 +191,7 @@ int main(int argc, char **argv)
 	break;
       }
       
-    case 4 : // refine step by step
+    case 5 : // refine step by step
       {
 	const int Nks = 64;
 	const int N = Nks - 2;
@@ -192,6 +246,8 @@ int main(int argc, char **argv)
 				  make_tuple(get<0>(p), get<1>(p)*nstp, nstp, 
 					     get<3>(p), -L/(2*M_PI)*get<2>(p))
 				  );
+
+	  
 	}
 	
 	////////////////////////////////////////////////////////////

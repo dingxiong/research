@@ -209,14 +209,14 @@ KSrefine::multishoot(KS &ks, const ArrayXXd &x, const int nstp,
  * @param[in] a0 guess of initial condition
  * @param[in] T guess of period
  * @param[in] h0 guess of time step
- * @param[in] Norbit number of pieces of the orbit
- * @param[in] M number of piece for multishooting method
+ * @param[in] Norbit number of pieces of the orbit, so each segment has Norbit/M.
+ * @param[in] M number of pieces for multishooting method
  * @param[in] ppType ppo/rpo
  * @param[in] th0 guess of initial group angle. For ppo, it is zero.
  * @param[in] hinit: the initial time step to get a good starting guess.
  * @param[in] MaxN maximal number of iteration
  * @param[in] tol tolerance of convergence
- * @return initial condition along the orbit, time step, shift, error
+ * @return initial conditions along the orbit, time step, shift, error
  *
  */
 tuple<MatrixXd, double, double, double>

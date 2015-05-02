@@ -133,8 +133,9 @@ KS::intgDP(const ArrayXd &a0, size_t nstp, size_t np){
  *
  * @param[in] a0 Initial condition of the orbit. Size [N-2,1]
  * @param[in] nstp Number of steps to integrate.
- * @return Pair value. The first element is the trajectory.
- *         The second element is the Jacobian along the trajectory.
+ * @return Pair value. The first element is the trajectory, dimension [N, nstp/np+1]
+ *         The second element is the Jacobian along the trajectory,
+ *         dimension [N*N, nstp/nqr].
  */
 std::pair<ArrayXXd, ArrayXXd>
 KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
@@ -284,6 +285,40 @@ double KS::pump(const ArrayXcd &vc){
 double KS::disspation(const ArrayXcd &vc){
   VectorXcd tmp = vc * K * K;
   return tmp.squaredNorm();
+}
+
+/*************************************************** 
+ *           Multishooting related                 *
+ ***************************************************/
+
+/**
+ * @brief calculate the multishooting orbit and Jacobian from
+ *        several ponts along the orbit.
+ * @param[in]  aa0 a set of points dimension [N, M]
+ * @param[in]  nstp integration step for each short segment
+ * @return     [orbit, Jacobian] pair, dimension [N, M*nstp/np+1]
+ *             and [N*N, M*nstp/nqr] respectively
+ */
+std::pair<ArrayXXd, ArrayXXd>
+KS::intgjMulti(const MatrixXd aa0, size_t nstp, size_t np, size_t nqr){
+    // nq and nqr should divide nstp
+    assert (nstp % np == 0 && nstp % nqr == 0);
+    int M = aa0.cols();
+    int N = aa0.rows(); 
+    
+    // set aa the dim = nstp/np + 1 to make it consistent with
+    // the original integrator
+    MatrixXd aa(N, M*nstp/np+1);
+    MatrixXd daa(N*N, M*nstp/nqr);
+    for (int i = 0; i < M; i++) {
+	std::pair<ArrayXXd, ArrayXXd> tmp = intgj(aa0.col(i), nstp, np, nqr);
+	aa.middleCols(i*nstp/np, nstp/np) = tmp.first.leftCols(nstp/np);
+	daa.middleCols(i*nstp/nqr, nstp/nqr) = tmp.second;
+	// the last color included
+	if(i == M-1) aa.rightCols(1) = tmp.first.rightCols(1);
+    }
+    
+    return std::make_pair(aa, daa);
 }
 
 /*************************************************** 

@@ -19,7 +19,8 @@ Note: in the H5 files, nstp is double.
 ============================
 Mon Jan  5 12:46:44 EST 2015
 
-ks22h1t120.h5, ks22h1t120x64.h5 : Ruslan's original data
+Ruslan : Ruslan's original data
+myN32 : my data for truncation N = 32
 ks22h02t120x64.h5 : the refined the data with h = 0.02
 ks22h005t120x64.h5 : the refined the data with h = 0.005
 ks22h001t120x64.h5 : the refined the data with h = 0.001

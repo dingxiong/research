@@ -30,3 +30,7 @@ libksint.so/.a : new KS integrator based on library Eigen3. Both KS and KSM1
 	       classes are included. 
 libped.so/.a : Periodic eigendecompostion.
 libreaks.a : read h5 file
+
+======================================================================
+orbitToSlice.mexa64
+>> [aaReduced, theta] = orbitToSlice(aa);

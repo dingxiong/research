@@ -4,6 +4,7 @@
  * */
 #include "ksintM1.hpp"
 #include "mex.h"
+#include "matrix.h"
 #include <cmath>
 #include <cstring>
 #include <Eigen/Dense>

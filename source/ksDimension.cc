@@ -5,9 +5,7 @@
  *
  * or (Note : libreadks.a is static library, so the following order is important)
  *
- * h5c++ ksDimension.cc -std=c++0x -I$XDAPPS/eigen/include/eigen3 -I../include
- * -L../lib -lreadks -lksint -lped  -lfftw3
- * -O3 -march=corei7 -msse4 -msse2
+ * h5c++ ksDimension.cc -std=c++0x -I$XDAPPS/eigen/include/eigen3 -I../include -L../lib -lreadks -lksint -lped  -lfftw3 -O3 -march=corei7 -msse4 -msse2
  */
 #include "ksint.hpp"
 #include "ped.hpp"
@@ -312,6 +310,8 @@ MatrixXd difAngle(const MatrixXd &minDifv, const VectorXi &minIx, const VectorXi
   return angle;
 }
 
+
+
 int main(){
   cout.precision(16);
   const int Nks = 64;
@@ -320,7 +320,7 @@ int main(){
   const int N62 = 62;
   const double L = 22;
 
-  switch (12)
+  switch (4)
     {
     case 1: // small test for angle calculation.
       {
@@ -455,101 +455,103 @@ int main(){
       
     case 4 : // ergodic orbit approache rpo/ppo
 	     // fields need to be changed: ppType ppId, nqr, gTpos, sT, folder
-      {
-	////////////////////////////////////////////////////////////
-	// set up the system
-	string fileName("../data/ks22h001t120x64");
-	string ppType("ppo");
-	const int ppId = 4; 
-	const int nqr = 5;
-	const int Trunc = 30;
-	const int gTpos = 3; // position of group tangent marginal vector 
-	VectorXi subsp(7); subsp << 3, 4, 5, 6, 7, 8, 9; // subspace indices.
-	////////////////////////////////////////////////////////////
+	{
+	    ////////////////////////////////////////////////////////////
+	    // set up the system
+	    const int Nks = 64;
+	    const int N = Nks - 2;
+	    string fileName("../data/ks22h001t120x64");
+	    string ppType("ppo");
+	    const int ppId = 4; 
+	    const int nqr = 5;
+	    const int Trunc = 30;
+	    const int gTpos = 3; // position of group tangent marginal vector 
+	    VectorXi subsp(7); subsp << 3, 4, 5, 6, 7, 8, 9; // subspace indices.
+	    ////////////////////////////////////////////////////////////
 
-	////////////////////////////////////////////////////////////
-	// prepare orbit, vectors
-	ReadKS readks(fileName+".h5",
-		      fileName+"E.h5", 
-		      fileName+"EV.h5", N, Nks);
-	// ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5");
-	std::tuple<ArrayXd, double, double, double, double>
-	  pp = readks.readKSinit(ppType, ppId);	
-	ArrayXd &a = get<0>(pp); 
-	double T = get<1>(pp);
-	int nstp = (int)get<2>(pp);
-	double r = get<3>(pp);
-	double s = get<4>(pp);
-  	MatrixXd eigVals = readks.readKSe(ppType, ppId); 
-	MatrixXd eigVecs = readks.readKSve(ppType, ppId);
+	    ////////////////////////////////////////////////////////////
+	    // prepare orbit, vectors
+	    ReadKS readks(fileName+".h5",
+			  fileName+"E.h5", 
+			  fileName+"EV.h5", N, Nks);
+	    // ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5");
+	    std::tuple<ArrayXd, double, double, double, double>
+		pp = readks.readKSinit(ppType, ppId);	
+	    ArrayXd &a = get<0>(pp); 
+	    double T = get<1>(pp);
+	    int nstp = (int)get<2>(pp);
+	    double r = get<3>(pp);
+	    double s = get<4>(pp);
+	    MatrixXd eigVals = readks.readKSe(ppType, ppId); 
+	    MatrixXd eigVecs = readks.readKSve(ppType, ppId);
 
-	KS ks(Nks, T/nstp, L);
-	ArrayXXd aa = ks.intg(a, nstp, nqr); 
-	ArrayXXd aaWhole, eigVecsWhole;
-	if(ppType.compare("ppo") == 0) {
-	  aaWhole = ks.half2whole(aa.leftCols(aa.cols()-1));
-	  eigVecsWhole = ks.half2whole(eigVecs); // this is correct. Think carefully.
-	} else {
-	  aaWhole = aa.leftCols(aa.cols()-1); // one less
-	  eigVecsWhole = eigVecs;
+	    KS ks(Nks, T/nstp, L);
+	    ArrayXXd aa = ks.intg(a, nstp, nqr); 
+	    ArrayXXd aaWhole, eigVecsWhole;
+	    if(ppType.compare("ppo") == 0) {
+		aaWhole = ks.half2whole(aa.leftCols(aa.cols()-1));
+		eigVecsWhole = ks.half2whole(eigVecs); // this is correct. Think carefully.
+	    } else {
+		aaWhole = aa.leftCols(aa.cols()-1); // one less
+		eigVecsWhole = eigVecs;
+	    }
+	    assert(aaWhole.cols() == eigVecsWhole.cols());
+	    std::pair<MatrixXd, VectorXd> tmp = ks.orbitToSlice(aaWhole); 
+	    MatrixXd &aaHat = tmp.first;
+	    // note here aa has one more column the the Floquet vectors
+	    MatrixXd veSlice = ks.veToSliceAll( eigVecsWhole, aaWhole, Trunc);
+	    MatrixXd ve_trunc = veTrunc(veSlice, gTpos, Trunc);
+	    ////////////////////////////////////////////////////////////
+	
+	    ////////////////////////////////////////////////////////////
+	    // choose experiment parameters & do experiment
+	    const double h = 0.1;
+	    const double sT = 30;
+	    const double tolClose = 0.1;
+	    const int MaxSteps = floor(2000/h);
+	    const int MaxT = 10000;
+	    string folder = "./case4ppo4x5sT30/";
+	    KS ks2(Nks, h, L); 
+	    srand(time(NULL));
+	    ArrayXd a0(0.1 * ArrayXd::Random(N));
+	
+	    const int fileNum = 5;
+	    string strf[fileNum] = {"angle", "dis", "difv", "indexPo", "No"};
+	    ofstream saveName[fileNum];	
+	    for (size_t i = 0; i < fileNum; i++) {
+		saveName[i].open(folder + strf[i], ios::trunc);
+		saveName[i].precision(16);
+	    } 
+	
+	    int accum = 0;
+	    for(size_t i = 0; i < MaxT; i++){
+		std::cout << "********** i = " << i << "**********"<< std::endl;
+		ArrayXXd ergodic = ks2.intg(a0, MaxSteps); a0 = ergodic.rightCols(1);
+		std::pair<MatrixXd, VectorXd> tmp = ks2.orbitToSlice(ergodic);
+		MatrixXd &ergodicHat = tmp.first;
+		// be careful about the size of aaHat
+		std::tuple<MatrixXd, VectorXi, VectorXi, VectorXd> 
+		    dis = minDistance(ergodicHat, aaHat, tolClose, (int)(sT/h) );
+		MatrixXd &minDifv = std::get<0>(dis); 
+		VectorXi &minIndexErgodic = std::get<1>(dis);
+		VectorXi &minIndexPo = std::get<2>(dis); 
+		VectorXd &minDis = std::get<3>(dis);
+		MatrixXd angle = difAngle(minDifv, minIndexPo, subsp, ve_trunc, Trunc-1);
+		if(angle.cols() > 0) printf("angle size = %ld x %ld, instance %d \n", 
+					    angle.rows(), angle.cols(), ++accum);
+
+		if(angle.cols() != 0) {
+		    saveName[0] << angle.transpose() << endl;
+		    saveName[1] << minDis << std::endl;
+		    saveName[2] << minDifv.transpose() << std::endl;
+		    saveName[3] << minIndexPo << std::endl;
+		    saveName[4] << angle.cols() << std::endl;
+		}
+	    }
+	    for (size_t i = 0; i < fileNum; i++)  saveName[i].close();
+	    ////////////////////////////////////////////////////////////
+	    break;
 	}
-	assert(aaWhole.cols() == eigVecsWhole.cols());
-	std::pair<MatrixXd, VectorXd> tmp = ks.orbitToSlice(aaWhole); 
-	MatrixXd &aaHat = tmp.first;
-	// note here aa has one more column the the Floquet vectors
-	MatrixXd veSlice = ks.veToSliceAll( eigVecsWhole, aaWhole, Trunc);
-	MatrixXd ve_trunc = veTrunc(veSlice, gTpos, Trunc);
-	////////////////////////////////////////////////////////////
-	
-	////////////////////////////////////////////////////////////
-	// choose experiment parameters & do experiment
-	const double h = 0.1;
-	const double sT = 30;
-	const double tolClose = 0.1;
-	const int MaxSteps = floor(2000/h);
-	const int MaxT = 10000;
-	string folder = "./case4ppo4x10sT30/";
-	KS ks2(Nks, h, L); 
-	srand(time(NULL));
-	ArrayXd a0(0.1 * ArrayXd::Random(N));
-	
-	const int fileNum = 5;
-	string strf[fileNum] = {"angle", "dis", "difv", "indexPo", "No"};
-	ofstream saveName[fileNum];	
-	for (size_t i = 0; i < fileNum; i++) {
-	  saveName[i].open(folder + strf[i], ios::trunc);
-	  saveName[i].precision(16);
-	} 
-	
-	int accum = 0;
-	for(size_t i = 0; i < MaxT; i++){
-	  std::cout << "********** i = " << i << "**********"<< std::endl;
-	  ArrayXXd ergodic = ks2.intg(a0, MaxSteps); a0 = ergodic.rightCols(1);
-	  std::pair<MatrixXd, VectorXd> tmp = ks2.orbitToSlice(ergodic);
-	  MatrixXd &ergodicHat = tmp.first;
-	  // be careful about the size of aaHat
-	  std::tuple<MatrixXd, VectorXi, VectorXi, VectorXd> 
-	    dis = minDistance(ergodicHat, aaHat, tolClose, (int)(sT/h) );
-	  MatrixXd &minDifv = std::get<0>(dis); 
-	  VectorXi &minIndexErgodic = std::get<1>(dis);
-	  VectorXi &minIndexPo = std::get<2>(dis); 
-	  VectorXd &minDis = std::get<3>(dis);
-	  MatrixXd angle = difAngle(minDifv, minIndexPo, subsp, ve_trunc, Trunc-1);
-	  if(angle.cols() > 0) printf("angle size = %ld x %ld, instance %d \n", 
-				      angle.rows(), angle.cols(), ++accum);
-
-	  if(angle.cols() != 0) {
-	    saveName[0] << angle.transpose() << endl;
-	    saveName[1] << minDis << std::endl;
-	    saveName[2] << minDifv.transpose() << std::endl;
-	    saveName[3] << minIndexPo << std::endl;
-	    saveName[4] << angle.cols() << std::endl;
-	  }
-	}
-	for (size_t i = 0; i < fileNum; i++)  saveName[i].close();
-	////////////////////////////////////////////////////////////
-	break;
-      }
       
     case 5: // test the projection of subspaces.
 	    // not using FVs, but OVs. OVs is rotated to slice.
@@ -964,6 +966,7 @@ int main(){
 	const int N = 62;
 	const int nqr = 10;
 
+	// read files from disk
 	const int fileNum = 4;
 	string strf[fileNum] = {"No", "dis", "difv", "indexPo"};	
 	ifstream saveName[fileNum];

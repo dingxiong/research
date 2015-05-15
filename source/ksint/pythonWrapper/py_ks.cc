@@ -59,6 +59,112 @@ public:
 
 	return bp::make_tuple(aa, daa);
     }
+
+    /* reflection */
+    bn::ndarray PYreflection(bn::ndarray aa){
+	
+	int m = aa.shape(0);
+	int n = aa.shape(1);
+
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXXd tmpraa = Reflection(tmpaa);
+	
+	Py_intptr_t dims[2] = {m , n};
+	bn::ndarray raa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
+	       sizeof(double) * m * n );
+
+	return raa;
+    }
+
+
+    /* half2whole */
+    bn::ndarray PYhalf2whole(bn::ndarray aa){
+	
+	int m = aa.shape(0);
+	int n = aa.shape(1);
+
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXXd tmpraa = half2whole(tmpaa);
+
+	int n2 = tmpraa.rows();
+	int m2 = tmpraa.cols();	
+	Py_intptr_t dims[2] = {m2 , n2};
+	bn::ndarray raa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
+	       sizeof(double) * m2 * n2 );
+
+	return raa;
+    }
+
+
+    /* Rotation */
+    bn::ndarray PYrotation(bn::ndarray aa, const double th){
+	
+	int m = aa.shape(0);
+	int n = aa.shape(1);
+
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXXd tmpraa = Rotation(tmpaa, th);
+
+	Py_intptr_t dims[2] = {m , n};
+	bn::ndarray raa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
+	       sizeof(double) * m * n );
+
+	return raa;
+    }
+
+
+    /* orbitToSlice */
+    bp::tuple PYorbitToSlice(bn::ndarray aa){
+	
+	int m = aa.shape(0);
+	int n = aa.shape(1);
+
+	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
+	std::pair<MatrixXd, VectorXd> tmp = orbitToSlice(tmpaa);
+
+	Py_intptr_t dims[2] = {m , n};
+	bn::ndarray raa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)raa.get_data(), (void*)(&tmp.first(0, 0)), 
+	       sizeof(double) * m * n );
+	bn::ndarray ang = 
+	    bn::empty(1, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)ang.get_data(), (void*)(&tmp.second(0, 0)), 
+	       sizeof(double) * m );
+	      
+	return bp::make_tuple(raa, ang);
+    }
+
+
+    /* veToSlice */
+    bn::ndarray PYveToSlice(bn::ndarray ve, bn::ndarray x){
+	
+	int m = ve.shape(0);
+	int n = ve.shape(1);
+
+	Map<MatrixXd> tmpve((double*)ve.get_data(), n, m);
+	Map<VectorXd> tmpx((double*)ve.get_data(), n);
+	MatrixXd tmpvep = veToSlice(tmpve, tmpx);
+
+	Py_intptr_t dims[2] = {m , n};
+	bn::ndarray vep = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)vep.get_data(), (void*)(&tmpvep(0, 0)), 
+	       sizeof(double) * m * n );
+	      
+	return vep;
+    }
+
+
+
+
+
 };
 
 class pyKSM1 : public KSM1 {
@@ -70,7 +176,7 @@ public :
 	Map<ArrayXd> tmpa((double*)a0.get_data(), N-2);
 	std::pair<ArrayXXd, ArrayXd> tmp = intg(tmpa, nstp, np);
 	
-	Py_intptr_t dims[2] = { (int)(nstp/np+1), N-2 };
+	Py_intptr_t dims[2] = { nstp/np+1, N-2 };
 	bn::ndarray aa = 
 	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
 	bn::ndarray tt = 
@@ -79,6 +185,27 @@ public :
 	       sizeof(double) * (N-2) * (nstp/np+1) );
 	memcpy((void*)tt.get_data(), (void*)(&tmp.second(0)), 
 	       sizeof(double) * (nstp/np+1) );
+
+	return bp::make_tuple(aa, tt);
+    }
+
+    /* wrap the second integrator */
+    bp::tuple PYintg2(bn::ndarray a0, double T, size_t np){
+	Map<ArrayXd> tmpa((double*)a0.get_data(), N-2);
+	std::pair<ArrayXXd, ArrayXd> tmp = intg2(tmpa, T, np);
+	
+	int n = tmp.first.rows();
+	int m = tmp.first.cols();
+		
+	Py_intptr_t dims[2] = { m , n };
+	bn::ndarray aa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	bn::ndarray tt = 
+	    bn::empty(1, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)aa.get_data(), (void*)(&tmp.first(0, 0)), 
+	       sizeof(double) * n * m );
+	memcpy((void*)tt.get_data(), (void*)(&tmp.second(0)), 
+	       sizeof(double) * m );
 
 	return bp::make_tuple(aa, tt);
     }
@@ -96,6 +223,11 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def("velocity", &pyKS::PYvelocity)
 	.def("intg", &pyKS::PYintg)
 	.def("intgj", &pyKS::PYintgj)
+	.def("Reflection", &pyKS::PYreflection)
+	.def("half2whole", &pyKS::PYhalf2whole)
+	.def("Rotation", &pyKS::PYrotation)
+	.def("orbitToSlice", &pyKS::PYorbitToSlice)
+	.def("veToSlice", &pyKS::PYveToSlice)
 	;
 
     bp::class_<pyKSM1, bp::bases<KSM1> >("pyKSM1", bp::init<int, double, double>())
@@ -103,5 +235,6 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def_readonly("d", &pyKS::d)
 	.def_readonly("h", &pyKS::h)
 	.def("intg", &pyKSM1::PYintg)
+	.def("intg2", &pyKSM1::PYintg2)
 	;
 }

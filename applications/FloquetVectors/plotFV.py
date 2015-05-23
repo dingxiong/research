@@ -7,6 +7,9 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 
+def magvalue(x):
+	return np.abs(x[0::2] + 1j * x[1::2]);
+	
 
 # In[52]:
 
@@ -22,16 +25,16 @@ ve = ve[:,0]; ve.resize(N, N);
 
 fig = plt.figure(figsize=(8,4))
 ax = fig.add_subplot(111)
-ax.plot(range(1, N+1), ve[:,0], '-o', c='r',label=r'$V_{1r}$')
-ax.plot(range(1, N+1), ve[:,1], '-s', c='b',label=r'$V_{1i}$')
-ax.plot(range(1, N+1), ve[:,7], '-^', c='g',label=r'$V_{8}$')
-ax.plot([8.5, 8.5], [-0.8,0.6], '--', c='k',lw=3)
+ax.plot(range(1, N/2+1), magvalue(ve[:,0]), '-o', c='r',label=r'$V_{1r}$')
+ax.plot(range(1, N/2+1), magvalue(ve[:,1]), '-s', c='b',label=r'$V_{1i}$')
+ax.plot(range(1, N/2+1), magvalue(ve[:,7]), '-^', c='g',label=r'$V_{8}$')
+ax.plot([4.5, 4.5], [0,0.7], '--', c='k',lw=3)
 ax.grid('on')
-ax.set_xlabel('k')
+ax.set_xlabel('Fourier mode index')
+ax.set_ylabel('amplitute')
 ax.legend()
 plt.tight_layout(pad=0)
 plt.show()
-
 
 # The black dashed line separate the physical (first 8) and transient modes ( 9 to 30). 
 # since 
@@ -46,13 +49,14 @@ plt.show()
 
 fig = plt.figure(figsize=(8,4))
 ax = fig.add_subplot(111)
-ax.plot(range(1, N+1), ve[:,8], '-o', c='r',label=r'$V_{9}$')
-ax.plot(range(1, N+1), ve[:,17], '-s', c='b',label=r'$V_{18}$')
-ax.plot(range(1, N+1), ve[:,24], '-v', c='c',label=r'$V_{25}$')
-ax.plot(range(1, N+1), ve[:,29], '-^', c='g',label=r'$V_{30}$')
-ax.plot([8.5, 8.5], [-1,1], '--', c='k',lw=3)
+ax.plot(range(1, N/2+1), magvalue(ve[:,8]), '-o', c='r',label=r'$V_{9}$')
+ax.plot(range(1, N/2+1), magvalue(ve[:,17]), '-s', c='b',label=r'$V_{18}$')
+ax.plot(range(1, N/2+1), magvalue(ve[:,24]), '-v', c='c',label=r'$V_{25}$')
+ax.plot(range(1, N/2+1), magvalue(ve[:,29]), '-^', c='g',label=r'$V_{30}$')
+ax.plot([4.5, 4.5], [0,1], '--', c='k',lw=3)
 ax.grid('on')
-ax.set_xlabel('k')
+ax.set_xlabel('Fourier mode index')
+ax.set_ylabel('amplitute')
 ax.legend(loc='best')
 plt.tight_layout(pad=0)
 plt.show()

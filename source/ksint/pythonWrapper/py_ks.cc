@@ -149,7 +149,7 @@ public:
 	int n = ve.shape(1);
 
 	Map<MatrixXd> tmpve((double*)ve.get_data(), n, m);
-	Map<VectorXd> tmpx((double*)ve.get_data(), n);
+	Map<VectorXd> tmpx((double*)x.get_data(), n);
 	MatrixXd tmpvep = veToSlice(tmpve, tmpx);
 
 	Py_intptr_t dims[2] = {m , n};

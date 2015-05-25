@@ -1,6 +1,7 @@
 #include <boost/python.hpp>
 #include <boost/numpy.hpp>
 #include <Eigen/Dense>
+#include <cstdio>
 
 #include "ksint.hpp"
 #include "ksintM1.hpp"
@@ -12,6 +13,15 @@ namespace bn = boost::numpy;
 
 
 class pyKS : public KS {
+  /*
+   * Python interface for ksint.cc
+   * Note:
+   *     1) Input and out put are arrays of C form, meaning each
+   *        row is a vector
+   *     2) Usually input to functions should be 2-d array, so
+   *        1-d arrays should be resized to 2-d before passed
+   */
+  
 public:
     pyKS(int N, double h, double d) : KS(N, h, d) {}
     
@@ -121,7 +131,8 @@ public:
 
     /* orbitToSlice */
     bp::tuple PYorbitToSlice(bn::ndarray aa){
-	
+
+      
 	int m = aa.shape(0);
 	int n = aa.shape(1);
 
@@ -145,8 +156,15 @@ public:
     /* veToSlice */
     bn::ndarray PYveToSlice(bn::ndarray ve, bn::ndarray x){
 	
-	int m = ve.shape(0);
-	int n = ve.shape(1);
+	int m, n;
+	if(ve.get_nd() == 1){
+	    m = 1;
+	    n = ve.shape(0);
+	} else {
+	    m = ve.shape(0);
+	    n = ve.shape(1);
+	}
+	// printf("%d %d\n", m, n);
 
 	Map<MatrixXd> tmpve((double*)ve.get_data(), n, m);
 	Map<VectorXd> tmpx((double*)x.get_data(), n);

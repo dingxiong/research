@@ -196,6 +196,42 @@ public:
 	return vep;
     }
 
+    /* veToSliceAll */
+    bn::ndarray PYveToSliceAll(bn::ndarray eigVecs, bn::ndarray aa, const int trunc){
+	
+	int m, n;
+	if(eigVecs.get_nd() == 1){
+	    m = 1;
+	    n = eigVecs.shape(0);
+	} else {
+	    m = eigVecs.shape(0);
+	    n = eigVecs.shape(1);
+	}
+
+	int m2, n2;
+	if(aa.get_nd() == 1){
+	    m2 = 1;
+	    n2 = aa.shape(0);
+	} else {
+	    m2 = aa.shape(0);
+	    n2 = aa.shape(1);
+	}
+	// printf("%d %d %d %d\n", m, n, m2, n2);
+	Map<MatrixXd> tmpeigVecs((double*)eigVecs.get_data(), n, m);
+	Map<MatrixXd> tmpaa((double*)aa.get_data(), n2, m2);
+	MatrixXd tmpvep = veToSliceAll(tmpeigVecs , tmpaa, trunc);
+	
+	int m3 = tmpvep.cols();
+	int n3 = tmpvep.rows();
+	Py_intptr_t dims[2] = {m3 , n3};
+	bn::ndarray vep = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)vep.get_data(), (void*)(&tmpvep(0, 0)), 
+	       sizeof(double) * m3 * n3 );
+	      
+	return vep;
+    }
+
 
 
 
@@ -263,6 +299,7 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def("Rotation", &pyKS::PYrotation)
 	.def("orbitToSlice", &pyKS::PYorbitToSlice)
 	.def("veToSlice", &pyKS::PYveToSlice)
+	.def("veToSliceAll", &pyKS::PYveToSliceAll)
 	;
 
     bp::class_<pyKSM1, bp::bases<KSM1> >("pyKSM1", bp::init<int, double, double>())

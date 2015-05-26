@@ -72,10 +72,16 @@ public:
 
     /* reflection */
     bn::ndarray PYreflection(bn::ndarray aa){
-	
-	int m = aa.shape(0);
-	int n = aa.shape(1);
 
+	int m, n;
+	if(aa.get_nd() == 1){
+	    m = 1;
+	    n = aa.shape(0);
+	} else {
+	    m = aa.shape(0);
+	    n = aa.shape(1);
+	}
+	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	ArrayXXd tmpraa = Reflection(tmpaa);
 	
@@ -112,9 +118,15 @@ public:
 
     /* Rotation */
     bn::ndarray PYrotation(bn::ndarray aa, const double th){
-	
-	int m = aa.shape(0);
-	int n = aa.shape(1);
+
+	int m, n;
+	if(aa.get_nd() == 1){
+	    m = 1;
+	    n = aa.shape(0);
+	} else {
+	    m = aa.shape(0);
+	    n = aa.shape(1);
+	}
 
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	ArrayXXd tmpraa = Rotation(tmpaa, th);
@@ -132,9 +144,14 @@ public:
     /* orbitToSlice */
     bp::tuple PYorbitToSlice(bn::ndarray aa){
 
-      
-	int m = aa.shape(0);
-	int n = aa.shape(1);
+      	int m, n;
+	if(aa.get_nd() == 1){
+	    m = 1;
+	    n = aa.shape(0);
+	} else {
+	    m = aa.shape(0);
+	    n = aa.shape(1);
+	}
 
 	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
 	std::pair<MatrixXd, VectorXd> tmp = orbitToSlice(tmpaa);

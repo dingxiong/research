@@ -11,10 +11,13 @@ project
 
 import python ;
 
+# define a new variant => in order to keep assert() functions 
+variant release_assert : <optimization>speed <inlining>full <debug-symbols>off <runtime-debugging>off ; 
+
 lib np : : <name>boost_numpy <file>/usr/local/home/xiong/apps/BoostNumpy/lib/libboost_numpy.so ;
 lib fftw3 : : <name>fftw3 <file>/usr/lib/libfftw3.so ;
 python-extension py_ks : py_ks.cc np fftw3 ../ksint.cc ../ksintM1.cc 
-		 : <variant>release <optimization>speed 
+		 : <variant>release_assert <optimization>speed 
 		 : <link>shared <cxxflags>-std=c++11 <cxxflags>-lffw3 <cxxflags>-lm
 		 ;
 

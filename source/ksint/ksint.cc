@@ -445,8 +445,9 @@ MatrixXd KS::veToSlice(const MatrixXd &ve, const Ref<const VectorXd> &x){
  *      veToSliceAll(eigVecs, aa.leftCols(aa.cols()-1))
  *  \endcode
  *  
- *  @param[in] eigVecs Floquet vectors along the orbit. Dimension: [N^2, M]
+ *  @param[in] eigVecs Floquet vectors along the orbit. Dimension: [N*Trunc, M]
  *  @param[in] aa the orbit
+ *  @return projected vectors on the slice with dimension [N, M*Trunc]
  *
  *  @note vectors are not normalized
  */

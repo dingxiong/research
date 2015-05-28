@@ -150,9 +150,9 @@ ve = veWhole[indexPo[x1+pid], :].reshape([30, 62])
 ve = ks.veToSlice(ve, aaWhole[indexPo[x1+pid], :])  # transform to slice
 # print ve[gTpos,:].T
 # get rid of one tangent direction
-ve = np.vstack((ve[0:gTpos, :], ve[gTpos+1:, :]))
+FV = np.vstack((ve[0:gTpos, :], ve[gTpos+1:, :]))
 # print ve.shape
-ve = qr(ve.T)[0]
+ve = qr(FV.T)[0]
 # print ve[:, 0:3]
 
 ##################################################
@@ -228,6 +228,23 @@ print Poincare[minIndex], np.amin(np.abs(Poincare))
 interpDifv = -dotproduct[minIndex+1] * newDifv[minIndex] + dotproduct[minIndex] * newDifv[minIndex+1]
 print np.dot(interpDifv, velocity) / norm(velocity) / norm(interpDifv)
 print np.sin(pAngle(interpDifv, ve[:, 0:7]))
+
+
+##################################################
+# plot the angle between difference vector and single FV when
+# ergodic point slides along the ergodic trajectory
+
+ixFV = np.array([0, 1, 7, 10])
+fig = plt.figure(figsize=(8, 6))
+for i in range(ixFV.size):
+    angDxFV = np.dot(newDifv, FV[ixFV[i]]) / norm(FV[ixFV[i]]) / norm(newDifv, axis=1)
+    ax = fig.add_subplot('22'+str(i+1))
+    ax.plot(angDxFV)
+    ax.plot([minIndex, minIndex], [-1, 1], c='r', lw=2, label=str(ixFV[i]))
+    ax.grid('on')
+    ax.legend(loc='upper left')
+plt.tight_layout(pad=0)
+plt.show(block=False)
 
 ##################################################
 # apply this method to all points in this case

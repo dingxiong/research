@@ -73,7 +73,7 @@ Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
  * @return state trajectory. Each column is the state followed the previous column. 
  *         Size : [2*N, nst/np+1] 
  */
-ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, size_t nstp, size_t np){
+ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
     assert( 2*N == a0.rows() ); // check the dimension of initial condition.
     Fv.v1 = R2C(a0);
     ArrayXXd uu(2*N, nstp/np+1); uu.col(0) = a0;  
@@ -91,7 +91,9 @@ ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, size_t nstp, size_t np){
     return uu;
 }
 
-pair<ArrayXXd, ArrayXXd> Cqcgl1d::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
+pair<ArrayXXd, ArrayXXd>
+Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
+	       const size_t np, const size_t nqr){
     assert( 2*N == a0.rows() ); // check the dimension of initial condition.
 
     // Kronecker product package is not available right now.

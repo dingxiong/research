@@ -49,9 +49,10 @@ public:
     Cqcgl1d & operator=(const Cqcgl1d &x);
 
     // member functions.
-    ArrayXXd intg(const ArrayXd &a0, size_t nstp, size_t np = 1);
+    ArrayXXd intg(const ArrayXd &a0, const size_t nstp, const size_t np = 1);
     pair<ArrayXXd, ArrayXXd>
-    intgj(const ArrayXd &a0, size_t nstp, size_t np = 1, size_t nqr = 1);
+    intgj(const ArrayXd &a0, const size_t nstp, const size_t np = 1,
+	  const size_t nqr = 1);
     ArrayXXd C2R(const ArrayXXcd &v);
     ArrayXXcd R2C(const ArrayXXd &v);
     ArrayXd velocity(const ArrayXd &a0);

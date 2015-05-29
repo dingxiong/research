@@ -5,11 +5,11 @@ OPTIM = -O3 -msse2 -msse4 -march=corei7
 INCLUDE = ../../include
 EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 
-CFLAGS = -std=c++0x
+CFLAGS = -lm -lfftw3 -std=c++0x 
 
-SOURCE = cqcgl1d.cc 
-SHARED = libcqcgl1d.so
-STATIC = libcqcgl1d.a
+SOURCE = sparseRoutines.cc
+SHARED = libsparseRoutines.so
+STATIC = libsparseRoutines.a
 
 all : $(SHARED) $(STATIC) 
 

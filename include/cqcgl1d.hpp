@@ -14,6 +14,9 @@
 #include <complex>
 #include <utility>
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <vector>
+#include "sparseRoutines.hpp"
 using std::pair; using std::make_pair;
 using Eigen::MatrixXd; using Eigen::VectorXd;
 using Eigen::MatrixXcd; using Eigen::VectorXcd;
@@ -25,7 +28,9 @@ class Cqcgl1d {
   
 public:
     typedef std::complex<double> dcp;
-
+    typedef Eigen::SparseMatrix<double> SpMat;
+    typedef Eigen::Triplet<double> Tri;
+    
     const int N;
     const double d;
     const double h;
@@ -45,10 +50,11 @@ public:
 
     // member functions.
     ArrayXXd intg(const ArrayXd &a0, size_t nstp, size_t np = 1);
-    pair<ArrayXXd, ArrayXXd> intgj(const ArrayXd &a0, size_t nstp, size_t np = 1, size_t nqr = 1);
+    pair<ArrayXXd, ArrayXXd>
+    intgj(const ArrayXd &a0, size_t nstp, size_t np = 1, size_t nqr = 1);
     ArrayXXd C2R(const ArrayXXcd &v);
     ArrayXXcd R2C(const ArrayXXd &v);
-    ArrayXd vel(const ArrayXd &a0);
+    ArrayXd velocity(const ArrayXd &a0);
     MatrixXd stab(const ArrayXd &a0);
     MatrixXd stabReq(const ArrayXd &a0, double w1, double w2);
     
@@ -60,6 +66,12 @@ public:
     ArrayXXd phaseTangent(const Ref<const ArrayXXd> &aa);
     MatrixXd phaseGenerator();
 
+    ArrayXXd Rotate(const Ref<const ArrayXXd> &aa, const double th, const double phi);
+    
+    VectorXd multiF(const ArrayXXd &x, const int nstp, const double th, const double phi);
+    pair<SpMat, VectorXd>
+    multishoot(const ArrayXXd &x, const int nstp, const double th, const double phi, bool doesPrint = false);
+    
 protected:
     /****    global variable definition.   *****/
     enum { M = 64 }; // number used to approximate the complex integral.

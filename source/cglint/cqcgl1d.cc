@@ -2,7 +2,9 @@
 #include <cmath>
 #include <omp.h>
 #include <iostream>
-using std::cout; using std::endl;
+using std::cout;
+using std::endl;
+using namespace sparseRoutines;
 /*      ----------------------------------------------------
  *                        Class Cqcgl1d
  *      ----------------------------------------------------
@@ -124,26 +126,26 @@ pair<ArrayXXd, ArrayXXd> Cqcgl1d::intgj(const ArrayXd &a0, size_t nstp, size_t n
 }
 
 void Cqcgl1d::CGLInit(){
-  // calculate the ETDRK4 coefficients 
-  K.resize(N,1);
-  Kindex << ArrayXd::LinSpaced(N/2+1, 0, N/2), ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
-  K = 2*M_PI/d * Kindex;
-  L = Mu - dcp(Dr, Di) * K.square();
-  E = (h*L).exp(); 
-  E2 =(h/2*L).exp();
+    // calculate the ETDRK4 coefficients
+    Kindex.resize(N,1);
+    Kindex << ArrayXd::LinSpaced(N/2+1, 0, N/2), ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
+    K = 2*M_PI/d * Kindex;
+    L = Mu - dcp(Dr, Di) * K.square();
+    E = (h*L).exp(); 
+    E2 =(h/2*L).exp();
   
-  ArrayXd tmp = ArrayXd::LinSpaced(M, 1, M);
-  ArrayXXcd r = (tmp/M*dcp(0,2*M_PI)).exp().transpose(); // row array.
+    ArrayXd tmp = ArrayXd::LinSpaced(M, 1, M);
+    ArrayXXcd r = (tmp/M*dcp(0,2*M_PI)).exp().transpose(); // row array.
 
-  ArrayXXcd LR = h*L.replicate(1, M) + r.replicate(N, 1);
-  ArrayXXcd LR2 = LR. square();
-  ArrayXXcd LR3 = LR.cube();
-  ArrayXXcd LRe = LR.exp();
+    ArrayXXcd LR = h*L.replicate(1, M) + r.replicate(N, 1);
+    ArrayXXcd LR2 = LR. square();
+    ArrayXXcd LR3 = LR.cube();
+    ArrayXXcd LRe = LR.exp();
 
-  Q = h * ( ((LR/2.0).exp() - 1)/LR ).rowwise().mean();
-  f1 = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean();
-  f2 = h * ( (4.0 + 2.0*LR + LRe*(-4.0 + 2.0*LR)) / LR3 ).rowwise().mean();
-  f3 = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean();
+    Q = h * ( ((LR/2.0).exp() - 1)/LR ).rowwise().mean();
+    f1 = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean();
+    f2 = h * ( (4.0 + 2.0*LR + LRe*(-4.0 + 2.0*LR)) / LR3 ).rowwise().mean();
+    f3 = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean();
 
 }
 
@@ -227,7 +229,7 @@ ArrayXXcd Cqcgl1d::R2C(const ArrayXXd &v){
 /* -------------------------------------------------- */
 /* --------            velocity field     ----------- */
 /* -------------------------------------------------- */
-ArrayXd Cqcgl1d::vel(const ArrayXd &a0){
+ArrayXd Cqcgl1d::velocity(const ArrayXd &a0){
   assert( 2*N == a0.rows() );
   Fv.v1 = R2C(a0);
   NL(Fv);
@@ -263,14 +265,17 @@ MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double w1, double w2){
  *  th : rotation angle
  *  */
 ArrayXXd Cqcgl1d::transRotate(const Ref<const ArrayXXd> &aa, const double th){
-    ArrayXcd R = ( (dcp(0,1) * th * Kindex) ).exp(); // e^{ik\theta}
+    ArrayXcd R = ( dcp(0,1) * th * Kindex ).exp(); // e^{ik\theta}
     ArrayXXcd raa = R2C(aa); 
     raa.colwise() *= R;
   
     return C2R(raa);
 }
 
-/** @brief group tangent in angle unit. */
+/** @brief group tangent in angle unit.
+ *
+ *  x=(b0, c0, b1, c1, b2, c2 ...) ==> tx=(0, 0, -c1, b1, -2c2, 2b2, ...)
+ */
 ArrayXXd Cqcgl1d::transTangent(const Ref<const ArrayXXd> &aa){
     ArrayXcd R = dcp(0,1) * Kindex;
     ArrayXXcd raa = R2C(aa);
@@ -288,6 +293,7 @@ MatrixXd Cqcgl1d::transGenerator(){
   }
   return T;
 }
+
 
 /** @brief group transform for complex rotation
  * phi: rotation angle
@@ -310,4 +316,126 @@ MatrixXd Cqcgl1d::phaseGenerator(){
     T(2*i+1, 2*i) = 1;
   }
   return T;
+}
+
+/**
+ * @brief apply both continous symmetries
+ *
+ * @note     for performance purpose, this function is not written as the
+ *           superposition of 2 functions
+ */
+ArrayXXd Cqcgl1d::Rotate(const Ref<const ArrayXXd> &aa, const double th,
+			 const double phi){
+    ArrayXcd R = ( dcp(0,1) * th * Kindex + phi).exp(); // e^{ik\theta + \phi}
+    ArrayXXcd raa = R2C(aa); 
+    raa.colwise() *= R;
+  
+    return C2R(raa);
+    return phaseRotate( transRotate(aa, th), phi);
+}
+
+/* -------------------------------------------------- */
+/* --------          shooting related     ----------- */
+/* -------------------------------------------------- */
+
+/**
+ * @brief form the multishooting vector
+ *
+ *  df  = [ f(x_0, nstp) - x_1,
+ *          f(x_1, nstp) - x_2,
+ *          ...
+ *          g(\theta, \phi) f(x_{M-1}, nstp) - x_0 ]
+ * 
+ * @param[in] x      a stack of state vectors on a orbit. Each column is one point
+ * @param[in] nstp   integration time steps for each point in x
+ * @param[in] th     translation rotation angle
+ * @param[in] phi    phase change angle
+ */
+VectorXd Cqcgl1d::multiF(const ArrayXXd &x, const int nstp, const double th, const double phi){
+    int m = x.cols();
+    int n = x.rows();
+    assert( 2*N == n );
+    
+    VectorXd F(m*n);
+    for(size_t i = 0; i < m; i++){
+	ArrayXXd aa = intg(x.col(i), nstp, nstp);
+	if(i < m-1) F.segment(i*n, n) = aa.col(1) - x.col(i+1);
+	else F.segment(i*n, n) =  Rotate(aa.col(1), th, phi)  - x.col((i+1)%m);
+    }
+
+    return F;
+}
+
+/**
+ * @brief form the multishooting matrix and the difference vector
+ *
+ *  df  = [ f(x_0, nstp) - x_1,
+ *          f(x_1, nstp) - x_2,
+ *          ...
+ *          g(\theta, \phi) f(x_{M-1}, nstp) - x_0 ]
+ *          
+ *  A relative periodic orbit has form \f$ x(0) = g_\tau(\theta) g_\rho(\phi) x(T_p) \f$.
+ *  Take derivative of the above vector, we obtain
+ *             [ J(x_0)   -I                                      v(f(x_0))         
+ *                       J(x_1)   -I                              v(f(x_1))
+ *  Jacobian =                    ....                             ...
+ *               -I                   g(\theta, \phi)J(x_{M-1})   v(f(x_{M-1}))  tx1  tx2 ]
+ *  
+ */
+pair<Cqcgl1d::SpMat, VectorXd>
+Cqcgl1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
+		    const double phi, bool doesPrint /* = false*/){
+    int m = x.cols();		/* number of shooting points */
+    int n = x.rows();
+    assert( 2*N == n );
+  
+    SpMat DF(m*n, m*n+3);
+    VectorXd F(m*n);
+    std::vector<Tri> nz;
+    nz.reserve(2*m*n*n);
+    
+    if(doesPrint) printf("Forming multishooting matrix:");
+    for(size_t i = 0 ; i < m; i++){
+	if(doesPrint) printf("%zd ", i);
+	std::pair<ArrayXXd, ArrayXXd> aadaa = intgj(x.col(i), nstp, nstp, nstp); 
+	ArrayXXd &aa = aadaa.first;
+	ArrayXXd &J = aadaa.second;
+	J.resize(n, n);
+	
+	if(i < m-1){
+	    // J
+	    std::vector<Tri> triJ = triMat(J, i*n, i*n);
+	    nz.insert(nz.end(), triJ.begin(), triJ.end());
+	    // velocity
+	    std::vector<Tri> triv = triMat(velocity(aa.col(1)), i*n, m*n);
+	    nz.insert(nz.end(), triv.begin(), triv.end());
+	    // f(x_i) - x_{i+1}
+	    F.segment(i*n, n) = aa.col(1) - x.col(i+1);
+	} else {
+	    ArrayXd gfx = Rotate(aa.col(1), th, phi); /* gf(x) */
+	    // g*J
+	    std::vector<Tri> triJ = triMat(Rotate(J, th, phi), i*n, i*n);     
+	    nz.insert(nz.end(), triJ.begin(), triJ.end());
+	    // R*velocity
+	    std::vector<Tri> triv = triMat(Rotate(velocity(aa.col(1)), th, phi), i*n, m*n);
+	    nz.insert(nz.end(), triv.begin(), triv.end());
+	    // T_\tau * g * f(x_{m-1})
+	    VectorXd tx_trans = transTangent(gfx) ;
+	    std::vector<Tri> tritx_trans = triMat(tx_trans, i*n, m*n+1);
+	    nz.insert(nz.end(), tritx_trans.begin(), tritx_trans.end());
+	    // T_\phi * g * f(x_{m-1})
+	    ArrayXd tx_phase = phaseTangent( gfx );
+	    std::vector<Tri> tritx_phase = triMat(tx_phase, i*n, m*n+2);
+	    nz.insert(nz.end(), tritx_phase.begin(), tritx_phase.end());
+	    // g*f(x_{m-1}) - x_0
+	    F.segment(i*n, n) = gfx  - x.col((i+1)%m);
+	}
+	std::vector<Tri> triI = triDiag(n, -1, i*n, ((i+1)%m)*n);
+	nz.insert(nz.end(), triI.begin(), triI.end());
+    }
+    if(doesPrint) printf("\n");
+    
+    DF.setFromTriplets(nz.begin(), nz.end());
+
+    return make_pair(DF, F);
 }

@@ -55,6 +55,10 @@ public:
 	  const size_t nqr = 1);
     ArrayXXd C2R(const ArrayXXcd &v);
     ArrayXXcd R2C(const ArrayXXd &v);
+    ArrayXXd Fourier2Config(const Ref<const ArrayXXd> &aa);
+    ArrayXXd Config2Fourier(const Ref<const ArrayXXd> &AA);
+    ArrayXXd calMag(const Ref<const ArrayXXd> &AA);
+    ArrayXXd Fourier2ConfigMag(const Ref<const ArrayXXd> &aa);
     ArrayXd velocity(const ArrayXd &a0);
     MatrixXd stab(const ArrayXd &a0);
     MatrixXd stabReq(const ArrayXd &a0, double w1, double w2);

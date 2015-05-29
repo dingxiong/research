@@ -16,7 +16,7 @@ fig = plt.figure(figsize=(4,5));
 ax = fig.add_subplot(111)
 ax.set_xlabel('x')
 ax.set_ylabel('t')
-im = ax.imshow(abs(np.fft.ifft(taa, axis=0)).T, cmap=plt.get_cmap('get'),
+im = ax.imshow(abs(np.fft.ifft(taa, axis=0)).T, cmap=plt.get_cmap('jet'),
                 extent=(0,50,0, h*taa.shape[1]), aspect='auto',
                 origin ='lower')
 ax.grid('on')

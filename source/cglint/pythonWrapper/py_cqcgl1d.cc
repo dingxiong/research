@@ -112,6 +112,81 @@ public:
 	return bp::make_tuple(aa, daa);
     }
 
+    /* wrap Fourier2Config */
+    bn::ndarray PYFourier2Config(bn::ndarray aa){
+
+	int m, n;
+	if(aa.get_nd() == 1){
+	    m = 1;
+	    n = aa.shape(0);
+	} else {
+	    m = aa.shape(0);
+	    n = aa.shape(1);
+	}
+	
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXXd tmpAA = Fourier2Config(tmpaa);
+	
+	int m2 = tmpAA.cols();
+	int n2 = tmpAA.rows();
+	Py_intptr_t dims[2] = {m2 , n2};
+	bn::ndarray AA = bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)AA.get_data(), (void*)(&tmpAA(0, 0)), 
+	       sizeof(double) * m2 * n2 );
+
+	return AA;
+    }
+
+    /* wrap Config2Fourier */
+    bn::ndarray PYConfig2Fourier(bn::ndarray AA){
+
+	int m, n;
+	if(AA.get_nd() == 1){
+	    m = 1;
+	    n = AA.shape(0);
+	} else {
+	    m = AA.shape(0);
+	    n = AA.shape(1);
+	}
+	
+	Map<ArrayXXd> tmpAA((double*)AA.get_data(), n, m);
+	ArrayXXd tmpaa = Config2Fourier(tmpAA);
+	
+	int m2 = tmpaa.cols();
+	int n2 = tmpaa.rows();
+	Py_intptr_t dims[2] = {m2 , n2};
+	bn::ndarray aa = bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)aa.get_data(), (void*)(&tmpaa(0, 0)), 
+	       sizeof(double) * m2 * n2 );
+
+	return aa;
+    }
+    
+    /* wrap Fourier2ConfigMag */
+    bn::ndarray PYFourier2ConfigMag(bn::ndarray aa){
+
+	int m, n;
+	if(aa.get_nd() == 1){
+	    m = 1;
+	    n = aa.shape(0);
+	} else {
+	    m = aa.shape(0);
+	    n = aa.shape(1);
+	}
+	
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXXd tmpAA = Fourier2ConfigMag(tmpaa);
+	
+	int m2 = tmpAA.cols();
+	int n2 = tmpAA.rows();
+	Py_intptr_t dims[2] = {m2 , n2};
+	bn::ndarray AA = bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)AA.get_data(), (void*)(&tmpAA(0, 0)), 
+	       sizeof(double) * m2 * n2 );
+
+	return AA;
+    }
+
 #if 0
     /* reflection */
     bn::ndarray PYreflection(bn::ndarray aa){
@@ -299,6 +374,9 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("velocity", &pyCqcgl1d::PYvelocity)
 	.def("intg", &pyCqcgl1d::PYintg)
 	.def("intgj", &pyCqcgl1d::PYintgj)
+	.def("Fourier2Config", &pyCqcgl1d::PYFourier2Config)
+	.def("Config2Fourier", &pyCqcgl1d::PYConfig2Fourier)
+	.def("Fourier2ConfigMag", &pyCqcgl1d::PYFourier2Config)
 	;
 
 }

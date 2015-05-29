@@ -229,6 +229,54 @@ ArrayXXcd Cqcgl1d::R2C(const ArrayXXd &v){
 }
 
 /* -------------------------------------------------- */
+/* -------  Fourier/Configure transformation -------- */
+/* -------------------------------------------------- */
+/**
+ * @brief back Fourier transform of the states. xInput and output are both real.
+ */
+ArrayXXd Cqcgl1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
+    int m = aa.cols();
+    int n = aa.rows();
+    assert(2*N == n);
+    ArrayXXd AA(n, m);
+    
+    for(size_t i = 0; i < m; i++){
+	Fv.v1 = R2C(aa.col(i));
+	ifft(Fv);
+	AA.col(i) = C2R(Fv.v2);
+    }
+    
+    return AA;
+}
+
+
+/**
+ * @brief Fourier transform of the states. Input and output are both real.
+ */
+ArrayXXd Cqcgl1d::Config2Fourier(const Ref<const ArrayXXd> &AA){
+    int m = AA.cols();
+    int n = AA.rows();
+    assert(2*N == n);
+    ArrayXXd aa(n, m);
+    
+    for(size_t i = 0; i < m; i++){
+	Fv.v2 = R2C(AA.col(i));
+	fft(Fv);
+	aa.col(i) = C2R(Fv.v3);
+    }
+    
+    return aa;
+}
+
+ArrayXXd Cqcgl1d::calMag(const Ref<const ArrayXXd> &AA){
+    return R2C(AA).abs();
+}
+
+ArrayXXd Cqcgl1d::Fourier2ConfigMag(const Ref<const ArrayXXd> &aa){
+    return calMag(Fourier2Config(aa));
+}
+
+/* -------------------------------------------------- */
 /* --------            velocity field     ----------- */
 /* -------------------------------------------------- */
 ArrayXd Cqcgl1d::velocity(const ArrayXd &a0){

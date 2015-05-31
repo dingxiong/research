@@ -51,6 +51,31 @@ public:
 	
 	return v;
     }
+    
+    /* wrap velocityReq */
+    bn::ndarray PYvelocityReq(bn::ndarray a0, double th, double phi){
+	int m, n;
+	if(a0.get_nd() == 1){
+	    m = 1;
+	    n = a0.shape(0);
+	} else {
+	    m = a0.shape(0);
+	    n = a0.shape(1);
+	}
+	
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	VectorXd tmpv = velocityReq(tmpa, th, phi);
+	
+	int n3 = tmpv.rows();
+	Py_intptr_t dims[1] = {n3};
+	bn::ndarray v = 
+	    bn::empty(1, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)v.get_data(), (void*)(&tmpv(0)), 
+	       sizeof(double) * n3 );
+	
+	return v;
+
+    }
 
 
     /* wrap the integrator */
@@ -186,6 +211,98 @@ public:
 
 	return AA;
     }
+    
+    /* orbit2slice */
+    bp::tuple PYorbit2slice(bn::ndarray aa){
+
+      	int m, n;
+	if(aa.get_nd() == 1){
+	    m = 1;
+	    n = aa.shape(0);
+	} else {
+	    m = aa.shape(0);
+	    n = aa.shape(1);
+	}
+
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(tmpaa);
+
+	int m2 = std::get<0>(tmp).cols();
+	int n2 = std::get<0>(tmp).rows();
+	Py_intptr_t dims[2] = {m2 , n2};
+	bn::ndarray raa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)raa.get_data(), (void*)(&(std::get<0>(tmp)(0, 0))), 
+	       sizeof(double) * m2 * n2 );
+
+	int n3 = std::get<1>(tmp).rows();
+	Py_intptr_t dims2[1] = { n3 };
+	bn::ndarray th = 
+	    bn::empty(1, dims2, bn::dtype::get_builtin<double>());
+	memcpy((void*)th.get_data(), (void*)(&(std::get<1>(tmp)(0))), 
+	       sizeof(double) * n3 );
+
+	int n4 = std::get<2>(tmp).rows();
+	Py_intptr_t dims3[1] = { n4 };
+	bn::ndarray phi = 
+	    bn::empty(1, dims3, bn::dtype::get_builtin<double>());
+	memcpy((void*)phi.get_data(), (void*)(&(std::get<2>(tmp)(0))), 
+	       sizeof(double) * n4 );
+	      
+	return bp::make_tuple(raa, th, phi);
+    }
+
+    /* stability matrix */
+    bn::ndarray PYstab(bn::ndarray a0){
+
+      	int m, n;
+	if(a0.get_nd() == 1){
+	    m = 1;
+	    n = a0.shape(0);
+	} else {
+	    m = a0.shape(0);
+	    n = a0.shape(1);
+	}
+
+	Map<ArrayXd> tmpa((double*)a0.get_data(), n*m);
+	MatrixXd tmpZ = stab(tmpa);
+
+	int m2 = tmpZ.cols();
+	int n2 = tmpZ.rows();
+	Py_intptr_t dims[2] = {m2 , n2};
+	bn::ndarray Z = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)Z.get_data(), (void*)&(tmpZ(0, 0)), 
+	       sizeof(double) * m2 * n2 );
+	      
+	return Z;
+    }
+
+    /* stability matrix for relative equibrium */
+    bn::ndarray PYstabReq(bn::ndarray a0, double th, double phi){
+
+      	int m, n;
+	if(a0.get_nd() == 1){
+	    m = 1;
+	    n = a0.shape(0);
+	} else {
+	    m = a0.shape(0);
+	    n = a0.shape(1);
+	}
+
+	Map<ArrayXd> tmpa((double*)a0.get_data(), n*m);
+	MatrixXd tmpZ = stabReq(tmpa, th, phi);
+
+	int m2 = tmpZ.cols();
+	int n2 = tmpZ.rows();
+	Py_intptr_t dims[2] = {m2 , n2};
+	bn::ndarray Z = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)Z.get_data(), (void*)&(tmpZ(0, 0)), 
+	       sizeof(double) * m2 * n2 );
+	      
+	return Z;
+    }
 
 #if 0
     /* reflection */
@@ -257,36 +374,6 @@ public:
 
 	return raa;
     }
-
-
-    /* orbitToSlice */
-    bp::tuple PYorbitToSlice(bn::ndarray aa){
-
-      	int m, n;
-	if(aa.get_nd() == 1){
-	    m = 1;
-	    n = aa.shape(0);
-	} else {
-	    m = aa.shape(0);
-	    n = aa.shape(1);
-	}
-
-	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
-	std::pair<MatrixXd, VectorXd> tmp = orbitToSlice(tmpaa);
-
-	Py_intptr_t dims[2] = {m , n};
-	bn::ndarray raa = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)raa.get_data(), (void*)(&tmp.first(0, 0)), 
-	       sizeof(double) * m * n );
-	bn::ndarray ang = 
-	    bn::empty(1, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)ang.get_data(), (void*)(&tmp.second(0, 0)), 
-	       sizeof(double) * m );
-	      
-	return bp::make_tuple(raa, ang);
-    }
-
 
     /* veToSlice */
     bn::ndarray PYveToSlice(bn::ndarray ve, bn::ndarray x){
@@ -372,11 +459,14 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def_readonly("Gr", &pyCqcgl1d::Gr)
 	.def_readonly("Gi", &pyCqcgl1d::Gi)
 	.def("velocity", &pyCqcgl1d::PYvelocity)
+	.def("velocityReq", &pyCqcgl1d::PYvelocityReq)
 	.def("intg", &pyCqcgl1d::PYintg)
 	.def("intgj", &pyCqcgl1d::PYintgj)
 	.def("Fourier2Config", &pyCqcgl1d::PYFourier2Config)
 	.def("Config2Fourier", &pyCqcgl1d::PYConfig2Fourier)
 	.def("Fourier2ConfigMag", &pyCqcgl1d::PYFourier2Config)
+	.def("orbit2slice", &pyCqcgl1d::PYorbit2slice)
+	.def("stab", &pyCqcgl1d::PYstab)
+	.def("stabReq", &pyCqcgl1d::PYstabReq)
 	;
-
 }

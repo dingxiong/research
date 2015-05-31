@@ -26,35 +26,6 @@ const int N = 256;
 const double L = 50;
 
 
-struct KeepDiag {
-    inline bool operator() (const int& row, const int& col,
-			    const double&) const
-    { return row == col;  }
-};
-
-vector<Tri> triMat(const MatrixXd &A, const size_t M = 0, const size_t N = 0){
-    vector<Tri> tri; 
-    size_t m = A.cols();
-    size_t n = A.rows();
-    tri.reserve(m*n);
-    for(size_t j = 0; j < m; j++)
-	for(size_t i = 0; i < n; i++)
-	    tri.push_back( Tri(M+i, N+j, A(i,j) ));
-
-    return tri;
-}
-
-vector<Tri> triDiag(const size_t n, const double x, const size_t M = 0, const size_t N = 0 ){
-    vector<Tri> tri;
-    tri.reserve(n);
-    for(size_t i = 0; i < n; i++) tri.push_back( Tri(M+i, N+i, x) );
-    return tri;
-}
-
-
-
-
-
 ArrayXd findPO(const ArrayXd &a0, const double h0, const int Norbit, const double th0, const double phi0,
 	       const int M, const int MaxN, const double tol){
 
@@ -114,7 +85,7 @@ ArrayXd findPO(const ArrayXd &a0, const double h0, const int Norbit, const doubl
     }
   
     ArrayXd po(2*N+3);
-    po << x.col(0), h, th, phi;
+    po << x.col(0), h, th, phi;ve
     return po;
 }
 
@@ -134,28 +105,6 @@ pair<ArrayXXd, ArrayXd> findRecurrence(const ArrayXd &a0, const double h,
   }
 }
 ****************************************/
-
-pair<MatrixXd, VectorXd> newtonReq(Cqcgl1d &cgl, const ArrayXd &a0, const double w1, const double w2){
-    MatrixXd DF(2*N+2, 2*N+2);
-    ArrayXd t1 = cgl.TS1(a0);
-    ArrayXd t2 = cgl.TS2(a0);
-    DF.topLeftCorner(2*N, 2*N) = cgl.stab(a0) + w1*cgl.GS1() + w2*cgl.GS2();
-    DF.col(2*N).head(2*N) = t1;
-    DF.col(2*N+1).head(2*N) = t2;
-    //DF.row(2*N).head(2*N) = t1.transpose();
-    //DF.row(2*N+1).head(2*N) = t2.transpose();
-    DF.row(2*N).head(2*N) = VectorXd::Zero(2*N);
-    DF.row(2*N+1).head(2*N) = VectorXd::Zero(2*N);
-    DF.bottomRightCorner(2,2) = MatrixXd::Zero(2,2);
-
-    VectorXd F(2*N+2);
-    F.head(2*N) = cgl.vel(a0) + w1*t1 + w2*t2;
-    F(2*N) = 0;
-    F(2*N+1) = 0;
-
-    return make_pair(DF, F);
-  
-}
 
 ArrayXd findReq(const ArrayXd &a0, const double w10, const double w20, const int MaxN, const double tol){
 

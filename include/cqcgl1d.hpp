@@ -59,9 +59,12 @@ public:
     ArrayXXd Config2Fourier(const Ref<const ArrayXXd> &AA);
     ArrayXXd calMag(const Ref<const ArrayXXd> &AA);
     ArrayXXd Fourier2ConfigMag(const Ref<const ArrayXXd> &aa);
+    
     ArrayXd velocity(const ArrayXd &a0);
+    ArrayXd velocityReq(const ArrayXd &a0, const double th,
+			const double phi);
     MatrixXd stab(const ArrayXd &a0);
-    MatrixXd stabReq(const ArrayXd &a0, double w1, double w2);
+    MatrixXd stabReq(const ArrayXd &a0, double th, double phi);
     
     ArrayXXd transRotate(const Ref<const ArrayXXd> &aa, const double th);
     ArrayXXd transTangent(const Ref<const ArrayXXd> &aa);
@@ -72,10 +75,14 @@ public:
     MatrixXd phaseGenerator();
 
     ArrayXXd Rotate(const Ref<const ArrayXXd> &aa, const double th, const double phi);
+    std::tuple<ArrayXXd, ArrayXd, ArrayXd>
+    orbit2slice(const Ref<const ArrayXXd> &aa);
     
     VectorXd multiF(const ArrayXXd &x, const int nstp, const double th, const double phi);
     pair<SpMat, VectorXd>
     multishoot(const ArrayXXd &x, const int nstp, const double th, const double phi, bool doesPrint = false);
+    std::pair<MatrixXd, VectorXd>
+    newtonReq(const ArrayXd &a0, const double th, const double phi);
     
 protected:
     /****    global variable definition.   *****/

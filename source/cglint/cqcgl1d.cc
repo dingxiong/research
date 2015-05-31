@@ -279,12 +279,26 @@ ArrayXXd Cqcgl1d::Fourier2ConfigMag(const Ref<const ArrayXXd> &aa){
 /* -------------------------------------------------- */
 /* --------            velocity field     ----------- */
 /* -------------------------------------------------- */
+
+/**
+ * @brief velocity field
+ */
 ArrayXd Cqcgl1d::velocity(const ArrayXd &a0){
   assert( 2*N == a0.rows() );
   Fv.v1 = R2C(a0);
   NL(Fv);
   ArrayXcd vel = L*Fv.v1 + Fv.v3;
   return C2R(vel);
+}
+
+/**
+ * @brief the generalized velociyt for relative equilibrium
+ *
+ *   v(x) + t_\tau(x) + t_\pho(x)
+ */
+ArrayXd Cqcgl1d::velocityReq(const ArrayXd &a0, const double th,
+			     const double phi){
+    return velocity(a0) + th*transTangent(a0) + phi*phaseTangent(a0);    
 }
 
 /* -------------------------------------------------- */
@@ -303,9 +317,12 @@ MatrixXd Cqcgl1d::stab(const ArrayXd &a0){
   return C2R(Z);
 }
 
-MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double w1, double w2){
+/**
+ * @brief stability for relative equilbrium
+ */
+MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double th, double phi){
     MatrixXd z = stab(a0);
-    return z + w1*transGenerator() + w2*phaseGenerator();
+    return z + th*transGenerator() + phi*phaseGenerator();
 }
 /* -------------------------------------------------- */
 /* ------           symmetry related           ------ */
@@ -376,12 +393,31 @@ MatrixXd Cqcgl1d::phaseGenerator(){
  */
 ArrayXXd Cqcgl1d::Rotate(const Ref<const ArrayXXd> &aa, const double th,
 			 const double phi){
-    ArrayXcd R = ( dcp(0,1) * th * Kindex + phi).exp(); // e^{ik\theta + \phi}
+    ArrayXcd R = ( dcp(0,1) * (th * Kindex + phi) ).exp(); // e^{ik\theta + \phi}
     ArrayXXcd raa = R2C(aa); 
     raa.colwise() *= R;
   
     return C2R(raa);
     return phaseRotate( transRotate(aa, th), phi);
+}
+
+std::tuple<ArrayXXd, ArrayXd, ArrayXd>
+Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
+    int n = aa.rows();
+    int m = aa.cols();
+    assert(2*N == n);
+    ArrayXXd raa(n, m);
+    ArrayXd th(m);
+    ArrayXd phi(m);
+
+    for(size_t i = 0; i < m; i++){
+	double a0 = atan2(aa(1, i), aa(0, i));
+	double a1 = atan2(aa(3, i), aa(2, i));
+	phi(i) = a0;
+	th(i) = a1 - a0;
+	raa.col(i) = Rotate(aa.col(i), -(a1-a0), -a0);
+    }
+    return std::make_tuple(raa, th, phi);
 }
 
 /* -------------------------------------------------- */
@@ -486,6 +522,30 @@ Cqcgl1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
     if(doesPrint) printf("\n");
     
     DF.setFromTriplets(nz.begin(), nz.end());
+
+    return make_pair(DF, F);
+}
+
+/**
+ * @brief calculate the Jacobian for finding relative equilibria
+ * 
+ */
+std::pair<MatrixXd, VectorXd>
+Cqcgl1d::newtonReq(const ArrayXd &a0, const double th, const double phi){
+    int n = a0.rows();
+    assert(2*N == n);
+    
+    MatrixXd DF(n, n+2);
+    ArrayXd tx_trans = transTangent(a0);
+    ArrayXd tx_phase = phaseTangent(a0);
+    DF.leftCols(n) = stabReq(a0, th, phi);
+    DF.col(n)= tx_trans;
+    DF.col(n+1) = tx_phase;
+
+    VectorXd F(n+2);
+    F.head(n) = velocity(a0) + th*tx_trans + phi*tx_phase;
+    F(n) = 0;
+    F(n+1) = 0;
 
     return make_pair(DF, F);
 }

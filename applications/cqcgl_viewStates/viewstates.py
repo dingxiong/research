@@ -42,23 +42,32 @@ if case == 2:
     vReq = cgl.velocityReq(a0, th0, phi0)
     print norm(vReq)
 
-    stabMat = cgl.stabReq(a0, th0, phi0).T  # transpose is needed
+    # check the reflected state
+    a0Reflected = cgl.reflect(a0)
+    vReqReflected = cgl.velocityReq(a0Reflected, -th0, phi0)
+    print norm(vReqReflected)
+    plotOneConfigFromFourier(cgl, a0)
+    plotOneConfigFromFourier(cgl, a0Reflected)
+
+    # obtain the stability exponents/vectors
+    # stabMat = cgl.stabReq(a0, th0, phi0).T
+    stabMat = cgl.stabReq(a0Reflected, -th0, phi0).T  # transpose is needed
     eigvalues, eigvectors = eig(stabMat)
     eigvalues, eigvectors = sortByReal(eigvalues, eigvectors)
     print eigvalues[:10]
 
     # make sure you make a copy because Fourier2Config takes contigous memory
     tmpr = eigvectors[:, 0].real.copy()
-    tmpr = cgl.Fourier2Config(tmpr).squeeze()
+    tmprc = cgl.Fourier2Config(tmpr).squeeze()
     tmpi = eigvectors[:, 0].imag.copy()
-    tmpi = cgl.Fourier2Config(tmpi).squeeze()
-    plotOneConfig(tmpi)
- 
+    tmpic = cgl.Fourier2Config(tmpi).squeeze()
+    plotOneConfig(tmprc, size=[6, 4])
+    plotOneConfig(tmpic, size=[6, 4])
 
-    
+
     nstp = 2000
-    aa = cgl.intg(a0, nstp, 1)
-    plotConfigSpace(cgl.Fourier2Config(aa), [0, d, 0, nstp*h])
+    aa = cgl.intg(a0Reflected, nstp, 1)
+    plotConfigSpace(cgl.Fourier2Config(aa), [0, d, 0, nstp*h], [0, 2])
     raa, th, phi = cgl.orbit2slice(aa)
-    plotConfigSpace(cgl.Fourier2Config(raa), [0, d, 0, nstp*h])
+    plotConfigSpace(cgl.Fourier2Config(raa), [0, d, 0, nstp*h], [0, 2])
     plotOneFourier(aa[-1])

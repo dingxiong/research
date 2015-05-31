@@ -43,6 +43,13 @@ def plotOneConfig(A, d=50, size=[8, 6]):
     plt.show(block=False)
 
 
+def plotOneConfigFromFourier(cgl, a0, d=50, size=[8, 6]):
+    """
+    plot the configuration at one point from Fourier mode
+    """
+    plotOneConfig(cgl.Fourier2Config(a0).squeeze(), d, size)
+
+
 def plotOneFourier(a, color='r', size=[8, 6]):
     """
     plot Fourier modes at one point

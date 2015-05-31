@@ -65,6 +65,8 @@ public:
 			const double phi);
     MatrixXd stab(const ArrayXd &a0);
     MatrixXd stabReq(const ArrayXd &a0, double th, double phi);
+
+    ArrayXXd reflect(const Ref<const ArrayXXd> &aa);
     
     ArrayXXd transRotate(const Ref<const ArrayXXd> &aa, const double th);
     ArrayXXd transTangent(const Ref<const ArrayXXd> &aa);

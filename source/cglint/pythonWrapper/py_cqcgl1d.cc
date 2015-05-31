@@ -304,9 +304,9 @@ public:
 	return Z;
     }
 
-#if 0
+
     /* reflection */
-    bn::ndarray PYreflection(bn::ndarray aa){
+    bn::ndarray PYreflect(bn::ndarray aa){
 
 	int m, n;
 	if(aa.get_nd() == 1){
@@ -318,9 +318,12 @@ public:
 	}
 	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXXd tmpraa = Reflection(tmpaa);
+	ArrayXXd tmpraa = reflect(tmpaa);
+
+	int m2 = tmpraa.cols();
+	int n2 = tmpraa.rows();
+	Py_intptr_t dims[2] = {m2 , n2};
 	
-	Py_intptr_t dims[2] = {m , n};
 	bn::ndarray raa = 
 	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
 	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
@@ -329,7 +332,7 @@ public:
 	return raa;
     }
 
-
+#if 0
     /* half2whole */
     bn::ndarray PYhalf2whole(bn::ndarray aa){
 	
@@ -468,5 +471,6 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("orbit2slice", &pyCqcgl1d::PYorbit2slice)
 	.def("stab", &pyCqcgl1d::PYstab)
 	.def("stabReq", &pyCqcgl1d::PYstabReq)
+	.def("reflect", &pyCqcgl1d::PYreflect)
 	;
 }

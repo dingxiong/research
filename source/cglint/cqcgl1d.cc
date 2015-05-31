@@ -328,6 +328,22 @@ MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double th, double phi){
 /* ------           symmetry related           ------ */
 /* -------------------------------------------------- */
 
+/**
+ * @brief reflect the states
+ *
+ * Reflection : a_k -> a_{-k}. so a_0 keeps unchanged
+ */
+ArrayXXd Cqcgl1d::reflect(const Ref<const ArrayXXd> &aa){
+    ArrayXXcd raa = R2C(aa);
+    const int n = raa.rows();
+    for(size_t i = 1; i < n/2; i++){
+	ArrayXcd tmp = raa.row(i);
+	raa.row(i) = raa.row(n-i);
+	raa.row(n-i) = tmp;
+    }
+    return C2R(raa);
+}
+
 /** @brief group rotation for spatial translation of set of arrays.
  *  th : rotation angle
  *  */

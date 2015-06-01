@@ -436,6 +436,36 @@ Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
     return std::make_tuple(raa, th, phi);
 }
 
+/** @brief project covariant vectors to 1st mode slice
+ *
+ * projection matrix is h = (I - |tx><tp|/<tx|tp>) * g(-th), so eigenvector |ve> is
+ * projected to |ve> - |tx>*(<tp|ve>|/<tx|tp>), before which, g(-th) is 
+ * performed.
+ *
+ * In 0th and 1st mode slice, template point is 
+ * |xp_\rho>=(1,0,0,...,0) ==> |tp_\rho>=(0,1,0,0,...,0)
+ * |xp_\tau>=(0,0,1,...,0) ==> |tp_\tau>=(0,0,0,1,...,0)
+ * <tp_\rho|ve> = ve.row(1) // second row
+ * <tp_\tau|ve> = ve.row(3) // 4th row
+ *
+ * @note vectors are not normalized
+ */
+MatrixXd Cqcgl1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
+    std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(x);
+    ArrayXXd &xhat =  std::get<0>(tmp); // dimension [2*N, 1]
+    double th = std::get<1>(tmp)[0];
+    double phi = std::get<2>(tmp)[0];
+    VectorXd tx_phase = phaseTangent(xhat);
+    VectorXd tx_trans = transTangent(xhat);
+	
+    MatrixXd vep = Rotate(ve, -th, -phi);
+    vep = vep - (tx_phase - tx_trans) * vep.row(1) / xhat(0)
+	- tx_trans * vep.row(3) / xhat(2);
+  
+    return vep;
+
+}
+
 /* -------------------------------------------------- */
 /* --------          shooting related     ----------- */
 /* -------------------------------------------------- */

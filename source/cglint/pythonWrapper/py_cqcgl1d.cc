@@ -332,6 +332,42 @@ public:
 	return raa;
     }
 
+    /* ve2slice */
+    bn::ndarray PYve2slice(bn::ndarray ve, bn::ndarray x){
+	
+	int m, n;
+	if(ve.get_nd() == 1){
+	    m = 1;
+	    n = ve.shape(0);
+	} else {
+	    m = ve.shape(0);
+	    n = ve.shape(1);
+	}
+
+	int m2, n2;
+	if(x.get_nd() == 1){
+	    m2 = 1;
+	    n2 = x.shape(0);
+	} else {
+	    m2 = x.shape(0);
+	    n2 = x.shape(1);
+	}
+
+	Map<ArrayXXd> tmpve((double*)ve.get_data(), n, m);
+	Map<ArrayXd> tmpx((double*)x.get_data(), n2*m2);
+	MatrixXd tmpvep = ve2slice(tmpve, tmpx);
+
+	int m3 = tmpvep.cols();
+	int n3 = tmpvep.rows();
+	Py_intptr_t dims[2] = {m3 , n3};
+	bn::ndarray vep = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)vep.get_data(), (void*)(&tmpvep(0, 0)), 
+	       sizeof(double) * m3 * n3 );
+	      
+	return vep;
+    }
+
 #if 0
     /* half2whole */
     bn::ndarray PYhalf2whole(bn::ndarray aa){
@@ -353,56 +389,6 @@ public:
 	return raa;
     }
 
-
-    /* Rotation */
-    bn::ndarray PYrotation(bn::ndarray aa, const double th){
-
-	int m, n;
-	if(aa.get_nd() == 1){
-	    m = 1;
-	    n = aa.shape(0);
-	} else {
-	    m = aa.shape(0);
-	    n = aa.shape(1);
-	}
-
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXXd tmpraa = Rotation(tmpaa, th);
-
-	Py_intptr_t dims[2] = {m , n};
-	bn::ndarray raa = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
-	       sizeof(double) * m * n );
-
-	return raa;
-    }
-
-    /* veToSlice */
-    bn::ndarray PYveToSlice(bn::ndarray ve, bn::ndarray x){
-	
-	int m, n;
-	if(ve.get_nd() == 1){
-	    m = 1;
-	    n = ve.shape(0);
-	} else {
-	    m = ve.shape(0);
-	    n = ve.shape(1);
-	}
-	// printf("%d %d\n", m, n);
-
-	Map<MatrixXd> tmpve((double*)ve.get_data(), n, m);
-	Map<VectorXd> tmpx((double*)x.get_data(), n);
-	MatrixXd tmpvep = veToSlice(tmpve, tmpx);
-
-	Py_intptr_t dims[2] = {m , n};
-	bn::ndarray vep = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)vep.get_data(), (void*)(&tmpvep(0, 0)), 
-	       sizeof(double) * m * n );
-	      
-	return vep;
-    }
 
     /* veToSliceAll */
     bn::ndarray PYveToSliceAll(bn::ndarray eigVecs, bn::ndarray aa, const int trunc){
@@ -472,5 +458,6 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("stab", &pyCqcgl1d::PYstab)
 	.def("stabReq", &pyCqcgl1d::PYstabReq)
 	.def("reflect", &pyCqcgl1d::PYreflect)
+	.def("ve2slice", &pyCqcgl1d::PYve2slice)
 	;
 }

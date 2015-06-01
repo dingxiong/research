@@ -79,6 +79,7 @@ public:
     ArrayXXd Rotate(const Ref<const ArrayXXd> &aa, const double th, const double phi);
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
     orbit2slice(const Ref<const ArrayXXd> &aa);
+    MatrixXd ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x);
     
     VectorXd multiF(const ArrayXXd &x, const int nstp, const double th, const double phi);
     pair<SpMat, VectorXd>

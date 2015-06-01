@@ -472,3 +472,39 @@ MatrixXd KS::veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa,
 
   return newVe;
 }
+
+/**
+ * @brief reduce the reflection symmetry in the 1st mode slice
+ *
+ *  p2 = \sqrt{b_2^2 + c_3^2}
+ *  p3 = b_2 \cdot c_3 / \sqrt{b_2^2 + c_3^2}
+ *  p4 = ...
+ *  
+ * @param[in] aaHat        states in the 1st mode slice
+ * @return                 reflection symmetry reduced states
+ */
+ArrayXXd KS::reduceReflection(const Ref<const ArrayXXd> &aaHat){
+    int n = aaHat.rows();
+    int m = aaHat.cols();
+    assert( n == N-2 );
+    MatrixXd aaTilde(aaHat);
+
+    std::vector<int> index;
+    index.push_back(2);
+    for(int i = 5; i < n; i+=4){
+	index.push_back(i);
+	if(i+1 < n) index.push_back(i+1); /* be carefule here */
+    }
+    //for(auto it : index) cout << it << endl;
+    
+    // p2
+    aaTilde.row(2) = (aaHat.row(2).square() + aaHat.row(5).square()).sqrt();
+    // p3, p4, p5, ...
+    for(int i = 1; i < index.size(); i++){
+	ArrayXd x = aaHat.row(index[i-1]);
+	ArrayXd y = aaHat.row(index[i]);
+	aaTilde.row(index[i]) = x * y / (x.square() + y.square()).sqrt();
+    }
+
+    return aaTilde;
+}

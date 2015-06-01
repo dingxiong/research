@@ -232,6 +232,31 @@ public:
 	return vep;
     }
 
+    /* reduceReflection */
+    bn::ndarray PYreduceReflection(bn::ndarray aa){
+	
+	int m, n;
+	if(aa.get_nd() == 1){
+	    m = 1;
+	    n = aa.shape(0);
+	} else {
+	    m = aa.shape(0);
+	    n = aa.shape(1);
+	}
+
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXXd tmpraa = reduceReflection(tmpaa);
+	
+	int m3 = tmpraa.cols();
+	int n3 = tmpraa.rows();
+	Py_intptr_t dims[2] = {m3 , n3};
+	bn::ndarray raa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
+	       sizeof(double) * m3 * n3 );
+	      
+	return raa;
+    }
 
 
 
@@ -300,6 +325,7 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def("orbitToSlice", &pyKS::PYorbitToSlice)
 	.def("veToSlice", &pyKS::PYveToSlice)
 	.def("veToSliceAll", &pyKS::PYveToSliceAll)
+	.def("reduceReflection", &pyKS::PYreduceReflection)
 	;
 
     bp::class_<pyKSM1, bp::bases<KSM1> >("pyKSM1", bp::init<int, double, double>())

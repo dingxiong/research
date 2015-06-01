@@ -3,26 +3,11 @@ import numpy as np
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.patches import FancyArrowPatch
-from mpl_toolkits.mplot3d import proj3d
 # from IPython.display import display
 # from IPython.html.widgets import interact
 from py_ks import *
+from personalFunctions import *
 
-
-class Arrow3D(FancyArrowPatch):
-    def __init__(self, xs, ys, zs, *args, **kwargs):
-        FancyArrowPatch.__init__(self, (0, 0), (0, 0), *args, **kwargs)
-        self._verts3d = xs, ys, zs
-
-    def draw(self, renderer):
-        xs3d, ys3d, zs3d = self._verts3d
-        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
-        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
-        FancyArrowPatch.draw(self, renderer)
-
-    def setvalue(self, x, y, z):
-        self._verts3d = x, y, z
 ##################################################
 # load data
 f = h5py.File('../../data/myN32/ks22h02t100EV.h5', 'r')

@@ -26,6 +26,17 @@ public:
 	      double Br, double Bi, double Dr,
 	      double Di, double Gr, double Gi) :
 	Cqcgl1d(N, d, h, Mu, Br, Bi, Dr, Di, Gr, Gi) {}
+
+    /* get the dimension of an array */
+    void getDims(bn::ndarray x, int &m, int &n){
+	if(x.get_nd() == 1){
+	    m = 1;
+	    n = x.shape(0);
+	} else {
+	    m = x.shape(0);
+	    n = x.shape(1);
+	}
+    }
     
     /* wrap the velocity */
     bn::ndarray PYvelocity(bn::ndarray a0){

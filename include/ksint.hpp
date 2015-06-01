@@ -74,8 +74,10 @@ public:
     MatrixXd 
     veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa,
 		 const int trunc = 0);
-    ArrayXXd
-    reduceReflection(const Ref<const ArrayXXd> &aaHat);
+    std::vector<int> reflectIndex();
+    ArrayXXd reduceReflection(const Ref<const ArrayXXd> &aaHat);
+    MatrixXd GammaMat(const Ref<const ArrayXd> &xHat);
+    MatrixXd reflectVe(const MatrixXd &ve, const Ref<const ArrayXd> &xHat);
 
 protected:
     enum { M = 16 }; // number used to approximate the complex integral.

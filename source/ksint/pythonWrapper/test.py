@@ -17,13 +17,15 @@ if case == 1:
     ks = pyKSM1(32, 0.1, 22)
     t_init = time()
     for i in range(1000):
-        a0 = np.ones(30)*0.1; a0[1] = 0
+        a0 = np.ones(30)*0.1
+        a0[1] = 0
         aa, tt = ks.intg(a0, 2000, 1)
     print time() - t_init
 
     t_init = time()
     for i in range(10):
-        a0 = np.ones(30)*0.1; a0[1] = 0
+        a0 = np.ones(30)*0.1
+        a0[1] = 0
         aa, tt = ks.intg2(a0, 20, 1)
     print time() - t_init
 
@@ -42,3 +44,7 @@ if case == 2:
     # check the unchanged terms
     print aaHat[:, 3]
     print aaTilde[:, 3]
+
+    x = 0.1*np.arange(30)
+    ve = np.sin(range(30))
+    veTilde = ks.reflectVe(ve, x)

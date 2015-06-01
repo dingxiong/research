@@ -25,6 +25,17 @@ class pyKS : public KS {
 public:
     pyKS(int N, double h, double d) : KS(N, h, d) {}
     
+    /* get the dimension of an array */
+    void getDims(bn::ndarray x, int &m, int &n){
+	if(x.get_nd() == 1){
+	    m = 1;
+	    n = x.shape(0);
+	} else {
+	    m = x.shape(0);
+	    n = x.shape(1);
+	}
+    }
+    
     /* wrap the velocity */
     bn::ndarray PYvelocity(bn::ndarray a0){
 	Map<ArrayXd> tmpa((double*)a0.get_data(), N-2);
@@ -258,6 +269,30 @@ public:
 	return raa;
     }
 
+    /* reflectVe */
+    bn::ndarray PYreflectVe(bn::ndarray ve, bn::ndarray x){
+	
+	int m, n;
+	getDims(ve, m, n);
+
+	int m2, n2;
+	getDims(x, m2, n2);
+
+	Map<MatrixXd> tmpve((double*)ve.get_data(), n, m);
+	Map<ArrayXd> tmpx((double*)x.get_data(), m2*n2);
+	MatrixXd tmprve = reflectVe(tmpve, tmpx);
+	
+	int m3 = tmprve.cols();
+	int n3 = tmprve.rows();
+	Py_intptr_t dims[2] = {m3 , n3};
+	bn::ndarray rve = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)rve.get_data(), (void*)(&tmprve(0, 0)), 
+	       sizeof(double) * m3 * n3 );
+	      
+	return rve;
+    }
+
 
 
 
@@ -326,6 +361,7 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def("veToSlice", &pyKS::PYveToSlice)
 	.def("veToSliceAll", &pyKS::PYveToSliceAll)
 	.def("reduceReflection", &pyKS::PYreduceReflection)
+	.def("reflectVe", &pyKS::PYreflectVe)
 	;
 
     bp::class_<pyKSM1, bp::bases<KSM1> >("pyKSM1", bp::init<int, double, double>())

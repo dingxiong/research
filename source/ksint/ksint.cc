@@ -341,6 +341,7 @@ ArrayXXd KS::Reflection(const Ref<const ArrayXXd> &aa){
   return Raa;
 }
 
+
 ArrayXXd KS::half2whole(const Ref<const ArrayXXd> &aa){
   int n = aa.rows();
   int m = aa.cols();
@@ -474,6 +475,22 @@ MatrixXd KS::veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa,
 }
 
 /**
+ * @brief calculate the changed indices under reflection symmetry
+ *
+ *        1, 2, 5, 6, 9, 10, ....
+ */
+std::vector<int> KS::reflectIndex(){
+    int n = N - 2;
+    std::vector<int> index;
+    index.push_back(2);
+    for(int i = 5; i < n; i+=4){
+	index.push_back(i);
+	if(i+1 < n) index.push_back(i+1); /* be carefule here */
+    }
+    return index;
+}
+
+/**
  * @brief reduce the reflection symmetry in the 1st mode slice
  *
  *  p2 = \sqrt{b_2^2 + c_3^2}
@@ -489,12 +506,7 @@ ArrayXXd KS::reduceReflection(const Ref<const ArrayXXd> &aaHat){
     assert( n == N-2 );
     MatrixXd aaTilde(aaHat);
 
-    std::vector<int> index;
-    index.push_back(2);
-    for(int i = 5; i < n; i+=4){
-	index.push_back(i);
-	if(i+1 < n) index.push_back(i+1); /* be carefule here */
-    }
+    std::vector<int> index = reflectIndex();
     //for(auto it : index) cout << it << endl;
     
     // p2
@@ -507,4 +519,42 @@ ArrayXXd KS::reduceReflection(const Ref<const ArrayXXd> &aaHat){
     }
 
     return aaTilde;
+}
+
+
+/**
+ * @brief transform covariant vectors (stability vector or Floquet vector)
+ *        into the reflection reduced
+ *
+ *        Denote the reflectiong transform as y = h(x), then according to
+ *        ChaosBook, Jacobian is transformed as J' = \Gamma J \Gamma^{-1}
+ *        Here \Gamma = \partial h(x) / \partial x : the Jacobian of h(x).
+ *        So, covariant vectors are transformed by \Gamma
+ */
+MatrixXd KS::GammaMat(const Ref<const ArrayXd> &xHat){
+    int n = xHat.rows();
+    assert( n == N-2);
+    
+    MatrixXd Gamma(MatrixXd::Identity(n, n));
+    std::vector<int> index = reflectIndex();
+    Gamma(2, 2) = xHat(2) / sqrt(xHat(2)*xHat(2) + xHat(5)*xHat(5));
+    Gamma(2, 5) = xHat(5) / sqrt(xHat(2)*xHat(2) + xHat(5)*xHat(5));
+
+    for(int i = 1; i < index.size(); i++){
+	double denom = sqrt( xHat(index[i])*xHat(index[i]) +
+			     xHat(index[i-1])*xHat(index[i-1]) );
+	double denom3 = denom * denom *denom;
+	
+	Gamma(index[i], index[i]) = xHat(index[i-1]) / denom -
+	    xHat(index[i-1]) * xHat(index[i]) * xHat(index[i]) / denom3;
+	Gamma(index[i], index[i-1]) = xHat(index[i]) / denom -
+	    xHat(index[i]) * xHat(index[i-1]) * xHat(index[i-1]) / denom3;
+    }
+
+    return Gamma;
+} 
+
+MatrixXd KS::reflectVe(const MatrixXd &ve, const Ref<const ArrayXd> &xHat){
+    MatrixXd Gamma = GammaMat(xHat);
+    return Gamma * ve;
 }

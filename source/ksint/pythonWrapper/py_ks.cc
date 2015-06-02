@@ -293,6 +293,30 @@ public:
 	return rve;
     }
 
+    /* reflectVeAll */
+    bn::ndarray PYreflectVeAll(bn::ndarray ve, bn::ndarray x, int trunc){
+	
+	int m, n;
+	getDims(ve, m, n);
+
+	int m2, n2;
+	getDims(x, m2, n2);
+
+	Map<MatrixXd> tmpve((double*)ve.get_data(), n, m);
+	Map<MatrixXd> tmpx((double*)x.get_data(), n2, m2);
+	MatrixXd tmprve = reflectVeAll(tmpve, tmpx, trunc);
+	
+	int m3 = tmprve.cols();
+	int n3 = tmprve.rows();
+	Py_intptr_t dims[2] = {m3 , n3};
+	bn::ndarray rve = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)rve.get_data(), (void*)(&tmprve(0, 0)), 
+	       sizeof(double) * m3 * n3 );
+	      
+	return rve;
+    }
+
 
 
 
@@ -362,6 +386,7 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def("veToSliceAll", &pyKS::PYveToSliceAll)
 	.def("reduceReflection", &pyKS::PYreduceReflection)
 	.def("reflectVe", &pyKS::PYreflectVe)
+	.def("reflectVeAll", &pyKS::PYreflectVeAll)
 	;
 
     bp::class_<pyKSM1, bp::bases<KSM1> >("pyKSM1", bp::init<int, double, double>())

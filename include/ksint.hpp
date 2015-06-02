@@ -78,7 +78,8 @@ public:
     ArrayXXd reduceReflection(const Ref<const ArrayXXd> &aaHat);
     MatrixXd GammaMat(const Ref<const ArrayXd> &xHat);
     MatrixXd reflectVe(const MatrixXd &ve, const Ref<const ArrayXd> &xHat);
-
+    MatrixXd reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
+			  const int trunc = 0);
 protected:
     enum { M = 16 }; // number used to approximate the complex integral.
   

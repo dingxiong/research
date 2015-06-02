@@ -558,3 +558,42 @@ MatrixXd KS::reflectVe(const MatrixXd &ve, const Ref<const ArrayXd> &xHat){
     MatrixXd Gamma = GammaMat(xHat);
     return Gamma * ve;
 }
+
+/** @beief reduce reflection symmetry of all the Floquet vectors along a po
+ *
+ *  Usaully, aaHat has one more column the the Floquet vectors, so you can
+ *  call this function like:
+ *  \code
+ *      reflectVeAll(veHat, aaHat.leftCols(aa.cols()-1))
+ *  \endcode
+ *  
+ *  @param[in] veHat   Floquet vectors along the orbit in the 1st mode slice.
+ *                     Dimension: [N, M*Trunc]
+ *  @param[in] aaHat   the orbit in the 1st mode slice
+ *  @param[in] trunc   the number of vectors at each orbit point.
+ *                     trunc = 0 means full set of vectors
+ *  @return            transformed to the reflection invariant space.
+ *                     Dimension [N, M*Trunc]
+ *
+ *  @note vectors are not normalized
+ */
+MatrixXd KS::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
+			  const int trunc /* = 0*/){
+    int Trunc = trunc;
+    if(trunc == 0) Trunc = veHat.rows();
+
+    assert(veHat.cols() % Trunc == 0);
+    const int n = veHat.rows();  
+    const int m = veHat.cols()/Trunc;
+    const int n2 = aaHat.rows();
+    const int m2 = aaHat.cols();
+
+    assert(m == m2 && n == n2);
+    MatrixXd veTilde(n, Trunc*m);
+    for(size_t i = 0; i < m; i++){
+	veTilde.middleCols(i*Trunc, Trunc) =
+	    reflectVe(veHat.middleCols(i*Trunc, Trunc), aaHat.col(i));
+    }
+
+    return veTilde;
+}

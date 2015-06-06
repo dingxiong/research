@@ -226,14 +226,8 @@ public:
     /* orbit2slice */
     bp::tuple PYorbit2slice(bn::ndarray aa){
 
-      	int m, n;
-	if(aa.get_nd() == 1){
-	    m = 1;
-	    n = aa.shape(0);
-	} else {
-	    m = aa.shape(0);
-	    n = aa.shape(1);
-	}
+	int m, n;
+	getDims(aa, m, n);
 
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(tmpaa);
@@ -345,24 +339,12 @@ public:
 
     /* ve2slice */
     bn::ndarray PYve2slice(bn::ndarray ve, bn::ndarray x){
-	
+
 	int m, n;
-	if(ve.get_nd() == 1){
-	    m = 1;
-	    n = ve.shape(0);
-	} else {
-	    m = ve.shape(0);
-	    n = ve.shape(1);
-	}
+	getDims(ve, m, n);
 
 	int m2, n2;
-	if(x.get_nd() == 1){
-	    m2 = 1;
-	    n2 = x.shape(0);
-	} else {
-	    m2 = x.shape(0);
-	    n2 = x.shape(1);
-	}
+	getDims(x, m2, n2);
 
 	Map<ArrayXXd> tmpve((double*)ve.get_data(), n, m);
 	Map<ArrayXd> tmpx((double*)x.get_data(), n2*m2);
@@ -379,6 +361,65 @@ public:
 	return vep;
     }
 
+    /* findReq */
+    bp::tuple PYfindReq(bn::ndarray a0, double wth0, double wphi0,
+			int MaxN, double tol, bool doesUseMyCG,
+			bool doesPrint){
+	int m, n;
+	getDims(a0, m, n);
+
+	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
+	std::tuple<ArrayXd, double, double, double> tmp = 
+	    findReq(tmpa0, wth0, wphi0, MaxN, tol, doesUseMyCG, doesPrint);
+
+	int n2 = std::get<0>(tmp).rows();
+	Py_intptr_t dims[1] = { n2 };
+	bn::ndarray a = bn::empty(1, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)a.get_data(), (void*)(&(std::get<0>(tmp)(0))), 
+	       sizeof(double) * n2 );
+
+	return bp::make_tuple(a, std::get<1>(tmp), std::get<2>(tmp),
+			      std::get<3>(tmp));
+    }
+    
+    /* transRotate */
+    bn::ndarray PYtransRotate(bn::ndarray aa, double th){
+	int m, n;
+	getDims(aa, m, n);
+	
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXXd tmpraa = transRotate(tmpaa, th);
+
+	int m3 = tmpraa.cols();
+	int n3 = tmpraa.rows();
+	Py_intptr_t dims[2] = {m3 , n3};
+	bn::ndarray raa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
+	       sizeof(double) * m3 * n3 );
+
+	return raa;
+    }
+
+    /* phaseRotate */
+    bn::ndarray PYphaseRotate(bn::ndarray aa, double phi){
+	int m, n;
+	getDims(aa, m, n);
+	
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXXd tmpraa = transRotate(tmpaa, phi);
+
+	int m3 = tmpraa.cols();
+	int n3 = tmpraa.rows();
+	Py_intptr_t dims[2] = {m3 , n3};
+	bn::ndarray raa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
+	       sizeof(double) * m3 * n3 );
+
+	return raa;
+    }
+    
 #if 0
     /* half2whole */
     bn::ndarray PYhalf2whole(bn::ndarray aa){
@@ -458,6 +499,7 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def_readonly("Di", &pyCqcgl1d::Di)
 	.def_readonly("Gr", &pyCqcgl1d::Gr)
 	.def_readonly("Gi", &pyCqcgl1d::Gi)
+	.def_readonly("Kindex", &pyCqcgl1d::Kindex)
 	.def("velocity", &pyCqcgl1d::PYvelocity)
 	.def("velocityReq", &pyCqcgl1d::PYvelocityReq)
 	.def("intg", &pyCqcgl1d::PYintg)
@@ -470,5 +512,8 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("stabReq", &pyCqcgl1d::PYstabReq)
 	.def("reflect", &pyCqcgl1d::PYreflect)
 	.def("ve2slice", &pyCqcgl1d::PYve2slice)
+	.def("findReq", &pyCqcgl1d::PYfindReq)
+	.def("transRotate", &pyCqcgl1d::PYtransRotate)
+	.def("phaseRotate", &pyCqcgl1d::PYphaseRotate)
 	;
 }

@@ -294,11 +294,11 @@ ArrayXd Cqcgl1d::velocity(const ArrayXd &a0){
 /**
  * @brief the generalized velociyt for relative equilibrium
  *
- *   v(x) + t_\tau(x) + t_\pho(x)
+ *   v(x) + \omega_\tau * t_\tau(x) + \omega_\rho * t_\rho(x)
  */
-ArrayXd Cqcgl1d::velocityReq(const ArrayXd &a0, const double th,
-			     const double phi){
-    return velocity(a0) + th*transTangent(a0) + phi*phaseTangent(a0);    
+ArrayXd Cqcgl1d::velocityReq(const ArrayXd &a0, const double wth,
+			     const double wphi){
+    return velocity(a0) + wth*transTangent(a0) + wphi*phaseTangent(a0);    
 }
 
 /* -------------------------------------------------- */
@@ -320,9 +320,9 @@ MatrixXd Cqcgl1d::stab(const ArrayXd &a0){
 /**
  * @brief stability for relative equilbrium
  */
-MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double th, double phi){
+MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double wth, double wphi){
     MatrixXd z = stab(a0);
-    return z + th*transGenerator() + phi*phaseGenerator();
+    return z + wth*transGenerator() + wphi*phaseGenerator();
 }
 /* -------------------------------------------------- */
 /* ------           symmetry related           ------ */
@@ -414,9 +414,17 @@ ArrayXXd Cqcgl1d::Rotate(const Ref<const ArrayXXd> &aa, const double th,
     raa.colwise() *= R;
   
     return C2R(raa);
-    return phaseRotate( transRotate(aa, th), phi);
 }
 
+/**
+ * @brief rotate the state points in the full state space to the slice
+ *
+ * @param[in] aa       states in the full state space
+ * @return    aaHat, theta, phi
+ *
+ * @note  g(theta, phi)(x+y) is different from gx+gy. There is no physical
+ *        meaning to transform the sum/subtraction of two state points.
+ */
 std::tuple<ArrayXXd, ArrayXd, ArrayXd>
 Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();
@@ -577,21 +585,112 @@ Cqcgl1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
  * 
  */
 std::pair<MatrixXd, VectorXd>
-Cqcgl1d::newtonReq(const ArrayXd &a0, const double th, const double phi){
+Cqcgl1d::newtonReq(const ArrayXd &a0, const double wth, const double wphi){
     int n = a0.rows();
     assert(2*N == n);
     
     MatrixXd DF(n, n+2);
     ArrayXd tx_trans = transTangent(a0);
     ArrayXd tx_phase = phaseTangent(a0);
-    DF.leftCols(n) = stabReq(a0, th, phi);
+    DF.leftCols(n) = stabReq(a0, wth, wphi);
     DF.col(n)= tx_trans;
     DF.col(n+1) = tx_phase;
 
-    VectorXd F(n+2);
-    F.head(n) = velocity(a0) + th*tx_trans + phi*tx_phase;
-    F(n) = 0;
-    F(n+1) = 0;
+    VectorXd F(n);
+    F.head(n) = velocity(a0) + wth*tx_trans + wphi*tx_phase;
 
     return make_pair(DF, F);
+}
+
+/**
+ * @brief use Levenberg-Marquardt algorithm to find relative equlibirum
+ *
+ * To find relative equilibrium, we do not need to integrate the system. We only
+ * need to use velocity
+ *
+ * @param[in] a0          initial guess of relative equilibrium
+ * @param[in] wth0        initial guess of the translation angular velocity
+ * @param[in] wphi0       initial guess of phase roation velocity
+ * @param[in] MaxN        maximal iteration number
+ * @param[in] tol         convergence tolerence
+ * @return    [a, wth, wphi, err]
+ */
+std::tuple<ArrayXd, double, double, double>
+Cqcgl1d::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
+		 const int MaxN /* = 100 */, const double tol /* = 1e-14 */,
+		 const bool doesUseMyCG /* = true */,
+		 const bool doesPrint /* = true */){ 
+    const int n = a0.rows();
+    assert(n == 2*N);
+    
+    ArrayXd a = a0;
+    double wth = wth0;
+    double wphi = wphi0;
+    double lam = 1;
+
+    ConjugateGradient<MatrixXd> CG;
+    PartialPivLU<MatrixXd> solver; // used in the pre-CG method
+    
+    for(size_t i = 0; i < MaxN; i++){
+	if (lam > 1e10) break;
+	if(doesPrint) printf("\n ********  i = %zd/%d   ******** \n", i, MaxN);	
+	ArrayXd F = velocityReq(a, wth, wphi); 
+	double err = F.matrix().norm(); 
+	if(err < tol){
+	    if(doesPrint) printf("stop at norm(F)=%g\n", err);
+	    break;
+	}
+
+	std::pair<MatrixXd, VectorXd> p = newtonReq(a, wth, wphi); 
+	MatrixXd JJ = p.first.transpose() * p.first;
+	VectorXd JF = p.first.transpose() * p.second;
+	
+
+	for(size_t j = 0; j < 20; j++){
+	    // printf("inner iteration j = %zd\n", j);
+	    //MatrixXd H = JJ + lam * JJ.diagonal().asDiagonal(); 
+	    MatrixXd H = JJ;
+	    H.diagonal() *= (1+lam);
+	    VectorXd dF;
+	    if(doesUseMyCG){
+		std::pair<VectorXd, std::vector<double> > cg = iterMethod::ConjGradSSOR<MatrixXd>
+		    (H, -JF, solver, VectorXd::Zero(H.rows()), H.rows(), 1e-6);
+		dF = cg.first;
+		if(doesPrint) printf("CG error %g after %lu iterations.\n", cg.second.back(), cg.second.size());
+	    }
+	    else{
+		CG.compute(H);     
+		dF = CG.solve(-JF);
+		if(doesPrint) printf("CG error %g, iteration number %d\n", CG.error(), CG.iterations());
+	    }
+	    ArrayXd aNew = a + dF.head(n).array();
+	    double wthNew = wth + dF(n); 
+	    double wphiNew = wphi + dF(n+1);
+	    // printf("wthNew = %g, wphiNew = %g\n", wthNew, wphiNew);
+      
+	    ArrayXd FNew = velocityReq(aNew, wthNew, wphiNew);
+	    double errNew = FNew.matrix().norm();
+	    if(doesPrint) printf("errNew = %g\n", errNew);
+	    if (errNew < err){
+		a = aNew;
+		wth = wthNew;
+		wphi = wphiNew;
+		lam = lam/10;
+		// if(doesPrint) printf("lam = %g\n", lam);
+		break;
+	    }
+	    else {
+		lam *= 10;
+		// if(doesPrint) printf("lam = %g\n", lam);
+		if( lam > 1e10){
+		    if(doesPrint) printf("lam = %f too large.\n", lam);
+		    break;
+		}
+	    }
+      
+	}
+    }
+
+    ArrayXd velReq = velocityReq(a, wth, wphi);
+    return std::make_tuple(a, wth, wphi, velReq.matrix().norm());
 }

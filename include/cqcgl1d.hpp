@@ -17,11 +17,14 @@
 #include <Eigen/Sparse>
 #include <vector>
 #include "sparseRoutines.hpp"
+#include "iterMethod.hpp"
 using std::pair; using std::make_pair;
 using Eigen::MatrixXd; using Eigen::VectorXd;
 using Eigen::MatrixXcd; using Eigen::VectorXcd;
 using Eigen::ArrayXXcd; using Eigen::ArrayXcd;
 using Eigen::ArrayXXd; using Eigen::ArrayXd;
+using Eigen::ConjugateGradient;
+using Eigen::PartialPivLU;
 using Eigen::Map; using Eigen::Ref;
 
 class Cqcgl1d {
@@ -86,6 +89,10 @@ public:
     multishoot(const ArrayXXd &x, const int nstp, const double th, const double phi, bool doesPrint = false);
     std::pair<MatrixXd, VectorXd>
     newtonReq(const ArrayXd &a0, const double th, const double phi);
+    std::tuple<ArrayXd, double, double, double>
+    findReq(const ArrayXd &a0, const double wth0, const double wphi0,
+	    const int MaxN = 100, const double tol = 1e-14,
+	    const bool doesUseMyCG = true, const bool doesPrint = true);
     
 protected:
     /****    global variable definition.   *****/

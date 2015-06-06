@@ -66,7 +66,7 @@ ArrayXd findPO(const ArrayXd &a0, const double h0, const int Norbit, const doubl
 	    double hnew = h + dF(2*N*M)/nstp; // be careful here.
 	    double thnew = th + dF(2*N*M+1);
 	    double phinew = phi + dF(2*N*M+2);
-	    printf("\nhnew = %f, thnew = %f, phinew = %f\n", hnew, thnew, phinew);
+	    printf("\nhnew = %g, thnew = %g, phinew = %f\n", hnew, thnew, phinew);
       
 	    if( hnew <= 0 ){ printf("new time step is negative\n"); exit(1); }
 	    Cqcgl1d tcgl(N, L, hnew);
@@ -106,77 +106,10 @@ pair<ArrayXXd, ArrayXd> findRecurrence(const ArrayXd &a0, const double h,
 }
 ****************************************/
 
-ArrayXd findReq(const ArrayXd &a0, const double w10, const double w20, const int MaxN, const double tol){
-
-    ArrayXd a = a0;
-    double w1 = w10;
-    double w2 = w20;
-    double lam = 1;
-    ConjugateGradient<MatrixXd> CG;
-    Cqcgl1d cgl(N, L);
-  
-    for(size_t i = 0; i < MaxN; i++){
-	if (lam > 1e10) break;
-	printf("********  i = %zd/%d   ******** \n", i, MaxN);
-	VectorXd F = cgl.vel(a) + w1*cgl.TS1(a) + w2*cgl.TS2(a);
-	double err = F.norm(); 
-	if(err < tol){
-	    printf("stop at norm(F)=%g\n", err);
-	    break;
-	}
-   
-	pair<MatrixXd, VectorXd> p = newtonReq(cgl, a, w1, w2); 
-	MatrixXd JJ = p.first.transpose() * p.first;
-	VectorXd JF = p.first.transpose() * p.second;
-    
-	for(size_t j = 0; j < 20; j++){
-	    printf("inner iteration j = %zd\n", j);
-	    //MatrixXd H = JJ + lam * JJ.diagonal().asDiagonal(); 
-	    MatrixXd H = JJ; H.diagonal() *= (1+lam);
-	    CG.compute(H);     
-	    VectorXd dF = CG.solve(-JF);
-	    printf("CG error %f, iteration number %d\n", CG.error(), CG.iterations());
-	    ArrayXd anew = a + dF.head(2*N).array();
-	    double w1new = w1 + dF(2*N); 
-	    double w2new = w2 + dF(2*N+1);
-	    printf("w1new = %f, w2new = %f\n", w1new, w2new);
-      
-	    VectorXd Fnew = cgl.vel(anew) + w1new*cgl.TS1(anew) + w2new*cgl.TS2(anew);
-	    cout << "err = " << Fnew.norm() << endl;
-	    if (Fnew.norm() < err){
-		a = anew; w1 = w1new; w2 = w2new;
-		lam = lam/10; cout << "lam = "<< lam << endl;
-		break;
-	    }
-	    else{
-		lam *= 10; cout << "lam = "<< lam << endl;
-		if( lam > 1e10) { printf("lam = %f too large.\n", lam); break; }
-	    }
-      
-	}
-    }
-  
-    ArrayXd req(2*N+3);
-    VectorXd err = cgl.vel(a) + w1*cgl.TS1(a) + w2*cgl.TS2(a);
-    req << a, w1, w2, err.norm(); 
-    return req;
-}
-
 bool comp(pair<double, int> i, pair<double, int> j){return (i.first > j.first); }
 
 int main(){
-    //--------------------------------------------------
-#if 0
-    Cqcgl1d cgl;
-    ArrayXXd x = ArrayXXd::Random(2*N,M);
-    pair<SpMat, VectorXd> p = multishoot(cgl, x, 20, 1, 1);
-    cout << p.first.rows() << 'x' << p.first.cols() << endl;
-    cout << p.first.nonZeros() << endl;
-
-    cout << p.second.rows() << 'x' << p.second.cols() << endl;
-    cout << p.first.coeffRef(5120-1,5122) << endl;
-#endif
-    //--------------------------------------------------
+   
 #if 0
     cout.precision(15);
 

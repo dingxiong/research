@@ -6,7 +6,7 @@ from numpy.random import rand
 from numpy.fft import fft, ifft
 from time import time
 from py_cqcgl1d import pyCqcgl1d
-from cqcgl1d import *
+from personalFunctions import *
 
 N = 256
 d = 50
@@ -105,6 +105,10 @@ if case == 3:
 
 # unstable manifold
 if case == 4:
+    N = 256
+    d = 50
+    h = 0.005
+
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
     f = h5py.File('../../data/cgl/req.h5', 'r')
     req = '/req1/'
@@ -120,22 +124,34 @@ if case == 4:
     veHat = cgl.ve2slice(eigvectors, a0)
 
     e1, e2, e3 = orthAxes(veHat[0], veHat[2], veHat[6])
-    nstp = 3000
-    # a0Erg = a0 + e1*1e-5
-    A0 = rand(2*N)
-    A0[:N/2] = 0
-    A0[-1:-N/2:-1] = 0
-    a0Erg = cgl.Config2Fourier(A0)
+    a0Hat = cgl.orbit2slice(a0)[0].squeeze()
+    a0Reflected = cgl.reflect(a0)
+    a0ReflectedHat = cgl.orbit2slice(a0Reflected)[0].squeeze()
+    a0ReflectedHatProj = np.dot(a0ReflectedHat, np.vstack((e1, e2, e3)).T)
+    
+    nstp = 1000
+    a0Erg = a0 #+ eigvectors[0]*1e-4
+    # A0 = rand(2*N)
+    # A0[:N/2] = 0
+    # A0[-1:-N/2:-1] = 0
+    # a0Erg = cgl.Config2Fourier(A0)
     aaErg = cgl.intg(a0Erg, nstp, 1)
-    raaErg, th, phi = cgl.orbit2slice(aaErg - a0)
-    raaErgProj = np.dot(raaErg, np.vstack((e1, e2, e3)).T)
+    aaErgHat, th, phi = cgl.orbit2slice(aaErg)
+    aaErgHat -= a0Hat
+    aaErgHatProj = np.dot(aaErgHat, np.vstack((e1, e2, e3)).T)
 
-    # plot3dfig(raaErgProj[1000:, 0], raaErgProj[1000:, 1], raaErgProj[1000:, 2])
+    # plot3dfig(aaErgHatProj[1000:, 0], aaErgHatProj[1000:, 1], aaErgHatProj[1000:, 2])
     fig = plt.figure(figsize=[8, 6])
     ax = fig.add_subplot(111, projection='3d')
-    ax.plot(raaErgProj[1000:, 0], raaErgProj[1000:, 1], raaErgProj[1000:, 2], c='r', lw=1)
+    ax.plot(aaErgHatProj[:, 0], aaErgHatProj[:, 1], aaErgHatProj[:, 2], c='r', lw=1)
     ax.scatter([0], [0], [0], s=80)
+    # ax.scatter(a0ReflectedHatProj[0], a0ReflectedHatProj[1], a0ReflectedHatProj[2], s=80, c='k')
     fig.tight_layout(pad=0)
     plt.show(block=False)
     plotConfigSpace(cgl.Fourier2Config(aaErg), [0, d, 0, nstp*h])
-    
+
+    plot3dfig(aaErg[:, 0], aaErg[:, 2], aaErg[:, 4])
+    plot3dfig(aaErgHat[:, 0], aaErgHat[:, 2], aaErgHat[:, 4])
+
+    plot1dfig(aaErgHatProj[:, 0], marker='')
+    plot1dfig(aaErgHat[:, 0], marker='')

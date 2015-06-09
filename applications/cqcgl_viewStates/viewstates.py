@@ -12,32 +12,46 @@ N = 256
 d = 50
 h = 0.01
 
-case = 4
+case = 1
 
 # view an ergodic instance
 if case == 1:
+    N = 256
+    d = 50
+    h = 0.01
+
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
-    A0 = rand(2*N)
-    A0[:N/2] = 0
-    A0[-1:-N/2:-1] = 0
+    A0 = centerRand(2*N, 0.25)
     a0 = cgl.Config2Fourier(A0)
     nstp = 10000
     aa = cgl.intg(a0, nstp, 1)
     AA = cgl.Fourier2Config(aa)
     plotConfigSpace(AA, [0, d, 0, nstp*h])
-    plotOneConfig(AA[5200])
-    raa, th, phi = cgl.orbit2slice(aa)
-    plotConfigSpace(cgl.Fourier2Config(raa), [0, d, 0, nstp*h])
+    # plotOneConfig(AA[5200])
+    aaHat, th, phi = cgl.orbit2slice(aa)
+    aaHat2, th2, phi2 = cgl.orbit2sliceUnwrap(aa)
+    plotConfigSpace(cgl.Fourier2Config(aaHat), [0, d, 0, nstp*h])
+    plotConfigSpace(cgl.Fourier2Config(aaHat2), [0, d, 0, nstp*h])
 
+    th3 = unwrap(th*2.0)/2.0
+    phi3 = unwrap(phi*2.0)/2.0
+    aaHat3 = cgl.rotateOrbit(aa, -th3, -phi3)
+    plotConfigSpace(cgl.Fourier2Config(aaHat3), [0, d, 0, nstp*h])
 
 # view relative equlibria
 if case == 2:
+    N = 256
+    d = 50
+    h = 0.01
+
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
     f = h5py.File('../../data/cgl/req.h5', 'r')
-    req = '/req1/'
-    a0 = f[req+'a0'].value
-    th0 = f[req+'w1'].value[0]
-    phi0 = f[req+'w2'].value[0]
+    req = '/1/'
+    a0 = f[req+'a'].value
+    th0 = f[req+'wth'].value
+    phi0 = f[req+'wphi'].value
+    err = f[req+'err'].value
+    f.close()
 
     vReq = cgl.velocityReq(a0, th0, phi0)
     print norm(vReq)
@@ -107,51 +121,72 @@ if case == 3:
 if case == 4:
     N = 256
     d = 50
-    h = 0.005
-
+    h = 0.001
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
     f = h5py.File('../../data/cgl/req.h5', 'r')
-    req = '/req1/'
-    a0 = f[req+'a0'].value
-    th0 = f[req+'w1'].value[0]
-    phi0 = f[req+'w2'].value[0]
+    req = '/1/'
+    a0 = f[req+'a'].value
+    wth0 = f[req+'wth'].value
+    wphi0 = f[req+'wphi'].value
+    err = f[req+'err'].value
+    f.close()
 
-    stabMat = cgl.stabReq(a0, th0, phi0).T
+    stabMat = cgl.stabReq(a0, wth0, wphi0).T
     eigvalues, eigvectors = eig(stabMat)
     eigvalues, eigvectors = sortByReal(eigvalues, eigvectors)
     eigvectors = realve(eigvectors)
     eigvectors = Tcopy(eigvectors)
     veHat = cgl.ve2slice(eigvectors, a0)
 
-    e1, e2, e3 = orthAxes(veHat[0], veHat[2], veHat[6])
     a0Hat = cgl.orbit2slice(a0)[0].squeeze()
     a0Reflected = cgl.reflect(a0)
     a0ReflectedHat = cgl.orbit2slice(a0Reflected)[0].squeeze()
-    a0ReflectedHatProj = np.dot(a0ReflectedHat, np.vstack((e1, e2, e3)).T)
-    
-    nstp = 1000
-    a0Erg = a0 #+ eigvectors[0]*1e-4
-    # A0 = rand(2*N)
-    # A0[:N/2] = 0
-    # A0[-1:-N/2:-1] = 0
-    # a0Erg = cgl.Config2Fourier(A0)
-    aaErg = cgl.intg(a0Erg, nstp, 1)
+
+    nstp = 85000
+    a0Erg = a0 + eigvectors[0]*1e-4
+    aaErg = cgl.intg(a0Erg, nstp, 5)
     aaErgHat, th, phi = cgl.orbit2slice(aaErg)
     aaErgHat -= a0Hat
+
+    nstp2 = 85000
+    a0Erg2 = a0 + eigvectors[2]*1e-4
+    aaErg2 = cgl.intg(a0Erg2, nstp2, 5)
+    aaErgHat2, th2, phi2 = cgl.orbit2slice(aaErg2)
+    aaErgHat2 -= a0Hat
+
+    nstp3 = 85000
+    a0Erg3 = cgl.Config2Fourier(centerRand(2*N, 0.25)).squeeze()
+    aaErg3 = cgl.intg(a0Erg3, nstp3, 5)
+    a0Erg3 = aaErg3[-1]
+    aaErg3 = cgl.intg(a0Erg3, nstp3, 5)
+    aaErgHat3, th3, phi3 = cgl.orbit2slice(aaErg3)
+    aaErgHat3 -= a0Hat
+
+    e1, e2, e3 = orthAxes(veHat[0], veHat[2], veHat[3])
+    a0ReflectedHatProj = np.dot(a0ReflectedHat, np.vstack((e1, e2, e3)).T)
     aaErgHatProj = np.dot(aaErgHat, np.vstack((e1, e2, e3)).T)
+    aaErgHatProj2 = np.dot(aaErgHat2, np.vstack((e1, e2, e3)).T)
+    aaErgHatProj3 = np.dot(aaErgHat3, np.vstack((e1, e2, e3)).T)
 
     # plot3dfig(aaErgHatProj[1000:, 0], aaErgHatProj[1000:, 1], aaErgHatProj[1000:, 2])
     fig = plt.figure(figsize=[8, 6])
     ax = fig.add_subplot(111, projection='3d')
-    ax.plot(aaErgHatProj[:, 0], aaErgHatProj[:, 1], aaErgHatProj[:, 2], c='r', lw=1)
+    ix1 = 00000/5
+    ix2 = 14000/5
+    ax.plot(aaErgHatProj[:, 0], aaErgHatProj[:, 1],
+            aaErgHatProj[:, 2], c='r', lw=1)
+    # ax.plot(aaErgHatProj2[:, 0], aaErgHatProj2[:, 1],
+    #         aaErgHatProj2[:, 2], c='m', lw=1)
+    ax.plot(aaErgHatProj3[ix1:ix2, 0], aaErgHatProj3[ix1:ix2, 1],
+            aaErgHatProj3[ix1:ix2, 2], c='g', lw=1)
     ax.scatter([0], [0], [0], s=80)
     # ax.scatter(a0ReflectedHatProj[0], a0ReflectedHatProj[1], a0ReflectedHatProj[2], s=80, c='k')
     fig.tight_layout(pad=0)
     plt.show(block=False)
-    plotConfigSpace(cgl.Fourier2Config(aaErg), [0, d, 0, nstp*h])
+    plotConfigSpace(cgl.Fourier2Config(aaErg3), [0, d, 0, nstp*h])
 
-    plot3dfig(aaErg[:, 0], aaErg[:, 2], aaErg[:, 4])
-    plot3dfig(aaErgHat[:, 0], aaErgHat[:, 2], aaErgHat[:, 4])
+    # plot3dfig(aaErg[:, 0], aaErg[:, 2], aaErg[:, 4])
+    # plot3dfig(aaErgHat[:, 0], aaErgHat[:, 2], aaErgHat[:, 4])
 
-    plot1dfig(aaErgHatProj[:, 0], marker='')
-    plot1dfig(aaErgHat[:, 0], marker='')
+    # plot1dfig(aaErgHatProj[:, 0], marker='')
+    # plot1dfig(aaErgHat[:, 0], marker='')

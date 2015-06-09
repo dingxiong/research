@@ -3,9 +3,9 @@ from numpy.random import rand
 from numpy.fft import fft, ifft
 from time import time
 from py_cqcgl1d import pyCqcgl1d
-from cqcgl1d import *
+from personalFunctions import *
 
-case = 4
+case = 5
 
 if case == 1:
     cgl = pyCqcgl1d(256, 50, 0.01, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
@@ -52,3 +52,13 @@ if case == 4:
     print aa[:2, :10]
     print raa[:2, :4]
     print raa[:2, -10:]
+
+if case == 5:
+    # test continous symmetry reduction
+    cgl = pyCqcgl1d(256, 50, 0.01, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    a0 = rand(512)
+    aa = cgl.intg(a0, 10, 1)
+    aaHat, th, phi = cgl.orbit2slice(aa)
+    print aaHat.shape
+    print aaHat[:, 3]
+    print aaHat[:, -1]

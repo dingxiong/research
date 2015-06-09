@@ -26,7 +26,7 @@ def cqcglFindReq(fileName, frac=0.3, MaxIter=300, Ntrial=1000):
             ReqNum += 1
 
 
-case = 3
+case = 4
 
 if case == 1:
     """
@@ -77,3 +77,10 @@ if case == 3:
     run a long time to collect relative equilibria
     """
     cqcglFindReq("req3.hdf5", 0.3, 300, 1000)
+
+
+if case == 4:
+    """
+    have a look at these relative equilibrium and remove the duplicates
+    """
+    cqcglReadReq("req3.hdf5")

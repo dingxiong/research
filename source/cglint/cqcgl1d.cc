@@ -417,6 +417,25 @@ ArrayXXd Cqcgl1d::Rotate(const Ref<const ArrayXXd> &aa, const double th,
 }
 
 /**
+ * @brief rotate the whole orbit with different phase angles at different point
+ */
+ArrayXXd Cqcgl1d::rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
+			      const ArrayXd &phi){
+    const int m = aa.cols();
+    const int n = aa.rows();
+    const int m2 = th.size();
+    const int m3 = phi.size();
+    assert( m == m2 && m2 == m3);
+
+    ArrayXXd aaHat(n, m);
+    for( size_t i = 0; i < m; i++){
+	aaHat.col(i) = Rotate(aa.col(i), th(i), phi(i));
+    }
+
+    return aaHat;
+}
+
+/**
  * @brief rotate the state points in the full state space to the slice
  *
  * @param[in] aa       states in the full state space
@@ -435,14 +454,55 @@ Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
     ArrayXd phi(m);
 
     for(size_t i = 0; i < m; i++){
-	double a0 = atan2(aa(1, i), aa(0, i));
+	double am1 = atan2(aa(n-1, i), aa(n-2, i));
 	double a1 = atan2(aa(3, i), aa(2, i));
-	phi(i) = a0;
-	th(i) = a1 - a0;
-	raa.col(i) = Rotate(aa.col(i), -(a1-a0), -a0);
+	phi(i) = 0.5 * (a1 + am1);
+	th(i) = 0.5 * (a1 - am1);
+	raa.col(i) = Rotate(aa.col(i), -th(i), -phi(i));
     }
     return std::make_tuple(raa, th, phi);
 }
+
+std::tuple<ArrayXXd, ArrayXd, ArrayXd>
+Cqcgl1d::orbit2sliceUnwrap(const Ref<const ArrayXXd> &aa){
+    int n = aa.rows();
+    int m = aa.cols();
+    assert(2*N == n);
+    ArrayXXd raa(n, m);
+    ArrayXd th(m);
+    ArrayXd phi(m);
+    
+    for(size_t i = 0; i < m; i++){
+	double am1 = atan2(aa(n-1, i), aa(n-2, i));
+	double a1 = atan2(aa(3, i), aa(2, i));
+	phi(i) = 0.5 * (a1 + am1);
+	th(i) = 0.5 * (a1 - am1);
+    }
+
+    const double M_2PI = 2 * M_PI;
+    for(size_t i = 1; i < m; i++){
+	double t0 = th(i) - th(i-1);
+	double t1 = t0 - M_PI;
+	double t2 = t0 + M_PI;
+	double t0WrapAbs = fabs(remainder(t0, M_2PI));
+	if(fabs(t1) < t0WrapAbs) { // theta jump pi up
+	    th(i) = remainder(th(i) - M_PI, M_2PI);
+	    phi(i) = remainder(phi(i) - M_PI, M_2PI);
+	    continue;
+	}
+	if(fabs(t2) < t0WrapAbs) { // theta jump pi down
+	    th(i) = remainder(th(i) + M_PI, M_2PI);
+	    phi(i) = remainder(phi(i) + M_PI, M_2PI);
+	}
+    }
+    
+    for(size_t i = 0; i < m; i++){
+	raa.col(i) = Rotate(aa.col(i), -th(i), -phi(i));
+    }
+
+    return std::make_tuple(raa, th, phi);
+}
+
 
 /** @brief project covariant vectors to 1st mode slice
  *
@@ -450,25 +510,26 @@ Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
  * projected to |ve> - |tx>*(<tp|ve>|/<tx|tp>), before which, g(-th) is 
  * performed.
  *
- * In 0th and 1st mode slice, template point is 
- * |xp_\rho>=(1,0,0,...,0) ==> |tp_\rho>=(0,1,0,0,...,0)
+ * In 1th and -1st mode slice, template point is 
+ * |xp_\rho>=(0, ...,1, 0) ==> |tp_\rho>=(0,0,0,...,0,1)
  * |xp_\tau>=(0,0,1,...,0) ==> |tp_\tau>=(0,0,0,1,...,0)
- * <tp_\rho|ve> = ve.row(1) // second row
+ * <tp_\rho|ve> = ve.bottomRows(1) // last row
  * <tp_\tau|ve> = ve.row(3) // 4th row
  *
  * @note vectors are not normalized
  */
 MatrixXd Cqcgl1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
+    int n = x.size();
     std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(x);
     ArrayXXd &xhat =  std::get<0>(tmp); // dimension [2*N, 1]
     double th = std::get<1>(tmp)[0];
     double phi = std::get<2>(tmp)[0];
-    VectorXd tx_phase = phaseTangent(xhat);
-    VectorXd tx_trans = transTangent(xhat);
+    VectorXd tx_rho = phaseTangent(xhat);
+    VectorXd tx_tau = transTangent(xhat);
 	
     MatrixXd vep = Rotate(ve, -th, -phi);
-    vep = vep - (tx_phase - tx_trans) * vep.row(1) / xhat(0)
-	- tx_trans * vep.row(3) / xhat(2);
+    vep = vep - 0.5 * ((tx_rho - tx_tau) * vep.row(n-1) / xhat(n-2) +
+		       (tx_rho + tx_tau) * vep.row(3) / xhat(2));
   
     return vep;
 

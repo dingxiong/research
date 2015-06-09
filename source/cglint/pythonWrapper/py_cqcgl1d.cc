@@ -257,6 +257,40 @@ public:
 	return bp::make_tuple(raa, th, phi);
     }
 
+    /* orbit2sliceUnwrap */
+    bp::tuple PYorbit2sliceUnwrap(bn::ndarray aa){
+
+	int m, n;
+	getDims(aa, m, n);
+
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2sliceUnwrap(tmpaa);
+
+	int m2 = std::get<0>(tmp).cols();
+	int n2 = std::get<0>(tmp).rows();
+	Py_intptr_t dims[2] = {m2 , n2};
+	bn::ndarray raa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)raa.get_data(), (void*)(&(std::get<0>(tmp)(0, 0))), 
+	       sizeof(double) * m2 * n2 );
+
+	int n3 = std::get<1>(tmp).rows();
+	Py_intptr_t dims2[1] = { n3 };
+	bn::ndarray th = 
+	    bn::empty(1, dims2, bn::dtype::get_builtin<double>());
+	memcpy((void*)th.get_data(), (void*)(&(std::get<1>(tmp)(0))), 
+	       sizeof(double) * n3 );
+
+	int n4 = std::get<2>(tmp).rows();
+	Py_intptr_t dims3[1] = { n4 };
+	bn::ndarray phi = 
+	    bn::empty(1, dims3, bn::dtype::get_builtin<double>());
+	memcpy((void*)phi.get_data(), (void*)(&(std::get<2>(tmp)(0))), 
+	       sizeof(double) * n4 );
+	      
+	return bp::make_tuple(raa, th, phi);
+    }
+
     /* stability matrix */
     bn::ndarray PYstab(bn::ndarray a0){
 
@@ -419,66 +453,51 @@ public:
 
 	return raa;
     }
-    
-#if 0
-    /* half2whole */
-    bn::ndarray PYhalf2whole(bn::ndarray aa){
+
+    /* Rotate */
+    bn::ndarray PYRotate(bn::ndarray aa, double th, double phi){
+	int m, n;
+	getDims(aa, m, n);
 	
-	int m = aa.shape(0);
-	int n = aa.shape(1);
-
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXXd tmpraa = half2whole(tmpaa);
+	ArrayXXd tmpraa = Rotate(tmpaa, th, phi);
 
-	int n2 = tmpraa.rows();
-	int m2 = tmpraa.cols();	
-	Py_intptr_t dims[2] = {m2 , n2};
+	int m3 = tmpraa.cols();
+	int n3 = tmpraa.rows();
+	Py_intptr_t dims[2] = {m3 , n3};
 	bn::ndarray raa = 
 	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
 	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
-	       sizeof(double) * m2 * n2 );
+	       sizeof(double) * m3 * n3 );
 
 	return raa;
     }
 
-
-    /* veToSliceAll */
-    bn::ndarray PYveToSliceAll(bn::ndarray eigVecs, bn::ndarray aa, const int trunc){
-	
+    /* rotateOrbit */
+    bn::ndarray PYrotateOrbit(bn::ndarray aa, bn::ndarray th, bn::ndarray phi){
 	int m, n;
-	if(eigVecs.get_nd() == 1){
-	    m = 1;
-	    n = eigVecs.shape(0);
-	} else {
-	    m = eigVecs.shape(0);
-	    n = eigVecs.shape(1);
-	}
-
+	getDims(aa, m, n);
 	int m2, n2;
-	if(aa.get_nd() == 1){
-	    m2 = 1;
-	    n2 = aa.shape(0);
-	} else {
-	    m2 = aa.shape(0);
-	    n2 = aa.shape(1);
-	}
-	// printf("%d %d %d %d\n", m, n, m2, n2);
-	Map<MatrixXd> tmpeigVecs((double*)eigVecs.get_data(), n, m);
-	Map<MatrixXd> tmpaa((double*)aa.get_data(), n2, m2);
-	MatrixXd tmpvep = veToSliceAll(tmpeigVecs , tmpaa, trunc);
+	getDims(th, m2, n2);
+	int m4, n4;
+	getDims(phi, m4, n4);
 	
-	int m3 = tmpvep.cols();
-	int n3 = tmpvep.rows();
-	Py_intptr_t dims[2] = {m3 , n3};
-	bn::ndarray vep = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)vep.get_data(), (void*)(&tmpvep(0, 0)), 
-	       sizeof(double) * m3 * n3 );
-	      
-	return vep;
-    }
-#endif
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	Map<ArrayXd> tmpth((double*)th.get_data(), n2 * m2);
+	Map<ArrayXd> tmpphi((double*)phi.get_data(), n4 * m4);
+	ArrayXXd tmpraa = rotateOrbit(tmpaa, tmpth, tmpphi);
 
+	int m3 = tmpraa.cols();
+	int n3 = tmpraa.rows();
+	Py_intptr_t dims[2] = {m3 , n3};
+	bn::ndarray raa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
+	       sizeof(double) * m3 * n3 );
+
+	return raa;
+    }
+    
 };
 
 
@@ -508,6 +527,7 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("Config2Fourier", &pyCqcgl1d::PYConfig2Fourier)
 	.def("Fourier2ConfigMag", &pyCqcgl1d::PYFourier2Config)
 	.def("orbit2slice", &pyCqcgl1d::PYorbit2slice)
+	.def("orbit2sliceUnwrap", &pyCqcgl1d::PYorbit2sliceUnwrap)
 	.def("stab", &pyCqcgl1d::PYstab)
 	.def("stabReq", &pyCqcgl1d::PYstabReq)
 	.def("reflect", &pyCqcgl1d::PYreflect)
@@ -515,5 +535,7 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("findReq", &pyCqcgl1d::PYfindReq)
 	.def("transRotate", &pyCqcgl1d::PYtransRotate)
 	.def("phaseRotate", &pyCqcgl1d::PYphaseRotate)
+	.def("Rotate", &pyCqcgl1d::PYRotate)
+	.def("rotateOrbit", &pyCqcgl1d::PYrotateOrbit)
 	;
 }

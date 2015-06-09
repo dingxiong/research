@@ -18,12 +18,12 @@ case = 1
 if case == 1:
     N = 256
     d = 50
-    h = 0.01
+    h = 0.005
 
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
     A0 = centerRand(2*N, 0.25)
     a0 = cgl.Config2Fourier(A0)
-    nstp = 10000
+    nstp = 15000
     aa = cgl.intg(a0, nstp, 1)
     AA = cgl.Fourier2Config(aa)
     plotConfigSpace(AA, [0, d, 0, nstp*h])
@@ -33,10 +33,15 @@ if case == 1:
     plotConfigSpace(cgl.Fourier2Config(aaHat), [0, d, 0, nstp*h])
     plotConfigSpace(cgl.Fourier2Config(aaHat2), [0, d, 0, nstp*h])
 
+    # rely on numpy's unwrap function
     th3 = unwrap(th*2.0)/2.0
     phi3 = unwrap(phi*2.0)/2.0
     aaHat3 = cgl.rotateOrbit(aa, -th3, -phi3)
     plotConfigSpace(cgl.Fourier2Config(aaHat3), [0, d, 0, nstp*h])
+
+    # rotate by g(pi, pi)
+    aaHat4 = cgl.Rotate(aaHat2, pi, pi)
+    plotConfigSpace(cgl.Fourier2Config(aaHat4), [0, d, 0, nstp*h])
 
 # view relative equlibria
 if case == 2:

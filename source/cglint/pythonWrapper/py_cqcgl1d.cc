@@ -42,13 +42,7 @@ public:
     bn::ndarray PYvelocity(bn::ndarray a0){
 
 	int m, n;
-	if(a0.get_nd() == 1){
-	    m = 1;
-	    n = a0.shape(0);
-	} else {
-	    m = a0.shape(0);
-	    n = a0.shape(1);
-	}
+	getDims(a0, m, n);
 	
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
 	VectorXd tmpv = velocity(tmpa);
@@ -66,13 +60,7 @@ public:
     /* wrap velocityReq */
     bn::ndarray PYvelocityReq(bn::ndarray a0, double th, double phi){
 	int m, n;
-	if(a0.get_nd() == 1){
-	    m = 1;
-	    n = a0.shape(0);
-	} else {
-	    m = a0.shape(0);
-	    n = a0.shape(1);
-	}
+	getDims(a0, m, n);
 	
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
 	VectorXd tmpv = velocityReq(tmpa, th, phi);
@@ -89,17 +77,48 @@ public:
     }
 
 
+    /* pad */
+    bn::ndarray PYpad(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXXd tmppaa = pad(tmpaa);
+
+	int m2 = tmppaa.cols();
+	int n2 = tmppaa.rows();
+	Py_intptr_t dims[2] = {m2 , n2};
+	bn::ndarray paa = bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)paa.get_data(), (void*)(&tmppaa(0, 0)), 
+	       sizeof(double) * m2 * n2 );
+
+	return paa;
+    }
+
+    /* unpad */
+    bn::ndarray PYunpad(bn::ndarray paa){
+	int m, n;
+	getDims(paa, m, n);
+
+	Map<ArrayXXd> tmppaa((double*)paa.get_data(), n, m);
+	ArrayXXd tmpaa = unpad(tmppaa);
+
+	int m2 = tmpaa.cols();
+	int n2 = tmpaa.rows();
+	Py_intptr_t dims[2] = {m2 , n2};
+	bn::ndarray aa = bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)aa.get_data(), (void*)(&tmpaa(0, 0)), 
+	       sizeof(double) * m2 * n2 );
+
+	return aa;
+    }
+
+    
     /* wrap the integrator */
     bn::ndarray PYintg(bn::ndarray a0, size_t nstp, size_t np){
 
 	int m, n;
-	if(a0.get_nd() == 1){
-	    m = 1;
-	    n = a0.shape(0);
-	} else {
-	    m = a0.shape(0);
-	    n = a0.shape(1);
-	}
+	getDims(a0, m, n);
 
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
 	ArrayXXd tmpaa = intg(tmpa, nstp, np);
@@ -120,13 +139,7 @@ public:
     bp::tuple PYintgj(bn::ndarray a0, size_t nstp, size_t np, size_t nqr){
 
 	int m, n;
-	if(a0.get_nd() == 1){
-	    m = 1;
-	    n = a0.shape(0);
-	} else {
-	    m = a0.shape(0);
-	    n = a0.shape(1);
-	}
+	getDims(a0, m, n);
 
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
 	std::pair<ArrayXXd, ArrayXXd> tmp = intgj(tmpa, nstp, np, nqr);
@@ -152,13 +165,7 @@ public:
     bn::ndarray PYFourier2Config(bn::ndarray aa){
 
 	int m, n;
-	if(aa.get_nd() == 1){
-	    m = 1;
-	    n = aa.shape(0);
-	} else {
-	    m = aa.shape(0);
-	    n = aa.shape(1);
-	}
+	getDims(aa, m, n);
 	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	ArrayXXd tmpAA = Fourier2Config(tmpaa);
@@ -258,13 +265,13 @@ public:
     }
 
     /* orbit2sliceUnwrap */
-    bp::tuple PYorbit2sliceUnwrap(bn::ndarray aa){
+    bp::tuple PYorbit2sliceWrap(bn::ndarray aa){
 
 	int m, n;
 	getDims(aa, m, n);
 
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2sliceUnwrap(tmpaa);
+	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2sliceWrap(tmpaa);
 
 	int m2 = std::get<0>(tmp).cols();
 	int n2 = std::get<0>(tmp).rows();
@@ -531,15 +538,19 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def_readonly("Gr", &pyCqcgl1d::Gr)
 	.def_readonly("Gi", &pyCqcgl1d::Gi)
 	.def_readonly("Kindex", &pyCqcgl1d::Kindex)
+	.def_readonly("Ndim", &pyCqcgl1d::Ndim)
+	.def_readonly("KindexUnpad", &pyCqcgl1d::KindexUnpad)
 	.def("velocity", &pyCqcgl1d::PYvelocity)
 	.def("velocityReq", &pyCqcgl1d::PYvelocityReq)
+	.def("pad", &pyCqcgl1d::PYpad)
+	.def("unpad", &pyCqcgl1d::PYunpad)
 	.def("intg", &pyCqcgl1d::PYintg)
 	.def("intgj", &pyCqcgl1d::PYintgj)
 	.def("Fourier2Config", &pyCqcgl1d::PYFourier2Config)
 	.def("Config2Fourier", &pyCqcgl1d::PYConfig2Fourier)
 	.def("Fourier2ConfigMag", &pyCqcgl1d::PYFourier2Config)
+	.def("orbit2sliceWrap", &pyCqcgl1d::PYorbit2sliceWrap)
 	.def("orbit2slice", &pyCqcgl1d::PYorbit2slice)
-	.def("orbit2sliceUnwrap", &pyCqcgl1d::PYorbit2sliceUnwrap)
 	.def("stab", &pyCqcgl1d::PYstab)
 	.def("stabReq", &pyCqcgl1d::PYstabReq)
 	.def("reflect", &pyCqcgl1d::PYreflect)

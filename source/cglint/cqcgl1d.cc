@@ -82,24 +82,28 @@ Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
  *
  * The dimension of input is Ndim = 2N-2, with is smaller than the internal
  * FFT length 2*N, so we need to pad zeros
+ * For example:
+ *     if N = 256
+ *     0, 1, 2, ..., 127, -127, ..., -1 => insert between 127 and -127
+ *     The left half has one mode more than the second half
  */
 ArrayXXd Cqcgl1d::pad(const Ref<const ArrayXXd> &aa){
-    int n = aa.rows();
+    int n = aa.rows();		/* 2*N-2 */
     int m = aa.cols();
     assert(Ndim == n);
     ArrayXXd paa(n+2, m);
-    paa << aa.topRows(n/2), ArrayXXd::Zero(2, m), 
-      aa.bottomRows(n/2);
+    paa << aa.topRows(n/2+1), ArrayXXd::Zero(2, m), 
+	aa.bottomRows(n/2-1);
     return paa;
 }
 
 ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
-  int n = paa.rows();
-  int m = paa.cols();
-  assert(2*N == n);
-  ArrayXXd aa(n-2, m);
-  aa << paa.topRows(n/2-1), paa.bottomRows(n/2-1);
-  return aa;
+    int n = paa.rows();
+    int m = paa.cols();
+    assert(2*N == n);
+    ArrayXXd aa(n-2, m);
+    aa << paa.topRows(n/2), paa.bottomRows(n/2-2);
+    return aa;
 }
 
 /**
@@ -155,8 +159,8 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
     ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
     ArrayXXd duu(Ndim, Ndim * nstp/nqr);
   
-    for(size_t i = 1; i < nstp + 1; i++){
-	jNL(jFv); jFa.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q;
+    for(size_t i = 1; i < nstp + 1; i++){ 
+	jNL(jFv); jFa.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q; 
 	jNL(jFa); jFb.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q;
 	jNL(jFb); jFc.v1 = jFa.v1.colwise() * E2 + (2.0*jFb.v3 - jFv.v3).colwise() * Q;
 	jNL(jFc);
@@ -164,7 +168,7 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
 	jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 +
 	    (jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
     
-	if ( 0 == i%np ) uu.col(i/np) = unpad(C2R(jFv.v1.col(0)));
+	if ( 0 == i%np ) uu.col(i/np) = unpad(C2R(jFv.v1.col(0))); 
 	if ( 0 == i%nqr){
 	    duu.middleCols((i/nqr - 1)*Ndim, Ndim) = unpad(C2R(jFv.v1.middleCols(1, Ndim)));
 	    jFv.v1.rightCols(Ndim) = J0;
@@ -220,63 +224,63 @@ void Cqcgl1d::jNL(CGLfft &f){
     dcp G(Gr, Gi);
     f.v2.col(0) = dcp(Br, Bi) * A * aA2 + dcp(Gr, Gi) * A * aA2.square();
 
-    f.v2.rightCols(2*N) = f.v2.rightCols(2*N).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
-    	f.v2.rightCols(2*N).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
+    f.v2.rightCols(2*N-2) = f.v2.rightCols(2*N-2).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
+    	f.v2.rightCols(2*N-2).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
 
     fft(f);
 }
 
 void Cqcgl1d::fft(CGLfft &f){
-  fftw_execute(f.p);  
+    fftw_execute(f.p);  
 }
 
 void Cqcgl1d::ifft(CGLfft &f){
-  fftw_execute(f.rp);
-  f.v2 /= N;
+    fftw_execute(f.rp);
+    f.v2 /= N;
 }
 
 void Cqcgl1d::initFFT(CGLfft &f, int M){
-  f.c1 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
-  f.c2 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
-  f.c3 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
-  //build the maps.
-  new (&(f.v1)) Map<ArrayXXcd>( (dcp*)&(f.c1[0][0]), N, M );
-  new (&(f.v2)) Map<ArrayXXcd>( (dcp*)&(f.c2[0][0]), N, M );
-  new (&(f.v3)) Map<ArrayXXcd>( (dcp*)&(f.c3[0][0]), N, M );
+    f.c1 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
+    f.c2 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
+    f.c3 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
+    //build the maps.
+    new (&(f.v1)) Map<ArrayXXcd>( (dcp*)&(f.c1[0][0]), N, M );
+    new (&(f.v2)) Map<ArrayXXcd>( (dcp*)&(f.c2[0][0]), N, M );
+    new (&(f.v3)) Map<ArrayXXcd>( (dcp*)&(f.c3[0][0]), N, M );
 
-  if (1 == M){
-    f.p = fftw_plan_dft_1d(N, f.c2, f.c3, FFTW_FORWARD, FFTW_MEASURE);
-    f.rp = fftw_plan_dft_1d(N, f.c1, f.c2, FFTW_BACKWARD, FFTW_MEASURE);
-  } else{
-    int n[] = { N };
-    f.p = fftw_plan_many_dft(1, n, M, f.c2, n, 1, N,
-			     f.c3, n, 1, N, FFTW_FORWARD, FFTW_MEASURE);
-    f.rp = fftw_plan_many_dft(1, n, M, f.c1, n, 1, N,
-			      f.c2, n, 1, N, FFTW_BACKWARD, FFTW_MEASURE);
-  }
+    if (1 == M){
+	f.p = fftw_plan_dft_1d(N, f.c2, f.c3, FFTW_FORWARD, FFTW_MEASURE);
+	f.rp = fftw_plan_dft_1d(N, f.c1, f.c2, FFTW_BACKWARD, FFTW_MEASURE);
+    } else{
+	int n[] = { N };
+	f.p = fftw_plan_many_dft(1, n, M, f.c2, n, 1, N,
+				 f.c3, n, 1, N, FFTW_FORWARD, FFTW_MEASURE);
+	f.rp = fftw_plan_many_dft(1, n, M, f.c1, n, 1, N,
+				  f.c2, n, 1, N, FFTW_BACKWARD, FFTW_MEASURE);
+    }
 }
 
 void Cqcgl1d::freeFFT(CGLfft &f){
-  fftw_destroy_plan(f.p);
-  fftw_destroy_plan(f.rp);
-  fftw_free(f.c1);
-  fftw_free(f.c2);
-  fftw_free(f.c3);
-  /* releae the map */
-  new (&(f.v1)) Map<ArrayXXcd>(NULL, 0, 0);
-  new (&(f.v2)) Map<ArrayXXcd>(NULL, 0, 0);
-  new (&(f.v3)) Map<ArrayXXcd>(NULL, 0, 0);
+    fftw_destroy_plan(f.p);
+    fftw_destroy_plan(f.rp);
+    fftw_free(f.c1);
+    fftw_free(f.c2);
+    fftw_free(f.c3);
+    /* releae the map */
+    new (&(f.v1)) Map<ArrayXXcd>(NULL, 0, 0);
+    new (&(f.v2)) Map<ArrayXXcd>(NULL, 0, 0);
+    new (&(f.v3)) Map<ArrayXXcd>(NULL, 0, 0);
 }
 
 /** @brief transform conjugate matrix to its real form */
 ArrayXXd Cqcgl1d::C2R(const ArrayXXcd &v){
-  // allocate memory for new array, so it will not change the original array.
-  return Map<ArrayXXd>((double*)&v(0,0), 2*v.rows(), v.cols());
+    // allocate memory for new array, so it will not change the original array.
+    return Map<ArrayXXd>((double*)&v(0,0), 2*v.rows(), v.cols());
 }
 
 ArrayXXcd Cqcgl1d::R2C(const ArrayXXd &v){
-  if(0 != v.rows()%2 ) { printf("R2C dimension wrong.\n"); exit(1); }
-  return Map<ArrayXXcd>((dcp*)&v(0,0), v.rows()/2, v.cols());
+    if(0 != v.rows()%2 ) { printf("R2C dimension wrong.\n"); exit(1); }
+    return Map<ArrayXXcd>((dcp*)&v(0,0), v.rows()/2, v.cols());
 }
 
 /* -------------------------------------------------- */
@@ -293,7 +297,7 @@ ArrayXXd Cqcgl1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
     ArrayXXd AA(n, m);
     
     for(size_t i = 0; i < m; i++){
-	Fv.v1 = R2C(aa.col(i));
+	Fv.v1 = R2C(paa.col(i));
 	ifft(Fv);
 	AA.col(i) = C2R(Fv.v2);
     }
@@ -336,11 +340,11 @@ ArrayXXd Cqcgl1d::Fourier2ConfigMag(const Ref<const ArrayXXd> &aa){
  * @brief velocity field
  */
 ArrayXd Cqcgl1d::velocity(const ArrayXd &a0){
-  assert( Ndim == a0.rows() );
-  Fv.v1 = R2C(pad(a0));
-  NL(Fv);
-  ArrayXcd vel = L*Fv.v1 + Fv.v3;
-  return unpad(C2R(vel));
+    assert( Ndim == a0.rows() );
+    Fv.v1 = R2C(pad(a0));
+    NL(Fv);
+    ArrayXcd vel = L*Fv.v1 + Fv.v3;
+    return unpad(C2R(vel));
 }
 
 /**
@@ -357,12 +361,12 @@ ArrayXd Cqcgl1d::velocityReq(const ArrayXd &a0, const double wth,
 /* --------          stability matrix     ----------- */
 /* -------------------------------------------------- */
 MatrixXd Cqcgl1d::stab(const ArrayXd &a0){
-  ArrayXXcd j0 = initJ(); 
-  jFv.v1 << R2C(pad(a0)), j0;
-  jNL(jFv);
-  MatrixXcd Z = j0.colwise() * L + jFv.v3.rightCols(Ndim);
+    ArrayXXcd j0 = initJ(); 
+    jFv.v1 << R2C(pad(a0)), j0;
+    jNL(jFv);
+    MatrixXcd Z = j0.colwise() * L + jFv.v3.rightCols(Ndim);
   
-  return unpad(C2R(Z));
+    return unpad(C2R(Z));
 }
 
 /**
@@ -399,11 +403,11 @@ ArrayXXd Cqcgl1d::reflect(const Ref<const ArrayXXd> &aa){
 ArrayXXd Cqcgl1d::reduceReflection(const Ref<const ArrayXXd> &aaHat){
     const int m = aaHat.cols();
     const int n = aaHat.rows();
-    assert(n == 2*N);
+    assert(n == Ndim);
     
     ArrayXXd step1(n, m);
-    int unchanged[4] = {0, 1, N, N+1};
-    for(size_t i = 0; i < 4; i++){
+    int unchanged[2] = {0, 1};
+    for(size_t i = 0; i < 2; i++){
 	step1.row(unchanged[i]) = aaHat.row(unchanged[i]);
     }
     for(size_t i = 1; i < N/2; i++){
@@ -454,12 +458,12 @@ ArrayXXd Cqcgl1d::transTangent(const Ref<const ArrayXXd> &aa){
 
 /** @brief group generator. */
 MatrixXd Cqcgl1d::transGenerator(){
-  MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
-  for(size_t i = 0; i < N-1; i++){
-    T(2*i, 2*i+1) = -KindexUnpad(i);
-    T(2*i+1, 2*i) = KindexUnpad(i);
-  }
-  return T;
+    MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
+    for(size_t i = 0; i < N-1; i++){
+	T(2*i, 2*i+1) = -KindexUnpad(i);
+	T(2*i+1, 2*i) = KindexUnpad(i);
+    }
+    return T;
 }
 
 
@@ -468,22 +472,22 @@ MatrixXd Cqcgl1d::transGenerator(){
  * */
 ArrayXXd Cqcgl1d::phaseRotate(const Ref<const ArrayXXd> &aa, const double phi){
   
-  return C2R( R2C(aa) * exp(dcp(0,1)*phi) ); // a0*e^{i\phi}
+    return C2R( R2C(aa) * exp(dcp(0,1)*phi) ); // a0*e^{i\phi}
 }
 
 /** @brief group tangent.  */
 ArrayXXd Cqcgl1d::phaseTangent(const Ref<const ArrayXXd> &aa){
-  return C2R( R2C(aa) * dcp(0,1) );
+    return C2R( R2C(aa) * dcp(0,1) );
 }
 
 /** @brief group generator  */
 MatrixXd Cqcgl1d::phaseGenerator(){
-  MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
-  for(size_t i = 0; i < N-1; i++){
-    T(2*i, 2*i+1) = -1;
-    T(2*i+1, 2*i) = 1;
-  }
-  return T;
+    MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
+    for(size_t i = 0; i < N-1; i++){
+	T(2*i, 2*i+1) = -1;
+	T(2*i+1, 2*i) = 1;
+    }
+    return T;
 }
 
 /**
@@ -673,7 +677,7 @@ Cqcgl1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
 		    const double phi, bool doesPrint /* = false*/){
     int m = x.cols();		/* number of shooting points */
     int n = x.rows();
-    assert( 2*N == n );
+    assert( Ndim == n );
   
     SpMat DF(m*n, m*n+3);
     VectorXd F(m*n);
@@ -686,7 +690,6 @@ Cqcgl1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
 	std::pair<ArrayXXd, ArrayXXd> aadaa = intgj(x.col(i), nstp, nstp, nstp); 
 	ArrayXXd &aa = aadaa.first;
 	ArrayXXd &J = aadaa.second;
-	J.resize(n, n);
 	
 	if(i < m-1){
 	    // J
@@ -733,7 +736,7 @@ Cqcgl1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
 std::pair<MatrixXd, VectorXd>
 Cqcgl1d::newtonReq(const ArrayXd &a0, const double wth, const double wphi){
     int n = a0.rows();
-    assert(2*N == n);
+    assert(Ndim == n);
     
     MatrixXd DF(n, n+2);
     ArrayXd tx_trans = transTangent(a0);
@@ -767,7 +770,7 @@ Cqcgl1d::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
 		 const bool doesUseMyCG /* = true */,
 		 const bool doesPrint /* = true */){ 
     const int n = a0.rows();
-    assert(n == 2*N);
+    assert(n == Ndim);
     
     ArrayXd a = a0;
     double wth = wth0;

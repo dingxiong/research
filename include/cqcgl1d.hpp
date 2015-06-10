@@ -40,7 +40,7 @@ public:
 
     int Ndim;			/* dimension of state space */
     double Br, Bi, Gr, Gi, Dr, Di, Mu;
-    ArrayXd K, Kindex, KindexUnad;
+    ArrayXd K, Kindex, KindexUnpad;
     ArrayXcd L, E, E2, Q, f1, f2, f3;
 
     ////////////////////////////////////////////////////////////

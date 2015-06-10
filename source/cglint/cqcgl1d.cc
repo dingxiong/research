@@ -33,8 +33,15 @@ Cqcgl1d::Cqcgl1d(int N, double d, double h,
     fftw_plan_with_nthreads(omp_get_max_threads());
 #endif	/* TFFT */
 
-    initFFT(Fv, 1); initFFT(Fa, 1); initFFT(Fb, 1); initFFT(Fc, 1);
-    initFFT(jFv, 2*N+1); initFFT(jFa, 2*N+1); initFFT(jFb, 2*N+1); initFFT(jFc, 2*N+1);
+    initFFT(Fv, 1);
+    initFFT(Fa, 1);
+    initFFT(Fb, 1);
+    initFFT(Fc, 1);
+    
+    initFFT(jFv, 2*N-1);
+    initFFT(jFa, 2*N-1);
+    initFFT(jFb, 2*N-1);
+    initFFT(jFc, 2*N-1);
 }
 
 Cqcgl1d::Cqcgl1d(const Cqcgl1d &x) : N(x.N), d(x.d), h(x.h),
@@ -45,8 +52,16 @@ Cqcgl1d::Cqcgl1d(const Cqcgl1d &x) : N(x.N), d(x.d), h(x.h),
 
 Cqcgl1d::~Cqcgl1d(){
     // destroy fft/ifft plan
-    freeFFT(Fv); freeFFT(Fa); freeFFT(Fb); freeFFT(Fc);
-    freeFFT(jFv); freeFFT(jFa); freeFFT(jFb); freeFFT(jFc);
+    freeFFT(Fv);
+    freeFFT(Fa);
+    freeFFT(Fb);
+    freeFFT(Fc);
+    
+    freeFFT(jFv);
+    freeFFT(jFa);
+    freeFFT(jFb);
+    freeFFT(jFc);
+    
     //fftw_cleanup();
   
 #ifdef TFFT
@@ -62,6 +77,34 @@ Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
 /* ---------        integrator         -------------- */
 /* -------------------------------------------------- */
 
+/**
+ * @brief pad the input with zeros
+ *
+ * The dimension of input is Ndim = 2N-2, with is smaller than the internal
+ * FFT length 2*N, so we need to pad zeros
+ */
+ArrayXXd Cqcgl1d::pad(const Ref<const ArrayXXd> &aa){
+    int n = aa.rows();
+    int m = aa.cols();
+    ArrayXXd paa(n+2, m);
+    paa << aa, ArrayXXd::Zero(2, m);
+    return paa;
+}
+
+/**
+ * @brief calculate the inital input for calculate Jacobian
+ *        It has dimension [N, 2*N-2]
+ */
+ArrayXXcd Cqcgl1d::initJ(){
+    // Kronecker product package is not available right now.
+    ArrayXXcd J0 = ArrayXXcd::Zero(N, Ndim);
+    for(size_t i = 0; i < Ndim/2; i++) {
+	J0(i,2*i) = dcp(1,0);
+	J0(i,2*i+1) = dcp(0,1);
+    }
+    return J0;
+}
+
 /** @brief Integrator of 1d cqCGL equation.
  *
  *  The intial condition a0 should be coefficients of the intial state:
@@ -74,9 +117,9 @@ Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
  *         Size : [2*N, nst/np+1] 
  */
 ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
-    assert( 2*N == a0.rows() ); // check the dimension of initial condition.
-    Fv.v1 = R2C(a0);
-    ArrayXXd uu(2*N, nstp/np+1); uu.col(0) = a0;  
+    assert( Ndim == a0.rows() ); // check the dimension of initial condition.
+    Fv.v1 = R2C(pad(a0));
+    ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
   
     for(size_t i = 1; i < nstp+1; i++) {    
 	NL(Fv);  Fa.v1 = E2*Fv.v1 + Q*Fv.v3;
@@ -85,7 +128,7 @@ ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
 	NL(Fc); 
 	Fv.v1 = E*Fv.v1 + Fv.v3*f1 + (Fa.v3+Fb.v3)*f2 + Fc.v3*f3;
       
-	if( i%np == 0 ) uu.col(i/np) = C2R(Fv.v1) ;
+	if( i%np == 0 ) uu.col(i/np) = C2R(Fv.v1).topRows(Ndim) ;
     }
 
     return uu;
@@ -94,18 +137,11 @@ ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
 pair<ArrayXXd, ArrayXXd>
 Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
 	       const size_t np, const size_t nqr){
-    assert( 2*N == a0.rows() ); // check the dimension of initial condition.
-
-    // Kronecker product package is not available right now.
-    ArrayXXcd J0 = ArrayXXcd::Zero(N,2*N);
-    for(size_t i = 0; i < N; i++) {
-	J0(i,2*i) = dcp(1,0);
-	J0(i,2*i+1) = dcp(0,1);
-    }
-
-    jFv.v1 << R2C(a0), J0;
-    ArrayXXd uu(2*N, nstp/np+1); uu.col(0) = a0;  
-    ArrayXXd duu((2*N)*(2*N), nstp/nqr);
+    assert( Ndim == a0.rows() ); // check the dimension of initial condition.
+    
+    jFv.v1 << R2C(pad(a0)), initJ();
+    ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
+    ArrayXXd duu(Ndim, Ndim * nstp/nqr);
   
     for(size_t i = 1; i < nstp + 1; i++){
 	jNL(jFv); jFa.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q;
@@ -116,10 +152,9 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
 	jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 +
 	    (jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
     
-	if ( 0 == i%np ) uu.col(i/np) = C2R(jFv.v1.col(0));
+	if ( 0 == i%np ) uu.col(i/np) = C2R(jFv.v1.col(0)).topRows(Ndim);
 	if ( 0 == i%nqr){
-	    Map<ArrayXcd> tmp(&jFv.v1(0,1), N*2*N, 1); 
-	    duu.col(i/nqr - 1) = C2R(tmp); 
+	    duu.middleCols((i/nqr - 1)*Ndim, Ndim) = C2R(jFv.v1.middleCols(1, Ndim)).topRows(Ndim);
 	    jFv.v1.rightCols(2*N) = J0;
 	}    
     }
@@ -128,9 +163,10 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
 }
 
 void Cqcgl1d::CGLInit(){
+    Ndim = 2*N-2;
     // calculate the ETDRK4 coefficients
     Kindex.resize(N,1);
-    Kindex << ArrayXd::LinSpaced(N/2+1, 0, N/2), ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
+    Kindex << ArrayXd::LinSpaced(N/2, 0, N/2-1), 0, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
     K = 2*M_PI/d * Kindex;
     L = Mu - dcp(Dr, Di) * K.square();
     E = (h*L).exp(); 

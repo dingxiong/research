@@ -38,11 +38,14 @@ public:
     const double d;
     const double h;
 
+    int Ndim;			/* dimension of state space */
     double Br, Bi, Gr, Gi, Dr, Di, Mu;
     ArrayXd K, Kindex;
     ArrayXcd L, E, E2, Q, f1, f2, f3;
 
-    // constructor, destructor, copy assignment.
+    ////////////////////////////////////////////////////////////
+    //         constructor, destructor, copy assignment.      //
+    ////////////////////////////////////////////////////////////
     Cqcgl1d(int N = 256, double d = 50, double h = 0.01, 
 	    double Mu = -0.1, double Br = 1.0, double Bi = 0.8,
 	    double Dr = 0.125, double Di = 0.5, double Gr = -0.1,
@@ -51,11 +54,15 @@ public:
     ~Cqcgl1d();
     Cqcgl1d & operator=(const Cqcgl1d &x);
 
-    // member functions.
+    ////////////////////////////////////////////////////////////
+    //                    member functions.                   //
+    ////////////////////////////////////////////////////////////
     ArrayXXd intg(const ArrayXd &a0, const size_t nstp, const size_t np = 1);
     pair<ArrayXXd, ArrayXXd>
     intgj(const ArrayXd &a0, const size_t nstp, const size_t np = 1,
 	  const size_t nqr = 1);
+    ArrayXXd pad(const Ref<const ArrayXXd> &aa);
+    ArrayXXcd initJ();
     ArrayXXd C2R(const ArrayXXcd &v);
     ArrayXXcd R2C(const ArrayXXd &v);
     ArrayXXd Fourier2Config(const Ref<const ArrayXXd> &aa);

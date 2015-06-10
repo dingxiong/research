@@ -40,7 +40,7 @@ public:
 
     int Ndim;			/* dimension of state space */
     double Br, Bi, Gr, Gi, Dr, Di, Mu;
-    ArrayXd K, Kindex;
+    ArrayXd K, Kindex, KindexUnad;
     ArrayXcd L, E, E2, Q, f1, f2, f3;
 
     ////////////////////////////////////////////////////////////
@@ -62,6 +62,7 @@ public:
     intgj(const ArrayXd &a0, const size_t nstp, const size_t np = 1,
 	  const size_t nqr = 1);
     ArrayXXd pad(const Ref<const ArrayXXd> &aa);
+    ArrayXXd unpad(const Ref<const ArrayXXd> &paa);
     ArrayXXcd initJ();
     ArrayXXd C2R(const ArrayXXcd &v);
     ArrayXXcd R2C(const ArrayXXd &v);
@@ -91,9 +92,9 @@ public:
     ArrayXXd rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
 			 const ArrayXd &phi);
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-    orbit2slice(const Ref<const ArrayXXd> &aa);
+    orbit2sliceWrap(const Ref<const ArrayXXd> &aa);
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-    orbit2sliceUnwrap(const Ref<const ArrayXXd> &aa);
+    orbit2slice(const Ref<const ArrayXXd> &aa);
     MatrixXd ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x);
     
     VectorXd multiF(const ArrayXXd &x, const int nstp, const double th, const double phi);

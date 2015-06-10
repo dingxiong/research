@@ -86,9 +86,20 @@ Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
 ArrayXXd Cqcgl1d::pad(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();
     int m = aa.cols();
+    assert(Ndim == n);
     ArrayXXd paa(n+2, m);
-    paa << aa, ArrayXXd::Zero(2, m);
+    paa << aa.topRows(n/2), ArrayXXd::Zero(2, m), 
+      aa.bottomRows(n/2);
     return paa;
+}
+
+ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
+  int n = paa.rows();
+  int m = paa.cols();
+  assert(2*N == n);
+  ArrayXXd aa(n-2, m);
+  aa << paa.topRows(n/2-1), paa.bottomRows(n/2-1);
+  return aa;
 }
 
 /**
@@ -128,7 +139,7 @@ ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
 	NL(Fc); 
 	Fv.v1 = E*Fv.v1 + Fv.v3*f1 + (Fa.v3+Fb.v3)*f2 + Fc.v3*f3;
       
-	if( i%np == 0 ) uu.col(i/np) = C2R(Fv.v1).topRows(Ndim) ;
+	if( i%np == 0 ) uu.col(i/np) = unpad(C2R(Fv.v1));
     }
 
     return uu;
@@ -139,7 +150,8 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
 	       const size_t np, const size_t nqr){
     assert( Ndim == a0.rows() ); // check the dimension of initial condition.
     
-    jFv.v1 << R2C(pad(a0)), initJ();
+    ArrayXXcd J0 = initJ();
+    jFv.v1 << R2C(pad(a0)), J0;
     ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
     ArrayXXd duu(Ndim, Ndim * nstp/nqr);
   
@@ -152,10 +164,10 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
 	jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 +
 	    (jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
     
-	if ( 0 == i%np ) uu.col(i/np) = C2R(jFv.v1.col(0)).topRows(Ndim);
+	if ( 0 == i%np ) uu.col(i/np) = unpad(C2R(jFv.v1.col(0)));
 	if ( 0 == i%nqr){
-	    duu.middleCols((i/nqr - 1)*Ndim, Ndim) = C2R(jFv.v1.middleCols(1, Ndim)).topRows(Ndim);
-	    jFv.v1.rightCols(2*N) = J0;
+	    duu.middleCols((i/nqr - 1)*Ndim, Ndim) = unpad(C2R(jFv.v1.middleCols(1, Ndim)));
+	    jFv.v1.rightCols(Ndim) = J0;
 	}    
     }
   
@@ -167,6 +179,9 @@ void Cqcgl1d::CGLInit(){
     // calculate the ETDRK4 coefficients
     Kindex.resize(N,1);
     Kindex << ArrayXd::LinSpaced(N/2, 0, N/2-1), 0, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
+    KindexUnpad.resize(N-1, 1);
+    KindexUnpad << ArrayXd::LinSpaced(N/2, 0, N/2-1), ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
+      
     K = 2*M_PI/d * Kindex;
     L = Mu - dcp(Dr, Di) * K.square();
     E = (h*L).exp(); 
@@ -271,8 +286,9 @@ ArrayXXcd Cqcgl1d::R2C(const ArrayXXd &v){
  * @brief back Fourier transform of the states. xInput and output are both real.
  */
 ArrayXXd Cqcgl1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
-    int m = aa.cols();
-    int n = aa.rows();
+    ArrayXXd paa = pad(aa);
+    int m = paa.cols();
+    int n = paa.rows();
     assert(2*N == n);
     ArrayXXd AA(n, m);
     
@@ -293,12 +309,12 @@ ArrayXXd Cqcgl1d::Config2Fourier(const Ref<const ArrayXXd> &AA){
     int m = AA.cols();
     int n = AA.rows();
     assert(2*N == n);
-    ArrayXXd aa(n, m);
+    ArrayXXd aa(n-2, m);
     
     for(size_t i = 0; i < m; i++){
 	Fv.v2 = R2C(AA.col(i));
 	fft(Fv);
-	aa.col(i) = C2R(Fv.v3);
+	aa.col(i) = unpad(C2R(Fv.v3));
     }
     
     return aa;
@@ -320,11 +336,11 @@ ArrayXXd Cqcgl1d::Fourier2ConfigMag(const Ref<const ArrayXXd> &aa){
  * @brief velocity field
  */
 ArrayXd Cqcgl1d::velocity(const ArrayXd &a0){
-  assert( 2*N == a0.rows() );
-  Fv.v1 = R2C(a0);
+  assert( Ndim == a0.rows() );
+  Fv.v1 = R2C(pad(a0));
   NL(Fv);
   ArrayXcd vel = L*Fv.v1 + Fv.v3;
-  return C2R(vel);
+  return unpad(C2R(vel));
 }
 
 /**
@@ -341,16 +357,12 @@ ArrayXd Cqcgl1d::velocityReq(const ArrayXd &a0, const double wth,
 /* --------          stability matrix     ----------- */
 /* -------------------------------------------------- */
 MatrixXd Cqcgl1d::stab(const ArrayXd &a0){
-  ArrayXXcd j0 = MatrixXcd::Zero(N, 2*N);
-  for(size_t i = 0; i < N; i++) {
-    j0(i,2*i) = dcp(1,0);
-    j0(i,2*i+1) =dcp(0,1);
-  }
-  jFv.v1 << R2C(a0), j0;
+  ArrayXXcd j0 = initJ(); 
+  jFv.v1 << R2C(pad(a0)), j0;
   jNL(jFv);
-  MatrixXcd Z = j0.colwise() * L + jFv.v3.rightCols(2*N);
+  MatrixXcd Z = j0.colwise() * L + jFv.v3.rightCols(Ndim);
   
-  return C2R(Z);
+  return unpad(C2R(Z));
 }
 
 /**
@@ -371,8 +383,8 @@ MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double wth, double wphi){
  */
 ArrayXXd Cqcgl1d::reflect(const Ref<const ArrayXXd> &aa){
     ArrayXXcd raa = R2C(aa);
-    const int n = raa.rows();
-    for(size_t i = 1; i < n/2; i++){
+    const int n = raa.rows(); // n = N - 1
+    for(size_t i = 1; i < (n+1)/2; i++){
 	ArrayXcd tmp = raa.row(i);
 	raa.row(i) = raa.row(n-i);
 	raa.row(n-i) = tmp;
@@ -421,7 +433,7 @@ ArrayXXd Cqcgl1d::reduceReflection(const Ref<const ArrayXXd> &aaHat){
  *  th : rotation angle
  *  */
 ArrayXXd Cqcgl1d::transRotate(const Ref<const ArrayXXd> &aa, const double th){
-    ArrayXcd R = ( dcp(0,1) * th * Kindex ).exp(); // e^{ik\theta}
+    ArrayXcd R = ( dcp(0,1) * th * KindexUnpad ).exp(); // e^{ik\theta}
     ArrayXXcd raa = R2C(aa); 
     raa.colwise() *= R;
   
@@ -433,7 +445,7 @@ ArrayXXd Cqcgl1d::transRotate(const Ref<const ArrayXXd> &aa, const double th){
  *  x=(b0, c0, b1, c1, b2, c2 ...) ==> tx=(0, 0, -c1, b1, -2c2, 2b2, ...)
  */
 ArrayXXd Cqcgl1d::transTangent(const Ref<const ArrayXXd> &aa){
-    ArrayXcd R = dcp(0,1) * Kindex;
+    ArrayXcd R = dcp(0,1) * KindexUnpad;
     ArrayXXcd raa = R2C(aa);
     raa.colwise() *= R;
   
@@ -442,10 +454,10 @@ ArrayXXd Cqcgl1d::transTangent(const Ref<const ArrayXXd> &aa){
 
 /** @brief group generator. */
 MatrixXd Cqcgl1d::transGenerator(){
-  MatrixXd T = MatrixXd::Zero(2*N, 2*N);
-  for(size_t i = 0; i < N; i++){
-    T(2*i, 2*i+1) = -Kindex(i);
-    T(2*i+1, 2*i) = Kindex(i);
+  MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
+  for(size_t i = 0; i < N-1; i++){
+    T(2*i, 2*i+1) = -KindexUnpad(i);
+    T(2*i+1, 2*i) = KindexUnpad(i);
   }
   return T;
 }
@@ -466,8 +478,8 @@ ArrayXXd Cqcgl1d::phaseTangent(const Ref<const ArrayXXd> &aa){
 
 /** @brief group generator  */
 MatrixXd Cqcgl1d::phaseGenerator(){
-  MatrixXd T = MatrixXd::Zero(2*N, 2*N);
-  for(size_t i = 0; i < N; i++){
+  MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
+  for(size_t i = 0; i < N-1; i++){
     T(2*i, 2*i+1) = -1;
     T(2*i+1, 2*i) = 1;
   }
@@ -482,7 +494,7 @@ MatrixXd Cqcgl1d::phaseGenerator(){
  */
 ArrayXXd Cqcgl1d::Rotate(const Ref<const ArrayXXd> &aa, const double th,
 			 const double phi){
-    ArrayXcd R = ( dcp(0,1) * (th * Kindex + phi) ).exp(); // e^{ik\theta + \phi}
+    ArrayXcd R = ( dcp(0,1) * (th * KindexUnpad + phi) ).exp(); // e^{ik\theta + \phi}
     ArrayXXcd raa = R2C(aa); 
     raa.colwise() *= R;
   
@@ -518,10 +530,10 @@ ArrayXXd Cqcgl1d::rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
  *        meaning to transform the sum/subtraction of two state points.
  */
 std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
+Cqcgl1d::orbit2sliceWrap(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();
     int m = aa.cols();
-    assert(2*N == n);
+    assert(Ndim == n);
     ArrayXXd raa(n, m);
     ArrayXd th(m);
     ArrayXd phi(m);
@@ -537,10 +549,10 @@ Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
 }
 
 std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-Cqcgl1d::orbit2sliceUnwrap(const Ref<const ArrayXXd> &aa){
+Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();
     int m = aa.cols();
-    assert(2*N == n);
+    assert(Ndim == n);
     ArrayXXd raa(n, m);
     ArrayXd th(m);
     ArrayXd phi(m);
@@ -628,7 +640,7 @@ MatrixXd Cqcgl1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
 VectorXd Cqcgl1d::multiF(const ArrayXXd &x, const int nstp, const double th, const double phi){
     int m = x.cols();
     int n = x.rows();
-    assert( 2*N == n );
+    assert( Ndim == n );
     
     VectorXd F(m*n);
     for(size_t i = 0; i < m; i++){

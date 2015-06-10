@@ -320,14 +320,8 @@ public:
     /* stability matrix for relative equibrium */
     bn::ndarray PYstabReq(bn::ndarray a0, double th, double phi){
 
-      	int m, n;
-	if(a0.get_nd() == 1){
-	    m = 1;
-	    n = a0.shape(0);
-	} else {
-	    m = a0.shape(0);
-	    n = a0.shape(1);
-	}
+	int m, n;
+	getDims(a0, m, n);
 
 	Map<ArrayXd> tmpa((double*)a0.get_data(), n*m);
 	MatrixXd tmpZ = stabReq(tmpa, th, phi);
@@ -348,13 +342,7 @@ public:
     bn::ndarray PYreflect(bn::ndarray aa){
 
 	int m, n;
-	if(aa.get_nd() == 1){
-	    m = 1;
-	    n = aa.shape(0);
-	} else {
-	    m = aa.shape(0);
-	    n = aa.shape(1);
-	}
+	getDims(aa, m, n);
 	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	ArrayXXd tmpraa = reflect(tmpaa);
@@ -366,11 +354,35 @@ public:
 	bn::ndarray raa = 
 	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
 	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
-	       sizeof(double) * m * n );
+	       sizeof(double) * m2 * n2 );
 
 	return raa;
     }
 
+
+    /* reduceReflection */
+    bn::ndarray PYreduceReflection(bn::ndarray aa){
+
+	int m, n;
+	getDims(aa, m, n);
+	
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXXd tmpraa = reduceReflection(tmpaa);
+
+	int m2 = tmpraa.cols();
+	int n2 = tmpraa.rows();
+	Py_intptr_t dims[2] = {m2 , n2};
+	
+	bn::ndarray raa = 
+	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
+	       sizeof(double) * m2 * n2 );
+
+	return raa;
+    }
+
+    
+    
     /* ve2slice */
     bn::ndarray PYve2slice(bn::ndarray ve, bn::ndarray x){
 
@@ -531,6 +543,7 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("stab", &pyCqcgl1d::PYstab)
 	.def("stabReq", &pyCqcgl1d::PYstabReq)
 	.def("reflect", &pyCqcgl1d::PYreflect)
+	.def("reduceReflection", &pyCqcgl1d::PYreduceReflection)
 	.def("ve2slice", &pyCqcgl1d::PYve2slice)
 	.def("findReq", &pyCqcgl1d::PYfindReq)
 	.def("transRotate", &pyCqcgl1d::PYtransRotate)

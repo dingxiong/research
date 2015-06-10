@@ -344,6 +344,43 @@ ArrayXXd Cqcgl1d::reflect(const Ref<const ArrayXXd> &aa){
     return C2R(raa);
 }
 
+/**
+ * @brief reduce the discrete symmetry
+ * 
+ */
+ArrayXXd Cqcgl1d::reduceReflection(const Ref<const ArrayXXd> &aaHat){
+    const int m = aaHat.cols();
+    const int n = aaHat.rows();
+    assert(n == 2*N);
+    
+    ArrayXXd step1(n, m);
+    int unchanged[4] = {0, 1, N, N+1};
+    for(size_t i = 0; i < 4; i++){
+	step1.row(unchanged[i]) = aaHat.row(unchanged[i]);
+    }
+    for(size_t i = 1; i < N/2; i++){
+	step1.row(2*i) = 0.5*(aaHat.row(2*i) - aaHat.row(n-2*i));
+	step1.row(n-2*i) = 0.5*(aaHat.row(2*i) + aaHat.row(n-2*i));
+	step1.row(2*i+1) = 0.5*(aaHat.row(2*i+1) - aaHat.row(n+1-2*i));
+	step1.row(n+1-2*i) = 0.5*(aaHat.row(2*i+1) + aaHat.row(n+1-2*i));
+    }
+
+    ArrayXXd step2(step1);  
+    
+    ArrayXd p1s = step1.row(2).square(); 
+    ArrayXd q1s = step1.row(3).square();
+    ArrayXd denorm = (p1s + q1s).sqrt();
+    step2.row(2) = (p1s - q1s) / denorm;
+    step2.row(3) = step1.row(2) * step1.row(3) / denorm.transpose(); 
+    
+    for(size_t i = 4; i < N; i++){
+	ArrayXd denorm = (step1.row(i-1).square() +  step1.row(i).square()).sqrt();
+	step2.row(i) = step1.row(i-1) * step1.row(i) / denorm.transpose() ;
+    }
+
+    return step2;
+}
+
 /** @brief group rotation for spatial translation of set of arrays.
  *  th : rotation angle
  *  */

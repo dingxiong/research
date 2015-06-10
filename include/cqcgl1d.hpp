@@ -70,6 +70,7 @@ public:
     MatrixXd stabReq(const ArrayXd &a0, double th, double phi);
 
     ArrayXXd reflect(const Ref<const ArrayXXd> &aa);
+    ArrayXXd reduceReflection(const Ref<const ArrayXXd> &aaHat);
     
     ArrayXXd transRotate(const Ref<const ArrayXXd> &aa, const double th);
     ArrayXXd transTangent(const Ref<const ArrayXXd> &aa);

@@ -426,6 +426,7 @@ MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double wth, double wphi){
     MatrixXd z = stab(a0);
     return z + wth*transGenerator() + wphi*phaseGenerator();
 }
+
 /* -------------------------------------------------- */
 /* ------           symmetry related           ------ */
 /* -------------------------------------------------- */
@@ -446,11 +447,22 @@ ArrayXXd Cqcgl1d::reflect(const Ref<const ArrayXXd> &aa){
     return C2R(raa);
 }
 
+inline ArrayXd Cqcgl1d::rcos2th(const ArrayXd &x, const ArrayXd &y){
+    ArrayXd x2 = x.square();
+    ArrayXd y2 = y.square();
+    return (x2 - y2) / (x2 + y2).sqrt();
+}
+
+inline ArrayXd Cqcgl1d::rsin2th(const ArrayXd &x, const ArrayXd &y){
+    return x * y / (x.square() + y.square()).sqrt();
+
+}
+
 /**
- * @brief reduce the discrete symmetry
+ * @brief the first 2 steps to reduce the discrete symmetry
  * 
  */
-ArrayXXd Cqcgl1d::reduceReflection(const Ref<const ArrayXXd> &aaHat){
+ArrayXXd Cqcgl1d::reduceReflectionStep12(const Ref<const ArrayXXd> &aaHat){
     const int m = aaHat.cols();
     const int n = aaHat.rows();
     assert(n == Ndim);
@@ -464,7 +476,7 @@ ArrayXXd Cqcgl1d::reduceReflection(const Ref<const ArrayXXd> &aaHat){
 	step1.row(n+1-2*i) = 0.5*(aaHat.row(2*i+1) + aaHat.row(n+1-2*i));
     }
 
-    ArrayXXd step2(step1);     
+    ArrayXXd step2(step1);
     ArrayXd p1s = step1.row(2).square(); 
     ArrayXd q1s = step1.row(3).square();
     ArrayXd denorm = (p1s + q1s).sqrt();
@@ -478,6 +490,38 @@ ArrayXXd Cqcgl1d::reduceReflection(const Ref<const ArrayXXd> &aaHat){
 
     return step2;
 }
+
+/**
+ * @brief the 3rd step to reduce the discrete symmetry
+ *
+ */
+ArrayXXd Cqcgl1d::reduceReflectionStep3(const Ref<const ArrayXXd> &aa){
+
+    ArrayXXd aaTilde(aa);
+    aaTilde.row(0) = rcos2th(aa.row(0), aa.row(1));
+    aaTilde.row(1) = rsin2th(aa.row(0), aa.row(1));
+    
+    std::vector<int> index;  // vector storing indices which flip sign
+    index.push_back(1);
+    for(size_t i = 2; i < Nplus; i++) index.push_back(2*i);
+    for(size_t i = Nplus; i < Ne; i++) {
+	if(i%2 != 0){		// the last mode a_{-1} has index Ne-1 even
+	    index.push_back(2*i);
+	    index.push_back(2*i+1);
+	}
+    }
+
+    for(size_t i = 1; i < index.size(); i++){
+	aaTilde.row(index[i]) = rsin2th(aa.row(index[i-1]), aa.row(index[i]));
+    }
+
+    return aaTilde;
+}
+
+ArrayXXd Cqcgl1d::reduceReflection(const Ref<const ArrayXXd> &aaHat){
+    return reduceReflectionStep3(reduceReflectionStep12(aaHat));
+}
+
 
 /** @brief group rotation for spatial translation of set of arrays.
  *  th : rotation angle

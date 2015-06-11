@@ -15,6 +15,8 @@ case = 1
 if case == 1:
     """
     view an ergodic instance
+    full state space => reduce continuous symmetry =>
+    reduce reflection symmetry
     """
     N = 256
     d = 50
@@ -24,18 +26,16 @@ if case == 1:
 
     A0 = centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
-    nstp = 20000
+    nstp = 15000
     aa = cgl.intg(a0, nstp, 1)
-    # aa, daa = cgl.intgj(a0, 10, 1, 1)
-    AA = cgl.Fourier2Config(aa)
-    plotConfigSpace(AA, [0, d, 0, nstp*h])
-    # maxmode = np.amax(np.abs(aa), axis=1)
-    # plot1dfig(np.abs(aa[:, Ndim/2])/maxmode, yscale='log')
-    # plotOneConfig(AA[5200])
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+
     aaHat, th, phi = cgl.orbit2sliceWrap(aa)
     aaHat2, th2, phi2 = cgl.orbit2slice(aa)
     plotConfigSpace(cgl.Fourier2Config(aaHat), [0, d, 0, nstp*h])
     plotConfigSpace(cgl.Fourier2Config(aaHat2), [0, d, 0, nstp*h])
+    aaTilde = cgl.reduceReflection(aaHat)
+    plotConfigSpace(cgl.Fourier2Config(aaTilde), [0, d, 0, nstp*h])
 
     # rely on numpy's unwrap function
     th3 = unwrap(th*2.0)/2.0
@@ -46,6 +46,16 @@ if case == 1:
     # rotate by g(pi, pi)
     aaHat4 = cgl.Rotate(aaHat2, pi, pi)
     plotConfigSpace(cgl.Fourier2Config(aaHat4), [0, d, 0, nstp*h])
+    aaTilde4 = cgl.reduceReflection(aaHat4)
+    plotConfigSpace(cgl.Fourier2Config(aaTilde4), [0, d, 0, nstp*h])
+
+    # reflection
+    aa2 = cgl.reflect(aa)
+    plotConfigSpace(cgl.Fourier2Config(aa2), [0, d, 0, nstp*h])
+    aaHat5, th5, phi5 = cgl.orbit2slice(aa2)
+    plotConfigSpaceFromFourier(cgl, aaHat5, [0, d, 0, nstp*h])
+    aaTilde5 = cgl.reduceReflection(aaHat5)
+    plotConfigSpace(cgl.Fourier2Config(aaTilde5), [0, d, 0, nstp*h])
 
 # view relative equlibria
 if case == 2:

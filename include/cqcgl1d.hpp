@@ -84,6 +84,10 @@ public:
     MatrixXd stabReq(const ArrayXd &a0, double th, double phi);
 
     ArrayXXd reflect(const Ref<const ArrayXXd> &aa);
+    inline ArrayXd rcos2th(const ArrayXd &x, const ArrayXd &y);
+    inline ArrayXd rsin2th(const ArrayXd &x, const ArrayXd &y);
+    ArrayXXd reduceReflectionStep12(const Ref<const ArrayXXd> &aaHat);
+    ArrayXXd reduceReflectionStep3(const Ref<const ArrayXXd> &aa);
     ArrayXXd reduceReflection(const Ref<const ArrayXXd> &aaHat);
     
     ArrayXXd transRotate(const Ref<const ArrayXXd> &aa, const double th);

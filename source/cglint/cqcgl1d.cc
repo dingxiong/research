@@ -182,7 +182,7 @@ void Cqcgl1d::CGLInit(){
     Ndim = 2*N-2;
     // calculate the ETDRK4 coefficients
     Kindex.resize(N,1);
-    Kindex << ArrayXd::LinSpaced(N/2, 0, N/2-1), 0, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
+    Kindex << ArrayXd::LinSpaced(N/2, 0, N/2-1), N/2, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
     KindexUnpad.resize(N-1, 1);
     KindexUnpad << ArrayXd::LinSpaced(N/2, 0, N/2-1), ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
       

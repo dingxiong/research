@@ -8,9 +8,6 @@ from time import time
 from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
-N = 256
-d = 50
-h = 0.01
 
 case = 1
 
@@ -21,12 +18,14 @@ if case == 1:
     h = 0.005
 
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
-    A0 = centerRand(2*N, 0.25)
+    A0 = centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
     nstp = 15000
     aa = cgl.intg(a0, nstp, 1)
     AA = cgl.Fourier2Config(aa)
     plotConfigSpace(AA, [0, d, 0, nstp*h])
+    semilogy(aa[:, N])
+    show(block=False)
     # plotOneConfig(AA[5200])
     aaHat, th, phi = cgl.orbit2slice(aa)
     aaHat2, th2, phi2 = cgl.orbit2sliceUnwrap(aa)

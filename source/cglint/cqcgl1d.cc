@@ -106,6 +106,10 @@ ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
     return aa;
 }
 
+void Cqcgl1d::dealias(CGLfft &Fv){
+    Fv.v1.row(N/2) = ArrayXcd::Zero(Fv.v1.cols());
+}
+
 /**
  * @brief calculate the inital input for calculate Jacobian
  *        It has dimension [N, 2*N-2]
@@ -142,7 +146,8 @@ ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
 	NL(Fb);  Fc.v1 = E2*Fa.v1 + Q*(2.0*Fb.v3-Fv.v3);
 	NL(Fc); 
 	Fv.v1 = E*Fv.v1 + Fv.v3*f1 + (Fa.v3+Fb.v3)*f2 + Fc.v3*f3;
-      
+
+	dealias(Fv);
 	if( i%np == 0 ) uu.col(i/np) = unpad(C2R(Fv.v1));
     }
 
@@ -167,7 +172,8 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
     
 	jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 +
 	    (jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
-    
+
+	dealias(jFv);
 	if ( 0 == i%np ) uu.col(i/np) = unpad(C2R(jFv.v1.col(0))); 
 	if ( 0 == i%nqr){
 	    duu.middleCols((i/nqr - 1)*Ndim, Ndim) = unpad(C2R(jFv.v1.middleCols(1, Ndim)));

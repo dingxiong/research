@@ -133,7 +133,7 @@ protected:
     void ifft(CGLfft &f);
     void initFFT(CGLfft &f, int M);
     void freeFFT(CGLfft &f);
-
+    void dealias(CGLfft &Fv);
 };
 
 

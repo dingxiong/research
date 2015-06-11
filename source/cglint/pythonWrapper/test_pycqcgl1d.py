@@ -70,15 +70,19 @@ if case == 5:
 if case == 6:
     # test the reduceReflection function
     cgl = pyCqcgl1d(256, 50, 0.01, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
-    A0 = rand(512)
+    A0 = centerRand(512, 0.2)
     a0 = cgl.Config2Fourier(A0)
     aa = cgl.intg(a0, 1000, 1)
     aaHat, th, phi = cgl.orbit2slice(aa)
+    plotConfigSpaceFromFourier(cgl, aaHat, [0, 50, 0, 10])
     aaTilde = cgl.reduceReflection(aaHat)
-
+    plotConfigSpaceFromFourier(cgl, aaTilde, [0, 50, 0, 10])
+    
     raa = cgl.reflect(aa)
     aaHat2, th2, phi2 = cgl.orbit2slice(raa)
+    plotConfigSpaceFromFourier(cgl, aaHat2, [0, 50, 0, 10])
     aaTilde2 = cgl.reduceReflection(aaHat2)
+    plotConfigSpaceFromFourier(cgl, aaTilde2, [0, 50, 0, 10])
 
     print np.allclose(aaTilde, aaTilde2)
     print np.amax(np.abs(aaTilde - aaTilde2))

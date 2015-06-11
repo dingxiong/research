@@ -37,11 +37,12 @@ Cqcgl1d::Cqcgl1d(int N, double d, double h,
     initFFT(Fa, 1);
     initFFT(Fb, 1);
     initFFT(Fc, 1);
-    
-    initFFT(jFv, 2*N-1);
-    initFFT(jFa, 2*N-1);
-    initFFT(jFb, 2*N-1);
-    initFFT(jFc, 2*N-1);
+
+    /* Ndim must be calculated in CGLInit() */
+    initFFT(jFv, Ndim+1);
+    initFFT(jFa, Ndim+1);
+    initFFT(jFb, Ndim+1);
+    initFFT(jFc, Ndim+1);
 }
 
 Cqcgl1d::Cqcgl1d(const Cqcgl1d &x) : N(x.N), d(x.d), h(x.h),
@@ -73,124 +74,43 @@ Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
     return *this;
 }
 
-/* -------------------------------------------------- */
-/* ---------        integrator         -------------- */
-/* -------------------------------------------------- */
+/* ------------------------------------------------------ */
+/* ----                Internal functions         ------- */
+/* ------------------------------------------------------ */
 
 /**
- * @brief pad the input with zeros
+ * @brief set the corret dimension of the system
+ *     
+ * Dealiasing is the method to calculate correct convolution term. For centralized
+ * FFT, it works as set Fourier modes a_k = 0 for wave number |k| > 2/3 * N.
+ * More specifically, in this code, the middle part of modes
+ * is set to zero.
  *
- * The dimension of input is Ndim = 2N-2, with is smaller than the internal
- * FFT length 2*N, so we need to pad zeros
- * For example:
- *     if N = 256
- *     0, 1, 2, ..., 127, -127, ..., -1 => insert between 127 and -127
- *     The left half has one mode more than the second half
- */
-ArrayXXd Cqcgl1d::pad(const Ref<const ArrayXXd> &aa){
-    int n = aa.rows();		/* 2*N-2 */
-    int m = aa.cols();
-    assert(Ndim == n);
-    ArrayXXd paa(n+2, m);
-    paa << aa.topRows(n/2+1), ArrayXXd::Zero(2, m), 
-	aa.bottomRows(n/2-1);
-    return paa;
-}
-
-ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
-    int n = paa.rows();
-    int m = paa.cols();
-    assert(2*N == n);
-    ArrayXXd aa(n-2, m);
-    aa << paa.topRows(n/2), paa.bottomRows(n/2-2);
-    return aa;
-}
-
-void Cqcgl1d::dealias(CGLfft &Fv){
-    Fv.v1.row(N/2) = ArrayXcd::Zero(Fv.v1.cols());
-}
-
-/**
- * @brief calculate the inital input for calculate Jacobian
- *        It has dimension [N, 2*N-2]
- */
-ArrayXXcd Cqcgl1d::initJ(){
-    // Kronecker product package is not available right now.
-    ArrayXXcd J0 = ArrayXXcd::Zero(N, Ndim);
-    for(size_t i = 0; i < Ndim/2; i++) {
-	J0(i,2*i) = dcp(1,0);
-	J0(i,2*i+1) = dcp(0,1);
-    }
-    return J0;
-}
-
-/** @brief Integrator of 1d cqCGL equation.
+ *    |<---------------------------------------------------------->|
+ *                             FFT length: N
+ *               
+ *    |<--------------->|<--------------------->|<---------------->|
+ *        (Ne + 1) / 2         N - Ne                (Ne - 1) /2
+ *         = Nplus             = Nalias               = Nminus
  *
- *  The intial condition a0 should be coefficients of the intial state:
- *  [b0, c0 ,b1, c1,...] where bi, ci the real and imaginary parts of Fourier modes.
- *  
- * @param[in] a0 initial condition of Fourier coefficents. Size : [2*N,1]
- * @param[in] nstp number of integration steps.
- * @param[in] np spacing of saving the trajectory.
- * @return state trajectory. Each column is the state followed the previous column. 
- *         Size : [2*N, nst/np+1] 
+ *    @Note each term has real and imaginary part, so the indices are
+ *          0, 1, 2,... Nplus*2, Nplus*2+1,... 2*Ne-1
  */
-ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
-    assert( Ndim == a0.rows() ); // check the dimension of initial condition.
-    Fv.v1 = R2C(pad(a0));
-    ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
-  
-    for(size_t i = 1; i < nstp+1; i++) {    
-	NL(Fv);  Fa.v1 = E2*Fv.v1 + Q*Fv.v3;
-	NL(Fa);  Fb.v1 = E2*Fv.v1 + Q*Fa.v3;
-	NL(Fb);  Fc.v1 = E2*Fa.v1 + Q*(2.0*Fb.v3-Fv.v3);
-	NL(Fc); 
-	Fv.v1 = E*Fv.v1 + Fv.v3*f1 + (Fa.v3+Fb.v3)*f2 + Fc.v3*f3;
-
-	dealias(Fv);
-	if( i%np == 0 ) uu.col(i/np) = unpad(C2R(Fv.v1));
-    }
-
-    return uu;
-}
-
-pair<ArrayXXd, ArrayXXd>
-Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
-	       const size_t np, const size_t nqr){
-    assert( Ndim == a0.rows() ); // check the dimension of initial condition.
-    
-    ArrayXXcd J0 = initJ();
-    jFv.v1 << R2C(pad(a0)), J0;
-    ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
-    ArrayXXd duu(Ndim, Ndim * nstp/nqr);
-  
-    for(size_t i = 1; i < nstp + 1; i++){ 
-	jNL(jFv); jFa.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q; 
-	jNL(jFa); jFb.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q;
-	jNL(jFb); jFc.v1 = jFa.v1.colwise() * E2 + (2.0*jFb.v3 - jFv.v3).colwise() * Q;
-	jNL(jFc);
-    
-	jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 +
-	    (jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
-
-	dealias(jFv);
-	if ( 0 == i%np ) uu.col(i/np) = unpad(C2R(jFv.v1.col(0))); 
-	if ( 0 == i%nqr){
-	    duu.middleCols((i/nqr - 1)*Ndim, Ndim) = unpad(C2R(jFv.v1.middleCols(1, Ndim)));
-	    jFv.v1.rightCols(Ndim) = J0;
-	}    
-    }
-  
-    return make_pair(uu, duu);
-}
-
 void Cqcgl1d::CGLInit(){
-    Ndim = 2*N-2;
+    // Ne = N - 1 			/* no dealiasing */
+    Ne = (N/3) * 2 - 1;		/* make it an odd number */
+    Ndim = 2 * Ne;	
+    aliasStart = (Ne + 1) / 2;
+    aliasEnd = N - (Ne - 1) / 2;
+    Nplus = (Ne + 1) / 2;
+    Nminus = (Ne - 1) / 2;
+    Nalias = N - Ne;
+    
     // calculate the ETDRK4 coefficients
     Kindex.resize(N,1);
     Kindex << ArrayXd::LinSpaced(N/2, 0, N/2-1), N/2, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
-    KindexUnpad.resize(N-1, 1);
-    KindexUnpad << ArrayXd::LinSpaced(N/2, 0, N/2-1), ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
+    KindexUnpad.resize(Ne, 1);
+    KindexUnpad << ArrayXd::LinSpaced(Nplus, 0, Nplus-1), ArrayXd::LinSpaced(Nminus, -Nminus, -1);
       
     K = 2*M_PI/d * Kindex;
     L = Mu - dcp(Dr, Di) * K.square();
@@ -212,6 +132,49 @@ void Cqcgl1d::CGLInit(){
 
 }
 
+/**
+ * @brief pad the input with zeros
+ *
+ * The dimension of input is Ndim = 2N-2, with is smaller than the internal
+ * FFT length 2*N, so we need to pad zeros
+ * For example:
+ *     if N = 256
+ *     0, 1, 2, ..., 127, -127, ..., -1 => insert between 127 and -127
+ *     The left half has one mode more than the second half
+ */
+ArrayXXd Cqcgl1d::pad(const Ref<const ArrayXXd> &aa){
+    int n = aa.rows();		
+    int m = aa.cols();
+    assert(Ndim == n);
+    ArrayXXd paa(2*N, m);
+    paa << aa.topRows(2*Nplus), ArrayXXd::Zero(2*Nalias, m), 
+	aa.bottomRows(2*Nminus);
+    return paa;
+}
+
+ArrayXXcd Cqcgl1d::padcp(const Ref<const ArrayXXcd> &x){
+    int n = x.rows();
+    int m = x.cols();
+    assert(Ne == n);
+    ArrayXXcd px(N, m);
+    px << x.topRows(Nplus), ArrayXXcd::Zero(Nalias, m),
+	x.bottomRows(Nminus);
+
+    return px;
+}
+
+ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
+    int n = paa.rows();
+    int m = paa.cols();
+    assert(2*N == n);
+    ArrayXXd aa(Ndim, m);
+    aa << paa.topRows(2*Nplus), paa.bottomRows(2*Nminus);
+    return aa;
+}
+
+void Cqcgl1d::dealias(CGLfft &Fv){
+    Fv.v1.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, Fv.v1.cols());
+}
 
 
 void Cqcgl1d::NL(CGLfft &f){
@@ -230,11 +193,12 @@ void Cqcgl1d::jNL(CGLfft &f){
     dcp G(Gr, Gi);
     f.v2.col(0) = dcp(Br, Bi) * A * aA2 + dcp(Gr, Gi) * A * aA2.square();
 
-    f.v2.rightCols(2*N-2) = f.v2.rightCols(2*N-2).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
-    	f.v2.rightCols(2*N-2).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
+    f.v2.rightCols(Ndim) = f.v2.rightCols(Ndim).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
+    	f.v2.rightCols(Ndim).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
 
     fft(f);
 }
+
 
 void Cqcgl1d::fft(CGLfft &f){
     fftw_execute(f.p);  
@@ -290,6 +254,86 @@ ArrayXXcd Cqcgl1d::R2C(const ArrayXXd &v){
 }
 
 /* -------------------------------------------------- */
+/* ---------        integrator         -------------- */
+/* -------------------------------------------------- */
+
+
+/**
+ * @brief calculate the inital input for calculate Jacobian
+ *        It has dimension [N, Ndim]
+ */
+ArrayXXcd Cqcgl1d::initJ(){
+    // Kronecker product package is not available right now.
+    ArrayXXcd J0 = ArrayXXcd::Zero(Ne, Ndim);
+    for(size_t i = 0; i < Ne; i++) {
+	J0(i,2*i) = dcp(1,0);
+	J0(i,2*i+1) = dcp(0,1);
+    }
+    return padcp(J0);
+}
+
+/** @brief Integrator of 1d cqCGL equation.
+ *
+ *  The intial condition a0 should be coefficients of the intial state:
+ *  [b0, c0 ,b1, c1,...] where bi, ci the real and imaginary parts of Fourier modes.
+ *  
+ * @param[in] a0 initial condition of Fourier coefficents. Size : [2*N,1]
+ * @param[in] nstp number of integration steps.
+ * @param[in] np spacing of saving the trajectory.
+ * @return state trajectory. Each column is the state followed the previous column. 
+ *         Size : [2*N, nst/np+1] 
+ */
+ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
+    assert( Ndim == a0.rows() ); // check the dimension of initial condition.
+    Fv.v1 = R2C(pad(a0));
+    ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
+  
+    for(size_t i = 1; i < nstp+1; i++) {    
+	NL(Fv);  Fa.v1 = E2*Fv.v1 + Q*Fv.v3;
+	NL(Fa);  Fb.v1 = E2*Fv.v1 + Q*Fa.v3;
+	NL(Fb);  Fc.v1 = E2*Fa.v1 + Q*(2.0*Fb.v3-Fv.v3);
+	NL(Fc); 
+	Fv.v1 = E*Fv.v1 + Fv.v3*f1 + (Fa.v3+Fb.v3)*f2 + Fc.v3*f3;
+
+	dealias(Fv);
+	if( i%np == 0 ) uu.col(i/np) = unpad(C2R(Fv.v1));
+    }
+
+    return uu;
+}
+
+pair<ArrayXXd, ArrayXXd>
+Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
+	       const size_t np, const size_t nqr){
+    assert( Ndim == a0.rows() ); // check the dimension of initial condition.
+    
+    ArrayXXcd J0 = initJ();
+    jFv.v1 << R2C(pad(a0)), J0;
+    ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
+    ArrayXXd duu(Ndim, Ndim * nstp/nqr); 
+  
+    for(size_t i = 1; i < nstp + 1; i++){
+	jNL(jFv); jFa.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q; 
+	jNL(jFa); jFb.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q;
+	jNL(jFb); jFc.v1 = jFa.v1.colwise() * E2 + (2.0*jFb.v3 - jFv.v3).colwise() * Q;
+	jNL(jFc); 
+    
+	jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 +
+	    (jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
+
+	dealias(jFv);
+	if ( 0 == i%np ) uu.col(i/np) = unpad(C2R(jFv.v1.col(0))); 
+	if ( 0 == i%nqr){
+	    duu.middleCols((i/nqr - 1)*Ndim, Ndim) = unpad(C2R(jFv.v1.middleCols(1, Ndim)));
+	    jFv.v1.rightCols(Ndim) = J0;
+	}    
+    }
+  
+    return make_pair(uu, duu);
+}
+
+
+/* -------------------------------------------------- */
 /* -------  Fourier/Configure transformation -------- */
 /* -------------------------------------------------- */
 /**
@@ -319,7 +363,7 @@ ArrayXXd Cqcgl1d::Config2Fourier(const Ref<const ArrayXXd> &AA){
     int m = AA.cols();
     int n = AA.rows();
     assert(2*N == n);
-    ArrayXXd aa(n-2, m);
+    ArrayXXd aa(Ndim, m);
     
     for(size_t i = 0; i < m; i++){
 	Fv.v2 = R2C(AA.col(i));
@@ -393,7 +437,7 @@ MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double wth, double wphi){
  */
 ArrayXXd Cqcgl1d::reflect(const Ref<const ArrayXXd> &aa){
     ArrayXXcd raa = R2C(aa);
-    const int n = raa.rows(); // n = N - 1
+    const int n = raa.rows(); // n is an odd number
     for(size_t i = 1; i < (n+1)/2; i++){
 	ArrayXcd tmp = raa.row(i);
 	raa.row(i) = raa.row(n-i);
@@ -412,26 +456,22 @@ ArrayXXd Cqcgl1d::reduceReflection(const Ref<const ArrayXXd> &aaHat){
     assert(n == Ndim);
     
     ArrayXXd step1(n, m);
-    int unchanged[2] = {0, 1};
-    for(size_t i = 0; i < 2; i++){
-	step1.row(unchanged[i]) = aaHat.row(unchanged[i]);
-    }
-    for(size_t i = 1; i < N/2; i++){
+    step1.topRows<2>() = aaHat.topRows<2>();
+    for(size_t i = 1; i < Nplus; i++){
 	step1.row(2*i) = 0.5*(aaHat.row(2*i) - aaHat.row(n-2*i));
 	step1.row(n-2*i) = 0.5*(aaHat.row(2*i) + aaHat.row(n-2*i));
 	step1.row(2*i+1) = 0.5*(aaHat.row(2*i+1) - aaHat.row(n+1-2*i));
 	step1.row(n+1-2*i) = 0.5*(aaHat.row(2*i+1) + aaHat.row(n+1-2*i));
     }
 
-    ArrayXXd step2(step1);  
-    
+    ArrayXXd step2(step1);     
     ArrayXd p1s = step1.row(2).square(); 
     ArrayXd q1s = step1.row(3).square();
     ArrayXd denorm = (p1s + q1s).sqrt();
     step2.row(2) = (p1s - q1s) / denorm;
     step2.row(3) = step1.row(2) * step1.row(3) / denorm.transpose(); 
     
-    for(size_t i = 4; i < N; i++){
+    for(size_t i = 4; i < 2*Nplus; i++){
 	ArrayXd denorm = (step1.row(i-1).square() +  step1.row(i).square()).sqrt();
 	step2.row(i) = step1.row(i-1) * step1.row(i) / denorm.transpose() ;
     }
@@ -465,7 +505,7 @@ ArrayXXd Cqcgl1d::transTangent(const Ref<const ArrayXXd> &aa){
 /** @brief group generator. */
 MatrixXd Cqcgl1d::transGenerator(){
     MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
-    for(size_t i = 0; i < N-1; i++){
+    for(size_t i = 0; i < Ne; i++){
 	T(2*i, 2*i+1) = -KindexUnpad(i);
 	T(2*i+1, 2*i) = KindexUnpad(i);
     }
@@ -489,7 +529,7 @@ ArrayXXd Cqcgl1d::phaseTangent(const Ref<const ArrayXXd> &aa){
 /** @brief group generator  */
 MatrixXd Cqcgl1d::phaseGenerator(){
     MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
-    for(size_t i = 0; i < N-1; i++){
+    for(size_t i = 0; i < Ne; i++){
 	T(2*i, 2*i+1) = -1;
 	T(2*i+1, 2*i) = 1;
     }
@@ -785,7 +825,7 @@ Cqcgl1d::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
 
     ConjugateGradient<MatrixXd> CG;
     PartialPivLU<MatrixXd> solver; // used in the pre-CG method
-    
+    cout << "good" << endl;
     for(size_t i = 0; i < MaxN; i++){
 	if (lam > 1e10) break;
 	if(doesPrint) printf("\n ********  i = %zd/%d   ******** \n", i, MaxN);	

@@ -35,16 +35,18 @@ if case == 1:
     N = 256
     d = 50
     h = 0.005
-
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    Ndim = cgl.Ndim
+    
     a0, wth0, wphi0, err0 = cqcglReadReq('../../data/cgl/req.h5', '1')
     
     a0unpad = cgl.unpad(a0).squeeze()
-    a, wth, wphi, err = cgl.findReq(a0unpad, wth0, wphi0, 100, 1e-13, True, True)
+    a, wth, wphi, err = cgl.findReq(a0unpad, wth0, wphi0,
+                                    100, 1e-12, True, True)
     # cqcglSaveReq("req.hdf5", '1', a, wth, wphi, err)
-    # nstp = 10000
-    # aa = cgl.intg(a, nstp, 1)
-    # plotConfigSpace(cgl.Fourier2Config(aa), [0, d, 0, nstp*h])
+    nstp = 10000
+    aa = cgl.intg(a, nstp, 1)
+    plotConfigSpace(cgl.Fourier2Config(aa), [0, d, 0, nstp*h])
 
 if case == 2:
     """
@@ -55,12 +57,12 @@ if case == 2:
     d = 50
     h = 0.005
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
-    
+
     A0 = 3*centerRand(2*N, 0.25)
     a0 = cgl.Config2Fourier(A0).squeeze()
     wth0 = rand()
     wphi0 = rand()
-    a, wth, wphi, err = cgl.findReq(a0, wth0, wphi0, 500, 1e-12, True, True)
+    a, wth, wphi, err = cgl.findReq(a0, wth0, wphi0, 200, 1e-12, True, True)
     nstp = 10000
     aa = cgl.intg(a, nstp, 1)
     plotConfigSpace(cgl.Fourier2Config(aa), [0, d, 0, nstp*h])

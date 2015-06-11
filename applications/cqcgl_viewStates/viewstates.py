@@ -11,24 +11,29 @@ from personalFunctions import *
 
 case = 1
 
-# view an ergodic instance
+
 if case == 1:
+    """
+    view an ergodic instance
+    """
     N = 256
     d = 50
     h = 0.005
-
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    Ndim = cgl.Ndim
+
     A0 = centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
-    nstp = 15000
+    nstp = 20000
     aa = cgl.intg(a0, nstp, 1)
+    # aa, daa = cgl.intgj(a0, 10, 1, 1)
     AA = cgl.Fourier2Config(aa)
     plotConfigSpace(AA, [0, d, 0, nstp*h])
-    semilogy(aa[:, N])
-    show(block=False)
+    # maxmode = np.amax(np.abs(aa), axis=1)
+    # plot1dfig(np.abs(aa[:, Ndim/2])/maxmode, yscale='log')
     # plotOneConfig(AA[5200])
-    aaHat, th, phi = cgl.orbit2slice(aa)
-    aaHat2, th2, phi2 = cgl.orbit2sliceUnwrap(aa)
+    aaHat, th, phi = cgl.orbit2sliceWrap(aa)
+    aaHat2, th2, phi2 = cgl.orbit2slice(aa)
     plotConfigSpace(cgl.Fourier2Config(aaHat), [0, d, 0, nstp*h])
     plotConfigSpace(cgl.Fourier2Config(aaHat2), [0, d, 0, nstp*h])
 

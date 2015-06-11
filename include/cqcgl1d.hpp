@@ -34,11 +34,16 @@ public:
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> Tri;
     
-    const int N;
+    const int N;		/* dimension of FFT */
     const double d;
     const double h;
 
+    int Ne;			/* effective number of modes */
     int Ndim;			/* dimension of state space */
+    int aliasStart, aliasEnd;	/* start and end index of
+				   dealias part */
+    int Nplus, Nminus, Nalias;
+    
     double Br, Bi, Gr, Gi, Dr, Di, Mu;
     ArrayXd K, Kindex, KindexUnpad;
     ArrayXcd L, E, E2, Q, f1, f2, f3;
@@ -62,6 +67,7 @@ public:
     intgj(const ArrayXd &a0, const size_t nstp, const size_t np = 1,
 	  const size_t nqr = 1);
     ArrayXXd pad(const Ref<const ArrayXXd> &aa);
+    ArrayXXcd padcp(const Ref<const ArrayXXcd> &x);
     ArrayXXd unpad(const Ref<const ArrayXXd> &paa);
     ArrayXXcd initJ();
     ArrayXXd C2R(const ArrayXXcd &v);

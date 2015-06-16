@@ -3,6 +3,7 @@ import numpy as np
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import scipy.io as sio
 # from IPython.display import display
 # from IPython.html.widgets import interact
 from py_ks import *
@@ -152,20 +153,27 @@ if case == 4:
     aaTilde2 = ks2.reduceReflection(aaHat2)
     veTilde2 = ks2.reflectVeAll(vep2, aaHat2, 0)
 
+    # load Burak's axes.
+    # comment out this part if using Fourier modes projection
+    ee = sio.loadmat('ee.mat')['ee'][:3].T
+    aaTilde1 = np.dot(aaTilde1, ee)
+    veTilde1 = np.dot(veTilde1, ee)
+    aaTilde2 = np.dot(aaTilde2, ee)
+    veTilde2 = np.dot(veTilde2, ee)
     i1 = 0
-    i2 = 2
-    i3 = 3
+    i2 = 1
+    i3 = 2
 
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(aaTilde1[:, i1], aaTilde1[:, i2], aaTilde1[:, i3], 'r')
     ax.plot(aaTilde2[:, i1], aaTilde2[:, i2], aaTilde2[:, i3], 'g')
 
-    spa = 70
+    spa = 60
 
     ratio1 = 5
     ah1 = aaTilde1
-    veIndex1 = 2
+    veIndex1 = 0
     nor1 = norm(veTilde1[veIndex1::30], axis=1)
     nor1.resize((nor1.size, 1))
     ae1r = ah1 + veTilde1[veIndex1::30] / nor1 / ratio1
@@ -174,9 +182,9 @@ if case == 4:
     nor1.resize((nor1.size, 1))
     ae1i = ah1 + veTilde1[veIndex1::30] / nor1 / ratio1
 
-    ratio2 = 3
+    ratio2 = 5
     ah2 = aaTilde2
-    veIndex2 = 2
+    veIndex2 = 0
     nor2 = norm(veTilde2[veIndex2::30], axis=1)
     nor2.resize((nor2.size, 1))
     ae2r = ah2 + veTilde2[veIndex2::30] / nor2 / ratio2
@@ -190,24 +198,24 @@ if case == 4:
                      [ah1[i, i3], ae1r[i, i3]],
                      mutation_scale=20, lw=1.0, arrowstyle="-|>", color="m")
         ax.add_artist(a1)
-        # a1 = Arrow3D([ah1[i, i1], ae1i[i, i1]], [ah1[i, i2], ae1i[i, i2]],
-        #              [ah1[i, i3], ae1i[i, i3]],
-        #              mutation_scale=20, lw=1.0, arrowstyle="-|>", color="b")
-        # ax.add_artist(a1)
+        a1 = Arrow3D([ah1[i, i1], ae1i[i, i1]], [ah1[i, i2], ae1i[i, i2]],
+                     [ah1[i, i3], ae1i[i, i3]],
+                     mutation_scale=20, lw=1.0, arrowstyle="-|>", color="b")
+        ax.add_artist(a1)
 
     for i in np.arange(0, aaTilde2.shape[0], spa):
         a2 = Arrow3D([ah2[i, i1], ae2r[i, i1]], [ah2[i, i2], ae2r[i, i2]],
                      [ah2[i, i3], ae2r[i, i3]],
                      mutation_scale=20, lw=1.0, arrowstyle="-|>", color="k")
         ax.add_artist(a2)
-        # a2 = Arrow3D([ah2[i, i1], ae2i[i, i1]], [ah2[i, i2], ae2i[i, i2]],
-        #              [ah2[i, i3], ae2i[i, i3]],
-        #              mutation_scale=20, lw=1.0, arrowstyle="-|>", color="c")
-        # ax.add_artist(a2)
+        a2 = Arrow3D([ah2[i, i1], ae2i[i, i1]], [ah2[i, i2], ae2i[i, i2]],
+                     [ah2[i, i3], ae2i[i, i3]],
+                     mutation_scale=20, lw=1.0, arrowstyle="-|>", color="c")
+        ax.add_artist(a2)
 
-    ax.set_xlabel(r'$b_1$')
-    ax.set_ylabel(r'$b_2$')
-    ax.set_zlabel(r'$c_2$')
+    ax.set_xlabel(r'$e_1$', fontsize=25)
+    ax.set_ylabel(r'$e_2$', fontsize=25)
+    ax.set_zlabel(r'$e_3$', fontsize=25)
     plt.tight_layout(pad=0)
     plt.show(block=False)
 

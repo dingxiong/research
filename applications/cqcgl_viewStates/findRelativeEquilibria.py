@@ -7,7 +7,7 @@ from personalFunctions import *
 
 
 def cqcglFindReq(fileName, frac=0.3, MaxIter=300, Ntrial=1000):
-    N = 256
+    N = 512
     d = 50
     h = 0.005
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
@@ -26,22 +26,40 @@ def cqcglFindReq(fileName, frac=0.3, MaxIter=300, Ntrial=1000):
             ReqNum += 1
 
 
-case = 1
+def cqcglConvertReq(inputFile, outputFile, indices, MaxIter=300, tol=1e-12):
+    """
+    indices : the indices of reqs needed to be converted
+    """
+    N = 256*2
+    d = 50
+    h = 0.005
+    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    # Ndim = cgl.Ndim
+
+    for i in indices:
+        a0, wth0, wphi0, err0 = cqcglReadReq(inputFile, str(i))
+        a0unpad = 2 * cgl.generalPadding(a0)
+        a, wth, wphi, err = cgl.findReq(a0unpad, wth0, wphi0,
+                                        MaxIter, tol, True, False)
+        print err
+        cqcglSaveReq(outputFile, str(i), a, wth, wphi, err)
+
+case = 6
 
 if case == 1:
     """
     find the relative equlibria after changing dimension
     """
-    N = 256
+    N = 512
     d = 50
     h = 0.005
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
     Ndim = cgl.Ndim
-    
-    a0, wth0, wphi0, err0 = cqcglReadReq('../../data/cgl/req.h5', '1')
-    
-    a0unpad = cgl.unpad(a0).squeeze()
-    a, wth, wphi, err = cgl.findReq(a0unpad, wth0, wphi0,
+
+    a0, wth0, wphi0, err0 = cqcglReadReq('../../data/cgl/req.h5', '10')
+
+    a0unpad = 2*cgl.generalPadding(a0)
+    a, wth, wphi, err = cgl.findReq(a0unpad, 0, wphi0,
                                     100, 1e-12, True, True)
     # cqcglSaveReq("req.hdf5", '1', a, wth, wphi, err)
     nstp = 10000
@@ -53,7 +71,7 @@ if case == 2:
     try different guesses to find relative equilibria
     Just for test purpose
     """
-    N = 256
+    N = 512
     d = 50
     h = 0.005
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
@@ -75,7 +93,7 @@ if case == 3:
     """
     run a long time to collect relative equilibria
     """
-    cqcglFindReq("req3.hdf5", 0.3, 300, 1000)
+    cqcglFindReq("req3.h5", 0.3, 300, 1000)
 
 
 if case == 4:
@@ -130,12 +148,17 @@ if case == 4:
     #     plotOneConfigFromFourier(cgl, a, save=True,
     #                              name=str(i+2)+'.png')
 
-
 if case == 5:
+    """
+    change the existing reqs to different dimension
+    """
+    cqcglConvertReq('../../data/cgl/req.h5', 'req2.h5', range(1, 23))
+
+if case == 6:
     """
     plot the interesting relative equilibria that I have found
     """
-    N = 256
+    N = 512
     d = 50
     h = 0.005
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)

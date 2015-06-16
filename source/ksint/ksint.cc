@@ -493,7 +493,7 @@ std::vector<int> KS::reflectIndex(){
 /**
  * @brief reduce the reflection symmetry in the 1st mode slice
  *
- *  p2 = \sqrt{b_2^2 + c_3^2}
+ *  p2 = ()\sqrt{b_2^2 + c_3^2}
  *  p3 = b_2 \cdot c_3 / \sqrt{b_2^2 + c_3^2}
  *  p4 = ...
  *  
@@ -510,7 +510,9 @@ ArrayXXd KS::reduceReflection(const Ref<const ArrayXXd> &aaHat){
     //for(auto it : index) cout << it << endl;
     
     // p2
-    aaTilde.row(2) = (aaHat.row(2).square() + aaHat.row(5).square()).sqrt();
+    ArrayXd x = aaHat.row(2).square();
+    ArrayXd y = aaHat.row(5).square();
+    aaTilde.row(2) = (x - y) / (x + y).sqrt();
     // p3, p4, p5, ...
     for(int i = 1; i < index.size(); i++){
 	ArrayXd x = aaHat.row(index[i-1]);
@@ -537,8 +539,10 @@ MatrixXd KS::GammaMat(const Ref<const ArrayXd> &xHat){
     
     MatrixXd Gamma(MatrixXd::Identity(n, n));
     std::vector<int> index = reflectIndex();
-    Gamma(2, 2) = xHat(2) / sqrt(xHat(2)*xHat(2) + xHat(5)*xHat(5));
-    Gamma(2, 5) = xHat(5) / sqrt(xHat(2)*xHat(2) + xHat(5)*xHat(5));
+    double denom = sqrt(xHat(2)*xHat(2) + xHat(5)*xHat(5));
+    double denom3 = denom * denom * denom;
+    Gamma(2, 2) = xHat(2) * (xHat(2)*xHat(2) + 3*xHat(5)*xHat(5)) / denom3;
+    Gamma(2, 5) = -xHat(5) * (xHat(5)*xHat(5) + 3*xHat(2)*xHat(2)) / denom3;
 
     for(int i = 1; i < index.size(); i++){
 	double denom = sqrt( xHat(index[i])*xHat(index[i]) +

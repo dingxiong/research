@@ -9,7 +9,7 @@ from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
 
-case = 1
+case = 2
 
 
 if case == 1:
@@ -59,41 +59,33 @@ if case == 1:
 
 # view relative equlibria
 if case == 2:
-    N = 256
+    N = 512
     d = 50
     h = 0.01
 
     cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
-    f = h5py.File('../../data/cgl/req.h5', 'r')
-    req = '/1/'
-    a0 = f[req+'a'].value
-    th0 = f[req+'wth'].value
-    phi0 = f[req+'wphi'].value
-    err = f[req+'err'].value
-    f.close()
+    a0, wth0, wphi0, err = cqcglReadReq('../../data/cgl/reqN512.h5', '1')
 
-    vReq = cgl.velocityReq(a0, th0, phi0)
+    vReq = cgl.velocityReq(a0, wth0, wphi0)
     print norm(vReq)
 
     # check the reflected state
     a0Reflected = cgl.reflect(a0)
-    vReqReflected = cgl.velocityReq(a0Reflected, -th0, phi0)
+    vReqReflected = cgl.velocityReq(a0Reflected, -wth0, wphi0)
     print norm(vReqReflected)
-    plotOneConfigFromFourier(cgl, a0)
-    plotOneConfigFromFourier(cgl, a0Reflected)
+    # plotOneConfigFromFourier(cgl, a0)
+    # plotOneConfigFromFourier(cgl, a0Reflected)
 
     # obtain the stability exponents/vectors
-    stabMat = cgl.stabReq(a0, th0, phi0).T
-    # stabMat = cgl.stabReq(a0Reflected, -th0, phi0).T  # transpose is needed
-    eigvalues, eigvectors = eig(stabMat)
-    eigvalues, eigvectors = sortByReal(eigvalues, eigvectors)
+    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
+    # eigvalues, eigvectors = eigReq(cgl, a0Reflected, -wth0, wphi0)
     print eigvalues[:10]
 
     # make sure you make a copy because Fourier2Config takes contigous memory
     tmpr = eigvectors[:, 0].real.copy()
-    tmprc = cgl.Fourier2Config(tmpr).squeeze()
+    tmprc = cgl.Fourier2Config(tmpr)
     tmpi = eigvectors[:, 0].imag.copy()
-    tmpic = cgl.Fourier2Config(tmpi).squeeze()
+    tmpic = cgl.Fourier2Config(tmpi)
     plotOneConfig(tmprc, size=[6, 4])
     plotOneConfig(tmpic, size=[6, 4])
 

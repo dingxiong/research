@@ -67,6 +67,7 @@ public:
     intgj(const ArrayXd &a0, const size_t nstp, const size_t np = 1,
 	  const size_t nqr = 1);
     ArrayXXd pad(const Ref<const ArrayXXd> &aa);
+    ArrayXXd generalPadding(const Ref<const ArrayXXd> &aa);
     ArrayXXcd padcp(const Ref<const ArrayXXcd> &x);
     ArrayXXd unpad(const Ref<const ArrayXXd> &paa);
     ArrayXXcd initJ();

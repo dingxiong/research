@@ -37,43 +37,49 @@ public:
 	    n = x.shape(1);
 	}
     }
+
+    /*
+     * @brief used to copy content in Eigen array to boost.numpy array.
+     *
+     *  Only work for double array/matrix
+     */
+    bn::ndarray copy2bn(const Ref<const ArrayXXd> &x){
+	int m = x.cols();
+	int n = x.rows();
+
+	Py_intptr_t dims[2];
+	int ndim;
+	if(m == 1){
+	    ndim = 1;
+	    dims[0] = n;
+	}
+	else {
+	    ndim = 2;
+	    dims[0] = m;
+	    dims[1] = n;
+	}
+	bn::ndarray px = bn::empty(ndim, dims, bn::dtype::get_builtin<double>());
+	memcpy((void*)px.get_data(), (void*)x.data(), sizeof(double) * m * n);
+	    
+	return px;
+    }
     
     /* wrap the velocity */
     bn::ndarray PYvelocity(bn::ndarray a0){
-
 	int m, n;
 	getDims(a0, m, n);
-	
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	VectorXd tmpv = velocity(tmpa);
-	
-	int n3 = tmpv.rows();
-	Py_intptr_t dims[1] = {n3};
-	bn::ndarray v = 
-	    bn::empty(1, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)v.get_data(), (void*)(&tmpv(0)), 
-	       sizeof(double) * n3 );
-	
-	return v;
+	ArrayXd tmpv = velocity(tmpa);
+	return copy2bn(tmpv);
     }
     
     /* wrap velocityReq */
     bn::ndarray PYvelocityReq(bn::ndarray a0, double th, double phi){
 	int m, n;
-	getDims(a0, m, n);
-	
+	getDims(a0, m, n);	
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	VectorXd tmpv = velocityReq(tmpa, th, phi);
-	
-	int n3 = tmpv.rows();
-	Py_intptr_t dims[1] = {n3};
-	bn::ndarray v = 
-	    bn::empty(1, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)v.get_data(), (void*)(&tmpv(0)), 
-	       sizeof(double) * n3 );
-	
-	return v;
-
+	ArrayXd tmpv = velocityReq(tmpa, th, phi);
+	return copy2bn(tmpv);
     }
 
 
@@ -81,337 +87,135 @@ public:
     bn::ndarray PYpad(bn::ndarray aa){
 	int m, n;
 	getDims(aa, m, n);
-
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	ArrayXXd tmppaa = pad(tmpaa);
+	return copy2bn(pad(tmpaa));
+    }
 
-	int m2 = tmppaa.cols();
-	int n2 = tmppaa.rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	bn::ndarray paa = bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)paa.get_data(), (void*)(&tmppaa(0, 0)), 
-	       sizeof(double) * m2 * n2 );
-
-	return paa;
+    /* generalPadding */
+    bn::ndarray PYgeneralPadding(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	return copy2bn( generalPadding(tmpaa) );
     }
 
     /* unpad */
     bn::ndarray PYunpad(bn::ndarray paa){
 	int m, n;
 	getDims(paa, m, n);
-
 	Map<ArrayXXd> tmppaa((double*)paa.get_data(), n, m);
-	ArrayXXd tmpaa = unpad(tmppaa);
-
-	int m2 = tmpaa.cols();
-	int n2 = tmpaa.rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	bn::ndarray aa = bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)aa.get_data(), (void*)(&tmpaa(0, 0)), 
-	       sizeof(double) * m2 * n2 );
-
-	return aa;
+	return copy2bn(unpad(tmppaa));
     }
 
     
     /* wrap the integrator */
     bn::ndarray PYintg(bn::ndarray a0, size_t nstp, size_t np){
-
 	int m, n;
 	getDims(a0, m, n);
-
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	ArrayXXd tmpaa = intg(tmpa, nstp, np);
-
-	int m3 = tmpaa.cols();
-	int n3 = tmpaa.rows();
-	Py_intptr_t dims[2] = {m3 , n3};
-	bn::ndarray aa = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)aa.get_data(), (void*)(&tmpaa(0, 0)), 
-	       sizeof(double) * m3 * n3 );
-
-	return aa;
+	return copy2bn(intg(tmpa, nstp, np));
     }
     
 
     /* wrap the integrator with Jacobian */
     bp::tuple PYintgj(bn::ndarray a0, size_t nstp, size_t np, size_t nqr){
-
 	int m, n;
 	getDims(a0, m, n);
-
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
 	std::pair<ArrayXXd, ArrayXXd> tmp = intgj(tmpa, nstp, np, nqr);
-
-	int m2 = tmp.first.cols();
-	int n2 = tmp.first.rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	bn::ndarray aa = bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)aa.get_data(), (void*)(&tmp.first(0, 0)), 
-	       sizeof(double) * m2 * n2 );
-
-	int m3 = tmp.second.cols();
-	int n3 = tmp.second.rows();
-	Py_intptr_t dims2[2] = {m3 , n3};
-	bn::ndarray daa = bn::empty(2, dims2, bn::dtype::get_builtin<double>());
-	memcpy((void*)daa.get_data(), (void*)(&tmp.second(0, 0)), 
-	       sizeof(double) * m3 * n3 );
-
-	return bp::make_tuple(aa, daa);
+	return bp::make_tuple(copy2bn(tmp.first), copy2bn(tmp.second));
     }
 
     /* wrap Fourier2Config */
     bn::ndarray PYFourier2Config(bn::ndarray aa){
-
 	int m, n;
 	getDims(aa, m, n);
-	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXXd tmpAA = Fourier2Config(tmpaa);
-	
-	int m2 = tmpAA.cols();
-	int n2 = tmpAA.rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	bn::ndarray AA = bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)AA.get_data(), (void*)(&tmpAA(0, 0)), 
-	       sizeof(double) * m2 * n2 );
-
-	return AA;
+	return copy2bn( Fourier2Config(tmpaa) );
     }
 
     /* wrap Config2Fourier */
     bn::ndarray PYConfig2Fourier(bn::ndarray AA){
-
 	int m, n;
-	if(AA.get_nd() == 1){
-	    m = 1;
-	    n = AA.shape(0);
-	} else {
-	    m = AA.shape(0);
-	    n = AA.shape(1);
-	}
-	
+	getDims(AA, m, n);
 	Map<ArrayXXd> tmpAA((double*)AA.get_data(), n, m);
-	ArrayXXd tmpaa = Config2Fourier(tmpAA);
-	
-	int m2 = tmpaa.cols();
-	int n2 = tmpaa.rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	bn::ndarray aa = bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)aa.get_data(), (void*)(&tmpaa(0, 0)), 
-	       sizeof(double) * m2 * n2 );
-
-	return aa;
+	return copy2bn( Config2Fourier(tmpAA) );
     }
     
     /* wrap Fourier2ConfigMag */
     bn::ndarray PYFourier2ConfigMag(bn::ndarray aa){
-
 	int m, n;
-	if(aa.get_nd() == 1){
-	    m = 1;
-	    n = aa.shape(0);
-	} else {
-	    m = aa.shape(0);
-	    n = aa.shape(1);
-	}
-	
+	getDims(aa, m, n);
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXXd tmpAA = Fourier2ConfigMag(tmpaa);
-	
-	int m2 = tmpAA.cols();
-	int n2 = tmpAA.rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	bn::ndarray AA = bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)AA.get_data(), (void*)(&tmpAA(0, 0)), 
-	       sizeof(double) * m2 * n2 );
-
-	return AA;
+	return copy2bn( Fourier2ConfigMag(tmpaa) );
     }
     
     /* orbit2slice */
     bp::tuple PYorbit2slice(bn::ndarray aa){
-
 	int m, n;
 	getDims(aa, m, n);
-
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(tmpaa);
-
-	int m2 = std::get<0>(tmp).cols();
-	int n2 = std::get<0>(tmp).rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	bn::ndarray raa = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)raa.get_data(), (void*)(&(std::get<0>(tmp)(0, 0))), 
-	       sizeof(double) * m2 * n2 );
-
-	int n3 = std::get<1>(tmp).rows();
-	Py_intptr_t dims2[1] = { n3 };
-	bn::ndarray th = 
-	    bn::empty(1, dims2, bn::dtype::get_builtin<double>());
-	memcpy((void*)th.get_data(), (void*)(&(std::get<1>(tmp)(0))), 
-	       sizeof(double) * n3 );
-
-	int n4 = std::get<2>(tmp).rows();
-	Py_intptr_t dims3[1] = { n4 };
-	bn::ndarray phi = 
-	    bn::empty(1, dims3, bn::dtype::get_builtin<double>());
-	memcpy((void*)phi.get_data(), (void*)(&(std::get<2>(tmp)(0))), 
-	       sizeof(double) * n4 );
-	      
-	return bp::make_tuple(raa, th, phi);
+	return bp::make_tuple(copy2bn(std::get<0>(tmp)), copy2bn(std::get<1>(tmp)),
+			      copy2bn(std::get<2>(tmp)));
     }
 
     /* orbit2sliceUnwrap */
     bp::tuple PYorbit2sliceWrap(bn::ndarray aa){
-
 	int m, n;
 	getDims(aa, m, n);
-
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2sliceWrap(tmpaa);
-
-	int m2 = std::get<0>(tmp).cols();
-	int n2 = std::get<0>(tmp).rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	bn::ndarray raa = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)raa.get_data(), (void*)(&(std::get<0>(tmp)(0, 0))), 
-	       sizeof(double) * m2 * n2 );
-
-	int n3 = std::get<1>(tmp).rows();
-	Py_intptr_t dims2[1] = { n3 };
-	bn::ndarray th = 
-	    bn::empty(1, dims2, bn::dtype::get_builtin<double>());
-	memcpy((void*)th.get_data(), (void*)(&(std::get<1>(tmp)(0))), 
-	       sizeof(double) * n3 );
-
-	int n4 = std::get<2>(tmp).rows();
-	Py_intptr_t dims3[1] = { n4 };
-	bn::ndarray phi = 
-	    bn::empty(1, dims3, bn::dtype::get_builtin<double>());
-	memcpy((void*)phi.get_data(), (void*)(&(std::get<2>(tmp)(0))), 
-	       sizeof(double) * n4 );
-	      
-	return bp::make_tuple(raa, th, phi);
+	return bp::make_tuple(copy2bn(std::get<0>(tmp)), copy2bn(std::get<1>(tmp)),
+			      copy2bn(std::get<2>(tmp)));
     }
 
     /* stability matrix */
     bn::ndarray PYstab(bn::ndarray a0){
-
-      	int m, n;
-	if(a0.get_nd() == 1){
-	    m = 1;
-	    n = a0.shape(0);
-	} else {
-	    m = a0.shape(0);
-	    n = a0.shape(1);
-	}
-
+	int m, n;
+	getDims(a0, m, n);
 	Map<ArrayXd> tmpa((double*)a0.get_data(), n*m);
-	MatrixXd tmpZ = stab(tmpa);
-
-	int m2 = tmpZ.cols();
-	int n2 = tmpZ.rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	bn::ndarray Z = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)Z.get_data(), (void*)&(tmpZ(0, 0)), 
-	       sizeof(double) * m2 * n2 );
-	      
-	return Z;
+	return copy2bn(stab(tmpa));
     }
 
     /* stability matrix for relative equibrium */
     bn::ndarray PYstabReq(bn::ndarray a0, double th, double phi){
-
 	int m, n;
 	getDims(a0, m, n);
-
 	Map<ArrayXd> tmpa((double*)a0.get_data(), n*m);
-	MatrixXd tmpZ = stabReq(tmpa, th, phi);
-
-	int m2 = tmpZ.cols();
-	int n2 = tmpZ.rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	bn::ndarray Z = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)Z.get_data(), (void*)&(tmpZ(0, 0)), 
-	       sizeof(double) * m2 * n2 );
-	      
-	return Z;
+	return copy2bn(stabReq(tmpa, th, phi));
     }
 
 
     /* reflection */
     bn::ndarray PYreflect(bn::ndarray aa){
-
 	int m, n;
 	getDims(aa, m, n);
-	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXXd tmpraa = reflect(tmpaa);
-
-	int m2 = tmpraa.cols();
-	int n2 = tmpraa.rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	
-	bn::ndarray raa = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
-	       sizeof(double) * m2 * n2 );
-
-	return raa;
+	return copy2bn( reflect(tmpaa) );
     }
 
 
     /* reduceReflection */
     bn::ndarray PYreduceReflection(bn::ndarray aa){
-
 	int m, n;
-	getDims(aa, m, n);
-	
+	getDims(aa, m, n);	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXXd tmpraa = reduceReflection(tmpaa);
-
-	int m2 = tmpraa.cols();
-	int n2 = tmpraa.rows();
-	Py_intptr_t dims[2] = {m2 , n2};
-	
-	bn::ndarray raa = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
-	       sizeof(double) * m2 * n2 );
-
-	return raa;
+	return copy2bn( reduceReflection(tmpaa) );
     }
 
     
     
     /* ve2slice */
     bn::ndarray PYve2slice(bn::ndarray ve, bn::ndarray x){
-
 	int m, n;
 	getDims(ve, m, n);
-
 	int m2, n2;
 	getDims(x, m2, n2);
-
 	Map<ArrayXXd> tmpve((double*)ve.get_data(), n, m);
 	Map<ArrayXd> tmpx((double*)x.get_data(), n2*m2);
-	MatrixXd tmpvep = ve2slice(tmpve, tmpx);
-
-	int m3 = tmpvep.cols();
-	int n3 = tmpvep.rows();
-	Py_intptr_t dims[2] = {m3 , n3};
-	bn::ndarray vep = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)vep.get_data(), (void*)(&tmpvep(0, 0)), 
-	       sizeof(double) * m3 * n3 );
-	      
-	return vep;
+	return copy2bn( ve2slice(tmpve, tmpx) );
     }
 
     /* findReq */
@@ -420,76 +224,35 @@ public:
 			bool doesPrint){
 	int m, n;
 	getDims(a0, m, n);
-
 	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
 	std::tuple<ArrayXd, double, double, double> tmp = 
 	    findReq(tmpa0, wth0, wphi0, MaxN, tol, doesUseMyCG, doesPrint);
-
-	int n2 = std::get<0>(tmp).rows();
-	Py_intptr_t dims[1] = { n2 };
-	bn::ndarray a = bn::empty(1, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)a.get_data(), (void*)(&(std::get<0>(tmp)(0))), 
-	       sizeof(double) * n2 );
-
-	return bp::make_tuple(a, std::get<1>(tmp), std::get<2>(tmp),
-			      std::get<3>(tmp));
+	return bp::make_tuple(copy2bn(std::get<0>(tmp)),  std::get<1>(tmp),
+			      std::get<2>(tmp), std::get<3>(tmp));
     }
     
     /* transRotate */
     bn::ndarray PYtransRotate(bn::ndarray aa, double th){
 	int m, n;
-	getDims(aa, m, n);
-	
+	getDims(aa, m, n);	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXXd tmpraa = transRotate(tmpaa, th);
-
-	int m3 = tmpraa.cols();
-	int n3 = tmpraa.rows();
-	Py_intptr_t dims[2] = {m3 , n3};
-	bn::ndarray raa = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
-	       sizeof(double) * m3 * n3 );
-
-	return raa;
+	return copy2bn( transRotate(tmpaa, th) );
     }
 
     /* phaseRotate */
     bn::ndarray PYphaseRotate(bn::ndarray aa, double phi){
 	int m, n;
-	getDims(aa, m, n);
-	
+	getDims(aa, m, n);	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXXd tmpraa = transRotate(tmpaa, phi);
-
-	int m3 = tmpraa.cols();
-	int n3 = tmpraa.rows();
-	Py_intptr_t dims[2] = {m3 , n3};
-	bn::ndarray raa = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
-	       sizeof(double) * m3 * n3 );
-
-	return raa;
+	return copy2bn( transRotate(tmpaa, phi) );
     }
 
     /* Rotate */
     bn::ndarray PYRotate(bn::ndarray aa, double th, double phi){
 	int m, n;
-	getDims(aa, m, n);
-	
+	getDims(aa, m, n);	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXXd tmpraa = Rotate(tmpaa, th, phi);
-
-	int m3 = tmpraa.cols();
-	int n3 = tmpraa.rows();
-	Py_intptr_t dims[2] = {m3 , n3};
-	bn::ndarray raa = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
-	       sizeof(double) * m3 * n3 );
-
-	return raa;
+	return copy2bn( Rotate(tmpaa, th, phi) );
     }
 
     /* rotateOrbit */
@@ -499,22 +262,11 @@ public:
 	int m2, n2;
 	getDims(th, m2, n2);
 	int m4, n4;
-	getDims(phi, m4, n4);
-	
+	getDims(phi, m4, n4);	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	Map<ArrayXd> tmpth((double*)th.get_data(), n2 * m2);
 	Map<ArrayXd> tmpphi((double*)phi.get_data(), n4 * m4);
-	ArrayXXd tmpraa = rotateOrbit(tmpaa, tmpth, tmpphi);
-
-	int m3 = tmpraa.cols();
-	int n3 = tmpraa.rows();
-	Py_intptr_t dims[2] = {m3 , n3};
-	bn::ndarray raa = 
-	    bn::empty(2, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)raa.get_data(), (void*)(&tmpraa(0, 0)), 
-	       sizeof(double) * m3 * n3 );
-
-	return raa;
+	return copy2bn( rotateOrbit(tmpaa, tmpth, tmpphi) );
     }
     
 };
@@ -541,6 +293,7 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("velocity", &pyCqcgl1d::PYvelocity)
 	.def("velocityReq", &pyCqcgl1d::PYvelocityReq)
 	.def("pad", &pyCqcgl1d::PYpad)
+	.def("generalPadding", &pyCqcgl1d::PYgeneralPadding)
 	.def("unpad", &pyCqcgl1d::PYunpad)
 	.def("intg", &pyCqcgl1d::PYintg)
 	.def("intgj", &pyCqcgl1d::PYintgj)

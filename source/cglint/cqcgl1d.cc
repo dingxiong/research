@@ -152,6 +152,29 @@ ArrayXXd Cqcgl1d::pad(const Ref<const ArrayXXd> &aa){
     return paa;
 }
 
+/**
+ * @brief general padding/squeeze an array (arrays).
+ *
+ * This function is different from pad() that it only requrie n/2
+ * is an odd number. It is used to prepare initial conditions for
+ * Fourier modes doubled/halfed system. Alos the padding result does not
+ * have dimension 2*N, but Ndim
+ */
+ArrayXXd Cqcgl1d::generalPadding(const Ref<const ArrayXXd> &aa){
+    int n = aa.rows();
+    int m = aa.cols();
+    assert( n % 4 == 2);
+    ArrayXXd paa(Ndim, m);
+    if (n < Ndim){
+	paa << aa.topRows(n/2 + 1), ArrayXXd::Zero(Ndim - n, m),
+	    aa.bottomRows(n/2 - 1);
+    }
+    else {
+	paa << aa.topRows(Ne + 1), aa.bottomRows(Ne - 1);
+    }
+    return paa;
+}
+
 ArrayXXcd Cqcgl1d::padcp(const Ref<const ArrayXXcd> &x){
     int n = x.rows();
     int m = x.cols();
@@ -869,7 +892,6 @@ Cqcgl1d::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
 
     ConjugateGradient<MatrixXd> CG;
     PartialPivLU<MatrixXd> solver; // used in the pre-CG method
-    cout << "good" << endl;
     for(size_t i = 0; i < MaxN; i++){
 	if (lam > 1e10) break;
 	if(doesPrint) printf("\n ********  i = %zd/%d   ******** \n", i, MaxN);	

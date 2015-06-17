@@ -87,9 +87,20 @@ public:
     ArrayXXd reflect(const Ref<const ArrayXXd> &aa);
     inline ArrayXd rcos2th(const ArrayXd &x, const ArrayXd &y);
     inline ArrayXd rsin2th(const ArrayXd &x, const ArrayXd &y);
-    ArrayXXd reduceReflectionStep12(const Ref<const ArrayXXd> &aaHat);
-    ArrayXXd reduceReflectionStep3(const Ref<const ArrayXXd> &aa);
+    inline double rcos2thGrad(const double x, const double y);
+    inline double rsin2thGrad(const double x, const double y);
+    ArrayXXd reduceRef1(const Ref<const ArrayXXd> &aaHat);
+    ArrayXXd reduceRef2(const Ref<const ArrayXXd> &step1);
+    std::vector<int> refIndex3();
+    ArrayXXd reduceRef3(const Ref<const ArrayXXd> &aa);
     ArrayXXd reduceReflection(const Ref<const ArrayXXd> &aaHat);
+    MatrixXd refGrad1();
+    MatrixXd refGrad2(const ArrayXd &x);
+    MatrixXd refGrad3(const ArrayXd &x);
+    MatrixXd refGradMat(const ArrayXd &x);
+    MatrixXd reflectVe(const MatrixXd &veHat, const Ref<const ArrayXd> &xHat);
+    MatrixXd reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
+			  const int trunc = 0);
     
     ArrayXXd transRotate(const Ref<const ArrayXXd> &aa, const double th);
     ArrayXXd transTangent(const Ref<const ArrayXXd> &aa);

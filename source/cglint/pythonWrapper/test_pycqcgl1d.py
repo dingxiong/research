@@ -5,13 +5,14 @@ from time import time
 from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
-case = 6
+case = 1
 
 if case == 1:
-    cgl = pyCqcgl1d(256, 50, 0.01, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
-    a0 = rand(510)
-    aa = cgl.intg(a0, 10, 1)
-    aa, daa = cgl.intgj(a0, 10, 1, 1)
+    cgl = pyCqcgl1d(512, 50, 0.01, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    Ndim = cgl.Ndim
+    a0 = rand(Ndim)
+    aa = cgl.intg(a0, 50000, 1)
+    # aa, daa = cgl.intgj(a0, 10, 1, 1)
 
 # compare fft with Fourier2Config
 if case == 2:

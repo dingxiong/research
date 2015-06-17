@@ -28,7 +28,7 @@ public:
 	Cqcgl1d(N, d, h, Mu, Br, Bi, Dr, Di, Gr, Gi) {}
 
     /* get the dimension of an array */
-    void getDims(bn::ndarray x, int &m, int &n){
+    inline void getDims(bn::ndarray x, int &m, int &n){
 	if(x.get_nd() == 1){
 	    m = 1;
 	    n = x.shape(0);
@@ -43,7 +43,7 @@ public:
      *
      *  Only work for double array/matrix
      */
-    bn::ndarray copy2bn(const Ref<const ArrayXXd> &x){
+    inline bn::ndarray copy2bn(const Ref<const ArrayXXd> &x){
 	int m = x.cols();
 	int n = x.rows();
 
@@ -152,7 +152,7 @@ public:
     }
     
     /* orbit2slice */
-    bp::tuple PYorbit2slice(bn::ndarray aa){
+    bp::tuple PYorbit2slice(const bn::ndarray &aa){
 	int m, n;
 	getDims(aa, m, n);
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
@@ -162,7 +162,7 @@ public:
     }
 
     /* orbit2sliceUnwrap */
-    bp::tuple PYorbit2sliceWrap(bn::ndarray aa){
+    bp::tuple PYorbit2sliceWrap(const bn::ndarray &aa){
 	int m, n;
 	getDims(aa, m, n);
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
@@ -189,7 +189,7 @@ public:
 
 
     /* reflection */
-    bn::ndarray PYreflect(bn::ndarray aa){
+    bn::ndarray PYreflect(const bn::ndarray &aa){
 	int m, n;
 	getDims(aa, m, n);
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
@@ -198,13 +198,43 @@ public:
 
 
     /* reduceReflection */
-    bn::ndarray PYreduceReflection(bn::ndarray aa){
+    bn::ndarray PYreduceReflection(const bn::ndarray &aa){
 	int m, n;
 	getDims(aa, m, n);	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	return copy2bn( reduceReflection(tmpaa) );
     }
 
+    /* refGradMat */
+    bn::ndarray PYrefGradMat(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);	
+	Map<ArrayXd> tmpaa((double*)aa.get_data(), n * m);
+	return copy2bn( refGradMat(tmpaa) );
+    }
+
+    /* reflectVe */
+    bn::ndarray PYreflectVe(const bn::ndarray &veHat, const bn::ndarray &xHat){
+	int m, n;
+	getDims(veHat, m, n);	
+	Map<MatrixXd> tmpveHat((double*)veHat.get_data(), n, m);
+	int m2, n2;
+	getDims(xHat, m2, n2);
+	Map<ArrayXd> tmpxHat((double*)xHat.get_data(), n*m);
+	return copy2bn( reflectVe(tmpveHat, tmpxHat) );
+    }
+
+    /* reflectVeAll */
+    bn::ndarray PYreflectVeAll(const bn::ndarray &veHat, const bn::ndarray &aaHat,
+			    const int trunc){
+	int m, n;
+	getDims(veHat, m, n);	
+	Map<MatrixXd> tmpveHat((double*)veHat.get_data(), n, m);
+	int m2, n2;
+	getDims(aaHat, m2, n2);
+	Map<ArrayXd> tmpaaHat((double*)aaHat.get_data(), n, m);
+	return copy2bn( reflectVeAll(tmpveHat, tmpaaHat, trunc) );
+    }
     
     
     /* ve2slice */
@@ -306,6 +336,9 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("stabReq", &pyCqcgl1d::PYstabReq)
 	.def("reflect", &pyCqcgl1d::PYreflect)
 	.def("reduceReflection", &pyCqcgl1d::PYreduceReflection)
+	.def("refGradMat", &pyCqcgl1d::PYrefGradMat)
+	.def("reflectVe", &pyCqcgl1d::PYreflectVe)
+	.def("reflectVeAll", &pyCqcgl1d::PYreflectVeAll)
 	.def("ve2slice", &pyCqcgl1d::PYve2slice)
 	.def("findReq", &pyCqcgl1d::PYfindReq)
 	.def("transRotate", &pyCqcgl1d::PYtransRotate)

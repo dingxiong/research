@@ -158,7 +158,15 @@ ArrayXXd Cqcgl1d::pad(const Ref<const ArrayXXd> &aa){
  * This function is different from pad() that it only requrie n/2
  * is an odd number. It is used to prepare initial conditions for
  * Fourier modes doubled/halfed system. Alos the padding result does not
- * have dimension 2*N, but Ndim
+ * have dimension 2*N, but Ndim.
+ *
+ * @note It is user's duty to rescale the values since Fourier mode magnitude
+ *       changes after doubling/halfing.
+ *       For example,
+ *       Initially, a_k = \sum_{i=0}^{N} f(x_n)e^{ikx}
+ *       After doubling modes, ap_k is a sum of 2*N terms, and
+ *       each adjacent pair is also as twice large as the previous
+ *       corresponding one term.
  */
 ArrayXXd Cqcgl1d::generalPadding(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();
@@ -470,22 +478,56 @@ ArrayXXd Cqcgl1d::reflect(const Ref<const ArrayXXd> &aa){
     return C2R(raa);
 }
 
+/**
+ * @ brief calculate (x^2 - y^2) / \sqrt{x^2 + y^2}
+ */
 inline ArrayXd Cqcgl1d::rcos2th(const ArrayXd &x, const ArrayXd &y){
     ArrayXd x2 = x.square();
     ArrayXd y2 = y.square();
     return (x2 - y2) / (x2 + y2).sqrt();
 }
 
+/**
+ * @ brief calculate x * y / \sqrt{x^2 + y^2}
+ */
 inline ArrayXd Cqcgl1d::rsin2th(const ArrayXd &x, const ArrayXd &y){
     return x * y / (x.square() + y.square()).sqrt();
 
 }
 
 /**
- * @brief the first 2 steps to reduce the discrete symmetry
+ * @brief calculate the gradient of rcos2th()
+ *
+ *        partial derivative over x :   (x^3 + 3*x*y^2) / (x^2 + y^2)^{3/2}
+ *        partial derivative over y : - (y^3 + 3*y*x^2) / (x^2 + y^2)^{3/2}
+ */
+inline double Cqcgl1d::rcos2thGrad(const double x, const double y){
+    // only return derivative over x. Derivative over y can be obtained
+    // by exchange x and y and flip sign
+    double denorm = sqrt(x*x + y*y);
+    double denorm3 = denorm * denorm * denorm;
+    return x * (x*x + 3*y*y) / denorm3;
+}
+
+/**
+ * @brief calculate the gradient of rsin2th()
+ *
+ *        partial derivative over x :   y^3 / (x^2 + y^2)^{3/2}
+ *        partial derivative over y :   x^3 / (x^2 + y^2)^{3/2}
+ */
+inline double Cqcgl1d::rsin2thGrad(const double x, const double y){
+    // only return derivative over x. Derivative over y can be obtained
+    // by exchange x and y
+    double denorm = sqrt(x*x + y*y);
+    double denorm3 = denorm * denorm * denorm;
+    return y*y*y / denorm3;
+}
+
+/**
+ * @brief the first step to reduce the discrete symmetry
  * 
  */
-ArrayXXd Cqcgl1d::reduceReflectionStep12(const Ref<const ArrayXXd> &aaHat){
+ArrayXXd Cqcgl1d::reduceRef1(const Ref<const ArrayXXd> &aaHat){
     const int m = aaHat.cols();
     const int n = aaHat.rows();
     assert(n == Ndim);
@@ -499,6 +541,10 @@ ArrayXXd Cqcgl1d::reduceReflectionStep12(const Ref<const ArrayXXd> &aaHat){
 	step1.row(n+1-2*i) = 0.5*(aaHat.row(2*i+1) + aaHat.row(n+1-2*i));
     }
 
+    return step1;
+}
+
+ArrayXXd Cqcgl1d::reduceRef2(const Ref<const ArrayXXd> &step1){
     ArrayXXd step2(step1);
     ArrayXd p1s = step1.row(2).square(); 
     ArrayXd q1s = step1.row(3).square();
@@ -515,16 +561,13 @@ ArrayXXd Cqcgl1d::reduceReflectionStep12(const Ref<const ArrayXXd> &aaHat){
 }
 
 /**
- * @brief the 3rd step to reduce the discrete symmetry
+ * @brief get the indices which reflect sign in the 3rd step of reflection
+ *        reduction
  *
+ *        1, 4, 6, ...
  */
-ArrayXXd Cqcgl1d::reduceReflectionStep3(const Ref<const ArrayXXd> &aa){
-
-    ArrayXXd aaTilde(aa);
-    aaTilde.row(0) = rcos2th(aa.row(0), aa.row(1));
-    aaTilde.row(1) = rsin2th(aa.row(0), aa.row(1));
-    
-    std::vector<int> index;  // vector storing indices which flip sign
+std::vector<int> Cqcgl1d::refIndex3(){
+    std::vector<int> index; // vector storing indices which flip sign
     index.push_back(1);
     for(size_t i = 2; i < Nplus; i++) index.push_back(2*i);
     for(size_t i = Nplus; i < Ne; i++) {
@@ -533,7 +576,19 @@ ArrayXXd Cqcgl1d::reduceReflectionStep3(const Ref<const ArrayXXd> &aa){
 	    index.push_back(2*i+1);
 	}
     }
+    return index;
+}
+/**
+ * @brief the 3rd step to reduce the discrete symmetry
+ *
+ */
+ArrayXXd Cqcgl1d::reduceRef3(const Ref<const ArrayXXd> &aa){
 
+    ArrayXXd aaTilde(aa);
+    aaTilde.row(0) = rcos2th(aa.row(0), aa.row(1));
+    aaTilde.row(1) = rsin2th(aa.row(0), aa.row(1));
+    
+    std::vector<int> index = refIndex3();
     for(size_t i = 1; i < index.size(); i++){
 	aaTilde.row(index[i]) = rsin2th(aa.row(index[i-1]), aa.row(index[i]));
     }
@@ -542,7 +597,158 @@ ArrayXXd Cqcgl1d::reduceReflectionStep3(const Ref<const ArrayXXd> &aa){
 }
 
 ArrayXXd Cqcgl1d::reduceReflection(const Ref<const ArrayXXd> &aaHat){
-    return reduceReflectionStep3(reduceReflectionStep12(aaHat));
+    return reduceRef3(reduceRef2(reduceRef1(aaHat)));
+}
+
+/**
+ * @brief The gradient of the reflection reduction transformation for the
+ *        firt step.
+ *
+ * step 1: ---------------------------------------
+ *         | 1					 |
+ *         |   1				 |
+ *         |     1/2                   -1/2	 |
+ *         |         1/2                   -1/2	 |
+ *         |                   ...		 |
+ *         |             1/2   -1/2		 |
+ *         |                1/2    -1/2		 |
+ *         |             1/2    1/2		 |
+ *         |                1/2     1/2		 |
+ *         |                   ...		 |
+ *         |     1/2                   1/2 	 |
+ *         |         1/2                   1/2   |
+ *         ---------------------------------------
+ */
+MatrixXd Cqcgl1d::refGrad1(){
+    MatrixXd Gamma(MatrixXd::Zero(Ndim, Ndim));
+    Gamma(0, 0) = 1;
+    Gamma(1, 1) = 1;
+    for (size_t i = 1; i < Nplus; i++){
+	Gamma(2*i, 2*i) = 0.5;
+	Gamma(2*i+1, 2*i+1) = 0.5;
+	Gamma(2*i, Ndim - 2*i) = -0.5;
+	Gamma(2*i+1, Ndim - 2*i + 1) = -0.5;
+    }
+    for(size_t i = Nplus; i < Ne; i++){
+	Gamma(2*i, 2*i) = 0.5;
+	Gamma(2*i, Ndim - 2*i) = 0.5;
+	Gamma(2*i+1, 2*i+1) = 0.5;
+	Gamma(2*i+1, Ndim - 2*i + 1) = 0.5;
+    }
+    return Gamma;
+}
+
+/**
+ * @brief The gradient of the reflection reduction transformation for the
+ *        2nd step.
+ *        
+ * step 2: ------------------------------------
+ *         | 1				      |
+ *         |   1			      |
+ *         |     *  *                         |
+ *         |     *  *                         |
+ *         |        *  *         	      |
+ *         |           *  *      	      |
+ *         |               ...  	      |
+ *         |                  *  *            |
+ *         |                       1          |
+ *         |                         1        |
+ *         |                           ...    |
+ *         |                               1  |
+ *         ------------------------------------
+ *               
+ */
+MatrixXd Cqcgl1d::refGrad2(const ArrayXd &x){
+    assert (x.size() == Ndim);
+    MatrixXd Gamma(MatrixXd::Zero(Ndim, Ndim));
+    Gamma(0, 0) = 1;
+    Gamma(1, 1) = 1;
+    Gamma(2, 2) = rcos2thGrad(x(2), x(3));
+    Gamma(2, 3) = - rcos2thGrad(x(3), x(2));
+    for (size_t i = 3; i < 2*Nplus; i++){
+	Gamma(i, i) = rsin2thGrad(x(i), x(i-1));
+	Gamma(i, i-1) = rsin2thGrad(x(i-1), x(i));
+    }
+    for (size_t i = 2*Nplus; i < Ndim; i++){
+	Gamma(i, i) = 1;
+    }
+    return Gamma;
+}
+
+/**
+ * @brief The gradient of the reflection reduction transformation for the
+ *        3rd step.
+ */
+MatrixXd Cqcgl1d::refGrad3(const ArrayXd &x){
+    assert(x.size() == Ndim);
+    MatrixXd Gamma(MatrixXd::Identity(Ndim, Ndim));
+    std::vector<int> index = refIndex3();
+    Gamma(0, 0) = rcos2thGrad(x(0), x(1));
+    Gamma(0, 1) = - rcos2thGrad(x(1), x(0));
+    Gamma(1, 1) = rsin2thGrad(x(1), x(0));
+    Gamma(1, 0) = rsin2thGrad(x(0), x(1));
+    
+    for(size_t i = 1; i < index.size(); i++){
+	Gamma(index[i], index[i]) = rsin2thGrad(x(index[i]), x(index[i-1]));
+	Gamma(index[i], index[i-1]) = rsin2thGrad(x(index[i-1]), x(index[i]));
+    }
+    return Gamma;
+}
+
+/**
+ * @brief calculate the tranformation matrix for reflection reduction
+ */
+MatrixXd Cqcgl1d::refGradMat(const ArrayXd &x){
+    ArrayXd step1 = reduceRef1(x);
+    ArrayXd step2 = reduceRef2(step1);
+    return refGrad3(step2) * refGrad2(step1) * refGrad1();
+}
+
+/**
+ * @brief transform covariant vectors after reducing reflection
+ */
+MatrixXd Cqcgl1d::reflectVe(const MatrixXd &veHat, const Ref<const ArrayXd> &xHat){
+    MatrixXd Gamma = refGradMat(xHat);
+    return Gamma * veHat;
+}
+
+/** @beief reduce reflection symmetry of all the Floquet vectors along a po
+ *
+ *  Usaully, aaHat has one more column the the Floquet vectors, so you can
+ *  call this function like:
+ *  \code
+ *      reflectVeAll(veHat, aaHat.leftCols(aa.cols()-1))
+ *  \endcode
+ *  
+ *  @param[in] veHat   Floquet vectors along the orbit in the 1st mode slice.
+ *                     Dimension: [N, M*Trunc]
+ *  @param[in] aaHat   the orbit in the  slice
+ *  @param[in] trunc   the number of vectors at each orbit point.
+ *                     trunc = 0 means full set of vectors
+ *  @return            transformed to the reflection invariant space.
+ *                     Dimension [N, M*Trunc]
+ *
+ *  @note vectors are not normalized
+ */
+MatrixXd Cqcgl1d::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
+			       const int trunc /* = 0*/){
+    int Trunc = trunc;
+    if(trunc == 0) Trunc = veHat.rows();
+
+    assert(veHat.cols() % Trunc == 0);
+    const int n = veHat.rows();  
+    const int m = veHat.cols()/Trunc;
+    const int n2 = aaHat.rows();
+    const int m2 = aaHat.cols();
+
+    assert(m == m2 && n == n2);
+    MatrixXd veTilde(n, Trunc*m);
+    for(size_t i = 0; i < m; i++){
+	veTilde.middleCols(i*Trunc, Trunc) =
+	    reflectVe(veHat.middleCols(i*Trunc, Trunc), aaHat.col(i));
+    }
+
+    return veTilde;
 }
 
 

@@ -528,8 +528,8 @@ inline double Cqcgl1d::rsin2thGrad(const double x, const double y){
  * 
  */
 ArrayXXd Cqcgl1d::reduceRef1(const Ref<const ArrayXXd> &aaHat){
-    const int m = aaHat.cols();
-    const int n = aaHat.rows();
+    const int m = aaHat.cols(); 
+    const int n = aaHat.rows(); 
     assert(n == Ndim);
     
     ArrayXXd step1(n, m);
@@ -699,7 +699,7 @@ MatrixXd Cqcgl1d::refGrad3(const ArrayXd &x){
  * @brief calculate the tranformation matrix for reflection reduction
  */
 MatrixXd Cqcgl1d::refGradMat(const ArrayXd &x){
-    ArrayXd step1 = reduceRef1(x);
+    ArrayXd step1 = reduceRef1(x); 
     ArrayXd step2 = reduceRef2(step1);
     return refGrad3(step2) * refGrad2(step1) * refGrad1();
 }

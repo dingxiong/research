@@ -220,7 +220,7 @@ public:
 	Map<MatrixXd> tmpveHat((double*)veHat.get_data(), n, m);
 	int m2, n2;
 	getDims(xHat, m2, n2);
-	Map<ArrayXd> tmpxHat((double*)xHat.get_data(), n*m);
+	Map<ArrayXd> tmpxHat((double*)xHat.get_data(), n2*m2);
 	return copy2bn( reflectVe(tmpveHat, tmpxHat) );
     }
 
@@ -232,7 +232,7 @@ public:
 	Map<MatrixXd> tmpveHat((double*)veHat.get_data(), n, m);
 	int m2, n2;
 	getDims(aaHat, m2, n2);
-	Map<ArrayXd> tmpaaHat((double*)aaHat.get_data(), n, m);
+	Map<ArrayXd> tmpaaHat((double*)aaHat.get_data(), n2, m2);
 	return copy2bn( reflectVeAll(tmpveHat, tmpaaHat, trunc) );
     }
     

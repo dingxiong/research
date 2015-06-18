@@ -9,7 +9,7 @@ from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
 
-case = 2
+case = 4
 
 
 if case == 1:
@@ -77,8 +77,8 @@ if case == 2:
     # plotOneConfigFromFourier(cgl, a0Reflected)
 
     # obtain the stability exponents/vectors
-    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
-    # eigvalues, eigvectors = eigReq(cgl, a0Reflected, -wth0, wphi0)
+    # eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
+    eigvalues, eigvectors = eigReq(cgl, a0Reflected, -wth0, wphi0)
     print eigvalues[:10]
 
     # make sure you make a copy because Fourier2Config takes contigous memory
@@ -99,105 +99,54 @@ if case == 2:
 
 # test the ve2slice function
 if case == 3:
-    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
-    f = h5py.File('../../data/cgl/req.h5', 'r')
-    req = '/req1/'
-    a0 = f[req+'a0'].value
-    th0 = f[req+'w1'].value[0]
-    phi0 = f[req+'w2'].value[0]
+    N = 512
+    d = 50
+    h = 0.01
 
-    stabMat = cgl.stabReq(a0, th0, phi0).T
-    eigvalues, eigvectors = eig(stabMat)
-    eigvalues, eigvectors = sortByReal(eigvalues, eigvectors)
+    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    a0, wth0, wphi0, err = cqcglReadReq('../../data/cgl/reqN512.h5', '1')
+    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
 
     # plot the last vector to see whether Tcopy works
     eigvectors = realve(eigvectors)
     eigvectors = Tcopy(eigvectors)
-    plotOneConfigFromFourier(cgl, eigvectors[-1].real)
+    plotOneConfigFromFourier(cgl, eigvectors[-1])
 
     veHat = cgl.ve2slice(eigvectors, a0)
     print veHat[:4, :8]
-    plotOneConfigFromFourier(cgl, eigvectors[0].real)
+    # plotOneConfigFromFourier(cgl, eigvectors[0])
     # print out the norm of two marginal vectors. They should valish
     print norm(veHat[4]), norm(veHat[5])
 
     # test the angle between each eigenvector
-    v1 = veHat[1]
-    v2 = veHat[3]
+    v1 = veHat[0]
+    v2 = veHat[1]
     print np.dot(v1, v2) / norm(v1) / norm(v2)
     plotOneFourier(v1)
     plotOneFourier(v2)
 
-# unstable manifold
 if case == 4:
-    N = 256
+    """
+    test the reflectVe function
+    """
+    N = 512
     d = 50
-    h = 0.001
-    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
-    f = h5py.File('../../data/cgl/req.h5', 'r')
-    req = '/1/'
-    a0 = f[req+'a'].value
-    wth0 = f[req+'wth'].value
-    wphi0 = f[req+'wphi'].value
-    err = f[req+'err'].value
-    f.close()
+    h = 0.01
 
-    stabMat = cgl.stabReq(a0, wth0, wphi0).T
-    eigvalues, eigvectors = eig(stabMat)
-    eigvalues, eigvectors = sortByReal(eigvalues, eigvectors)
+    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    Ndim = cgl.Ndim
+    a0, wth0, wphi0, err = cqcglReadReq('../../data/cgl/reqN512.h5', '1')
+    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
     eigvectors = realve(eigvectors)
     eigvectors = Tcopy(eigvectors)
+
+    a0Hat = cgl.orbit2slice(a0)[0]
     veHat = cgl.ve2slice(eigvectors, a0)
+    veTilde = cgl.reflectVe(veHat, a0Hat)
 
-    a0Hat = cgl.orbit2slice(a0)[0].squeeze()
-    a0Reflected = cgl.reflect(a0)
-    a0ReflectedHat = cgl.orbit2slice(a0Reflected)[0].squeeze()
-
-    nstp = 85000
-    a0Erg = a0 + eigvectors[0]*1e-4
-    aaErg = cgl.intg(a0Erg, nstp, 5)
-    aaErgHat, th, phi = cgl.orbit2slice(aaErg)
-    aaErgHat -= a0Hat
-
-    nstp2 = 85000
-    a0Erg2 = a0 + eigvectors[2]*1e-4
-    aaErg2 = cgl.intg(a0Erg2, nstp2, 5)
-    aaErgHat2, th2, phi2 = cgl.orbit2slice(aaErg2)
-    aaErgHat2 -= a0Hat
-
-    nstp3 = 85000
-    a0Erg3 = cgl.Config2Fourier(centerRand(2*N, 0.25)).squeeze()
-    aaErg3 = cgl.intg(a0Erg3, nstp3, 5)
-    a0Erg3 = aaErg3[-1]
-    aaErg3 = cgl.intg(a0Erg3, nstp3, 5)
-    aaErgHat3, th3, phi3 = cgl.orbit2slice(aaErg3)
-    aaErgHat3 -= a0Hat
-
-    e1, e2, e3 = orthAxes(veHat[0], veHat[2], veHat[3])
-    a0ReflectedHatProj = np.dot(a0ReflectedHat, np.vstack((e1, e2, e3)).T)
-    aaErgHatProj = np.dot(aaErgHat, np.vstack((e1, e2, e3)).T)
-    aaErgHatProj2 = np.dot(aaErgHat2, np.vstack((e1, e2, e3)).T)
-    aaErgHatProj3 = np.dot(aaErgHat3, np.vstack((e1, e2, e3)).T)
-
-    # plot3dfig(aaErgHatProj[1000:, 0], aaErgHatProj[1000:, 1], aaErgHatProj[1000:, 2])
-    fig = plt.figure(figsize=[8, 6])
-    ax = fig.add_subplot(111, projection='3d')
-    ix1 = 00000/5
-    ix2 = 14000/5
-    ax.plot(aaErgHatProj[:, 0], aaErgHatProj[:, 1],
-            aaErgHatProj[:, 2], c='r', lw=1)
-    # ax.plot(aaErgHatProj2[:, 0], aaErgHatProj2[:, 1],
-    #         aaErgHatProj2[:, 2], c='m', lw=1)
-    ax.plot(aaErgHatProj3[ix1:ix2, 0], aaErgHatProj3[ix1:ix2, 1],
-            aaErgHatProj3[ix1:ix2, 2], c='g', lw=1)
-    ax.scatter([0], [0], [0], s=80)
-    # ax.scatter(a0ReflectedHatProj[0], a0ReflectedHatProj[1], a0ReflectedHatProj[2], s=80, c='k')
-    fig.tight_layout(pad=0)
-    plt.show(block=False)
-    plotConfigSpace(cgl.Fourier2Config(aaErg3), [0, d, 0, nstp*h])
-
-    # plot3dfig(aaErg[:, 0], aaErg[:, 2], aaErg[:, 4])
-    # plot3dfig(aaErgHat[:, 0], aaErgHat[:, 2], aaErgHat[:, 4])
-
-    # plot1dfig(aaErgHatProj[:, 0], marker='')
-    # plot1dfig(aaErgHat[:, 0], marker='')
+    a0Ref = cgl.reflect(a0)
+    veRef = cgl.reflect(eigvectors)
+    a0RefHat = cgl.orbit2slice(a0Ref)[0]
+    veRefHat = cgl.ve2slice(veRef, a0Ref)
+    veRefTilde = cgl.reflectVe(veRefHat, a0RefHat)
+    # why the hell is veHat the same as veRefHat ?

@@ -1,4 +1,4 @@
-%function [t,X,Y,u] = cqCGL(A0, h, nstp)
+function [t,X,Y,u] = cqCGL(A0, h, nstp)
 % 2D cubic-quintic complex Gizburg-Landau equation on a periodic domain.
 % A_t = Mu*A + (Br+1i*Bi)*A*abs(A)^2 + (Gr+1i*Gi)*A*abs(A)^4 + (Dr+1i*Di)*(u_xx + u_yy)
 % Note Diffution constant is complex, then evaluation of ETDRK4

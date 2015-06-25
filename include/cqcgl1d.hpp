@@ -27,6 +27,10 @@ using Eigen::ConjugateGradient;
 using Eigen::PartialPivLU;
 using Eigen::Map; using Eigen::Ref;
 
+
+//////////////////////////////////////////////////////////////////////
+//                       class Cqcgl1d                              //
+//////////////////////////////////////////////////////////////////////
 class Cqcgl1d {
   
 public:
@@ -158,5 +162,44 @@ protected:
     void dealias(CGLfft &Fv);
 };
 
+
+//////////////////////////////////////////////////////////////////////
+//                       class CqcglRPO                             //
+//////////////////////////////////////////////////////////////////////
+class CqcglRPO {
+
+public:
+    typedef std::complex<double> dcp;
+    typedef Eigen::SparseMatrix<double> SpMat;
+    typedef Eigen::Triplet<double> Tri;
+
+    double Br, Bi, Gr, Gi, Dr, Di, Mu;
+    const int N;		/* dimension of FFT */
+    const double d;
+
+    int Ne;			/* effective number of modes */
+    int Ndim;			/* dimension of state space */
+
+    CqcglRPO(int N = 256, double d = 50, 
+	     double Mu = -0.1, double Br = 1.0, double Bi = 0.8,
+	     double Dr = 0.125, double Di = 0.5, double Gr = -0.1,
+	     double Gi = -0.6);
+    explicit CqcglRPO(const CqcglRPO &x);
+    ~CqcglRPO();
+    CqcglRPO & operator=(const CqcglRPO &x);
+
+    /*---------------  member functions ------------------------- */
+    VectorXd cgSolver(ConjugateGradient<SpMat> &CG, Eigen::SparseLU<SpMat> &solver,
+		      SpMat &H, VectorXd &JF, bool doesUseMyCG = true,
+		      bool doesPrint =  true);
+    std::tuple<ArrayXXd, double, double, double, double>
+    findPO(const ArrayXXd &aa0, const double h0, const int nstp,
+	   const double th0, const double phi0,
+	   const int MaxN = 200,
+	   const double tol = 1e-13,
+	   const bool doesUseMyCG = true,
+	   const bool doesPrint = false);
+    
+};
 
 #endif  /* CQCGL1D_H */

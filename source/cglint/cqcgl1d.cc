@@ -5,10 +5,11 @@
 using std::cout;
 using std::endl;
 using namespace sparseRoutines;
-/*      ----------------------------------------------------
- *                        Class Cqcgl1d
- *      ----------------------------------------------------
- */
+using namespace Eigen;
+
+//////////////////////////////////////////////////////////////////////
+//                        Class Cqcgl1d                             //
+//////////////////////////////////////////////////////////////////////
 
 /* ------------------------------------------------------ */
 /* ----                constructor/destructor     ------- */
@@ -1160,4 +1161,146 @@ Cqcgl1d::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
 
     ArrayXd velReq = velocityReq(a, wth, wphi);
     return std::make_tuple(a, wth, wphi, velReq.matrix().norm());
+}
+
+//////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////
+//                        Class Cqcgl1d                             //
+//////////////////////////////////////////////////////////////////////
+CqcglRPO::CqcglRPO(int N, double d,
+		   double Mu, double Br, double Bi,
+		   double Dr, double Di, double Gr,
+		   double Gi)
+    : N(N), d(d),
+      Mu(Mu), Br(Br), Bi(Bi),
+      Dr(Dr), Di(Di), Gr(Gr),
+      Gi(Gi)
+{
+    Ne = (N/3) * 2 - 1;		/* make it an odd number */
+    Ndim = 2 * Ne;	
+}
+
+CqcglRPO::CqcglRPO(const CqcglRPO &x) : N(x.N), d(x.d),
+					Mu(x.Mu), Br(x.Br), Bi(x.Bi),
+					Dr(x.Dr), Di(x.Di), Gr(x.Gr),
+					Gi(x.Gi)
+{ }
+
+CqcglRPO & CqcglRPO::operator=(const CqcglRPO &x){
+    return *this;
+}
+
+CqcglRPO::~CqcglRPO(){ }
+
+
+
+/**
+ * @brief solve the Ax = b problem
+ */
+VectorXd CqcglRPO::cgSolver(ConjugateGradient<SpMat> &CG, SparseLU<SpMat> &solver,
+			    SpMat &H, VectorXd &JF, bool doesUseMyCG /* = true */,
+			    bool doesPrint /* = false */){
+    VectorXd dF;
+    if(doesUseMyCG){
+	std::pair<VectorXd, std::vector<double>> cg = iterMethod::ConjGradSSOR<SpMat>
+	    (H, -JF, solver, VectorXd::Zero(H.rows()), H.rows(), 1e-6);
+	dF = cg.first;
+	if(doesPrint){
+	    printf("CG error %g, iteration number %zd\n", cg.second.back(), cg.second.size());
+	}
+    } else {
+	CG.compute(H);
+	dF = CG.solve(-JF);
+	if(doesPrint){
+	    printf("CG error %f, iteration number %d\n", CG.error(), CG.iterations());
+	}
+    }
+    return dF;
+}
+
+
+/**
+ * @brief find rpo in cqcgl 1d system
+ */
+std::tuple<ArrayXXd, double, double, double, double>
+CqcglRPO::findPO(const ArrayXXd &aa0, const double h0, const int nstp,
+		 const double th0, const double phi0,
+		 const int MaxN, const double tol,
+		 const bool doesUseMyCG /* = true */,
+		 const bool doesPrint /* = false */){
+
+    assert(Ndim == aa0.rows());
+    const int M = aa0.cols();
+    ArrayXXd x(aa0);
+    
+    double h = h0;
+    double th = th0;
+    double phi = phi0;
+    double lam = 1;
+
+    ConjugateGradient<SpMat> CG;
+    SparseLU<SpMat> solver; // used in the pre-CG method
+    
+    for(size_t i = 0; i < MaxN; i++){
+	if (lam > 1e10) break;
+	if(doesPrint){
+	    printf("********  i = %zd/%d   ******** \n", i, MaxN);
+	}
+	Cqcgl1d cgl(N, d, h, Mu, Br, Bi, Dr, Di, Gr, Gi);
+	VectorXd F = cgl.multiF(x, nstp, th, phi);
+	double err = F.norm(); 
+	if(err < tol){
+	    if(doesPrint) printf("stop at norm(F)=%g\n", err);
+	    break;
+	}
+   
+	std::pair<SpMat, VectorXd> p = cgl.multishoot(x, nstp, th, phi, doesPrint); 
+	SpMat JJ = p.first.transpose() * p.first;
+	VectorXd JF = p.first.transpose() * p.second;
+	SpMat Dia = JJ;
+	Dia.prune(KeepDiag());
+	
+	for(size_t j = 0; j < 20; j++){
+	    SpMat H = JJ + lam * Dia;
+	    VectorXd dF = cgSolver(CG, solver, H, JF, doesUseMyCG, doesPrint);
+	    ArrayXXd xnew = x + Map<ArrayXXd>(&dF(0), Ndim, M);
+	    double hnew = h + dF(Ndim*M)/nstp; // be careful here.
+	    double thnew = th + dF(Ndim*M+1);
+	    double phinew = phi + dF(Ndim*M+2);
+	    // printf("\nhnew = %g, thnew = %g, phinew = %f\n", hnew, thnew, phinew);
+      
+	    if( hnew <= 0 ){
+		fprintf(stderr, "new time step is negative\n");
+		break;
+	    }
+	    Cqcgl1d tcgl(N, d, hnew, Mu, Br, Bi, Dr, Di, Gr, Gi);
+	    VectorXd newF = tcgl.multiF(xnew, nstp, thnew, phinew);
+	    fprintf(stdout, "new err = %g\n", newF.norm());
+	    if (newF.norm() < err){
+		x = xnew;
+		h = hnew;
+		th = thnew;
+		phi = phinew;
+		lam = lam/10;
+		break;
+	    }
+	    else{
+		lam *= 10;
+		cout << "lam = "<< lam << endl;
+		if( lam > 1e10) {
+		    fprintf(stderr, "lam = %g too large \n", lam);
+		    break;
+		}
+	    }
+	    
+	}
+    }
+
+    Cqcgl1d finalCgl(N, d, h, Mu, Br, Bi, Dr, Di, Gr, Gi);
+    VectorXd F = finalCgl.multiF(x, nstp, th, phi);
+    return std::make_tuple(x, h, th, phi, F.norm());
 }

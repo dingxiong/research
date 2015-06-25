@@ -10,16 +10,60 @@ using namespace Eigen;
 namespace bp = boost::python;
 namespace bn = boost::numpy;
 
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+/* get the dimension of an array */
+inline void getDims(bn::ndarray x, int &m, int &n){
+    if(x.get_nd() == 1){
+	m = 1;
+	n = x.shape(0);
+    } else {
+	m = x.shape(0);
+	n = x.shape(1);
+    }
+}
+
+/*
+ * @brief used to copy content in Eigen array to boost.numpy array.
+ *
+ *  Only work for double array/matrix
+ */
+inline bn::ndarray copy2bn(const Ref<const ArrayXXd> &x){
+    int m = x.cols();
+    int n = x.rows();
+
+    Py_intptr_t dims[2];
+    int ndim;
+    if(m == 1){
+	ndim = 1;
+	dims[0] = n;
+    }
+    else {
+	ndim = 2;
+	dims[0] = m;
+	dims[1] = n;
+    }
+    bn::ndarray px = bn::empty(ndim, dims, bn::dtype::get_builtin<double>());
+    memcpy((void*)px.get_data(), (void*)x.data(), sizeof(double) * m * n);
+	    
+    return px;
+}
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 
 class pyCqcgl1d : public Cqcgl1d {
-  /*
-   * Python interface for Cqcgl1d.cc
-   * Note:
-   *     1) Input and out put are arrays of C form, meaning each
-   *        row is a vector
-   *     2) Usually input to functions should be 2-d array, so
-   *        1-d arrays should be resized to 2-d before passed
-   */
+    /*
+     * Python interface for Cqcgl1d.cc
+     * Note:
+     *     1) Input and out put are arrays of C form, meaning each
+     *        row is a vector
+     *     2) Usually input to functions should be 2-d array, so
+     *        1-d arrays should be resized to 2-d before passed
+     */
   
 public:
     pyCqcgl1d(int N, double d, double h, double Mu,
@@ -27,43 +71,7 @@ public:
 	      double Di, double Gr, double Gi) :
 	Cqcgl1d(N, d, h, Mu, Br, Bi, Dr, Di, Gr, Gi) {}
 
-    /* get the dimension of an array */
-    inline void getDims(bn::ndarray x, int &m, int &n){
-	if(x.get_nd() == 1){
-	    m = 1;
-	    n = x.shape(0);
-	} else {
-	    m = x.shape(0);
-	    n = x.shape(1);
-	}
-    }
 
-    /*
-     * @brief used to copy content in Eigen array to boost.numpy array.
-     *
-     *  Only work for double array/matrix
-     */
-    inline bn::ndarray copy2bn(const Ref<const ArrayXXd> &x){
-	int m = x.cols();
-	int n = x.rows();
-
-	Py_intptr_t dims[2];
-	int ndim;
-	if(m == 1){
-	    ndim = 1;
-	    dims[0] = n;
-	}
-	else {
-	    ndim = 2;
-	    dims[0] = m;
-	    dims[1] = n;
-	}
-	bn::ndarray px = bn::empty(ndim, dims, bn::dtype::get_builtin<double>());
-	memcpy((void*)px.get_data(), (void*)x.data(), sizeof(double) * m * n);
-	    
-	return px;
-    }
-    
     /* wrap the velocity */
     bn::ndarray PYvelocity(bn::ndarray a0){
 	int m, n;
@@ -226,7 +234,7 @@ public:
 
     /* reflectVeAll */
     bn::ndarray PYreflectVeAll(const bn::ndarray &veHat, const bn::ndarray &aaHat,
-			    const int trunc){
+			       const int trunc){
 	int m, n;
 	getDims(veHat, m, n);	
 	Map<MatrixXd> tmpveHat((double*)veHat.get_data(), n, m);
@@ -301,10 +309,41 @@ public:
     
 };
 
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+class pyCqcglRPO : public CqcglRPO {
+    
+public:
+    pyCqcglRPO(int N, double d, double Mu,
+	       double Br, double Bi, double Dr,
+	       double Di, double Gr, double Gi) :
+	CqcglRPO(N, d, Mu, Br, Bi, Dr, Di, Gr, Gi) {}
+
+
+    /* findPO */
+    bp::tuple PYfindPO(const bn::ndarray &aa0, const double h0,
+		       const int nstp, const double th0,
+		       const double phi0,
+		       const int MaxN, const double tol,
+		       const bool doesUseMyCG,
+		       const bool doesPrint){
+	int m, n;
+	getDims(aa0, m, n);
+	Map<ArrayXd> tmpaa0((double*)aa0.get_data(), n, m);
+	std::tuple<ArrayXXd, double, double, double, double> tmp = 
+	    findPO(tmpaa0, h0, nstp, th0, phi0, MaxN, tol, doesUseMyCG, doesPrint);
+	return bp::make_tuple(copy2bn(std::get<0>(tmp)),  std::get<1>(tmp),
+			      std::get<2>(tmp), std::get<3>(tmp), std::get<4>(tmp));
+    }
+    
+};
 
 BOOST_PYTHON_MODULE(py_cqcgl1d) {
     bn::initialize();    
     bp::class_<Cqcgl1d>("Cqcgl1d") ;
+    bp::class_<CqcglRPO>("CqcglRPO");
     
     bp::class_<pyCqcgl1d, bp::bases<Cqcgl1d> >("pyCqcgl1d", bp::init<int, double, double,
 					       double, double, double, double, double,
@@ -346,4 +385,22 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("Rotate", &pyCqcgl1d::PYRotate)
 	.def("rotateOrbit", &pyCqcgl1d::PYrotateOrbit)
 	;
+
+
+    bp::class_<pyCqcglRPO, bp::bases<CqcglRPO> >("pyCqcglRPO", bp::init<int, double,
+						 double, double, double, double, double,
+						 double, double >())
+	.def_readonly("N", &pyCqcglRPO::N)
+	.def_readonly("d", &pyCqcglRPO::d)
+	.def_readonly("Mu", &pyCqcglRPO::Mu)
+	.def_readonly("Br", &pyCqcglRPO::Br)
+	.def_readonly("Bi", &pyCqcglRPO::Bi)
+	.def_readonly("Dr", &pyCqcglRPO::Dr)
+	.def_readonly("Di", &pyCqcglRPO::Di)
+	.def_readonly("Gr", &pyCqcglRPO::Gr)
+	.def_readonly("Gi", &pyCqcglRPO::Gi)
+	.def_readonly("Ndim", &pyCqcglRPO::Ndim)
+	.def("findPO", &pyCqcglRPO::PYfindPO)
+	;
+	
 }

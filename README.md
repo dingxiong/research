@@ -1,4 +1,8 @@
-# My research C++ code
+# My research C++ code -- old FFT branch
+
+This branch contains the old implementation of cqcgl1d class,
+in which FFT serves as subclass. Also, it lacks the ability to
+evaluate `Jacobian * vector`.  
 
 ## folder structure 
 * **source**   C++ files and their Matlab/Python binding files

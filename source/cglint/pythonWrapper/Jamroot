@@ -16,10 +16,21 @@ variant release_assert : <optimization>speed <inlining>full <debug-symbols>off <
 
 lib np : : <name>boost_numpy <file>/usr/local/home/xiong/apps/BoostNumpy/lib/libboost_numpy.so ;
 lib fftw3 : : <name>fftw3 <file>/usr/lib/libfftw3.so ;
-python-extension py_cqcgl1d : py_cqcgl1d.cc np fftw3 ../../sparseRoutines/sparseRoutines.cc ../cqcgl1d.cc 
+lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/libfftw3_threads.so ;
+
+choice = 1 ;
+
+# python-extension py_cqcgl1d : py_cqcgl1d.cc np fftw3 ../../sparseRoutines/sparseRoutines.cc ../cqcgl1d.cc 
+# 		 : <variant>release_assert <optimization>speed 
+# 		 : <link>shared <cxxflags>-std=c++11 
+# 		 ;
+
+if $(choice) = 1 {
+python-extension py_cqcgl1dTFFT : py_cqcgl1d.cc np fftw3 fftw3_threads ../../sparseRoutines/sparseRoutines.cc ../cqcgl1d.cc 
 		 : <variant>release_assert <optimization>speed 
-		 : <link>shared <cxxflags>-std=c++11 
-		 ;
+		 : <link>shared <cxxflags>"-std=c++11 -DTFFT"
+		 ;		
 
 
-install py_extension : py_cqcgl1d : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
+install py_extension : py_cqcgl1dTFFT : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
+}

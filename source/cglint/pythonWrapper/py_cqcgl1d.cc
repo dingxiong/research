@@ -255,7 +255,45 @@ public:
 	Map<ArrayXd> tmpx((double*)x.get_data(), n2*m2);
 	return copy2bn( ve2slice(tmpve, tmpx) );
     }
+    
+    /* reduceAllSymmetries */
+    bp::tuple PYreduceAllSymmetries(const bn::ndarray &aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = 
+	    reduceAllSymmetries(tmpaa);
+	return bp::make_tuple(copy2bn(std::get<0>(tmp)),
+			      copy2bn(std::get<1>(tmp)),
+			      copy2bn(std::get<2>(tmp)));
+	
+    }
 
+    /* reduceIntg */
+    bp::tuple PYreduceIntg(const bn::ndarray &a0, const size_t nstp,
+			   const size_t np){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
+	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = 
+	    reduceIntg(tmpa0, nstp, np);
+	return bp::make_tuple(copy2bn(std::get<0>(tmp)),
+			      copy2bn(std::get<1>(tmp)),
+			      copy2bn(std::get<2>(tmp)));
+	
+    }
+
+    /* reduceVe */
+    bn::ndarray PYreduceVe(const bn::ndarray &ve, const bn::ndarray &x){
+	int m, n;
+	getDims(ve, m, n);
+	Map<ArrayXXd> tmpve((double*)ve.get_data(), n, m);
+	int m2, n2;
+	getDims(x, m2, n2);
+	Map<ArrayXd> tmpx((double*)x.get_data(), n2*m2);
+	return copy2bn(reduceVe(tmpve, tmpx));
+    }
+    
     /* findReq */
     bp::tuple PYfindReq(bn::ndarray a0, double wth0, double wphi0,
 			int MaxN, double tol, bool doesUseMyCG,
@@ -329,9 +367,9 @@ public:
 		       const int MaxN, const double tol,
 		       const bool doesUseMyCG,
 		       const bool doesPrint){
-	int m, n;
+	int m, n; 
 	getDims(aa0, m, n);
-	Map<ArrayXd> tmpaa0((double*)aa0.get_data(), n, m);
+	Map<ArrayXXd> tmpaa0((double*)aa0.get_data(), n, m); 
 	std::tuple<ArrayXXd, double, double, double, double> tmp = 
 	    findPO(tmpaa0, h0, nstp, th0, phi0, MaxN, tol, doesUseMyCG, doesPrint);
 	return bp::make_tuple(copy2bn(std::get<0>(tmp)),  std::get<1>(tmp),
@@ -340,7 +378,7 @@ public:
     
 };
 
-BOOST_PYTHON_MODULE(py_cqcgl1d) {
+BOOST_PYTHON_MODULE(py_cqcgl1dTFFT) {
     bn::initialize();    
     bp::class_<Cqcgl1d>("Cqcgl1d") ;
     bp::class_<CqcglRPO>("CqcglRPO");
@@ -379,6 +417,9 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("reflectVe", &pyCqcgl1d::PYreflectVe)
 	.def("reflectVeAll", &pyCqcgl1d::PYreflectVeAll)
 	.def("ve2slice", &pyCqcgl1d::PYve2slice)
+	.def("reduceAllSymmetries", &pyCqcgl1d::PYreduceAllSymmetries)
+	.def("reduceIntg", &pyCqcgl1d::PYreduceIntg)
+	.def("reduceVe", &pyCqcgl1d::PYreduceVe)
 	.def("findReq", &pyCqcgl1d::PYfindReq)
 	.def("transRotate", &pyCqcgl1d::PYtransRotate)
 	.def("phaseRotate", &pyCqcgl1d::PYphaseRotate)

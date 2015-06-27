@@ -7,6 +7,17 @@ EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 
 CFLAGS = -std=c++0x
 
+FFTW_THREADS = no
+ifeq ($(FFTW_THREADS), yes)
+CFLAGS += -DTFFT
+endif
+
+MULTISHOOT_THREADS = yes
+ifeq ($(MULTISHOOT_THREADS), yes)
+CFLAGS += -DMULTISHOOT
+endif
+
+
 SOURCE = cqcgl1d.cc 
 SHARED = libcqcgl1d.so
 STATIC = libcqcgl1d.a

@@ -1,5 +1,5 @@
 /* to comiple:
- * g++ -O3 test_cqcgl1d.cc  -L../../lib -I../../include -I $XDAPPS/eigen/include/eigen3 -std=c++0x -lcqcgl1d -lsparseRoutines -lm -lfftw3 
+ * g++ -O3 test_cqcgl1d.cc  -L../../lib -I../../include -I $XDAPPS/eigen/include/eigen3 -std=c++0x -lcqcgl1d -lsparseRoutines -lfftw3_threads -lfftw3 -lm -lpthread
  */
 #include "cqcgl1d.hpp"
 #include <iostream>
@@ -13,23 +13,27 @@ typedef std::complex<double> dcp;
 
 int main(){
 
-    switch(3){
+    switch(1){
 	
     case 1: {
-	const int N = 256; 
+	const int N = 512; 
 	const int L = 50;
-	int nstp = 2;
+	double h = 0.001;
+	Cqcgl1d cgl(N, L, h);
+	const int Ndim = cgl.Ndim;
+
+	int nstp = 2000;
 	int nqr = 1;
-	double h = 0.01; 
 	
-	ArrayXd A0(2*N) ;
+	ArrayXd A0(2*N) ; 
 	// prepare Gaussian curve initial condition
 	for(int i = 0; i < N; i++) {
 	    double x = (double)i/N*L - L/2.0; 
 	    A0(2*i) =  exp(-x*x/8.0);
-	}
-	Cqcgl1d cgl(N, L, h);  
-	std::pair<ArrayXXd, ArrayXXd> tmp = cgl.intgj(A0, nstp, nqr, nqr);
+	} 
+	ArrayXd a0 = cgl.Config2Fourier(A0).col(0);
+	
+	std::pair<ArrayXXd, ArrayXXd> tmp = cgl.intgj(a0, nstp, nqr, nstp);
 	ArrayXXd &AA = tmp.first;
 	
 	cout << AA.rows() << 'x' << AA.cols() << endl << "--------------" << endl;

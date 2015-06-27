@@ -55,7 +55,7 @@ public:
     ////////////////////////////////////////////////////////////
     //         constructor, destructor, copy assignment.      //
     ////////////////////////////////////////////////////////////
-    Cqcgl1d(int N = 256, double d = 50, double h = 0.01, 
+    Cqcgl1d(int N = 512, double d = 50, double h = 0.01, 
 	    double Mu = -0.1, double Br = 1.0, double Bi = 0.8,
 	    double Dr = 0.125, double Di = 0.5, double Gr = -0.1,
 	    double Gi = -0.6);
@@ -122,10 +122,16 @@ public:
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
     orbit2slice(const Ref<const ArrayXXd> &aa);
     MatrixXd ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x);
+    std::tuple<ArrayXXd, ArrayXd, ArrayXd>
+    reduceAllSymmetries(const Ref<const ArrayXXd> &aa);
+    std::tuple<ArrayXXd, ArrayXd, ArrayXd>
+    reduceIntg(const ArrayXd &a0, const size_t nstp, const size_t np = 1);
+    MatrixXd reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x);
     
     VectorXd multiF(const ArrayXXd &x, const int nstp, const double th, const double phi);
     pair<SpMat, VectorXd>
-    multishoot(const ArrayXXd &x, const int nstp, const double th, const double phi, bool doesPrint = false);
+    multishoot(const ArrayXXd &x, const int nstp, const double th,
+	       const double phi, bool doesPrint = false);
     std::pair<MatrixXd, VectorXd>
     newtonReq(const ArrayXd &a0, const double th, const double phi);
     std::tuple<ArrayXd, double, double, double>
@@ -189,9 +195,10 @@ public:
     CqcglRPO & operator=(const CqcglRPO &x);
 
     /*---------------  member functions ------------------------- */
-    VectorXd cgSolver(ConjugateGradient<SpMat> &CG, Eigen::SparseLU<SpMat> &solver,
-		      SpMat &H, VectorXd &JF, bool doesUseMyCG = true,
-		      bool doesPrint =  true);
+    
+    inline VectorXd cgSolver(ConjugateGradient<SpMat> &CG, Eigen::SparseLU<SpMat> &solver,
+			     SpMat &H, VectorXd &JF, bool doesUseMyCG = true,
+			     bool doesPrint =  true);
     std::tuple<ArrayXXd, double, double, double, double>
     findPO(const ArrayXXd &aa0, const double h0, const int nstp,
 	   const double th0, const double phi0,

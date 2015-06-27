@@ -28,10 +28,11 @@ Cqcgl1d::Cqcgl1d(int N, double d, double h,
     // initialize fft/ifft plan
 #ifdef TFFT  // mutlithread fft.
     if(!fftw_init_threads()){
-	printf("error create MultiFFT.\n");
+	fprintf(stderr, "error create MultiFFT.\n");
 	exit(1);
     }
-    fftw_plan_with_nthreads(omp_get_max_threads());
+    // fftw_plan_with_nthreads(omp_get_max_threads());
+    fftw_plan_with_nthreads(4);    
 #endif	/* TFFT */
 
     initFFT(Fv, 1);
@@ -64,7 +65,7 @@ Cqcgl1d::~Cqcgl1d(){
     freeFFT(jFb);
     freeFFT(jFc);
     
-    //fftw_cleanup();
+    fftw_cleanup();
   
 #ifdef TFFT
     fftw_cleanup_threads();
@@ -944,6 +945,32 @@ MatrixXd Cqcgl1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
 
 }
 
+/**
+ * @brief a wrap function => reduce all symmetries of an orbit
+ */
+std::tuple<ArrayXXd, ArrayXd, ArrayXd>
+Cqcgl1d::reduceAllSymmetries(const Ref<const ArrayXXd> &aa){
+    std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(aa);
+    return std::make_tuple(reduceReflection(std::get<0>(tmp)),
+			   std::get<1>(tmp), std::get<2>(tmp));
+}
+
+/**
+ * @brief a wrap function => integrate the system and reduce the symmetries
+ */
+std::tuple<ArrayXXd, ArrayXd, ArrayXd>
+Cqcgl1d::reduceIntg(const ArrayXd &a0, const size_t nstp, const size_t np){
+    return reduceAllSymmetries(intg(a0, nstp, np));
+}
+
+/**
+ * @brief a wrap function => reduce all the symmetries of covariant vectors
+ */
+MatrixXd Cqcgl1d::reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
+    std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(x);
+    return reflectVe(ve2slice(ve, x), std::get<0>(tmp).col(0));
+}
+
 /* -------------------------------------------------- */
 /* --------          shooting related     ----------- */
 /* -------------------------------------------------- */
@@ -1005,6 +1032,10 @@ Cqcgl1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
     nz.reserve(2*m*n*n);
     
     if(doesPrint) printf("Forming multishooting matrix:");
+
+#ifdef MULTISHOOT
+#pragma omp parallel for shared (DF, F, nz)
+#endif
     for(size_t i = 0 ; i < m; i++){
 	if(doesPrint) printf("%zd ", i);
 	std::pair<ArrayXXd, ArrayXXd> aadaa = intgj(x.col(i), nstp, nstp, nstp); 
@@ -1014,34 +1045,53 @@ Cqcgl1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
 	if(i < m-1){
 	    // J
 	    std::vector<Tri> triJ = triMat(J, i*n, i*n);
-	    nz.insert(nz.end(), triJ.begin(), triJ.end());
 	    // velocity
 	    std::vector<Tri> triv = triMat(velocity(aa.col(1)), i*n, m*n);
-	    nz.insert(nz.end(), triv.begin(), triv.end());
-	    // f(x_i) - x_{i+1}
-	    F.segment(i*n, n) = aa.col(1) - x.col(i+1);
+	    
+#ifdef MULTISHOOT
+#pragma omp critical
+#endif
+	    {
+		nz.insert(nz.end(), triJ.begin(), triJ.end());
+		nz.insert(nz.end(), triv.begin(), triv.end());
+		// f(x_i) - x_{i+1}
+		F.segment(i*n, n) = aa.col(1) - x.col(i+1);
+	    }
+	    
 	} else {
 	    ArrayXd gfx = Rotate(aa.col(1), th, phi); /* gf(x) */
 	    // g*J
-	    std::vector<Tri> triJ = triMat(Rotate(J, th, phi), i*n, i*n);     
-	    nz.insert(nz.end(), triJ.begin(), triJ.end());
+	    std::vector<Tri> triJ = triMat(Rotate(J, th, phi), i*n, i*n);
 	    // R*velocity
 	    std::vector<Tri> triv = triMat(Rotate(velocity(aa.col(1)), th, phi), i*n, m*n);
-	    nz.insert(nz.end(), triv.begin(), triv.end());
 	    // T_\tau * g * f(x_{m-1})
 	    VectorXd tx_trans = transTangent(gfx) ;
-	    std::vector<Tri> tritx_trans = triMat(tx_trans, i*n, m*n+1);
-	    nz.insert(nz.end(), tritx_trans.begin(), tritx_trans.end());
+	    std::vector<Tri> tritx_trans = triMat(tx_trans, i*n, m*n+1);	    
 	    // T_\phi * g * f(x_{m-1})
 	    ArrayXd tx_phase = phaseTangent( gfx );
 	    std::vector<Tri> tritx_phase = triMat(tx_phase, i*n, m*n+2);
-	    nz.insert(nz.end(), tritx_phase.begin(), tritx_phase.end());
-	    // g*f(x_{m-1}) - x_0
-	    F.segment(i*n, n) = gfx  - x.col((i+1)%m);
+	    
+#ifdef MULTISHOOT
+#pragma omp critical
+#endif	    
+	    {
+		nz.insert(nz.end(), triJ.begin(), triJ.end());
+		nz.insert(nz.end(), triv.begin(), triv.end());
+		nz.insert(nz.end(), tritx_trans.begin(), tritx_trans.end());
+		nz.insert(nz.end(), tritx_phase.begin(), tritx_phase.end());
+		// g*f(x_{m-1}) - x_0
+		F.segment(i*n, n) = gfx  - x.col((i+1)%m);
+	    }
 	}
+	
 	std::vector<Tri> triI = triDiag(n, -1, i*n, ((i+1)%m)*n);
+
+#ifdef MULTISHOOT
+#pragma omp critical
+#endif	    
 	nz.insert(nz.end(), triI.begin(), triI.end());
     }
+    
     if(doesPrint) printf("\n");
     
     DF.setFromTriplets(nz.begin(), nz.end());
@@ -1181,7 +1231,7 @@ CqcglRPO::CqcglRPO(int N, double d,
       Gi(Gi)
 {
     Ne = (N/3) * 2 - 1;		/* make it an odd number */
-    Ndim = 2 * Ne;	
+    Ndim = 2 * Ne;
 }
 
 CqcglRPO::CqcglRPO(const CqcglRPO &x) : N(x.N), d(x.d),
@@ -1197,13 +1247,16 @@ CqcglRPO & CqcglRPO::operator=(const CqcglRPO &x){
 CqcglRPO::~CqcglRPO(){ }
 
 
+/*********************************************************************** 
+ *                      member functions                               *
+ ***********************************************************************/
 
 /**
  * @brief solve the Ax = b problem
  */
-VectorXd CqcglRPO::cgSolver(ConjugateGradient<SpMat> &CG, SparseLU<SpMat> &solver,
-			    SpMat &H, VectorXd &JF, bool doesUseMyCG /* = true */,
-			    bool doesPrint /* = false */){
+inline VectorXd CqcglRPO::cgSolver(ConjugateGradient<SpMat> &CG, SparseLU<SpMat> &solver,
+				   SpMat &H, VectorXd &JF, bool doesUseMyCG /* = true */,
+				   bool doesPrint /* = false */){
     VectorXd dF;
     if(doesUseMyCG){
 	std::pair<VectorXd, std::vector<double>> cg = iterMethod::ConjGradSSOR<SpMat>
@@ -1233,14 +1286,14 @@ CqcglRPO::findPO(const ArrayXXd &aa0, const double h0, const int nstp,
 		 const bool doesUseMyCG /* = true */,
 		 const bool doesPrint /* = false */){
 
-    assert(Ndim == aa0.rows());
+    assert(Ndim == aa0.rows()); 
     const int M = aa0.cols();
     ArrayXXd x(aa0);
     
     double h = h0;
     double th = th0;
     double phi = phi0;
-    double lam = 1;
+    double lam = 1; 
 
     ConjugateGradient<SpMat> CG;
     SparseLU<SpMat> solver; // used in the pre-CG method
@@ -1290,7 +1343,7 @@ CqcglRPO::findPO(const ArrayXXd &aa0, const double h0, const int nstp,
 	    }
 	    else{
 		lam *= 10;
-		cout << "lam = "<< lam << endl;
+		// if(doesPrint) printf(" lam = %g\n", lam);
 		if( lam > 1e10) {
 		    fprintf(stderr, "lam = %g too large \n", lam);
 		    break;
@@ -1304,3 +1357,4 @@ CqcglRPO::findPO(const ArrayXXd &aa0, const double h0, const int nstp,
     VectorXd F = finalCgl.multiF(x, nstp, th, phi);
     return std::make_tuple(x, h, th, phi, F.norm());
 }
+

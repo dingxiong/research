@@ -1,5 +1,5 @@
 /* to comiple:
- * g++ -O3 test_cqcgl1d.cc  -L../../lib -I../../include -I $XDAPPS/eigen/include/eigen3 -std=c++0x -lcqcgl1d -lsparseRoutines -lfftw3_threads -lfftw3 -lm -lpthread
+ * g++ -O3 test_cqcgl1d.cc  -L../../lib -I../../include -I $XDAPPS/eigen/include/eigen3 -std=c++0x -lcqcgl1d -lsparseRoutines -lmyfft_threads -lfftw3_threads -lfftw3 -lm -lpthread
  */
 #include "cqcgl1d.hpp"
 #include <iostream>
@@ -19,10 +19,10 @@ int main(){
 	const int N = 512; 
 	const int L = 50;
 	double h = 0.001;
-	Cqcgl1d cgl(N, L, h);
+	Cqcgl1d cgl(N, L, h, true, 0);
 	const int Ndim = cgl.Ndim;
 
-	int nstp = 2000;
+	int nstp = 1000;
 	int nqr = 1;
 	
 	ArrayXd A0(2*N) ; 
@@ -32,11 +32,13 @@ int main(){
 	    A0(2*i) =  exp(-x*x/8.0);
 	} 
 	ArrayXd a0 = cgl.Config2Fourier(A0).col(0);
-	
+
+	// ArrayXXd AA = cgl.intg(a0, nstp, nqr);
 	std::pair<ArrayXXd, ArrayXXd> tmp = cgl.intgj(a0, nstp, nqr, nstp);
-	ArrayXXd &AA = tmp.first;
+	ArrayXXd &AA = tmp.second;
 	
 	cout << AA.rows() << 'x' << AA.cols() << endl << "--------------" << endl;
+	cout << cgl.trueNjacv << endl;
 	//cout << AA.col(2) << endl;
 	//cout << A0 << endl;
 	break;

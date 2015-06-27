@@ -1,6 +1,5 @@
 #include "cqcgl1d.hpp"
 #include <cmath>
-#include <omp.h>
 #include <iostream>
 using std::cout;
 using std::endl;
@@ -15,62 +14,30 @@ using namespace Eigen;
 /* ----                constructor/destructor     ------- */
 /* ------------------------------------------------------ */
 Cqcgl1d::Cqcgl1d(int N, double d, double h,
+		 bool enableJacv, int Njacv,
 		 double Mu, double Br, double Bi,
 		 double Dr, double Di, double Gr,
-		 double Gi)
+		 double Gi,  int threadNum)
     : N(N), d(d), h(h),
+      enableJacv(enableJacv),
+      Njacv(Njacv),
       Mu(Mu), Br(Br), Bi(Bi),
       Dr(Dr), Di(Di), Gr(Gr),
-      Gi(Gi)
+      Gi(Gi),
+      
+      Fv(N, 1, threadNum),
+      Fa(N, 1, threadNum),
+      Fb(N, 1, threadNum),
+      Fc(N, 1, threadNum),
+      jFv(N, calJacv(), threadNum),
+      jFa(N, calJacv(), threadNum),
+      jFb(N, calJacv(), threadNum),
+      jFc(N, calJacv(), threadNum)
 {
     CGLInit(); // calculate coefficients.
-  
-    // initialize fft/ifft plan
-#ifdef TFFT  // mutlithread fft.
-    if(!fftw_init_threads()){
-	fprintf(stderr, "error create MultiFFT.\n");
-	exit(1);
-    }
-    // fftw_plan_with_nthreads(omp_get_max_threads());
-    fftw_plan_with_nthreads(4);    
-#endif	/* TFFT */
-
-    initFFT(Fv, 1);
-    initFFT(Fa, 1);
-    initFFT(Fb, 1);
-    initFFT(Fc, 1);
-
-    /* Ndim must be calculated in CGLInit() */
-    initFFT(jFv, Ndim+1);
-    initFFT(jFa, Ndim+1);
-    initFFT(jFb, Ndim+1);
-    initFFT(jFc, Ndim+1);
 }
 
-Cqcgl1d::Cqcgl1d(const Cqcgl1d &x) : N(x.N), d(x.d), h(x.h),
-				     Mu(x.Mu), Br(x.Br), Bi(x.Bi),
-				     Dr(x.Dr), Di(x.Di), Gr(x.Gr),
-				     Gi(x.Gi)
-{}
-
-Cqcgl1d::~Cqcgl1d(){
-    // destroy fft/ifft plan
-    freeFFT(Fv);
-    freeFFT(Fa);
-    freeFFT(Fb);
-    freeFFT(Fc);
-    
-    freeFFT(jFv);
-    freeFFT(jFa);
-    freeFFT(jFb);
-    freeFFT(jFc);
-    
-    fftw_cleanup();
-  
-#ifdef TFFT
-    fftw_cleanup_threads();
-#endif	/* TFFT */
-}
+Cqcgl1d::~Cqcgl1d(){}
 
 Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
     return *this;
@@ -79,6 +46,29 @@ Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
 /* ------------------------------------------------------ */
 /* ----                Internal functions         ------- */
 /* ------------------------------------------------------ */
+
+/**
+ * @brief calculate the number of effective modes: Ne
+ * @note N must be initialized first
+ */
+inline int Cqcgl1d::calNe(){
+    return (N/3) * 2 - 1;
+}
+
+/**
+ * @brief calculate the dimension of fft tangent space
+ *
+ * enableJacv :
+ *             false  => M = 0
+ *
+ *             true   =>  Njacv <=0 => M = Ndim + 1
+ *                        Njacv >0  => M = Njacv + 1          
+ * 
+ * @note N  and enableJacv must be initialized first
+ */
+inline int Cqcgl1d::calJacv(){
+    return enableJacv ? (Njacv > 0 ? Njacv + 1 : 2 * calNe() + 1) : 0;
+}
 
 /**
  * @brief set the corret dimension of the system
@@ -99,8 +89,9 @@ Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
  *          0, 1, 2,... Nplus*2, Nplus*2+1,... 2*Ne-1
  */
 void Cqcgl1d::CGLInit(){
+    trueNjacv = calJacv() - 1;
     // Ne = N - 1 			/* no dealiasing */
-    Ne = (N/3) * 2 - 1;		/* make it an odd number */
+    Ne = calNe();		/* make it an odd number */
     Ndim = 2 * Ne;	
     aliasStart = (Ne + 1) / 2;
     aliasEnd = N - (Ne - 1) / 2;
@@ -205,20 +196,22 @@ ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
     return aa;
 }
 
-void Cqcgl1d::dealias(CGLfft &Fv){
+void Cqcgl1d::dealias(FFT &Fv){
     Fv.v1.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, Fv.v1.cols());
 }
 
-
-void Cqcgl1d::NL(CGLfft &f){
-    ifft(f);
+/* 3 different stage os ETDRK4:
+ *  v --> ifft(v) --> fft(g(ifft(v)))
+ * */
+void Cqcgl1d::NL(FFT &f){
+    f.ifft();
     ArrayXcd A2 = f.v2 * f.v2.conjugate();
     f.v2 =  dcp(Br, Bi) * f.v2 * A2 + dcp(Gr, Gi) * f.v2 * A2.square();
-    fft(f);
+    f.fft();
 }
 
-void Cqcgl1d::jNL(CGLfft &f){
-    ifft(f); 
+void Cqcgl1d::jNL(FFT &f){
+    f.ifft(); 
     ArrayXcd A = f.v2.col(0);
     ArrayXcd aA2 = A * A.conjugate();
     ArrayXcd A2 = A.square();
@@ -226,54 +219,13 @@ void Cqcgl1d::jNL(CGLfft &f){
     dcp G(Gr, Gi);
     f.v2.col(0) = dcp(Br, Bi) * A * aA2 + dcp(Gr, Gi) * A * aA2.square();
 
-    f.v2.rightCols(Ndim) = f.v2.rightCols(Ndim).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
-    	f.v2.rightCols(Ndim).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
+    const int M = f.v2.cols() - 1;
+    f.v2.rightCols(M) = f.v2.rightCols(M).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
+    	f.v2.rightCols(M).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
 
-    fft(f);
+    f.fft();
 }
 
-
-void Cqcgl1d::fft(CGLfft &f){
-    fftw_execute(f.p);  
-}
-
-void Cqcgl1d::ifft(CGLfft &f){
-    fftw_execute(f.rp);
-    f.v2 /= N;
-}
-
-void Cqcgl1d::initFFT(CGLfft &f, int M){
-    f.c1 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
-    f.c2 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
-    f.c3 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
-    //build the maps.
-    new (&(f.v1)) Map<ArrayXXcd>( (dcp*)&(f.c1[0][0]), N, M );
-    new (&(f.v2)) Map<ArrayXXcd>( (dcp*)&(f.c2[0][0]), N, M );
-    new (&(f.v3)) Map<ArrayXXcd>( (dcp*)&(f.c3[0][0]), N, M );
-
-    if (1 == M){
-	f.p = fftw_plan_dft_1d(N, f.c2, f.c3, FFTW_FORWARD, FFTW_MEASURE);
-	f.rp = fftw_plan_dft_1d(N, f.c1, f.c2, FFTW_BACKWARD, FFTW_MEASURE);
-    } else{
-	int n[] = { N };
-	f.p = fftw_plan_many_dft(1, n, M, f.c2, n, 1, N,
-				 f.c3, n, 1, N, FFTW_FORWARD, FFTW_MEASURE);
-	f.rp = fftw_plan_many_dft(1, n, M, f.c1, n, 1, N,
-				  f.c2, n, 1, N, FFTW_BACKWARD, FFTW_MEASURE);
-    }
-}
-
-void Cqcgl1d::freeFFT(CGLfft &f){
-    fftw_destroy_plan(f.p);
-    fftw_destroy_plan(f.rp);
-    fftw_free(f.c1);
-    fftw_free(f.c2);
-    fftw_free(f.c3);
-    /* releae the map */
-    new (&(f.v1)) Map<ArrayXXcd>(NULL, 0, 0);
-    new (&(f.v2)) Map<ArrayXXcd>(NULL, 0, 0);
-    new (&(f.v3)) Map<ArrayXXcd>(NULL, 0, 0);
-}
 
 /** @brief transform conjugate matrix to its real form */
 ArrayXXd Cqcgl1d::C2R(const ArrayXXcd &v){
@@ -365,6 +317,25 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
     return make_pair(uu, duu);
 }
 
+ArrayXXd
+Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
+	       const size_t nstp){
+    assert( Ndim == a0.rows() ); // check the dimension of initial condition.
+    jFv.v1 << R2C(pad(a0)), R2C(pad(v));
+
+    for(size_t i = 1; i < nstp + 1; i++){
+	jNL(jFv); jFa.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q; 
+	jNL(jFa); jFb.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q;
+	jNL(jFb); jFc.v1 = jFa.v1.colwise() * E2 + (2.0*jFb.v3 - jFv.v3).colwise() * Q;
+	jNL(jFc); 
+    
+	jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 +
+	    (jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
+
+	dealias(jFv);
+    }
+    return unpad(C2R(jFv.v1.rightCols(trueNjacv)));
+}
 
 /* -------------------------------------------------- */
 /* -------  Fourier/Configure transformation -------- */
@@ -381,7 +352,7 @@ ArrayXXd Cqcgl1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
     
     for(size_t i = 0; i < m; i++){
 	Fv.v1 = R2C(paa.col(i));
-	ifft(Fv);
+	Fv.ifft();
 	AA.col(i) = C2R(Fv.v2);
     }
     
@@ -400,7 +371,7 @@ ArrayXXd Cqcgl1d::Config2Fourier(const Ref<const ArrayXXd> &AA){
     
     for(size_t i = 0; i < m; i++){
 	Fv.v2 = R2C(AA.col(i));
-	fft(Fv);
+	Fv.fft();
 	aa.col(i) = unpad(C2R(Fv.v3));
     }
     

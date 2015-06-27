@@ -10,7 +10,7 @@
 #ifndef CQCGL1D_H
 #define CQCGL1D_H
 
-#include <fftw3.h>
+// #include <fftw3.h>
 #include <complex>
 #include <utility>
 #include <Eigen/Dense>
@@ -18,6 +18,7 @@
 #include <vector>
 #include "sparseRoutines.hpp"
 #include "iterMethod.hpp"
+#include "myfft.hpp"
 using std::pair; using std::make_pair;
 using Eigen::MatrixXd; using Eigen::VectorXd;
 using Eigen::MatrixXcd; using Eigen::VectorXcd;
@@ -41,7 +42,10 @@ public:
     const int N;		/* dimension of FFT */
     const double d;
     const double h;
-
+    const bool enableJacv;
+    const int Njacv;
+    
+    int trueNjacv;    		/* true tangent space dimension */
     int Ne;			/* effective number of modes */
     int Ndim;			/* dimension of state space */
     int aliasStart, aliasEnd;	/* start and end index of
@@ -55,21 +59,27 @@ public:
     ////////////////////////////////////////////////////////////
     //         constructor, destructor, copy assignment.      //
     ////////////////////////////////////////////////////////////
-    Cqcgl1d(int N = 512, double d = 50, double h = 0.01, 
+    Cqcgl1d(int N = 512, double d = 50, double h = 0.01,
+	    bool enableJacv = false, int Njacv = 1,
 	    double Mu = -0.1, double Br = 1.0, double Bi = 0.8,
 	    double Dr = 0.125, double Di = 0.5, double Gr = -0.1,
-	    double Gi = -0.6);
-    explicit Cqcgl1d(const Cqcgl1d &x);
+	    double Gi = -0.6, int threadNum = 4);
     ~Cqcgl1d();
     Cqcgl1d & operator=(const Cqcgl1d &x);
 
     ////////////////////////////////////////////////////////////
     //                    member functions.                   //
     ////////////////////////////////////////////////////////////
-    ArrayXXd intg(const ArrayXd &a0, const size_t nstp, const size_t np = 1);
+
+    ArrayXXd
+    intg(const ArrayXd &a0, const size_t nstp, const size_t np = 1);
     pair<ArrayXXd, ArrayXXd>
     intgj(const ArrayXd &a0, const size_t nstp, const size_t np = 1,
 	  const size_t nqr = 1);
+    ArrayXXd
+    intgv(const ArrayXd &a0, const ArrayXXd &v,
+	  const size_t nstp);
+
     ArrayXXd pad(const Ref<const ArrayXXd> &aa);
     ArrayXXd generalPadding(const Ref<const ArrayXXd> &aa);
     ArrayXXcd padcp(const Ref<const ArrayXXcd> &x);
@@ -142,30 +152,16 @@ public:
 protected:
     /****    global variable definition.   *****/
     enum { M = 64 }; // number used to approximate the complex integral.
-
-    /** @brief Structure for convenience of rfft.   */  
-    struct CGLfft{ 
-	/* 3 different stage os ETDRK4:
-	 *  v --> ifft(v) --> fft(g(ifft(v)))
-	 * */
-	fftw_plan p, rp;  // plan for fft/ifft.
-	fftw_complex *c1, *c2, *c3; // c1 = v, c2 = ifft(v), c3 = fft(g(ifft(v)))
-	Map<ArrayXXcd> v1, v2, v3;
-
-	CGLfft() : v1(NULL, 0, 0), v2(NULL, 0, 0), v3(NULL, 0, 0) {}
-    };
-  
-    CGLfft Fv, Fa, Fb, Fc; // create four fft&ifft structs for forward/backward fft transform.
-    CGLfft jFv, jFa, jFb, jFc;
+    
+    FFT Fv, Fa, Fb, Fc; // create four fft&ifft structs for forward/backward fft transform.
+    FFT jFv, jFa, jFb, jFc;
   
     void CGLInit();
-    void NL( CGLfft &f);
-    void jNL(CGLfft &f);
-    void fft(CGLfft &f);
-    void ifft(CGLfft &f);
-    void initFFT(CGLfft &f, int M);
-    void freeFFT(CGLfft &f);
-    void dealias(CGLfft &Fv);
+    void NL( FFT &f);
+    void jNL(FFT &f);
+    void dealias(FFT &Fv);
+    inline int calNe();
+    inline int calJacv();
 };
 
 

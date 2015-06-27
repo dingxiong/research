@@ -5,22 +5,22 @@ OPTIM = -O3 -msse2 -msse4 -march=corei7
 INCLUDE = ../../include
 EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 
-CFLAGS = -std=c++0x
+CFLAGS = -std=c++0x 
 
 FFTW_THREADS = no
 ifeq ($(FFTW_THREADS), yes)
 CFLAGS += -DTFFT
 endif
 
-MULTISHOOT_THREADS = no
-ifeq ($(MULTISHOOT_THREADS), yes)
-CFLAGS += -DMULTISHOOT
+CLEANUP = no
+ifeq ($(CLEANUP), yes)
+CFLAGS += -DCLEAN
 endif
 
 
-SOURCE = cqcgl1d.cc 
-SHARED = libcqcgl1d.so
-STATIC = libcqcgl1d.a
+SOURCE = myfft.cc
+SHARED = libmyfft.so
+STATIC = libmyfft.a
 
 all : $(SHARED) $(STATIC) 
 

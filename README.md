@@ -1,5 +1,7 @@
 # My research C++ code
+This repository contains all my code for research at `Center for Nonliear Science` at School of Physics in Georgia Institute of Technology.
 
+It is mainly C++ code and a few Python/Matlab bindings. Large datasets are not committed.
 ## folder structure 
 * **source**   C++ files and their Matlab/Python binding files
 * **include**  header files

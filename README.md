@@ -1,7 +1,8 @@
-# My research C++ code -- old FFT branch
+# My research C++ code -- no reflection symmetry branch
 
 This branch contains the old implementation of cqcgl1d class,
-It does not dealiase the FFT.
+It does not dealiase the FFT. Also it keeps the `N/2` mode, 
+so it has problem with reflection symmetry
 
 ## folder structure 
 * **source**   C++ files and their Matlab/Python binding files

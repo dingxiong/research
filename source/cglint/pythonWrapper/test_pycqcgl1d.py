@@ -5,7 +5,7 @@ from time import time
 from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
-case = 1
+case = 3
 
 if case == 1:
     cgl = pyCqcgl1d(512, 50, 0.01, True, 0,
@@ -44,8 +44,10 @@ if case == 2:
 
 # test plotting fiugres
 if case == 3:
-    cgl = pyCqcgl1d(256, 50, 0.01, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
-    A0 = rand(512)
+    cgl = pyCqcgl1d(512, 50, 0.01, False, 0,
+                    -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
+                    4)
+    A0 = rand(512*2)
     a0 = cgl.Config2Fourier(A0)
     aa = cgl.intg(a0, 1000, 1)
     AA = cgl.Fourier2Config(aa)

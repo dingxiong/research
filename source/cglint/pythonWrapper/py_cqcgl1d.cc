@@ -66,8 +66,9 @@ class pyCqcgl1d : public Cqcgl1d {
      */
   
 public:
-    pyCqcgl1d(int N, double d, double h, double Mu,
+    pyCqcgl1d(int N, double d, double h, 
 	      bool enableJacv, int Njacv,
+	      double Mu,
 	      double Br, double Bi, double Dr,
 	      double Di, double Gr, double Gi,
 	      int threadNum) :

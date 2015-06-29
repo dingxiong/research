@@ -76,6 +76,21 @@ namespace iterMethod {
 	  const int restart,
 	  const int maxit, const double rtol);
 
+    double chooseTheta(const double g0, const double g1, const double gp0,
+		       const double theta_min, const double theta_max);
+
+    template<class Jacv, class Fx>
+    void InexactNewtonBacktrack( const Fx &fx, const Jacv &jacv,
+				 const ArrayXd &x0,
+				 const double tol,
+				 const int btMaxIt = 20,
+				 const int maxit = 100,
+				 const double eta0 = 1e-4,
+				 const double t = 1e-4,
+				 const double theta_min = 0.1,
+				 const double theta_max = 0.5,
+				 const int GmresRestart = 30,
+				 const int GmresMaxit = 100);
 }
 
 
@@ -270,6 +285,7 @@ namespace iterMethod {
 	int M = restart;
 	VectorXd x = x0;
 	double bnrm2 = b.norm();
+	if ( bnrm2 == 0.0 ) bnrm2 = 1.0;
 	std::vector<double> errVec;	/* error at each iteration */
 
 	/* initialize workspace */
@@ -367,9 +383,117 @@ namespace iterMethod {
 	  const int restart,
 	  const int maxit, const double rtol){
 
-	return Gmres0([&A](VectorXd x){return A * x;}, b, x0, restart, maxit, rtol);
+	return Gmres0([&A](const VectorXd &x){return A * x;}, b, x0, restart, maxit, rtol);
     }
 
+
+    //////////////////////////////////////////////////////////////////////
+    //                    Netwon methods related                        //
+    //////////////////////////////////////////////////////////////////////
+    
+    /**
+     * @brief Inexact Newton Backtracking method
+     *
+     *   try to solve problem F(x) = 0 
+     *--------------------------------------------------------------------- 
+     *        "Inexact Newton Methods Applied to Under–Determined Systems
+     *                    by. Joseph P. Simonis. "
+     *
+     * Algorithm BINMU: 
+     *     Let x0 and t in (0,1), eta_max in [0,1), and
+     *         0 < theta_min< theta_max < 1 be given.
+     *         
+     *     For k = 0, 1, 2, ...; do
+     *
+     *         Find some bar_eta_k in [0, eta_max] and bar_s_k that satisfy
+     *            || F(x_k) + F′(x_k) * bar_s_k ||  ≤ bar_eta_k * ||F(x_k)||,
+     * 
+     *         Evaluate F(x_k+ s_k). Set eta_k = bar_eta_k,  s_k = bar_s_k.
+     *         While || F(x_k+ s_k) || > [1 − t(1 − eta_k)] * ||F(x_k)||, do
+     *               Choose theta in [theta_min, theta_max].
+     *               Update s_k = theta * s_k and eta_k = 1 − theta(1 − eta_k).
+     *               Evaluate F(x_k+ s_k)
+     *               
+     *         Set x_{k+1}= x_k+ s_k.
+     *----------------------------------------------------------------------
+     *
+     * In the above, we use GMRES to find s_k :
+     *   F'(x_k) * s_k = - F(x_k) with relative tolerance bar_eta_k.
+     * Also, for simplicity, we choose bar_eta_k to be constant.
+     *
+     * @param[in] fx             evaluate f(x)
+     * @param[in] jacv           perform J(x)*dx. Symtex is jacv(x, dx)
+     * @param[in] x0             initial guess
+     * @param[in] btMaxIt        maximal backtracking iteration number
+     *                           theta_max ^ btMaxIt => least shrink if fails
+     * @param[in] tol            convergence tollerance
+     * @param[in] eta0           initial value of eta
+     * @param[in] theta_min      minimal value of forcing parameter
+     * @param[in] theta_max      maximal value of forcing parameter
+     *                           set 0.5 => at least shrink 1/2
+     * @param[in] GmresRestart   gmres restart number
+     * @param[in] GmresMaxit     gmres maximal iteration number 
+     */
+    template<class Fx, class Jacv>
+    std::tuple<VectorXd, std::vector<double>, int>
+    InexactNewtonBacktrack( const Fx &fx, const Jacv &jacv,
+			    const ArrayXd &x0,
+			    const double tol,
+			    const int btMaxIt,
+			    const int maxit,
+			    const double eta0,
+			    const double t,
+			    const double theta_min,
+			    const double theta_max,
+			    const int GmresRestart,
+			    const int GmresMaxit){
+	const int N = x0.size();
+	VectorXd x(x0);
+	std::vector<double> errVec; // errors
+	
+	for (size_t i = 0; i < maxit; i++){
+
+	    ////////////////////////////////////////////////
+	    // test convergence first
+	    VectorXd F = fx(x);  
+	    double Fnorm = F.norm();
+	    errVec.push_back(Fnorm);
+	    if( Fnorm < tol) return std::make_tuple(x, errVec, 0);
+
+	    ////////////////////////////////////////////////
+	    //solve ||F + F's|| < eta * ||F||
+	    double eta = eta0;
+	    std::tuple<VectorXd, std::vector<double>, int>
+		tmp = Gmres0([&x, &jacv](const VectorXd &t){ return jacv(x, t); },
+			     -F, VectorXd::Zero(N), GmresRestart, GmresMaxit, eta);
+	    if(std::get<2>(tmp) != 0) {
+		fprintf(stderr, "GMRES not converged ! \n");
+	    }
+	    VectorXd &s = std::get<0>(tmp); // update vector 
+
+	    ////////////////////////////////////////////////
+	    // use back tracking method to find appropariate scale
+	    double initgp0 = 2 * F.dot(jacv(x, s));
+	    double theta = 1;
+	    for(size_t j = 0; j < btMaxIt; j++){
+		VectorXd F1 = fx(x + s);
+		double F1norm = F1.norm();
+		if(F1norm < (1 - t * (1 - eta)) * Fnorm ) break;
+		double gp0 = theta * initgp0;
+		theta = chooseTheta(Fnorm, F1norm, gp0, theta_min, theta_max);
+		s *= theta;
+		eta = 1 - theta * (1 - eta);
+		
+		if(j == btMaxIt - 1) fprintf(stderr, "INB backtrack not converged !\n");
+	    }
+	    x += s; 		// update x
+	}
+
+	// if finish the outer loop => not converged
+	fprintf(stderr, "INB not converged !\n");
+	return std::make_tuple(x, errVec, 1); 
+    }
+    
 }
 
 #endif	/* ITERMETHOD_H */

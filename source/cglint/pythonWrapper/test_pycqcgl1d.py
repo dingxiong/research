@@ -2,7 +2,7 @@ import numpy as np
 from numpy.random import rand
 from numpy.fft import fft, ifft
 from time import time
-from py_cqcgl1d import pyCqcgl1d
+from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
 case = 1

@@ -394,7 +394,7 @@ public:
     
 };
 
-BOOST_PYTHON_MODULE(py_cqcgl1d) {
+BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
     bn::initialize();    
     bp::class_<Cqcgl1d>("Cqcgl1d") ;
     bp::class_<CqcglRPO>("CqcglRPO");

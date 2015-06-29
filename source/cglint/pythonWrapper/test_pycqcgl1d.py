@@ -5,7 +5,7 @@ from time import time
 from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
-case = 3
+case = 1
 
 if case == 1:
     cgl = pyCqcgl1d(512, 50, 0.01, True, 0,
@@ -15,7 +15,7 @@ if case == 1:
     a0 = rand(Ndim)
     # aa = cgl.intg(a0, 50000, 1)
     t = time()
-    aa, daa = cgl.intgj(a0, 2000, 1, 2000)
+    aa, daa = cgl.intgj(a0, 1000, 1, 1000)
     print time() - t
 
 # compare fft with Fourier2Config

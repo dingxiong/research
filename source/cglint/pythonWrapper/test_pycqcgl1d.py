@@ -2,13 +2,15 @@ import numpy as np
 from numpy.random import rand
 from numpy.fft import fft, ifft
 from time import time
-from py_cqcgl1dTFFT import pyCqcgl1d
+from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
 case = 1
 
 if case == 1:
-    cgl = pyCqcgl1d(512, 50, 0.01, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    cgl = pyCqcgl1d(512, 50, 0.01, True, 0,
+                    -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
+                    4)
     Ndim = cgl.Ndim
     a0 = rand(Ndim)
     # aa = cgl.intg(a0, 50000, 1)

@@ -13,6 +13,11 @@ using namespace Eigen;
 /* ------------------------------------------------------ */
 /* ----                constructor/destructor     ------- */
 /* ------------------------------------------------------ */
+
+/**
+ * @param[in] enableJacv   false : forbid tangent space integration 
+ * @param[in] Njacv        <= 0 integrate Jacobian
+ */
 Cqcgl1d::Cqcgl1d(int N, double d, double h,
 		 bool enableJacv, int Njacv,
 		 double Mu, double Br, double Bi,

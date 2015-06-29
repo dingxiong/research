@@ -7,15 +7,9 @@ EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 
 CFLAGS = -std=c++0x
 
-MULTISHOOT_THREADS = no
-ifeq ($(MULTISHOOT_THREADS), yes)
-CFLAGS += -DMULTISHOOT
-endif
-
-
-SOURCE = cqcgl1d.cc 
-SHARED = libcqcgl1d.so
-STATIC = libcqcgl1d.a
+SOURCE = iterMethod.cc
+SHARED = libiterMethod.so
+STATIC = libiterMethod.a
 
 all : $(SHARED) $(STATIC) 
 

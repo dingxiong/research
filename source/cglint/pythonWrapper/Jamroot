@@ -1,13 +1,21 @@
+# some points need to be memorized :
+# 
+#  1) for some reason, the source file must be compiled except the bottom library
+#     For example, fftw3.so can be linked, but myfft.so cannot. because myfft.so
+#     calls fftw3.so, so it is not in the bottom rank. The same goes to cqcgl1d.so
+#     
+#  2) It is better to use lib rather than cxxflags
+# 
 use-project /boost : /usr/local/home/xiong/apps/sources/boost_1_57_0 ;
 
 project
-  : requirements <library>/boost/python//boost_python 
-      		 <implicit-dependency>/boost//headers 
-		 <include>/usr/local/home/xiong/apps/BoostNumpy/include/
-		 <include>../../../include
-		 <include>/usr/local/home/xiong/apps/eigen/include/eigen3
-  : usage-requirements <implicit-dependency>/boost//headers 	 
-  ;
+: requirements <library>/boost/python//boost_python 
+<implicit-dependency>/boost//headers 
+<include>/usr/local/home/xiong/apps/BoostNumpy/include/
+<include>../../../include
+<include>/usr/local/home/xiong/apps/eigen/include/eigen3
+: usage-requirements <implicit-dependency>/boost//headers 	 
+;
 
 import python ;
 
@@ -17,20 +25,30 @@ variant release_assert : <optimization>speed <inlining>full <debug-symbols>off <
 lib np : : <name>boost_numpy <file>/usr/local/home/xiong/apps/BoostNumpy/lib/libboost_numpy.so ;
 lib fftw3 : : <name>fftw3 <file>/usr/lib/libfftw3.so ;
 lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/libfftw3_threads.so ;
+lib sparse : : <name>sparseRoutines <file>/usr/local/home/xiong/00git/research/lib/libsparseRoutines.so ;
+lib iter : : <name>iterMethod <file>/usr/local/home/xiong/00git/research/lib/libiterMethod.so ;
+lib myfft : : <name>myfft_clean <file>/usr/local/home/xiong/00git/research/lib/libmyfft_clean.so ;
+lib myfft_threads : : <name>myfft_clean_threads <file>/usr/local/home/xiong/00git/research/lib/libmyfft_clean_threads.so ;
+lib cqcgl : : <name>cqcgl1d <file>/usr/local/home/xiong/00git/research/lib/libcqcgl1d.so ;
+
 
 choice = 1 ;
 
-# python-extension py_cqcgl1d : py_cqcgl1d.cc np fftw3 ../../sparseRoutines/sparseRoutines.cc ../cqcgl1d.cc 
-# 		 : <variant>release_assert <optimization>speed 
-# 		 : <link>shared <cxxflags>-std=c++11 
-# 		 ;
-
 if $(choice) = 1 {
-python-extension py_cqcgl1dTFFT : py_cqcgl1d.cc np fftw3 fftw3_threads ../../sparseRoutines/sparseRoutines.cc ../cqcgl1d.cc 
-		 : <variant>release_assert <optimization>speed 
-		 : <link>shared <cxxflags>"-std=c++11 -DTFFT"
-		 ;		
+  python-extension py_cqcgl1d : py_cqcgl1d.cc np sparse fftw3 iter ../../myfft/myfft.cc ../cqcgl1d.cc 
+  : <variant>release_assert <optimization>speed
+  : <link>shared <cxxflags>"-std=c++11" 
+  ;
 
+  install py_extension : py_cqcgl1d : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
+ 
+}
 
-install py_extension : py_cqcgl1dTFFT : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
+else if $(choice) = 2 {
+  python-extension py_cqcgl1d_threads : py_cqcgl1d.cc myfft_threads cqcgl sparse np fftw3 fftw3_threads 
+  : <variant>release_assert <optimization>speed 
+  : <link>shared <cxxflags>-std=c++11
+  ;
+  
+  install py_extension : py_cqcgl1d_threads : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
 }

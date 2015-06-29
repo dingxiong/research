@@ -67,10 +67,13 @@ class pyCqcgl1d : public Cqcgl1d {
   
 public:
     pyCqcgl1d(int N, double d, double h, double Mu,
+	      bool enableJacv, int Njacv,
 	      double Br, double Bi, double Dr,
-	      double Di, double Gr, double Gi) :
-	Cqcgl1d(N, d, h, Mu, Br, Bi, Dr, Di, Gr, Gi) {}
-
+	      double Di, double Gr, double Gi,
+	      int threadNum) :
+	Cqcgl1d(N, d, h, enableJacv, Njacv,
+		Mu, Br, Bi, Dr, Di, Gr, Gi, threadNum) {}
+    
 
     /* wrap the velocity */
     bn::ndarray PYvelocity(bn::ndarray a0){
@@ -135,6 +138,18 @@ public:
 	return bp::make_tuple(copy2bn(tmp.first), copy2bn(tmp.second));
     }
 
+    /* wrap intgv */
+    bn::ndarray PYintgv(const bn::ndarray &a0, const bn::ndarray &v,
+		      size_t nstp){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	getDims(v, m, n);
+	Map<ArrayXXd> tmpv((double*)v.get_data(), m, n);
+	return copy2bn( intgv(tmpa, tmpv, nstp));
+    }
+
+    
     /* wrap Fourier2Config */
     bn::ndarray PYFourier2Config(bn::ndarray aa){
 	int m, n;
@@ -378,17 +393,20 @@ public:
     
 };
 
-BOOST_PYTHON_MODULE(py_cqcgl1dTFFT) {
+BOOST_PYTHON_MODULE(py_cqcgl1d) {
     bn::initialize();    
     bp::class_<Cqcgl1d>("Cqcgl1d") ;
     bp::class_<CqcglRPO>("CqcglRPO");
     
     bp::class_<pyCqcgl1d, bp::bases<Cqcgl1d> >("pyCqcgl1d", bp::init<int, double, double,
+					       bool, int,
 					       double, double, double, double, double,
-					       double, double >())
+					       double, double,
+					       int >())
 	.def_readonly("N", &pyCqcgl1d::N)
 	.def_readonly("d", &pyCqcgl1d::d)
 	.def_readonly("h", &pyCqcgl1d::h)
+	.def_readonly("trueNjacv", &pyCqcgl1d::trueNjacv)
 	.def_readonly("Mu", &pyCqcgl1d::Mu)
 	.def_readonly("Br", &pyCqcgl1d::Br)
 	.def_readonly("Bi", &pyCqcgl1d::Bi)
@@ -404,6 +422,7 @@ BOOST_PYTHON_MODULE(py_cqcgl1dTFFT) {
 	.def("unpad", &pyCqcgl1d::PYunpad)
 	.def("intg", &pyCqcgl1d::PYintg)
 	.def("intgj", &pyCqcgl1d::PYintgj)
+	.def("intgv", &pyCqcgl1d::PYintgv)
 	.def("Fourier2Config", &pyCqcgl1d::PYFourier2Config)
 	.def("Config2Fourier", &pyCqcgl1d::PYConfig2Fourier)
 	.def("Fourier2ConfigMag", &pyCqcgl1d::PYFourier2Config)
@@ -426,7 +445,6 @@ BOOST_PYTHON_MODULE(py_cqcgl1dTFFT) {
 	.def("Rotate", &pyCqcgl1d::PYRotate)
 	.def("rotateOrbit", &pyCqcgl1d::PYrotateOrbit)
 	;
-
 
     bp::class_<pyCqcglRPO, bp::bases<CqcglRPO> >("pyCqcglRPO", bp::init<int, double,
 						 double, double, double, double, double,

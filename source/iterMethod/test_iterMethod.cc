@@ -1,5 +1,5 @@
 /* to compile :
- * g++ test_iterMethod.cc  -O3 -march=corei7 -msse2 -msse4 -I $XDAPPS/eigen/include/eigen3 -std=c++11 -I ../../include
+ * g++ test_iterMethod.cc  -O3 -march=corei7 -msse2 -msse4 -I $XDAPPS/eigen/include/eigen3 -std=c++11 -I ../../include -L ../../lib -literMethod
  */
 #include "iterMethod.hpp"
 #include <cmath>

@@ -34,7 +34,7 @@ protected:
 	    dxdt[2] = b + x[2] * (x[0] - c);
 	}
     };
-
+    
     /**
      * @brief calculate J * dx for Rossler
      *
@@ -62,11 +62,12 @@ protected:
     struct StoreStates{
 	ArrayXXd &xx;
 	ArrayXd &tt;
-	int blockSize, totalNum;
-	StoreStates(ArrayXd &xx, ArrayXd &tt,
+	int blockSize;
+	static int totalNum;
+	StoreStates(ArrayXXd &xx, ArrayXd &tt,
 		    int blockSize = 100) :
-	    xx(xx), tt(tt), blockSize(blockSize), totalNum(0)
-	{}
+	    xx(xx), tt(tt), blockSize(blockSize)
+	{ cout << totalNum << endl;}
 	
 	void operator()(const std::vector<double> &x, double t){
 	    if(totalNum >= tt.size()){
@@ -78,54 +79,49 @@ protected:
 	}
     };
     
+
     
 public:
     
     const double a, b, c;
     Velocity velocity;
     Jacv jacv;
-    StoreStates storeStates;
     double odeAtol, odeRtol;
+    int blockSize;
 
     Rossler(double odeAtol = 1e-16, double odeRtol = 1e-12,
+	    double blockSize = 100,
 	    double a = 0.2, double b=0.2, double c=5.7) :
 	a(a), b(b), c(c),
 	velocity(a, b, c),
 	jacv(a, b, c),
-	storeStates()
-	odeAtol(odeAtol), odeRtol(odeRtol) {}
+	odeAtol(odeAtol), odeRtol(odeRtol),
+	blockSize(blockSize){}
     
-    
+    template< typename Vel>
     std::pair<ArrayXXd, ArrayXd>
-    intg(const Array3d &x0, const double h, const int nstp){
-	const int blockSize = 100;
-	int totalNum = 0;
-	ArrayXXd xx(3, blockSize);
+    intg(const ArrayXd &x0, const double h, const int nstp, Vel vel){
+	ArrayXXd xx(x0.size(), blockSize);
 	ArrayXd tt(blockSize);
-	std::vector<double> x(&x0[0], &x0[0] + 3);
-	integrate_adaptive(make_controlled< runge_kutta_cash_karp54<std::vector<double>> >( 1.0e-16 , 1.0e-12 ) ,
+	std::vector<double> x(&x0[0], &x0[0] + x0.size());
+	StoreStates storeStates(xx, tt, blockSize);
+	integrate_adaptive(make_controlled< runge_kutta_cash_karp54<std::vector<double>> >( odeAtol , odeRtol ) ,
 			   // integrate(
-			   velocity, x, 0.0, nstp*h, h,
-			   [&xx, &tt, &totalNum, &blockSize](const std::vector<double> &x, double t){		      
-			       if(totalNum >= tt.size()){
-				   xx.conservativeResize(NoChange, xx.cols() + blockSize);
-				   tt.conservativeResize(tt.size() + blockSize);
-			       }
-			       xx.col(totalNum) = ArrayXd::Map(&x[0], x.size());
-			       tt(totalNum++) = t;
-		      
-			   });
-	return make_pair(xx.leftCols(totalNum), tt.head(totalNum));
+			   velocity, x, 0.0, nstp*h, h, storeStates);
+	cout << StoreStates::totalNum << endl;
+	return make_pair(xx.leftCols(storeStates.totalNum), tt.head(storeStates.totalNum));
     }
     
 
 };
+int Rossler::StoreStates::totalNum = 0;
+
 
 int main(){
     Rossler ros;
     Array3d x0;
     x0 << 1, 6.0918, 1.2997;
-    auto tmp = ros.intg(x0, 0.01, 588);
-    cout << tmp.first << endl;
+    auto tmp = ros.intg(x0, 0.01, 588, ros.velocity);
+    //cout << tmp.first << endl;
     return 0;
 }

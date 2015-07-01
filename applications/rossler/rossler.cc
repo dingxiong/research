@@ -1,15 +1,19 @@
 /*
- * g++ rossler.cc -std=c++11 -I $XDAPPS/sources/boost_1_57_0 -I $XDAPPS/eigen/include/eigen3
+ * g++ rossler.cc -std=c++11 -I $XDAPPS/sources/boost_1_57_0 -I $XDAPPS/eigen/include/eigen3 -I $RESH/include -L $RESH/lib -literMethod
  */
 #include <iostream>
 #include <vector>
 #include <boost/numeric/odeint.hpp>
 #include <Eigen/Dense>
+#include <functional>
+#include "iterMethod.hpp"
 
 using namespace std;
 using namespace Eigen;
 using namespace boost::numeric::odeint;
-    
+using namespace iterMethod;
+namespace ph = std::placeholders;
+
 class Rossler {
     
 protected:
@@ -96,7 +100,18 @@ public:
 	jacv(a, b, c),
 	odeAtol(odeAtol), odeRtol(odeRtol)
     {}
+
+    Vector3d getVelocity(Array3d x0){
+	std::vector<double> x(&x0[0], &x0[0] + x0.size());
+	std::vector<double> v(3);
+	velocity(x, v, 0);
+	Vector3d vel = Map<Vector3d>(&v[0]);
+	return vel; 
+    }
     
+    /**
+     * @brief integrator : each column is a state vector
+     */
     template< typename Vel>
     std::pair<ArrayXXd, ArrayXd>
     intg0(const ArrayXd &x0, const double h, const int nstp, Vel vel, int blockSize = 100){
@@ -125,7 +140,7 @@ public:
     }
 
     std::tuple<ArrayXXd, ArrayXXd, ArrayXd>
-    intgj(const ArrayXd &x0, const ArrayXd &dx0, const double h,
+    intgv(const ArrayXd &x0, const ArrayXd &dx0, const double h,
 	  const int nstp, int blockSize = 100){
 	ArrayXd xdx(x0.size() + dx0.size());
 	xdx << x0, dx0;
@@ -134,18 +149,76 @@ public:
 			       tmp.first.bottomRows(3),
 			       tmp.second);
     }
-    
+
+    /**
+     * @brief form f(x,t) - x
+     * @param[in] x   4-element vector: (x, t)
+     * @return    4-element vector
+     *               | f(x, t) - x|
+     *               |     0      |
+     */
+    Vector4d Fx(Vector4d x){
+	int nstp =  (int)(x(3) / 0.01); 
+	Array3d fx = intg(x.head(3), x(3)/nstp, nstp).first.rightCols(1);
+	Vector4d F; 
+	F << fx, x(3);
+	return F - x;
+    }
+
+    /**
+     * @brief get the product J * dx
+     *
+     * Here J = | J(x, t) - I,  v(f(x,t)) | 
+     *          |     v(x),          0    |
+     */
+    Vector4d DFx(Vector4d x, Vector4d dx){
+	int nstp = (int)(x(3) / 0.01);
+	auto tmp = intgv(x, dx, x(3)/nstp, nstp);
+	VectorXd v1 = getVelocity(x.head(3));
+	VectorXd v2 = getVelocity(std::get<0>(tmp).rightCols(1));
+	Vector4d DF;
+	DF << std::get<1>(tmp).rightCols(1).matrix() - dx.head(3) + v2 * dx(3),
+	    v1.dot(dx.head(3));
+	return DF;
+    }
 
 };
 
 
 int main(){
-    Rossler ros;
-    Array3d x0;
-    x0 << 1, 6.0918, 1.2997;
-    Array3d dx0;
-    dx0 << 0.01, 0.01, 0.01;
-    auto tmp = ros.intgj(x0, dx0, 0.01, 588);
-    cout << std::get<1>(tmp) << endl;
+    
+    switch (1){
+	
+    case 0 :{
+	Rossler ros;
+	Array3d x0;
+	x0 << 1, 6.0918, 1.2997;
+	Array3d dx0;
+	dx0 << 0.01, 0.01, 0.01;
+	auto tmp = ros.intgv(x0, dx0, 0.01, 588);
+	cout << std::get<1>(tmp) << endl;
+	break;
+    }
+    case 1:{
+	Rossler ros;
+	Vector4d x0;
+	x0 << 1, 6.0918, 1.2997, 5.88;
+	auto tmp = ros.Fx(x0);
+	cout << tmp << endl;
+
+	Vector4d dx0;
+	dx0 << 0.1, 0.1, 0.1, 0.1;
+	tmp = ros.DFx(x0, dx0);
+	cout << tmp << endl;
+
+	auto f = std::bind(&Rossler::Fx, ros, ph::_1);
+	auto df = std::bind(&Rossler::DFx, ros, ph::_1, ph::_2);
+	ArrayXd x(4);
+	x = x0;
+	auto result = InexactNewtonBacktrack(f, df, x, 1e-14);
+	break;
+    }
+	
+    }
     return 0;
 }

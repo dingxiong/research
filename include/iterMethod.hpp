@@ -79,18 +79,19 @@ namespace iterMethod {
     double chooseTheta(const double g0, const double g1, const double gp0,
 		       const double theta_min, const double theta_max);
 
-    template<class Jacv, class Fx>
-    void InexactNewtonBacktrack( const Fx &fx, const Jacv &jacv,
-				 const ArrayXd &x0,
-				 const double tol,
-				 const int btMaxIt = 20,
-				 const int maxit = 100,
-				 const double eta0 = 1e-4,
-				 const double t = 1e-4,
-				 const double theta_min = 0.1,
-				 const double theta_max = 0.5,
-				 const int GmresRestart = 30,
-				 const int GmresMaxit = 100);
+    template<class Fx, class Jacv>
+    std::tuple<VectorXd, std::vector<double>, int>
+    InexactNewtonBacktrack(Fx &fx, Jacv &jacv,
+			    const ArrayXd &x0,
+			    const double tol,
+			    const int btMaxIt = 20,
+			    const int maxit = 100,
+			    const double eta0 = 1e-4,
+			    const double t = 1e-4,
+			    const double theta_min = 0.1,
+			    const double theta_max = 0.5,
+			    const int GmresRestart = 30,
+			    const int GmresMaxit = 100);
 }
 
 
@@ -436,7 +437,7 @@ namespace iterMethod {
      */
     template<class Fx, class Jacv>
     std::tuple<VectorXd, std::vector<double>, int>
-    InexactNewtonBacktrack( const Fx &fx, const Jacv &jacv,
+    InexactNewtonBacktrack( Fx &fx, Jacv &jacv,
 			    const ArrayXd &x0,
 			    const double tol,
 			    const int btMaxIt,
@@ -497,3 +498,4 @@ namespace iterMethod {
 }
 
 #endif	/* ITERMETHOD_H */
+

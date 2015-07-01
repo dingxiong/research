@@ -63,7 +63,7 @@ protected:
 	
     };
 
-    
+
 public:
     
     const double a, b, c;
@@ -151,9 +151,11 @@ public:
      * Here J = | J(x, t) - I,  v(f(x,t)) | 
      *          |     v(x),          0    |
      */
+
     Vector4d DFx(Vector4d x, Vector4d dx){
 	int nstp = (int)(x(3) / 0.01);
-	auto tmp = intgv(x, dx, x(3)/nstp, nstp);
+	double norm = dx.head(3).norm();
+	auto tmp = intgv(x.head(3), dx.head(3), x(3)/nstp, nstp);
 	VectorXd v1 = getVelocity(x.head(3));
 	VectorXd v2 = getVelocity(std::get<0>(tmp).rightCols(1));
 	Vector4d DF;
@@ -162,25 +164,60 @@ public:
 	return DF;
     }
 
+#if 0
+    VectorXd DFx(Vector4d x, Vector4d dx){
+	int nstp = (int)(x(3) / 0.01);
+	auto tmp = intg(x.head(3), x(3)/nstp, nstp);
+	double norm = dx.head(3).norm();
+	auto tmp2 = intg(x.head(3) + 1e-7*dx.head(3)/norm, x(3)/nstp, nstp);
+	Vector3d Jx = (tmp2.first.rightCols(1) - tmp.first.rightCols(1)) / 1e-7 * norm;
+	VectorXd v1 = getVelocity(x.head(3));
+	VectorXd v2 = getVelocity(tmp.first.rightCols(1));
+	Vector4d DF;
+	DF << Jx - dx.head(3) + v2 * dx(3),
+	    v1.dot(dx.head(3));
+	return DF;
+    }
+
+    #endif
 };
 
 
 int main(){
     
-    switch (2){
+    switch (1){
 	
     case 1 :{
 	Rossler ros;
 	Array3d x0;
 	//x0 << 1, 6.0918, 1.2997;
-	x0 << -3.36773  ,  5.08498  ,  0.0491195;   
+	//x0 << -3.36773  ,  5.08498  ,  0.0491195;
+	// T = 18
+	x0 << -3.36788  ,  5.08677  ,  0.0240049;
+	double T = 17.5959;
+	int nstp = int(T/0.01);
+	    
 	Array3d dx0;
-	dx0 << 0.01, 0.01, 0.01;
-	auto tmp = ros.intgv(x0, dx0, 0.01, 1800);
+	dx0 << 0.2, 0.2, 0.2;
+	auto tmp = ros.intgv(x0, dx0, T/nstp, nstp);
 	cout << std::get<0>(tmp) << endl;
 	break;
     }
+
     case 2 : {
+	Rossler ros;
+	Array3d x0;
+	//x0 << 1, 6.0918, 1.2997;
+	x0 << -3.36773  ,  5.08498  ,  0.0491195;   
+	Array3d dx0;
+	dx0 << 0.1, 0.1, 0.1;
+	auto tmp = ros.intg(x0, 0.01, 1800);
+	cout << std::get<1>(tmp) << endl;
+	break;
+	
+    }
+	
+    case 3 : {
 	Rossler ros;
 	Vector4d x0;
 	//x0 << 1, 6.0918, 1.2997, 5.88;
@@ -192,10 +229,19 @@ int main(){
 	/* dx0 << 0.1, 0.1, 0.1, 0.1; */
 	/* tmp = ros.DFx(x0, dx0); */
 	/* cout << tmp << endl; */
-
+	break;
+    }
+	
+    case 4: {			// find POs
+	Rossler ros;
+	Vector4d x0;
+	//x0 << 1, 6.0918, 1.2997, 5.88;
+	x0  <<  -3.36773  ,  5.08498  ,  0.0491195, 18;
+	
 	auto f = std::bind(&Rossler::Fx, ros, ph::_1);
 	auto df = std::bind(&Rossler::DFx, ros, ph::_1, ph::_2);
-	auto result = InexactNewtonBacktrack(f, df, x0, 1e-14, 10, 10);
+	auto result = InexactNewtonBacktrack(f, df, x0, 1e-12, 10, 10);
+	cout << std::get<0>(result) << endl;
 	break;
     }
 	

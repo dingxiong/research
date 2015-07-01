@@ -201,7 +201,7 @@ int main()
 	case 7: // test Gmres() with dense matrix
 	    {
 		srand (time(NULL));
-		const int N  = 20;
+		const int N  = 10;
 
 		MatrixXd A(N, N);
 		VectorXd x(N);

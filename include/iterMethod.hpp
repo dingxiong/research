@@ -300,7 +300,7 @@ namespace iterMethod {
 	for(size_t iter = 0; iter < maxit; iter++){
 	    /* obtain residule */
 	    VectorXd r = b - Ax(x); 
-	    double rnorm = r.norm();
+	    double rnorm = r.norm(); printf("%g |", rnorm);
 	    double err = rnorm / bnrm2;
 	    if(err < rtol) return std::make_tuple(x, errVec, 0);
 	
@@ -353,11 +353,11 @@ namespace iterMethod {
 		 * since the last row of R is zero, then residual =
 		 * last element of g, namely g(i+1)
 		 */
-		double err = fabs(g(i+1)) / bnrm2 ;
+		double err = fabs(g(i+1)) / bnrm2 ; printf("%g %g |", err, (Ax(x)-b).norm());
 		errVec.push_back(err);
 		if (err < rtol){
 		    VectorXd y = H.topLeftCorner(i+1, i+1).lu().solve(g.head(i+1));
-		    x += V.leftCols(i+1) * y;
+		    x += V.leftCols(i+1) * y;  printf("%g %g |", err, (Ax(x)-b).norm());
 		    return std::make_tuple(x, errVec, 0);
 		}
 	    }
@@ -457,7 +457,7 @@ namespace iterMethod {
 	    ////////////////////////////////////////////////
 	    // test convergence first
 	    VectorXd F = fx(x);  
-	    double Fnorm = F.norm();
+	    double Fnorm = F.norm(); printf("\n %zd %g\n", i, Fnorm);
 	    errVec.push_back(Fnorm);
 	    if( Fnorm < tol) return std::make_tuple(x, errVec, 0);
 
@@ -471,7 +471,9 @@ namespace iterMethod {
 		fprintf(stderr, "GMRES not converged ! \n");
 	    }
 	    VectorXd &s = std::get<0>(tmp); // update vector 
-
+	    printf("\n GMRES iteration size %lu error = %g\n",
+		   std::get<1>(tmp).size(), std::get<1>(tmp)[3]);
+	    printf("error = %g  %g\n", (fx(x) + jacv(x, s)).norm()/Fnorm, fx(x+s).norm());
 	    ////////////////////////////////////////////////
 	    // use back tracking method to find appropariate scale
 	    double initgp0 = 2 * F.dot(jacv(x, s));

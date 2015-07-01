@@ -1,5 +1,5 @@
 /*
- * g++ rossler.cc -std=c++11 -I $XDAPPS/sources/boost_1_57_0 -I $XDAPPS/eigen/include/eigen3 -I $RESH/include -L $RESH/lib -literMethod
+ * g++ rossler.cc -O3 -std=c++11 -I $XDAPPS/sources/boost_1_57_0 -I $XDAPPS/eigen/include/eigen3 -I $RESH/include -L $RESH/lib -literMethod
  */
 #include <iostream>
 #include <vector>
@@ -30,7 +30,7 @@ protected:
      */
     struct Velocity{
 	const double a, b, c;
-	Velocity (double a = 0.2, double b=0.2, double c=5.7) : a(a), b(b), c(c) {}
+	Velocity (double a = 0.2, double b=0.2, double c = 5.7) : a(a), b(b), c(c) {}
 	void operator()(const std::vector<double> &x, std::vector<double> &dxdt,
 			const double /* t */){
 	    dxdt[0] = -x[1] - x[2];
@@ -43,13 +43,13 @@ protected:
      * @brief calculate J * dx for Rossler
      *
      *               | 0, -1, -1  |
-     *  Jacobian  =  | 1,  a,  0  |
+     *  stability =  | 1,  a,  0  |
      *               | z,  0, x-c |
      *
      */
     struct Jacv{
 	const double a, b, c;
-	Jacv (double a = 0.2, double b=0.2, double c=5.7) : a(a), b(b), c(c) {}
+	Jacv (double a = 0.2, double b = 0.2, double c = 5.7) : a(a), b(b), c(c) {}
 	void operator()(const std::vector<double> &x, std::vector<double> &dxdt,
 			const double /* t */){
 	    dxdt[0] = -x[1] - x[2];
@@ -62,27 +62,6 @@ protected:
 	}
 	
     };
-
-    struct StoreStates{
-	ArrayXXd &xx;
-	ArrayXd &tt;
-	int blockSize;
-	static int totalNum;
-	StoreStates(ArrayXXd &xx, ArrayXd &tt,
-		    int blockSize = 100) :
-	    xx(xx), tt(tt), blockSize(blockSize)
-	{ cout << totalNum << endl;}
-	
-	void operator()(const std::vector<double> &x, double t){
-	    if(totalNum >= tt.size()){
-		xx.conservativeResize(NoChange, xx.cols() + blockSize);
-		tt.conservativeResize(tt.size() + blockSize);
-	    }
-	    xx.col(totalNum) = ArrayXd::Map(&x[0], x.size());
-	    tt(totalNum++) = t;
-	}
-    };
-    
 
     
 public:
@@ -119,17 +98,18 @@ public:
 	ArrayXd tt(blockSize);
 	int totalNum = 0;
 	std::vector<double> x(&x0[0], &x0[0] + x0.size());
-	integrate_adaptive(make_controlled< runge_kutta_cash_karp54<std::vector<double>> >( odeAtol , odeRtol ) ,
-			   // integrate(
-			   vel, x, 0.0, nstp*h, h,
-			   [&xx, &tt, &totalNum, &blockSize](const std::vector<double> &x, double t){		      
-			       if(totalNum >= tt.size()){
-				   xx.conservativeResize(NoChange, xx.cols() + blockSize);
-				   tt.conservativeResize(tt.size() + blockSize);
-			       }
-			       xx.col(totalNum) = ArrayXd::Map(&x[0], x.size());
-			       tt(totalNum++) = t;
-			   });
+	//integrate_adaptive(make_controlled< runge_kutta_cash_karp54<std::vector<double>> >( odeAtol , odeRtol ) ,
+	integrate_const( runge_kutta4< std::vector<double> >() , 
+			 // integrate(
+			 vel, x, 0.0, nstp*h, h,
+			 [&xx, &tt, &totalNum, &blockSize](const std::vector<double> &x, double t){		      
+			     if(totalNum >= tt.size()){
+				 xx.conservativeResize(NoChange, xx.cols() + blockSize);
+				 tt.conservativeResize(tt.size() + blockSize);
+			     }
+			     xx.col(totalNum) = ArrayXd::Map(&x[0], x.size());
+			     tt(totalNum++) = t;
+			 });
        
 	return make_pair(xx.leftCols(totalNum), tt.head(totalNum));
     }
@@ -187,35 +167,35 @@ public:
 
 int main(){
     
-    switch (1){
+    switch (2){
 	
-    case 0 :{
+    case 1 :{
 	Rossler ros;
 	Array3d x0;
-	x0 << 1, 6.0918, 1.2997;
+	//x0 << 1, 6.0918, 1.2997;
+	x0 << -3.36773  ,  5.08498  ,  0.0491195;   
 	Array3d dx0;
 	dx0 << 0.01, 0.01, 0.01;
-	auto tmp = ros.intgv(x0, dx0, 0.01, 588);
-	cout << std::get<1>(tmp) << endl;
+	auto tmp = ros.intgv(x0, dx0, 0.01, 1800);
+	cout << std::get<0>(tmp) << endl;
 	break;
     }
-    case 1:{
+    case 2 : {
 	Rossler ros;
 	Vector4d x0;
-	x0 << 1, 6.0918, 1.2997, 5.88;
+	//x0 << 1, 6.0918, 1.2997, 5.88;
+	x0  <<  -3.36773  ,  5.08498  ,  0.0491195, 18;   
 	auto tmp = ros.Fx(x0);
-	cout << tmp << endl;
-
-	Vector4d dx0;
-	dx0 << 0.1, 0.1, 0.1, 0.1;
-	tmp = ros.DFx(x0, dx0);
-	cout << tmp << endl;
+	//cout << tmp << endl;
+	
+	/* Vector4d dx0; */
+	/* dx0 << 0.1, 0.1, 0.1, 0.1; */
+	/* tmp = ros.DFx(x0, dx0); */
+	/* cout << tmp << endl; */
 
 	auto f = std::bind(&Rossler::Fx, ros, ph::_1);
 	auto df = std::bind(&Rossler::DFx, ros, ph::_1, ph::_2);
-	ArrayXd x(4);
-	x = x0;
-	auto result = InexactNewtonBacktrack(f, df, x, 1e-14);
+	auto result = InexactNewtonBacktrack(f, df, x0, 1e-14, 10, 10);
 	break;
     }
 	

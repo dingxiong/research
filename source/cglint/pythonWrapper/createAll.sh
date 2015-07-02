@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash 
 
 # compile single thread library
 perl -p -i -e 's/choice = \d/choice = 1/' Jamroot

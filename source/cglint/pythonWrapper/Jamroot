@@ -35,9 +35,9 @@ lib cqcgl : : <name>cqcgl1d <file>/usr/local/home/xiong/00git/research/lib/libcq
 choice = 2 ;
 
 if $(choice) = 1 {
-  python-extension py_cqcgl1d : py_cqcgl1d.cc np sparse fftw3 iter ../../myfft/myfft.cc ../cqcgl1d.cc 
+  python-extension py_cqcgl1d : py_cqcgl1d.cc np sparse fftw3 iter ../../myfft/myfft.cc ../cqcgl1d.cc ../cqcglRPO.cc
   : <variant>release_assert <optimization>speed
-  : <link>shared <cxxflags>"-std=c++11 -DCLEAN" 
+  : <link>shared <cxxflags>"-std=c++11 -DGMRES_PRINT -DINB_PRINT -DCLEAN" 
   ;
 
   install py_extension : py_cqcgl1d : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
@@ -45,9 +45,9 @@ if $(choice) = 1 {
 }
 
 else if $(choice) = 2 {
-  python-extension py_cqcgl1d_threads : py_cqcgl1d.cc np sparse fftw3 fftw3_threads iter ../../myfft/myfft.cc ../cqcgl1d.cc 
+  python-extension py_cqcgl1d_threads : py_cqcgl1d.cc np sparse fftw3 fftw3_threads iter ../../myfft/myfft.cc ../cqcglRPO.cc ../cqcgl1d.cc 
   : <variant>release_assert <optimization>speed 
-  : <link>shared <cxxflags>"-std=c++11 -lpthread -DCLEAN -DTFFT"
+  : <link>shared <cxxflags>"-std=c++11 -DGMRES_PRINT -DINB_PRINT -lpthread -DCLEAN -DTFFT"
   ;
   
   install py_extension : py_cqcgl1d_threads : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;

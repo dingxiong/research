@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include "cqcgl1d.hpp"
+#include "cqcglRPO.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -61,8 +62,6 @@ class pyCqcgl1d : public Cqcgl1d {
      * Note:
      *     1) Input and out put are arrays of C form, meaning each
      *        row is a vector
-     *     2) Usually input to functions should be 2-d array, so
-     *        1-d arrays should be resized to 2-d before passed
      */
   
 public:
@@ -375,36 +374,80 @@ public:
 class pyCqcglRPO : public CqcglRPO {
     
 public:
-    pyCqcglRPO(int N, double d, double Mu,
-	       double Br, double Bi, double Dr,
-	       double Di, double Gr, double Gi) :
-	CqcglRPO(N, d, Mu, Br, Bi, Dr, Di, Gr, Gi) {}
+    pyCqcglRPO(int nstp, int M,
+	       int N, double d, double h,
+	       double Mu, double Br, double Bi,
+	       double Dr, double Di, double Gr,
+	       double Gi, int threadNum) :
+	CqcglRPO(nstp, M, N, d, h, Mu, Br, Bi, Dr, Di, Gr, Gi, threadNum) {}
 
 
-    /* findPO */
-    bp::tuple PYfindPO(const bn::ndarray &aa0, const double h0,
-		       const int nstp, const double th0,
-		       const double phi0,
-		       const int MaxN, const double tol,
-		       const bool doesUseMyCG,
-		       const bool doesPrint){
+    /* findRPO */
+    bp::tuple PYfindRPO(const bn::ndarray &x0, const double T,
+			const double th0,
+			const double phi0,
+			const double tol,
+			const int btMaxIt,
+			const int maxit,
+			const double eta0,
+			const double t,
+			const double theta_min,
+			const double theta_max,
+			const int GmresRestart,
+			const int GmresMaxit){
 	int m, n; 
-	getDims(aa0, m, n);
-	Map<ArrayXXd> tmpaa0((double*)aa0.get_data(), n, m); 
-	std::tuple<ArrayXXd, double, double, double, double> tmp = 
-	    findPO(tmpaa0, h0, nstp, th0, phi0, MaxN, tol, doesUseMyCG, doesPrint);
+	getDims(x0, m, n);
+	Map<VectorXd> tmpx0((double*)x0.get_data(), n*m); 
+	auto tmp = findRPO(tmpx0, T, th0, phi0, tol, btMaxIt, maxit, eta0, t,
+			   theta_min, theta_max, GmresRestart, GmresMaxit);
+	return bp::make_tuple(copy2bn(std::get<0>(tmp)),  std::get<1>(tmp),
+			      std::get<2>(tmp), std::get<3>(tmp), std::get<4>(tmp));
+    }
+
+    /* findRPO */
+    bp::tuple PYfindRPOM(const bn::ndarray &x0, const double T,
+			 const double th0,
+			 const double phi0,
+			 const double tol,
+			 const int btMaxIt,
+			 const int maxit,
+			 const double eta0,
+			 const double t,
+			 const double theta_min,
+			 const double theta_max,
+			 const int GmresRestart,
+			 const int GmresMaxit){
+	int m, n; 
+	getDims(x0, m, n);
+	Map<MatrixXd> tmpx0((double*)x0.get_data(), n, m); 
+	auto tmp = findRPOM(tmpx0, T, th0, phi0, tol, btMaxIt, maxit, eta0, t,
+			    theta_min, theta_max, GmresRestart, GmresMaxit);
 	return bp::make_tuple(copy2bn(std::get<0>(tmp)),  std::get<1>(tmp),
 			      std::get<2>(tmp), std::get<3>(tmp), std::get<4>(tmp));
     }
     
 };
 
+
 BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
-    bn::initialize();    
-    bp::class_<Cqcgl1d>("Cqcgl1d") ;
-    bp::class_<CqcglRPO>("CqcglRPO");
+    bn::initialize();
+
+    // must provide the constructor
+    bp::class_<Cqcgl1d>("Cqcgl1d", bp::init<
+			int, double, double,
+			bool, int,
+			double, double, double, double, double,
+			double, double,
+			int>()) ;
     
-    bp::class_<pyCqcgl1d, bp::bases<Cqcgl1d> >("pyCqcgl1d", bp::init<int, double, double,
+    bp::class_<CqcglRPO>("CqcglRPO", bp::init<
+			 int, int, int, double, double,
+			 double, double, double,
+			 double, double, double,
+			 double, int >());
+    
+    bp::class_<pyCqcgl1d, bp::bases<Cqcgl1d> >("pyCqcgl1d", bp::init<
+					       int, double, double,
 					       bool, int,
 					       double, double, double, double, double,
 					       double, double,
@@ -453,20 +496,15 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
 	.def("rotateOrbit", &pyCqcgl1d::PYrotateOrbit)
 	;
 
-    bp::class_<pyCqcglRPO, bp::bases<CqcglRPO> >("pyCqcglRPO", bp::init<int, double,
-						 double, double, double, double, double,
-						 double, double >())
+    bp::class_<pyCqcglRPO, bp::bases<CqcglRPO> >("pyCqcglRPO", bp::init<
+						 int, int, int, double, double,
+						 double, double, double,
+						 double, double, double,
+						 double, int >())
 	.def_readonly("N", &pyCqcglRPO::N)
-	.def_readonly("d", &pyCqcglRPO::d)
-	.def_readonly("Mu", &pyCqcglRPO::Mu)
-	.def_readonly("Br", &pyCqcglRPO::Br)
-	.def_readonly("Bi", &pyCqcglRPO::Bi)
-	.def_readonly("Dr", &pyCqcglRPO::Dr)
-	.def_readonly("Di", &pyCqcglRPO::Di)
-	.def_readonly("Gr", &pyCqcglRPO::Gr)
-	.def_readonly("Gi", &pyCqcglRPO::Gi)
 	.def_readonly("Ndim", &pyCqcglRPO::Ndim)
-	.def("findPO", &pyCqcglRPO::PYfindPO)
+	.def("findRPO", &pyCqcglRPO::PYfindRPO)
+	.def("findRPOM", &pyCqcglRPO::PYfindRPOM)
 	;
-	
+
 }

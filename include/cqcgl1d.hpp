@@ -40,11 +40,11 @@ public:
     typedef Eigen::Triplet<double> Tri;
     
     const int N;		/* dimension of FFT */
-    const double d;
-    const double h;
+    const double d;		/* system domain size */
     const bool enableJacv;
     const int Njacv;
-    
+
+    double h;			/* integration time step */
     int trueNjacv;    		/* true tangent space dimension */
     int Ne;			/* effective number of modes */
     int Ndim;			/* dimension of state space */
@@ -70,7 +70,8 @@ public:
     ////////////////////////////////////////////////////////////
     //                    member functions.                   //
     ////////////////////////////////////////////////////////////
-
+    
+    void changeh(const double hnew);
     ArrayXXd
     intg(const ArrayXd &a0, const size_t nstp, const size_t np = 1);
     pair<ArrayXXd, ArrayXXd>
@@ -157,6 +158,7 @@ protected:
     FFT jFv, jFa, jFb, jFc;
   
     void CGLInit();
+    void calculateCoefficients();
     void NL( FFT &f);
     void jNL(FFT &f);
     void dealias(FFT &Fv);
@@ -182,7 +184,7 @@ public:
     int Ne;			/* effective number of modes */
     int Ndim;			/* dimension of state space */
 
-    CqcglRPO(int N = 256, double d = 50, 
+    CqcglRPO(int N = 512, double d = 50, 
 	     double Mu = -0.1, double Br = 1.0, double Bi = 0.8,
 	     double Dr = 0.125, double Di = 0.5, double Gr = -0.1,
 	     double Gi = -0.6);

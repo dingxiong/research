@@ -5,7 +5,27 @@ from time import time
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 1
+case = 0
+
+if case == 0:
+    """
+    test changh()
+    """
+    cgl = pyCqcgl1d(512, 50, 0.01, False, 1,
+                    -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
+                    4)
+    Ndim = cgl.Ndim
+    a0 = rand(Ndim)
+    aa = cgl.intg(a0, 2000, 1)
+    cgl2 = pyCqcgl1d(512, 50, 0.02, False, 1,
+                     -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
+                     4)
+    aa2 = cgl2.intg(a0, 2000, 1)
+    cgl2.changeh(0.01)
+    aa3 = cgl2.intg(a0, 2000, 1)
+
+    print cgl2.h
+    print norm(aa-aa2), norm(aa-aa3)
 
 if case == 1:
     cgl = pyCqcgl1d(512, 50, 0.01, True, 0,

@@ -75,7 +75,12 @@ public:
 	Cqcgl1d(N, d, h, enableJacv, Njacv,
 		Mu, Br, Bi, Dr, Di, Gr, Gi, threadNum) {}
     
+    /* wrap changeh */
+    void PYchangeh(const double hnew){
+	changeh(hnew);
+    }
 
+    
     /* wrap the velocity */
     bn::ndarray PYvelocity(bn::ndarray a0){
 	int m, n;
@@ -416,6 +421,7 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
 	.def_readonly("Gr", &pyCqcgl1d::Gr)
 	.def_readonly("Gi", &pyCqcgl1d::Gi)
 	.def_readonly("Ndim", &pyCqcgl1d::Ndim)
+	.def("changeh", &pyCqcgl1d::PYchangeh)
 	.def("velocity", &pyCqcgl1d::PYvelocity)
 	.def("velocityReq", &pyCqcgl1d::PYvelocityReq)
 	.def("pad", &pyCqcgl1d::PYpad)

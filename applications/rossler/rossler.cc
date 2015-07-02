@@ -154,7 +154,6 @@ public:
 
     Vector4d DFx(Vector4d x, Vector4d dx){
 	int nstp = (int)(x(3) / 0.01);
-	double norm = dx.head(3).norm();
 	auto tmp = intgv(x.head(3), dx.head(3), x(3)/nstp, nstp);
 	VectorXd v1 = getVelocity(x.head(3));
 	VectorXd v2 = getVelocity(std::get<0>(tmp).rightCols(1));
@@ -190,11 +189,15 @@ int main(){
     case 1 :{
 	Rossler ros;
 	Array3d x0;
-	//x0 << 1, 6.0918, 1.2997;
-	//x0 << -3.36773  ,  5.08498  ,  0.0491195;
+	// x0 << 1, 6.0918, 1.2997;
+	// x0 << -3.36773  ,  5.08498  ,  0.0491195;
 	// T = 18
-	x0 << -3.36788  ,  5.08677  ,  0.0240049;
-	double T = 17.5959;
+	// x0 << -3.36788  ,  5.08677  ,  0.0240049;
+	// double T = 17.5959;
+	x0 << 0.511787,  5.99344,  1.85836;
+	double T = 5.88109;
+
+	
 	int nstp = int(T/0.01);
 	    
 	Array3d dx0;
@@ -235,8 +238,8 @@ int main(){
     case 4: {			// find POs
 	Rossler ros;
 	Vector4d x0;
-	//x0 << 1, 6.0918, 1.2997, 5.88;
-	x0  <<  -3.36773  ,  5.08498  ,  0.0491195, 18;
+	x0 << 1, 6.0918, 1.2997, 5.88;
+	//x0  <<  -3.36773  ,  5.08498  ,  0.0491195, 18;
 	
 	auto f = std::bind(&Rossler::Fx, ros, ph::_1);
 	auto df = std::bind(&Rossler::DFx, ros, ph::_1, ph::_2);

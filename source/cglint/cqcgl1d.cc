@@ -49,7 +49,7 @@ Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
 }
 
 /* ------------------------------------------------------ */
-/* ----                Internal functions         ------- */
+/* ----          Initialization functions         ------- */
 /* ------------------------------------------------------ */
 
 /**
@@ -112,6 +112,19 @@ void Cqcgl1d::CGLInit(){
       
     K = 2*M_PI/d * Kindex;
     L = Mu - dcp(Dr, Di) * K.square();
+
+    calculateCoefficients();
+}
+
+/**
+ * @brief calculate coefficients which depend on the time step
+ *
+ *  Thi function is used in the constructor, also used when you want
+ *  to change the time step.
+ *
+ *  @see changeh
+ */
+void Cqcgl1d::calculateCoefficients(){
     E = (h*L).exp(); 
     E2 =(h/2*L).exp();
   
@@ -130,6 +143,19 @@ void Cqcgl1d::CGLInit(){
 
 }
 
+/**
+ * @brief change the default time step. The integration coeffients should also
+ *        be recalculated.
+ */
+void Cqcgl1d::changeh(const double hnew){
+    h = hnew;
+    calculateCoefficients();
+}
+
+
+/* ------------------------------------------------------ */
+/* ----              Internal functions           ------- */
+/* ------------------------------------------------------ */
 /**
  * @brief pad the input with zeros
  *
@@ -339,7 +365,8 @@ Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
 
 	dealias(jFv);
     }
-    return unpad(C2R(jFv.v1.rightCols(trueNjacv)));
+    //return unpad(C2R(jFv.v1.rightCols(trueNjacv)));
+    return unpad(C2R(jFv.v1)); //both the orbit and the perturbation
 }
 
 /* -------------------------------------------------- */

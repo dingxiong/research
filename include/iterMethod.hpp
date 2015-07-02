@@ -83,7 +83,7 @@ namespace iterMethod {
     std::tuple<VectorXd, std::vector<double>, int>
     InexactNewtonBacktrack(Fx &fx, Jacv &jacv,
 			    const ArrayXd &x0,
-			    const double tol,
+			    const double tol = 1e-12,
 			    const int btMaxIt = 20,
 			    const int maxit = 100,
 			    const double eta0 = 1e-4,

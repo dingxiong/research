@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <vector>
+#include <omp.h>
 #include "cqcgl1d.hpp"
 #include "iterMethod.hpp"
 

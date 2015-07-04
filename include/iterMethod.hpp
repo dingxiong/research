@@ -363,7 +363,7 @@ namespace iterMethod {
 #endif
 		if (err < rtol){
 		    VectorXd y = H.topLeftCorner(i+1, i+1).lu().solve(g.head(i+1));
-		    x += V.leftCols(i+1) * y; 
+		    x += V.leftCols(i+1) * y; cout<< x.tail<3>() << '  ' <<(V.leftCols(i+1)*y).norm()<< endl;
 		    return std::make_tuple(x, errVec, 0);
 		}
 	    }
@@ -371,7 +371,7 @@ namespace iterMethod {
 	    // the inner loop finishes => has not converged
 	    // so need to update x, and go to outer loop
 	    VectorXd y = H.topLeftCorner(M, M).lu().solve(g.head(M));
-	    x += V.leftCols(M) * y;
+	    x += V.leftCols(M) * y; 
 	}
 
 	// if the outer loop finished => not converged

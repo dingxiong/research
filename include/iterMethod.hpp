@@ -363,7 +363,7 @@ namespace iterMethod {
 #endif
 		if (err < rtol){
 		    VectorXd y = H.topLeftCorner(i+1, i+1).lu().solve(g.head(i+1));
-		    x += V.leftCols(i+1) * y; cout<< x.tail<3>() << '  ' <<(V.leftCols(i+1)*y).norm()<< endl;
+		    x += V.leftCols(i+1) * y; 
 		    return std::make_tuple(x, errVec, 0);
 		}
 	    }
@@ -463,7 +463,7 @@ namespace iterMethod {
 	    ////////////////////////////////////////////////
 	    // test convergence first
 	    VectorXd F = fx(x); 
-	    double Fnorm = F.norm();
+	    double Fnorm = F.norm(); 
 #ifdef INB_PRINT
 	    fprintf(stderr, "\n+++++++++++ INB: i = %zd, r = %g ++++++++++ \n", i, Fnorm);
 #endif

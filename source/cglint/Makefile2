@@ -7,28 +7,24 @@ EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 
 CFLAGS = -std=c++11
 
-MULTISHOOT_THREADS = no
-ifeq ($(MULTISHOOT_THREADS), yes)
-CFLAGS += -DMULTISHOOT
+PRINT = yes
+ifeq ($(PRINT), yes)
+CFLAGS += -DGMRES_PRINT -DINB_PRINT
 endif
 
 
-SOURCE = cqcgl1d.cc 
-SHARED = libcqcgl1d.so
-STATIC = libcqcgl1d.a
+RPO_OMP = yes
+ifeq ($(RPO_OMP), yes)
+CFLAGS += -DRPO_OMP=5
+endif
+
 
 SOURCE2 = cqcglRPO.cc 
 SHARED2 = libcqcglRPO.so
 STATIC2 = libcqcglRPO.a
 
-all : $(SHARED) $(STATIC) $(SHARED2) $(STATIC2) 
+all : $(SHARED2) $(STATIC2) 
 
-$(SHARED): $(SOURCE)
-	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
-$(SOURCE:.cc=.o) : $(SOURCE)
-	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
-$(STATIC): $(SOURCE:.cc=.o)
-	$(AR) crs $@ $^
 
 $(SHARED2): $(SOURCE2)
 	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@

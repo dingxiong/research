@@ -48,4 +48,50 @@ namespace iterMethod {
 	// restrict theta in [theta_min, theta_max]
 	return theta > theta_max ? theta_max : (theta < theta_min ? theta_min : theta);
     }
+
+
+    //////////////////////////////////////////////////////////////////////
+    ///////////////////   trust region GMRES related /////////////////////
+    //////////////////////////////////////////////////////////////////////
+    /**
+     * @brief calculate z = d_i * p_i / (d_i^2 + mu)
+     */
+    ArrayXd calz(const ArrayXd &D, const ArrayXd &p, const double mu){
+	return D * p / (D.square() + mu);
+    }
+
+    /**
+     * @brief use newton method to find the parameter mu which minize
+     *        ||D*z - p|| w.r.t. ||z||< delta
+     */
+    std::tuple<double, std::vector<double>, int>
+    findTrustRegion(const ArrayXd &D, const ArrayXd &p, double delta,
+		    const double tol, const int maxit,
+		    const double mu0){
+	double mu = mu0;
+	std::vector<double> errVec;
+
+	// first check whether mu = 0 is enough
+	if( (p / D).matrix().norm() <= delta )
+	    return std::make_tuple(0, errVec, 0);
+	
+	// use Newton iteration to find mu
+	for(size_t i = 0; i < maxit; i++){
+	    ArrayXd denorm = D.square() + mu;	  /* di^2 + mu */
+	    ArrayXd z = D * p / denorm;		  /* z  */
+	    double z2 = z.matrix().squaredNorm(); /* ||z||^2 */
+	    double phi = z2 - delta * delta;	  /* phi(mu) */
+		
+	    errVec.push_back(phi);
+	    if(fabs(phi) < tol) return std::make_tuple(mu, errVec, 0);
+		
+	    double dphi = (-2*(D * p).square() / denorm * denorm * denorm).sum();
+	    mu -= (sqrt(z2) / delta) * ( phi / dphi );
+	    // mu -=  phi / dphi ;  
+	}
+
+	// run out of loop => not converged
+	return std::make_tuple(mu, errVec, 1);
+    }
+    
 }

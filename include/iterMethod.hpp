@@ -60,7 +60,8 @@ namespace iterMethod {
     ConjGradSSOR(const Mat &A, const VectorXd &b,
 		 LinearSolver &solver, 
 		 const VectorXd &x0, const int jmax, const double rtol);
-
+    
+    /* -------------------------------------------------- */
     void rotmat(const double &x, const double &y,
 		double *c, double *s);
 
@@ -76,22 +77,32 @@ namespace iterMethod {
 	  const int restart,
 	  const int maxit, const double rtol);
 
+    /* -------------------------------------------------- */
     double chooseTheta(const double g0, const double g1, const double gp0,
 		       const double theta_min, const double theta_max);
 
     template<class Fx, class Jacv>
     std::tuple<VectorXd, std::vector<double>, int>
     InexactNewtonBacktrack(Fx &fx, Jacv &jacv,
-			    const ArrayXd &x0,
-			    const double tol = 1e-12,
-			    const int btMaxIt = 20,
-			    const int maxit = 100,
-			    const double eta0 = 1e-4,
-			    const double t = 1e-4,
-			    const double theta_min = 0.1,
-			    const double theta_max = 0.5,
-			    const int GmresRestart = 30,
-			    const int GmresMaxit = 100);
+			   const ArrayXd &x0,
+			   const double tol = 1e-12,
+			   const int btMaxIt = 20,
+			   const int maxit = 100,
+			   const double eta0 = 1e-4,
+			   const double t = 1e-4,
+			   const double theta_min = 0.1,
+			   const double theta_max = 0.5,
+			   const int GmresRestart = 30,
+			   const int GmresMaxit = 100);
+    
+    ArrayXd calz(const ArrayXd &D, const ArrayXd &p, const double mu);
+    
+    std::tuple<double, std::vector<double>, int>
+    findTrustRegion(const ArrayXd &D, const ArrayXd &p, double delta,
+		    const double tol = 1e-12,
+		    const int maxit = 100,
+		    const double mu0 = 0);
+    
 }
 
 

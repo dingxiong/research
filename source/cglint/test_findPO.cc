@@ -42,13 +42,23 @@ int main(){
 	double th = std::get<3>(tmp);
 	double phi = std::get<4>(tmp);
 	double err = std::get<5>(tmp);
-	int M = x.cols();
 
+	
+	int M = x.cols();
+	int S = 1;
+	M /= S;
+	nstp *= S;
+
+	MatrixXd xp(x.rows(), M);
+	for(int i = 0; i < M; i++){
+	    xp.col(i) = x.col(S*i);
+	}
+	
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);	
 	
 	CqcglRPO cglrpo(nstp, M, N, d, h);
-	auto result = cglrpo.findRPOM(x, T, th, phi);
-		
+	auto result = cglrpo.findRPOM(xp, T, th, phi, 1e-12, 20, 100, 1e-4, 1e-4, 0.1, 0.5, 6000, 10);
+	
 	break;
     }
 	

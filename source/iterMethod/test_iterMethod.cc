@@ -14,7 +14,7 @@ typedef Eigen::SparseMatrix<double> SpMat;
 int main()
 {
     cout.precision(16);
-    switch (7)
+    switch (8)
 	{
  
 	case 1: // test ConjGrad() with dense matrix
@@ -232,7 +232,40 @@ int main()
 		cout << (A * std::get<0>(tmp) - b).norm() << endl;
 		break;	
 	    }
-	    
+
+	case 8: // test findTrustRegion
+	    {
+		srand (time(NULL));
+		const int N = 5;
+		ArrayXd D(N), p(N);
+		for(int i = 0; i < N; i++){
+		    /* D(i) = i+1; */
+		    /* p(i) = i+1; */
+		    /* D(i) = (double)rand() / RAND_MAX - 0.5; */
+		    /* p(i) = (double)rand() / RAND_MAX - 0.5; */
+		    D(i) = rand() % 100;
+		    p(i) = rand() % 100;
+		}
+
+		cout << D <<endl << endl;
+		cout << p << endl << endl;
+		cout << p / D << endl << endl;
+		cout << p.matrix().norm() << endl << endl;
+		
+		auto tmp = iterMethod::findTrustRegion(D, p, 0.1, 1e-4, 20, 0);
+		cout << std::get<0>(tmp) << endl;
+		cout << std::get<1>(tmp).size() << endl;
+		cout << std::get<2>(tmp) << endl;
+
+		auto x = std::get<1>(tmp);
+		for_each (x.begin(), x.end(), [](double i){cout << i << endl;});
+
+		ArrayXd z = iterMethod::calz(D, p,  std::get<0>(tmp));
+		cout << "z norm " << z.matrix().norm() << endl;
+		cout << "Dz-p " << endl << (D*z - p).matrix().norm() << endl;
+
+		break;
+	    }
 	}
     return 0;
 }

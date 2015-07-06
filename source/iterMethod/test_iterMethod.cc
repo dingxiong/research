@@ -14,7 +14,7 @@ typedef Eigen::SparseMatrix<double> SpMat;
 int main()
 {
     cout.precision(16);
-    switch (8)
+    switch (9)
 	{
  
 	case 1: // test ConjGrad() with dense matrix
@@ -266,6 +266,42 @@ int main()
 
 		break;
 	    }
+
+	case 9: // test GmresHook() with dense matrix
+	    {
+		srand (time(NULL));
+		const int N  = 10;
+
+		MatrixXd A(N, N);
+		VectorXd x(N);
+
+		for (int i = 0; i < N; i++) {
+		    for (int j = 0; j < N; j++) {
+			A(i,j) = (double)rand() / RAND_MAX - 0.5; 
+		    }
+		    x(i) =  (double)rand() / RAND_MAX - 0.5; 
+		}
+		VectorXd b = A * x;
+	
+		//cout << A << endl << endl;
+		cout << x << endl << endl;
+		cout << b << endl << endl;
+
+		// compute
+		std::tuple<VectorXd, vector<double>, int> 
+		    tmp = iterMethod::GmresHook<MatrixXd>
+		    (A, b, VectorXd::Zero(N), 20, 20, 1e-8, 0.8, 20);
+
+		cout << std::get<0>(tmp) << endl << endl;
+		for (int i = 0; i < std::get<1>(tmp).size(); i++) {
+		    cout << std::get<1>(tmp)[i] << endl;
+		}
+		cout << std::get<2>(tmp) << endl << endl;;
+		cout << std::get<1>(tmp).size() << endl << endl;
+		cout << (A * std::get<0>(tmp) - b).norm() << endl;
+		break;	
+	    }
+
 	}
     return 0;
 }

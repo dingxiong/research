@@ -76,7 +76,32 @@ namespace iterMethod {
     Gmres(const Mat &A, const VectorXd &b, const VectorXd &x0, 
 	  const int restart,
 	  const int maxit, const double rtol);
+    
+    ArrayXd calz(const ArrayXd &D, const ArrayXd &p, const double mu);
+    
+    std::tuple<double, std::vector<double>, int>
+    findTrustRegion(const ArrayXd &D, const ArrayXd &p, double delta,
+		    const double tol = 1e-12,
+		    const int maxit = 100,
+		    const double mu0 = 0);
+    
+    template <class Adotx>
+    std::tuple<VectorXd, std::vector<double>, int>
+    Gmres0Hook(Adotx Ax , const VectorXd &b, const VectorXd &x0,
+	       const int restart,
+	       const int maxit, const double rtol,
+	       const double delta,
+	       const int innerMaxit = 10);
+    
+    template <typename Mat>
+    std::tuple<VectorXd, std::vector<double>, int>
+    GmresHook(const Mat &A , const VectorXd &b, const VectorXd &x0,
+	      const int restart,
+	      const int maxit, const double rtol,
+	      const double delta,
+	      const int innerMaxit = 10);
 
+    
     /* -------------------------------------------------- */
     double chooseTheta(const double g0, const double g1, const double gp0,
 		       const double theta_min, const double theta_max);
@@ -95,13 +120,7 @@ namespace iterMethod {
 			   const int GmresRestart = 30,
 			   const int GmresMaxit = 100);
     
-    ArrayXd calz(const ArrayXd &D, const ArrayXd &p, const double mu);
-    
-    std::tuple<double, std::vector<double>, int>
-    findTrustRegion(const ArrayXd &D, const ArrayXd &p, double delta,
-		    const double tol = 1e-12,
-		    const int maxit = 100,
-		    const double mu0 = 0);
+
     
 }
 
@@ -404,6 +423,122 @@ namespace iterMethod {
 	return Gmres0([&A](const VectorXd &x){return A * x;}, b, x0, restart, maxit, rtol);
     }
 
+    /**
+     * @brief GMRES method to solve A*x = b  w. r. t  ||x|| < delta
+     *
+     * @param[in]  Ax            : a function take one argument and return Krylov vector:  Ax(x) = A*x
+     * @param[in]  b             : right side of linear equation A*x = b
+     * @param[in]  x0            : initial guess
+     * @param[in]  restart       : restart number
+     * @param[in]  maxit         : maximum iteration number
+     * @param[in]  rtol          : relative error tolerance
+     * @param[in]  delta         : radius of ball constriant
+     * @param[in]  innerMaxit    : maximal inner iteration number 
+     * @return [x, errVec, flag]
+     *          x       : the sotion of Ax=b
+     *          errVec  : errors in each iteration step
+     *          flag    : 0 => converged, 1 => not
+     *          
+     * @note this routine does not require the explicit form of matrix A, but only a function
+     *       which can return A*x.
+     * @see  Gmres()
+     */
+    template <class Adotx>
+    std::tuple<VectorXd, std::vector<double>, int>
+    Gmres0Hook(Adotx Ax , const VectorXd &b, const VectorXd &x0,
+	      const int restart,
+	      const int maxit, const double rtol,
+	      const double delta,
+	      const int innerMaxit){
+	
+	/* initial setup */
+	const int N = b.size();
+	int M = restart;
+	VectorXd x = x0;
+	double bnrm2 = b.norm();
+	if ( bnrm2 == 0.0 ) bnrm2 = 1.0;
+	std::vector<double> errVec;	/* error at each iteration */
+
+	/* initialize workspace */
+	MatrixXd V(MatrixXd::Zero(N, M+1)); // orthogonal vectors in Arnoldi iteration
+	MatrixXd H(MatrixXd::Zero(M+1, M)); // Hessenberg matrix in Arnoldi iteration
+    
+	/* outer iteration */
+	for(size_t iter = 0; iter < maxit; iter++){
+	    /* obtain residule */
+	    VectorXd r = b - Ax(x); 
+	    double rnorm = r.norm();
+	    double err = rnorm / bnrm2;
+#ifdef GMRES_PRINT
+	    fprintf(stderr, "GMRES : out loop: i= %zd , r= %g\n", iter, err);
+#endif
+	    if(err < rtol) return std::make_tuple(x, errVec, 0);
+	
+	    V.col(0) = r / rnorm;	// obtain V_1
+
+	    /* inner iteration : Arnoldi Iteration */
+	    for(size_t i = 0; i < M; i++){
+		// form the V_{i+1} and H(:, i)
+		V.col(i+1) = Ax( V.col(i) );
+		for(size_t j = 0; j <= i; j++){
+		    H(j, i) = V.col(i+1).dot( V.col(j) );
+		    V.col(i+1) -= H(j, i) * V.col(j);
+		}
+		H(i+1, i) = V.col(i+1).norm();
+		if(H(i+1, i) != 0) V.col(i+1) /= H(i+1, i);
+		
+		// conduct SVD decomposition
+		JacobiSVD<MatrixXd> svd(H.topLeftCorner(i+2, i+1), ComputeFullU | ComputeThinV);
+	        ArrayXd D ( svd.singularValues() );
+		MatrixXd U ( svd.matrixU() ); 
+		MatrixXd V2 ( svd.matrixV() ); 
+		VectorXd p = rnorm * U.row(0);
+		auto tmp = findTrustRegion(D, p.head(i+1), delta, rtol, innerMaxit, 0);
+		if (std::get<2>(tmp) != 0){
+		    fprintf(stderr, "GMRES inner newton not converge\n");
+		} 
+		ArrayXd z = calz(D, p.head(i+1), std::get<0>(tmp));  
+		double err =  sqrt( ((D * z).matrix() - p.head(i+1)).squaredNorm()
+				    + p(i+1) * p(i+1)); 
+		errVec.push_back(err); 
+#ifdef GMRES_PRINT
+		fprintf(stderr,
+			"GMRES : inner loop: i= %zd , r= %g, abs(z)= %g, inner# = %zd\n",
+			iter, err, z.matrix().norm(), std::get<1>(tmp).size());
+#endif
+		if (err < rtol){
+		    VectorXd y = V2 * z.matrix();
+		    x += V.leftCols(i+1) * y;
+		    return std::make_tuple(x, errVec, 0);
+		}
+		else if (i == M -1){ /* last one but has not converged */
+		    VectorXd y = V2 * z.matrix();
+		    x += V.leftCols(i+1) * y;
+		}
+	    }
+	}
+
+	// if the outer loop finished => not converged
+	return std::make_tuple(x, errVec, 1);
+    }
+    
+    /**
+     * @brief a wrapper of Gmres0Hook.
+     *
+     * This function uses an explicit form of matrix A.
+     */
+    template <typename Mat>
+    std::tuple<VectorXd, std::vector<double>, int>
+    GmresHook(const Mat &A , const VectorXd &b, const VectorXd &x0,
+	      const int restart,
+	      const int maxit, const double rtol,
+	      const double delta,
+	      const int innerMaxit){
+
+	return Gmres0Hook([&A](const VectorXd &x){return A * x;}, b, x0,
+			  restart, maxit, rtol,
+			  delta, innerMaxit);
+    }
 
     //////////////////////////////////////////////////////////////////////
     //                    Netwon methods related                        //

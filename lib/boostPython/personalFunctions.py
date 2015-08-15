@@ -273,6 +273,17 @@ def cqcglReadReq(fileName, groupName):
     f = h5py.File(fileName, 'r')
     req = '/' + groupName + '/'
     a = f[req+'a'].value
+    wth = f[req+'wth'].value
+    wphi = f[req+'wphi'].value
+    err = f[req+'err'].value
+    f.close()
+    return a, wth, wphi, err
+
+
+def cqcglReadRPO(fileName, groupName):
+    f = h5py.File(fileName, 'r')
+    req = '/' + groupName + '/'
+    a = f[req+'a'].value
     T = f[req+'T'].value
     nstp = f[req+'nstp'].value
     th = f[req+'th'].value
@@ -280,6 +291,18 @@ def cqcglReadReq(fileName, groupName):
     err = f[req+'err'].value
     f.close()
     return a, T, nstp, th, phi, err
+
+
+def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):
+    f = h5py.File(fileName, 'a')
+    req = f.create_group(groupName)
+    req.create_dataset("x", data=x)
+    req.create_dataset("T", data=T)
+    req.create_dataset("nstp", data=nstp)
+    req.create_dataset("th", data=th)
+    req.create_dataset('phi', data=phi)
+    req.create_dataset('err', data=err)
+    f.close()
 
 
 def cqcglRemoveReq(inputFile, outputFile, Num, groups):
@@ -314,27 +337,7 @@ def cqcglExtractReq(inputFile, outputFile, groups, startId=1):
         ix += 1
 
 
-def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):
-    f = h5py.File(fileName, 'a')
-    req = f.create_group(groupName)
-    req.create_dataset("x", data=x)
-    req.create_dataset("T", data=T)
-    req.create_dataset("nstp", data=nstp)
-    req.create_dataset("th", data=th)
-    req.create_dataset('phi', data=phi)
-    req.create_dataset('err', data=err)
-    f.close()
 
-
-def cqcglReadRPO(fileName, groupName):
-    f = h5py.File(fileName, 'r')
-    req = '/' + groupName + '/'
-    a = f[req+'a'].value
-    wth = f[req+'wth'].value
-    wphi = f[req+'wphi'].value
-    err = f[req+'err'].value
-    f.close()
-    return a, wth, wphi, err
 
 
 def centerRand(N, frac):

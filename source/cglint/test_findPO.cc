@@ -4,7 +4,7 @@
  * h5c++ test_findPO.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lcqcglRPO_print -lcqcgl1d -lmyfft_threads -lfftw3_threads -lfftw3 -lm -lpthread -lsparseRoutines -literMethod -lmyH5
  *
  * or
- * h5c++ test_findPO.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lcqcglRPO_omp -lcqcgl1d -lmyfft -lfftw3 -lm -fopenmp -lsparseRoutines -literMethod -lmyH5
+ * h5c++ test_findPO.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lcqcglRPO_omp -lcqcgl1d -lmyfft -lfftw3 -lm -fopenmp -lsparseRoutines -literMethod -lmy5H
  * 
  */
 
@@ -45,7 +45,7 @@ int main(){
 
 	
 	int M = x.cols();
-	int S = 1;
+	int S = 10;
 	M /= S;
 	nstp *= S;
 
@@ -57,7 +57,7 @@ int main(){
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);	
 	
 	CqcglRPO cglrpo(nstp, M, N, d, h);
-	auto result = cglrpo.findRPOM(xp, T, th, phi, 1e-12, 20, 100, 1e-4, 1e-4, 0.1, 0.5, 6000, 10);
+	auto result = cglrpo.findRPOM(xp, T, th, phi, 1e-12, 20, 100, 1e-7, 1e-2, 0.1, 0.5, 6000, 10);
 	
 	break;
     }

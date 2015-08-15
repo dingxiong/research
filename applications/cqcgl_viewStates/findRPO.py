@@ -15,7 +15,9 @@ if case == 1:
     N = 512
     d = 50
     h = 0.001
-    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    cgl = pyCqcgl1d(N, d, h, True, 0,
+                    -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
+                    4)
     Ndim = cgl.Ndim
 
     a0, wth0, wphi0, err = cqcglReadReq('../../data/cgl/reqN512.h5', '1')
@@ -25,12 +27,12 @@ if case == 1:
     veTilde = cgl.reduceVe(ve, a0)
     e1, e2, e3 = orthAxes(veTilde[0], veTilde[1], veTilde[6])
 
-    nstp = 70000
+    nstp = 50000
     a0Erg = a0 + ve[0]*1e-2
     totalPoints = np.zeros((0, 2))
     globalIndex = np.zeros((0,), dtype=np.int)
     originalPoints = np.zeros((0, Ndim))
-    for i in range(1):
+    for i in range(2):
         aaErg = cgl.intg(a0Erg, nstp, 1)
         aaErgTilde = cgl.reduceAllSymmetries(aaErg)[0] - a0Tilde
         aaErgTildeProj = np.dot(aaErgTilde, np.vstack((e1, e2, e3)).T)

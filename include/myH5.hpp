@@ -22,7 +22,33 @@ namespace MyH5 {
 
     void writeMatrixXd(H5File &file, string DSitem, const MatrixXd &mat);
     MatrixXd readMatrixXd(H5File &file, string DSitem);
-    
+
+    //////////////////////////////////////////////////////////////////////
+    /* KS related */
+    MatrixXi
+    checkExistEV(const string fileName, const string ppType, const int NN);
+    std::tuple<MatrixXd, double, double>
+    KSreadOrigin(const string fileName, const string &ppType, const int ppId);
+    std::tuple<MatrixXd, double, double, double, double>
+    KSreadRPO(const string fileName, const string &ppType, const int ppId);
+    void 
+    KSwriteRPO(const string fileName, const string ppType, const int ppId,
+	       const MatrixXd &a, const double T, const double nstp,
+	       const double r, const double s
+	       );
+
+    MatrixXd
+    KSreadFE(const string fileName, const string ppType, const int ppId);
+    MatrixXd
+    KSreadFV(const string fileName, const string ppType, const int ppId);
+    void 
+    KSwriteFE(const string fileName, const string ppType, const int ppId, 
+	      const MatrixXd &eigvals);
+    void 
+    KSwriteFEFV(const string fileName, const string ppType, const int ppId,
+		const MatrixXd &eigvals, const MatrixXd &eigvecs);
+
+    //////////////////////////////////////////////////////////////////////
     /* cqcgl related */
     void CqcglWriteRPO(const string fileName, const string groupName,
 		       const MatrixXd &x, const double T, const int nstp,

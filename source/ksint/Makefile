@@ -1,4 +1,5 @@
 CC = g++
+H5 = h5c++
 AR = ar
 
 OPTIM = -O3 -msse2 -msse4 -march=corei7
@@ -16,7 +17,11 @@ REFINE_SOURCE = ksrefine.cc
 REFINE_SHARED = libksrefine.so
 REFINE_STATIC = libksrefine.a
 
-all : $(SHARED) $(STATIC) $(REFINE_SHARED) $(REFINE_STATIC)
+DIM_SOURCE = ksdim.cc
+DIM_STATIC = libksdim.a
+
+all : $(SHARED) $(STATIC) $(REFINE_SHARED) $(REFINE_STATIC) $(DIM_STATIC)
+dim : $(DIM_STATIC)
 
 $(SHARED): $(SOURCE)
 	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
@@ -32,5 +37,14 @@ $(REFINE_SOURCE:.cc=.o) : $(REFINE_SOURCE)
 	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
 $(REFINE_STATIC) : $(REFINE_SOURCE:.cc=.o)
 	$(AR) crs $@ $^
+
+
+$(DIM_SOURCE:.cc=.o) : $(DIM_SOURCE)
+	$(H5) -c -std=c++11 $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
+$(DIM_STATIC) : $(DIM_SOURCE:.cc=.o)
+	$(AR) crs $@ $^
+
 clean:
 	rm -f *.so *.o *.a
+move:
+	mv *.so *.a /usr/local/home/xiong/00git/research/lib

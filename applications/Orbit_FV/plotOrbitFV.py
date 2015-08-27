@@ -7,7 +7,7 @@ from personalFunctions import *
 def magvalue(x):
 	return np.abs(x[0::2] + 1j * x[1::2]);
 
-case = 4
+case = 5
 
 if case == 1:
         f = h5py.File('../../data/myN32/ks22h02t100EV.h5')
@@ -154,11 +154,14 @@ if case == 5:
 
         veAll = np.array(f[pp + 've'])
         Nve = 30
-        veid = 2
+        veid = 30
         ve = veAll[:, (veid-1)*Ndim:veid*Ndim]
 
-        KSplotColorMapOrbit(ve, [0, 22, 0, 10.25])
-
+        KSplotColorMapOrbit(ve, [0, 22, 0, 10.25],
+                            size=[2.5, 6],
+                            save=True,
+                            name='ppo1Fv30_64', axisOn=False, barOn=False)
+        
 if case == 6:
         """
         plot the Fv of rpo1 for N = 64
@@ -174,10 +177,13 @@ if case == 6:
 
         veAll = np.array(f[pp + 've'])
         Nve = 30
-        veid = 1
+        veid = 30
         ve = veAll[:, (veid-1)*Ndim:veid*Ndim]
 
-        KSplotColorMapOrbit(ve, [0, 22, 0, 16.31])
+        KSplotColorMapOrbit(ve, [0, 22, 0, 16.31],
+                            size=[2.5, 6],
+                            save=True,
+                            name='rpo1Fv30_64', axisOn=False, barOn=False)
 
 if case == 7:
         """

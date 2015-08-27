@@ -1,0 +1,4 @@
+*.npz
+*.np
+*.mat
+.ipynb_checkpoints

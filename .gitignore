@@ -5,4 +5,4 @@
 *.mexa64
 *.pyc
 *~
-/data
+*.log

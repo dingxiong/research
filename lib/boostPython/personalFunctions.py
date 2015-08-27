@@ -387,3 +387,43 @@ def PoincareLinearInterp(x, getIndex=False):
         return points, index
     else:
         return points
+
+############################################################
+#                        KS related                        #
+############################################################
+
+
+def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
+                        percent='5%', size=[3, 6],
+                        axisOn=True, barOn=True,
+                        save=False, name='out'):
+    """
+    plot the color map of the states
+    """
+    half1 = aa[:, 0::2] + 1j*aa[:, 1::2]
+    half2 = aa[:, 0::2] - 1j*aa[:, 1::2]
+    M = half1.shape[0]
+    aaWhole = np.hstack((np.zeros((M, 1)), half1,
+                         np.zeros((M, 1)), half2[:,::-1]))
+    AA = np.fft.ifftn(aaWhole, axes=(1,)).real # only the real part
+    
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111)
+    if axisOn:
+        ax.set_xlabel('x', fontsize=20)
+        ax.set_ylabel('t', fontsize=20)
+        
+    im = ax.imshow(AA, cmap=plt.get_cmap(colortype), extent=ext,
+                   aspect='auto', origin='lower')
+    ax.grid('on')
+    if barOn:
+        dr = make_axes_locatable(ax)
+        cax = dr.append_axes('right', size=percent, pad=0.05)
+        bar = plt.colorbar(im, cax=cax, ticks=barTicks)
+        
+    fig.tight_layout(pad=0)
+    if save:
+        plt.savefig(name+'.png', format='png')
+        plt.savefig(name+'.eps', format='eps')
+    else:
+        plt.show(block=False)

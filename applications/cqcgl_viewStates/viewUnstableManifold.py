@@ -6,7 +6,7 @@ from time import time
 from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
-case = 3
+case = 2
 
 
 if case == 1:
@@ -93,7 +93,12 @@ if case == 2:
     d = 50
     h = 0.001
 
-    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    N = 512
+    d = 50
+    h = 0.001
+    cgl = pyCqcgl1d(N, d, h, True, 0,
+                    -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
+                    4)
     a0, wth0, wphi0, err = cqcglReadReq('../../data/cgl/reqN512.h5', '1')
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
     eigvectors = realve(eigvectors)

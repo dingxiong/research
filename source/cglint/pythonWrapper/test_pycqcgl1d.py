@@ -5,7 +5,7 @@ from time import time
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 0
+case = 1
 
 if case == 0:
     """
@@ -28,14 +28,20 @@ if case == 0:
     print norm(aa-aa2), norm(aa-aa3)
 
 if case == 1:
+    """
+    test the integration routines
+    """
     cgl = pyCqcgl1d(512, 50, 0.01, True, 0,
                     -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
                     4)
     Ndim = cgl.Ndim
-    a0 = rand(Ndim)
+    A0 = centerRand(512*2, 0.2)
+    a0 = cgl.Config2Fourier(A0)
+    # a0 = rand(Ndim)
     # aa = cgl.intg(a0, 50000, 1)
     t = time()
-    aa, daa = cgl.intgj(a0, 1000, 1, 1000)
+    # aa, daa = cgl.intgj(a0, 1000, 1, 1000)
+    aa = cgl.intg(a0, 10000, 1)
     print time() - t
 
 # compare fft with Fourier2Config

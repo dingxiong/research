@@ -8,8 +8,6 @@ tangency/*/
 
 
 !*.py
-!*/*.py
 !*.png
 !*.sh
 !*.m
-00readme.txt

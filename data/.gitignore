@@ -1,0 +1,15 @@
+*.h5
+*.mat
+*.gz
+
+ergodicShadow/*/
+!ergodicShadow/figs/
+tangency/*/
+
+
+!*.py
+!*/*.py
+!*.png
+!*.sh
+!*.m
+00readme.txt

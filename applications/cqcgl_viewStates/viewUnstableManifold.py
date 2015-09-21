@@ -89,17 +89,14 @@ if case == 2:
     """
     try to obtain the Poincare intersection points
     """
-    N = 512
+    N = 1024
     d = 50
-    h = 0.001
-
-    N = 512
-    d = 50
-    h = 0.001
+    h = 0.0001
+    
     cgl = pyCqcgl1d(N, d, h, True, 0,
                     -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
                     4)
-    a0, wth0, wphi0, err = cqcglReadReq('../../data/cgl/reqN512.h5', '1')
+    a0, wth0, wphi0, err = cqcglReadReq('../../data/cgl/reqN1024.h5', '1')
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
     eigvectors = realve(eigvectors)
     eigvectors = Tcopy(eigvectors)
@@ -110,23 +107,35 @@ if case == 2:
     e1, e2, e3 = orthAxes(veTilde[0], veTilde[1], veTilde[6])
 
     nstp = 60000
-    a0Erg = a0 + eigvectors[0]*1e-4
-    totalPoints = np.zeros((0, 2))
-    for i in range(5):
-        aaErg = cgl.intg(a0Erg, nstp, 1)
-        aaErgHat, th, phi = cgl.orbit2slice(aaErg)
-        aaErgTilde = cgl.reduceReflection(aaErgHat)
-        aaErgTilde -= a0Tilde
-        aaErgTildeProj = np.dot(aaErgTilde, np.vstack((e1, e2, e3)).T)
 
-        plotConfigSpace(cgl.Fourier2Config(aaErg),
-                        [0, d, nstp*h*i, nstp*h*(i+1)])
-        points = PoincareLinearInterp(aaErgTildeProj)
-        totalPoints = np.vstack((totalPoints, points))
-        a0Erg = aaErg[-1]
+    M = 10
+    a0Erg = np.empty((M, cgl.Ndim))
+    for i in range(M):
+        a0Erg[i] = a0 + (i+1) * eigvectors[0]*1e-4
+    PointsProj = np.zeros((0, 2))
+    PointsFull = np.zeros((0, cgl.Ndim))
+    for i in range(30):
+        for j in range(M):
+            aaErg = cgl.intg(a0Erg[j], nstp, 1)
+            aaErgHat, th, phi = cgl.orbit2slice(aaErg)
+            aaErgTilde = cgl.reduceReflection(aaErgHat)
+            aaErgTilde -= a0Tilde
+            aaErgTildeProj = np.dot(aaErgTilde, np.vstack((e1, e2, e3)).T)
 
-    scatter2dfig(totalPoints[:350, 0], totalPoints[:350, 1], s=10,
+            # plotConfigSpace(cgl.Fourier2Config(aaErg),
+            #                 [0, d, nstp*h*i, nstp*h*(i+1)])
+            points, index, ratios = PoincareLinearInterp(aaErgTildeProj, getIndex=True)
+            PointsProj = np.vstack((PointsProj, points))
+            for i in range(len(index)):
+                dif = aaErgTilde[index[i]+1] - aaErgTilde[index[i]]
+                p = dif * ratios[i] + aaErgTilde[index[i]]
+                PointsFull = np.vstack((PointsFull, p))
+            a0Erg[j] = aaErg[-1]
+
+    upTo = PointsProj.shape[0]
+    scatter2dfig(PointsProj[:upTo, 0], PointsProj[:upTo, 1], s=10,
                  labs=[r'$e_2$', r'$e_3$'])
+    dis = getCurveCoor(PointsFull)
     # np.savez_compressed('PoincarePoints', totalPoints=totalPoints)
 
 if case == 3:

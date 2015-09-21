@@ -2,7 +2,7 @@ import h5py
 from pylab import *
 import numpy as np
 from time import time
-from py_cqcgl1d import pyCqcgl1d
+from py_cqcgl1d_threads import pyCqcgl1d, pyCqcglRPO
 from personalFunctions import *
 
 
@@ -26,25 +26,35 @@ def cqcglFindReq(fileName, frac=0.3, MaxIter=300, Ntrial=1000):
             ReqNum += 1
 
 
-def cqcglConvertReq(inputFile, outputFile, indices, MaxIter=300, tol=1e-12):
+def cqcglConvertReq(N2, inputFile, outputFile, indices,
+                    MaxIter=300, tol=1e-12, doesPrint=False):
     """
-    indices : the indices of reqs needed to be converted
+    convert the relative equilibria found for some truncation number N to
+    a finer resolution N2 = 2*N.
+
+    parameters:
+    N2          the dimension of the finer system
+    inputFile   file storing reqs with N
+    outputFile  file is about to create to store reqs with 2*N
+    indices     the indices of reqs needed to be converted
     """
-    N = 256*2
+    # N = 512
     d = 50
-    h = 0.005
-    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
-    # Ndim = cgl.Ndim
+    h = 0.005                   # time step is not used acturally
+    cgl = pyCqcgl1d(N2, d, h, True, 0,
+                    -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
+                    4)
 
     for i in indices:
         a0, wth0, wphi0, err0 = cqcglReadReq(inputFile, str(i))
         a0unpad = 2 * cgl.generalPadding(a0)
         a, wth, wphi, err = cgl.findReq(a0unpad, wth0, wphi0,
-                                        MaxIter, tol, True, False)
+                                        MaxIter, tol, True, doesPrint)
         print err
         cqcglSaveReq(outputFile, str(i), a, wth, wphi, err)
 
-case = 6
+
+case = 5
 
 if case == 1:
     """
@@ -152,21 +162,26 @@ if case == 5:
     """
     change the existing reqs to different dimension
     """
-    cqcglConvertReq('../../data/cgl/req.h5', 'req2.h5', range(1, 23))
+    # cqcglConvertReq('../../data/cgl/req.h5', 'req2.h5', range(1, 23))
+    # cqcglConvertReq(2048, '../../data/cgl/reqN1024.h5', 'req2.h5', range(1, 23))
+    cqcglConvertReq(4096, '../../data/cgl/reqN2048.h5', 'req2.h5',
+                    range(1, 23), tol=1.5e-11, doesPrint=True)
 
 if case == 6:
     """
     plot the interesting relative equilibria that I have found
     """
-    N = 512
+    N = 1024
     d = 50
     h = 0.005
-    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    cgl = pyCqcgl1d(N, d, h, True, 0,
+                    -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
+                    4)
 
     Num = 22
     nstp = 18000
     for i in range(Num):
-        a, wth, wphi, err = cqcglReadReq('../../data/cgl/req.h5', str(i+1))
+        a, wth, wphi, err = cqcglReadReq('../../data/cgl/reqN1024.h5', str(i+1))
         aa = cgl.intg(a, nstp, 1)
         plotConfigSpace(cgl.Fourier2Config(aa), [0, d, 0, nstp*h],
                         save=True, name='cqcglReq'+str(i+1)+'T90'+'.png')

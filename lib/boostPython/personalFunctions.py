@@ -263,8 +263,8 @@ def cqcglSaveReq(fileName, groupName, a, wth, wphi, err):
     f = h5py.File(fileName, 'a')
     req = f.create_group(groupName)
     req.create_dataset("a", data=a)
-    req.create_dataset("th", data=wth)
-    req.create_dataset('phi', data=wphi)
+    req.create_dataset("wth", data=wth)
+    req.create_dataset('wphi', data=wphi)
     req.create_dataset('err', data=err)
     f.close()
 
@@ -376,6 +376,7 @@ def PoincareLinearInterp(x, getIndex=False):
     N, M = x.shape
     points = np.zeros((0, M-1))
     index = np.zeros((0,), dtype=np.int)
+    ratios = np.zeros((0,))
     for i in range(N-1):
         if x[i, 0] < 0 and x[i+1, 0] >= 0:
             ratio = -x[i, 0] / (x[i+1, 0] - x[i, 0])
@@ -383,11 +384,54 @@ def PoincareLinearInterp(x, getIndex=False):
             z = (x[i+1, 2] - x[i, 2]) * ratio + x[i, 2]
             points = np.vstack((points, np.array([y, z])))
             index = np.append(index, i)
+            ratios = np.append(ratios, ratio)
     if getIndex:
-        return points, index
+        return points, index, ratios
     else:
         return points
 
+def getCurveIndex(points):
+    """
+    Obtain the curvalinear Index of a set of points.
+    
+    parameter:
+    points   :  each row is a point 
+    """
+    n = points.shape[0]         # number of points
+    indices = range(n)
+    sortedIndices = []
+
+    norms = [np.linalg.norm(points[i]) for i in range(n)]
+    start = np.argmin(norms)
+    sortedIndices.append(start)
+    indices.remove(start)
+    
+    for i in range(n-1):
+        last = sortedIndices[-1]
+        norms = [np.linalg.norm(points[i] - points[last]) for i in indices]
+        minimal = indices[np.argmin(norms)] # careful
+        sortedIndices.append(minimal)
+        indices.remove(minimal)
+
+    return sortedIndices
+
+def getCurveCoor(points):
+    """
+    Obtain the curvalinear coordinate of a set of points.
+    
+    parameter:
+    points   :  each row is a point 
+    """
+    n = points.shape[0]         # number of points
+    indices = getCurveIndex(points)
+    dis = np.empty(n)
+
+    dis[0] = np.linalg.norm(points[indices[0]])
+    for i in range(1, n):
+        dis[i] = np.linalg.norm(points[indices[i]] - points[indices[i-1]])
+
+    return dis
+    
 ############################################################
 #                        KS related                        #
 ############################################################

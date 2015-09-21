@@ -4,8 +4,9 @@
 
 ergodicShadow/*/
 !ergodicShadow/figs/
-tangency/*/
 
+tangency/*/
+!tangency/figs/
 
 !*.py
 !*.png

@@ -6,3 +6,9 @@
 *.pyc
 *~
 *.log
+*.dat
+*.swp
+*.aux
+*.log
+*.toc
+*.el

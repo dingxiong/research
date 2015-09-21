@@ -1,0 +1,134 @@
+\documentclass[12pt]{book}
+%\usepackage[width=4.375in, height=7.0in, top=1.0in, papersize={5.5in,8.5in}]{geometry}
+\usepackage[a4paper, top=1.0in, left=1.5in, right=1.25in, bottom=1.25in]{geometry}
+\usepackage[pdftex]{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tipa}
+%\usepackage{txfonts}
+\usepackage{textcomp}
+%\usepackage{amsthm}
+%\usepackage{array}
+%\usepackage{xy}
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\fancyhf{}
+\fancyhead[LE,RO]{\bfseries\thepage}
+\fancyhead[LO]{\bfseries\rightmark}
+\fancyhead[RE]{\bfseries\leftmark}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+\addtolength{\headheight}{0.5pt}
+\setlength{\footskip}{0in}
+\renewcommand{\footruleskip}{0pt}
+\fancypagestyle{plain}{%
+\fancyhead{}
+\renewcommand{\headrulewidth}{0pt}
+}
+%
+%\parindent 0in
+\parskip 0.05in
+%
+\begin{document}
+\frontmatter
+%
+\chapter*{\Huge \center Math Notes}
+\thispagestyle{empty}
+%{\hspace{0.25in} \includegraphics{./ru_sun.jpg} }
+\section*{\huge \center Xiong Ding}
+\newpage
+\subsection*{\center \normalsize Copyright \copyright 2015 by Xiong Ding}
+\subsection*{\center \normalsize All rights reserved.}
+\subsection*{\center \normalsize ISBN \dots}
+\subsection*{\center \normalsize \dots Publications}
+%
+\chapter*{\center \normalsize To my PhD}
+%
+\tableofcontents
+%
+\mainmatter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% main content starts
+\chapter{Geometry, Topology and Physics -- Nakahara}
+\begin{itemize}
+\item inclusion map
+\item 
+  If $f:X\to Y$ preserves these algebraic structures, then $f$ is called a \textbf{homomorphism}.
+  If a homomorphism is bijective, then it is called an \textbf{isomorphism}.
+\item
+  equivalence relation, equivalence classes, quotient space ($X/\sim$), M\"{o}bius strip,
+  $T^2$ (2-d torus), $\Sigma_g$ (torus with $g$ handles)
+\item
+  linear map ( an homomorphism preserving vector addition and scalar multiplication), \\
+  linear function ( $V \to K$), \\
+  $dim V = dim(ker f) + dim(im f)$.
+\item
+  dual space ($V^*$) is a functional space whose axes are given by base functions 
+  $e^{i}(e_j)=\delta_{ij}$. This functional space is also a vector space, and if $V$ 
+  is finite dimensional, we have $dim V = dim V^*$. Basically, $f \in V^*$ means 
+  $f$ is linear functional defined in $V$, namely, $f:V\mapsto K$. Given an isomorphism 
+  $g : V\mapsto V^*$, define the bilinear form:
+  \[
+    g(\mathbf{v}, \mathbf{w}) \doteq \langle \mathbf{v}, \mathbf{w} \rangle_{g} 
+    = \langle g\mathbf{v}, \mathbf{w} \rangle
+    = (g(\mathbf{v}))(\mathbf{w})
+  \]
+  Note, $g(\mathbf{v})$ returns a linear functional.
+\item
+  discrete/trivial/usual topology,  Hausdorff spaces (every metric space is Hausdorff space), \\
+  closure $\bar{A}$, interior $A^\circ$, boundary $b(A)$, \\
+  connected, arcwise connected, simply connected.
+\item
+  homeomorphism is different from homomorphism. \\
+  why homeomorphism ? Because it defines a equivalence relation which enables us to deform one 
+  topological space continuously to another topological space in the same class. 
+\end{itemize}
+
+\chapter{Grassmann Algebra -- John Browne}
+
+Exterior product
+\begin{itemize}
+\item 
+  cobasis $\underline{e_i}$ defined as $e_i \wedge \underline{e_j} = \delta_{ij}  e_1 \wedge e_2 \cdots \wedge e_n$ \\
+  determinant, 
+  \[
+    \alpha_1 \wedge \alpha_2 \cdots \wedge \alpha_n = Det \cdot 
+    e_1 \wedge e_2 \cdots \wedge e_n
+  \]
+  Cofactors
+\item
+  simplicity (0, 1, $n-1$ and $n$ are simple)
+\item
+  exterior division: 
+  \[
+    \frac{ \alpha_1 \wedge \alpha_2 \cdots \wedge \alpha_n \wedge \beta} {\beta} =
+    (\alpha_1 + t_1 \beta) \wedge (\alpha_2 + t_2 \beta)\cdots \wedge (\alpha_n + t_n \beta)
+  \]
+\end{itemize}
+
+Regressive Product
+\begin{itemize}
+\item 
+  
+\end{itemize}
+
+\chapter{Pattern formation outside of equilibrium -- Cross and Hohenberg}
+\begin{itemize}
+\item 
+\end{itemize}
+
+\backmatter
+%
+\begin{thebibliography}{99}
+\bibitem{baba_books}
+Books of Shrii Shrii Anandamurti (Prabhat Ranjan Sarkar): \\
+http://shop.anandamarga.org/
+\bibitem{anandamitra}
+Avtk. Ananda Mitra Ac., \emph{The Spiritual Philosophy of Shrii Shrii Anandamurti: A Commentary on Ananda Sutram}, Ananda Marga Publications (1991) \\
+ISBN: 81-7252-119-7
+\end{thebibliography}
+\end{document}

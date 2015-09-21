@@ -29,9 +29,11 @@ anglePO(const string fileName, const string ppType,
     MatrixXd eigVals = MyH5::KSreadFE(fileName, ppType, ppId); // Floquet exponents
     MatrixXd eigVecs = MyH5::KSreadFV(fileName, ppType, ppId); // Floquet vectors
     // left and right bounds
-    MatrixXi ixSp = denseRoutines::indexSubspace(eigVals.col(2), eigVals.col(0)); 
+    MatrixXi ixSp = denseRoutines::indexSubspace(eigVals.col(2), eigVals.col(0));
   
-    const int N = sqrt(eigVecs.rows());
+    const int N = eigVals.rows(); // be careful about N when FVs are not complete
+    assert ( eigVecs.rows()  % N == 0);
+    const int NFV = eigVecs.rows() / N;
     const int M = eigVecs.cols();
     const int M2 = subspDim.cols();
     MatrixXd ang_po(M, M2);
@@ -43,7 +45,7 @@ anglePO(const string fileName, const string ppType,
 
     for(size_t i = 0; i < M; i++){
 	MatrixXd ve = eigVecs.col(i);
-	ve.resize(N, N);
+	ve.resize(N, NFV);
 	for(size_t j = 0; j < M2; j++){      
 	    double ang = denseRoutines::angleSubspace(ve.middleCols(bound(0, j), bound(1,j)-bound(0,j)+1), 
 						      ve.middleCols(bound(2, j), bound(3,j)-bound(2,j)+1) );
@@ -54,6 +56,13 @@ anglePO(const string fileName, const string ppType,
     return std::make_pair(ang_po, boundStrict);
 }
 
+/**
+ * Test the tangency of tangent bundle.
+ *
+ * @param[in] N         number of FVs at each point 
+ * @param[in] NN        number of periodic orbits
+ * @param[in] spType    "vector" or "space"
+ */
 void
 anglePOs(const string fileName, const string ppType,
 	 const int N, const int NN,
@@ -77,7 +86,7 @@ anglePOs(const string fileName, const string ppType,
     ofstream file[M];
     string angName("ang");
     for(size_t i = 0; i < M; i++){
-	file[i].open(saveFolder + angName + to_string(i) + ".txt", ios::trunc);
+	file[i].open(saveFolder + angName + to_string(i) + ".dat", ios::trunc);
 	file[i].precision(16);
     }
     ////////////////////////////////////////////////////////////
@@ -93,10 +102,13 @@ anglePOs(const string fileName, const string ppType,
 		std::pair<MatrixXd, MatrixXi> tmp =
 		    anglePO(fileName, ppType, ppId, subspDim);
 		MatrixXd &ang = tmp.first;
-		MatrixXi &boundStrict = tmp.second; cout << boundStrict << endl;
+		MatrixXi &boundStrict = tmp.second;
+		cout << boundStrict << endl;
 		// check whether there are degeneracy
-		MatrixXi pro = boundStrict.row(0).array() *  boundStrict.row(1).array() *
-		    boundStrict.row(2).array() * boundStrict.row(3).array();
+		MatrixXi pro = boundStrict.row(0).array() *
+		    boundStrict.row(1).array() *
+		    boundStrict.row(2).array() *
+		    boundStrict.row(3).array();
 		for(size_t i = 0; i < M; i++){
 		    // only keep the orbits whose 4 bounds are not degenerate
 		    if(pro(0, i) == 1) file[i] << ang.col(i) << endl;

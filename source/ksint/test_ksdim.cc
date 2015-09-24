@@ -17,7 +17,7 @@ using namespace Eigen;
 int main(){
     cout.precision(16);
 
-    switch (3) {
+    switch (4) {
 
     case 1: {
 	MatrixXi subspDim(4,3); 
@@ -60,9 +60,10 @@ int main(){
 	break;
     }
 
-    case 4: {
+    case 4: {	       /* calculate the local expansion rate of FVs */
 	string fileName("../../data/ks22h001t120x64EV.h5");
-	partialHyperbAll(fileName, 200, 200, "./FVexpand/");
+	partialHyperbOneType(fileName, "rpo", 200, "./FVexpand/rpo/");
+	// partialHyperbAll(fileName, 200, 200, "./FVexpand/");
 	break;
     }
 

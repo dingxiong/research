@@ -153,11 +153,14 @@ namespace MyH5 {
 	Group group(file.createGroup("/" + ppType + to_string(ppId)));
 	string DS = "/" + ppType + "/" + to_string(ppId) + "/";
 
+	KScheckGroups(fileName, ppType, ppId);
+	
 	writeMatrixXd(file, DS + "a", a);
 	writeScalar<double>(file, DS + "T", T);
 	writeScalar<double>(file, DS + "nstp", nstp);
 	writeScalar<double>(file, DS + "r", r);
-	writeScalar<double>(file, DS + "s", s);
+	if(ppType.compare("rpo") == 0) 
+	    writeScalar<double>(file, DS + "s", s);
     }
 
 
@@ -199,7 +202,9 @@ namespace MyH5 {
 	      const MatrixXd &eigvals){
 	H5File file(fileName, H5F_ACC_RDWR);
 	string DS = "/" + ppType + "/" + to_string(ppId) + "/";
-
+	
+	KScheckGroups(fileName, ppType, ppId);
+	
 	writeMatrixXd(file, DS + "e", eigvals);
     }
 

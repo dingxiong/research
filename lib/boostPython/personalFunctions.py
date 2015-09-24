@@ -474,7 +474,19 @@ def KSreadFEFV(fileName, poType, idx):
     fv = f[po+'ve'].value
     f.close()
     return fe, fv
-    
+
+def KScopyTo(inFile, outFile, poType, r):
+    inF = h5py.File(inFile, 'r')
+    outF = h5py.File(outFile, 'a')
+    if not ('/' + poType in outF):
+        outF.create_group('/' + poType)
+    for i in r:
+        print i;
+        ds =  '/' + poType + '/' + str(i)
+        h5py.h5o.copy(inF.id, ds, outF.id, ds)
+        
+    inF.close()
+    outF.close()
     
 def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
                         percent='5%', size=[3, 6],

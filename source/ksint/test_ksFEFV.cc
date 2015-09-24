@@ -26,12 +26,15 @@ int main(){
 	const int MaxN = 8000;  // maximal iteration number for PED
 	const double tol = 1e-15; // torlearance for PED   
 	const int trunc = 30; // number of vectors	
-	const size_t ppId = 3;
-	KScalWriteFEFV("../../data/ks22h001t120x64EV.h5", "ex.h5", "rpo", ppId, L, MaxN, tol, nqr, trunc);
+	const size_t ppId = 13;
+	const string inputfileName = "../../data/ks22h001t120x64EV.h5";
+	const string outputfileName = "ex.h5";
+	const string ppType = "rpo";
+	KScalWriteFEFVInit(inputfileName, outputfileName, ppType, ppId, L, MaxN, tol, nqr, trunc);
 	// auto tmp = KScalFEFV("../../data/ks22h001t120x64EV.h5", "ppo", ppId, L, MaxN, tol, nqr, trunc);
 	break;
     }
-
+	
     default: {
 	cout << "Please indicate the right #" << endl;
     }

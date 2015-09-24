@@ -110,6 +110,29 @@ KScalWriteFE(const string inputfileName,
     MyH5::KSwriteFE(outputfileName, ppType, ppId, eigvals);
 }
 
+
+void 
+KScalWriteFEInit(const string inputfileName,
+		 const string outputfileName,
+		 const string ppType,
+		 const int ppId,
+		 const int L /* = 22 */,
+		 const int MaxN /* = 80000 */,
+		 const double tol /* = 1e-15 */,
+		 const int nqr /* = 1 */){
+    MatrixXd eigvals = KScalFE(inputfileName, ppType, ppId, L, MaxN, tol, nqr);  
+    MyH5::KSwriteFE(outputfileName, ppType, ppId, eigvals);
+
+    auto tmp = MyH5::KSreadRPO(inputfileName, ppType, ppId);
+    MatrixXd &a = std::get<0>(tmp);
+    double T = std::get<1>(tmp);
+    int nstp = (int) std::get<2>(tmp);
+    double r = std::get<3>(tmp);
+    double s = std::get<4>(tmp);
+    MyH5::KSwriteRPO(outputfileName, ppType, ppId, a, T, nstp, r, s);
+}
+
+
 void 
 KScalWriteFEFV(const string inputfileName,
 	       const string outputfileName,
@@ -126,4 +149,30 @@ KScalWriteFEFV(const string inputfileName,
   
     MyH5::KSwriteFEFV(outputfileName, ppType, ppId, eigvals, eigvecs);
     
+}
+
+
+void 
+KScalWriteFEFVInit(const string inputfileName,
+		   const string outputfileName,
+		   const string ppType,
+		   const int ppId,
+		   const int L /* = 22 */,
+		   const int MaxN /* = 80000 */,
+		   const double tol /* = 1e-15 */,
+		   const int nqr /* = 1 */,
+		   const int trunc /* = 0 */){
+    pair<MatrixXd, MatrixXd> eigv = KScalFEFV(inputfileName, ppType, ppId, L, MaxN, tol, nqr, trunc);
+    MatrixXd &eigvals = eigv.first;
+    MatrixXd &eigvecs = eigv.second; 
+  
+    MyH5::KSwriteFEFV(outputfileName, ppType, ppId, eigvals, eigvecs);
+    
+    auto tmp = MyH5::KSreadRPO(inputfileName, ppType, ppId);
+    MatrixXd &a = std::get<0>(tmp);
+    double T = std::get<1>(tmp);
+    int nstp = (int) std::get<2>(tmp);
+    double r = std::get<3>(tmp);
+    double s = std::get<4>(tmp);
+    MyH5::KSwriteRPO(outputfileName, ppType, ppId, a, T, nstp, r, s);
 }

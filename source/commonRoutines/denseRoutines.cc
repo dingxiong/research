@@ -48,7 +48,7 @@ double denseRoutines::angleSpaceVector(const Ref<const MatrixXd> &Q,
 }
 
 
-/** @brief normalize each row of a matrix  */
+/** @brief normalize each column of a matrix  */
 void denseRoutines::normc(MatrixXd &A){
     int m = A.cols();
     for(size_t i = 0; i < m; i++) 

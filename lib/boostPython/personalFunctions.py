@@ -437,6 +437,45 @@ def getCurveCoor(points):
 ############################################################
 
 
+def KSreadPO(fileName, poType, idx):
+    f = h5py.File(fileName, 'r')
+    po = '/' + poType + '/' + str(idx) + '/'
+    a = f[po+'a'].value
+    T = f[po+'T'].value[0]
+    nstp = f[po+'nstp'].value[0]
+    r = f[po+'r'].value[0]
+    s = 0
+    if poType == 'rpo':
+        s = f[po+'s'].value[0]
+        f.close()
+        return a, T, nstp, r, s
+    else :
+        f.close()
+        return a, T, nstp, r, s
+
+def KSreadFE(fileName, poType, idx):
+    f = h5py.File(fileName, 'r')
+    po = '/' + poType + '/' + str(idx) + '/'
+    fe = f[po+'e'].value
+    f.close()
+    return fe
+
+def KSreadFE(fileName, poType, idx):
+    f = h5py.File(fileName, 'r')
+    po = '/' + poType + '/' + str(idx) + '/'
+    fv = f[po+'ve'].value
+    f.close()
+    return fv
+
+def KSreadFEFV(fileName, poType, idx):
+    f = h5py.File(fileName, 'r')
+    po = '/' + poType + '/' + str(idx) + '/'
+    fe = f[po+'e'].value
+    fv = f[po+'ve'].value
+    f.close()
+    return fe, fv
+    
+    
 def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
                         percent='5%', size=[3, 6],
                         axisOn=True, barOn=True,

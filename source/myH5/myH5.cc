@@ -1,4 +1,5 @@
 #include "myH5.hpp"
+#include <iostream>
 
 namespace MyH5 {
 
@@ -8,12 +9,25 @@ namespace MyH5 {
     MatrixXd readMatrixXd(H5File &file, string DSitem){
 	DataSet item = file.openDataSet(DSitem);
 	DataSpace dsp = item.getSpace();
-	assert(dsp.getSimpleExtentNdims() == 2);
-	hsize_t dims[2];
-	int ndims = dsp.getSimpleExtentDims(dims, NULL);
-	MatrixXd x(dims[1], dims[0]);	/* HDF5 uses row major by default */
-	item.read(x.data(), PredType::NATIVE_DOUBLE);
-	return x;
+	const int D = dsp.getSimpleExtentNdims();
+	if (D == 2) {
+	    hsize_t dims[2];
+	    int ndims = dsp.getSimpleExtentDims(dims, NULL);
+	    MatrixXd x(dims[1], dims[0]);	/* HDF5 uses row major by default */
+	    item.read(x.data(), PredType::NATIVE_DOUBLE);
+	    return x;
+	}
+	else if (D == 1) {
+	    hsize_t dims[1];
+	    int ndims = dsp.getSimpleExtentDims(dims, NULL);
+	    MatrixXd x(dims[0], 1);
+	    item.read(x.data(), PredType::NATIVE_DOUBLE);
+	    return x;
+	}
+	else {
+	    fprintf(stderr, "readMatrixXd() dimension wrong !\n");
+	    exit(-1);
+	}
     }
     
     /**

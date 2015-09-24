@@ -7,6 +7,7 @@
 #include "myH5.hpp"
 #include "denseRoutines.hpp"
 #include "ksdim.hpp"
+#include "ksint.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -118,3 +119,86 @@ anglePOs(const string fileName, const string ppType,
     for(size_t i = 0; i < M; i++) file[i].close();
 }
 
+/**
+ * Calucate local expansion rate of FVs along a periodic orbit
+ *
+ * @param[in] fileName   h5 file that stores the ppo/rpo
+ * @param[in] ppType     'rpo' or 'ppo'
+ * @param[in] ppId       index of po
+ * @return               expansion rate. each column is the expansion rate
+ *                       at a specific point along the orbit
+ */
+MatrixXd partialHyperb(const string fileName, const string ppType,
+		       const int ppId)
+{
+    auto tmp = MyH5::KSreadRPO(fileName, ppType, ppId);
+    MatrixXd &a = std::get<0>(tmp);
+    double T = std::get<1>(tmp);
+    int nstp = (int) std::get<2>(tmp);
+    double r = std::get<3>(tmp);
+    double s = std::get<4>(tmp);
+    MatrixXd eigVals = MyH5::KSreadFE(fileName, ppType, ppId); // Floquet exponents
+    MatrixXd eigVecs = MyH5::KSreadFV(fileName, ppType, ppId); // Floquet vectors
+    
+    const int N = eigVals.rows(); // be careful about N when FVs are not complete
+    assert ( eigVecs.rows()  % N == 0);
+    const int NFV = eigVecs.rows() / N;
+    const int M = eigVecs.cols();
+
+    const int Nks = a.rows() + 2;
+    const double L = 22;
+    assert(nstp % M == 0);
+    const int space = nstp / M;
+    KS ks(Nks, T/nstp, L);
+    auto tmp2 = ks.intgj(a.col(0), nstp, nstp, space);
+    ArrayXXd &daa = tmp2.second;
+    
+    MatrixXd Jv(N, NFV*M); 
+    for(size_t i = 0; i < M; i++){
+	MatrixXd ve = eigVecs.col(i);
+	ve.resize(N, NFV);
+	MatrixXd J = daa.col(i); 
+	J.resize(N, N);
+	Jv.middleCols(i*NFV, NFV) = J * ve; 
+    }
+
+    MatrixXd expand(NFV, M);
+    for(size_t i = 0; i < NFV; i++){
+	if (eigVals(i, 2) == 0) { // real case 
+	    for(int j = 0; j < M; j++){
+		expand(i, j) = Jv.col(j*NFV+i).norm();
+	    }
+	}
+	else {			// complex case
+	    for(int j = 0; j < M; j++){
+		double e1 = Jv.col(j*NFV+i).squaredNorm();
+		double e2 = Jv.col(j*NFV+i+1).squaredNorm();
+		expand(i, j) = sqrt(e1+e2);
+		expand(i+1, j) = expand(i, j);
+	    }
+	    i++;
+	}
+    }
+
+    return expand;
+}
+
+void partialHyperbOneType(const string fileName, const string ppType,
+		      const int NN, const string saveFolder){
+    ofstream file;
+    for(size_t i = 0; i < NN; i++){
+	int ppId = i + 1;
+	file.open(saveFolder + "FVexpand" + to_string(ppId) + ".dat", ios::trunc);
+	file.precision(16);
+	printf("========= i = %zd ========\n", i);
+	MatrixXd expand = partialHyperb( fileName,  ppType, ppId);
+	file << expand << endl;
+	file.close();
+    }
+}
+
+void partialHyperbAll(const string fileName, const int NNppo, const int NNrpo,
+		      const string saveFolder){
+    partialHyperbOneType(fileName, "ppo", NNppo, saveFolder + "ppo/");
+    partialHyperbOneType(fileName, "rpo", NNrpo, saveFolder + "rpo/");
+}

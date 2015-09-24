@@ -203,6 +203,26 @@ namespace MyH5 {
 	writeMatrixXd(file, DS + "e", eigvals);
     }
 
+
+    /**
+     * check the existence of groups. If not, then crate it.
+     */
+    void KScheckGroups(const string fileName, const string ppType,
+		       const int ppId){
+	
+	H5File file(fileName, H5F_ACC_RDWR);
+	string g1 =  "/" + ppType;
+	string g2 =  "/" + ppType + "/" + to_string(ppId);
+	if(H5Lexists(file.getId(), g1.c_str(), H5P_DEFAULT) == false){
+	    file.createGroup(g1.c_str());
+	    file.createGroup(g2.c_str());	    
+	}
+	else{
+	    if(H5Lexists(file.getId(), g2.c_str(), H5P_DEFAULT) == false)
+		file.createGroup(g2.c_str());	 
+	}
+    }
+    
     /** @brief write the Floquet exponents and Floquet vectors  */
     void 
     KSwriteFEFV(const string fileName, const string ppType, const int ppId,
@@ -210,6 +230,8 @@ namespace MyH5 {
 	H5File file(fileName, H5F_ACC_RDWR);
 	string DS = "/" + ppType + "/" + to_string(ppId) + "/";
 
+	KScheckGroups(fileName, ppType, ppId);
+	
 	writeMatrixXd(file, DS + "e", eigvals);
 	writeMatrixXd(file, DS + "ve", eigvecs);
     }

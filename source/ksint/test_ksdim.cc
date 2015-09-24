@@ -17,7 +17,7 @@ using namespace Eigen;
 int main(){
     cout.precision(16);
 
-    switch (4) {
+    switch (3) {
 
     case 1: {
 	MatrixXi subspDim(4,3); 
@@ -53,9 +53,9 @@ int main(){
 
     case 3: {			/* test partialHyperb */
 	string fileName("../../data/ks22h001t120x64EV.h5");
-	string ppType("ppo");
-	MatrixXd expand  = partialHyperb(fileName, ppType, 1);
-	cout << expand << endl;
+	string ppType("rpo");
+	MatrixXd expand  = partialHyperb(fileName, ppType, 3);
+	// cout << expand << endl;
 	
 	break;
     }

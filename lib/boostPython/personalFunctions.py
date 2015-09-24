@@ -460,7 +460,7 @@ def KSreadFE(fileName, poType, idx):
     f.close()
     return fe
 
-def KSreadFE(fileName, poType, idx):
+def KSreadFV(fileName, poType, idx):
     f = h5py.File(fileName, 'r')
     po = '/' + poType + '/' + str(idx) + '/'
     fv = f[po+'ve'].value

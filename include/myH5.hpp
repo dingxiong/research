@@ -47,7 +47,8 @@ namespace MyH5 {
     void 
     KSwriteFEFV(const string fileName, const string ppType, const int ppId,
 		const MatrixXd &eigvals, const MatrixXd &eigvecs);
-
+    void KScheckGroups(const string fileName, const string ppType,
+		       const int ppId);
     //////////////////////////////////////////////////////////////////////
     /* cqcgl related */
     void CqcglWriteRPO(const string fileName, const string groupName,

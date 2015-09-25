@@ -34,7 +34,16 @@ def add_subplot_axes(ax, rect, axisbg='w'):
     subax.yaxis.set_tick_params(labelsize=y_labelsize)
     return subax
 
-
+def setAxis(ax):
+    ax.set_xlabel(r'$\theta$', fontsize=20)
+    ax.set_xticks([0., .125*pi, 0.25*pi, 0.375*pi, 0.5*pi])
+    ax.set_xticklabels(["$0$", r"$\frac{1}{8}\pi$", r"$\frac{1}{4}\pi$",
+                        r"$\frac{3}{8}\pi$", r"$\frac{1}{2}\pi$"])
+    ax.legend(loc='best', fontsize=10)
+    ax.set_yscale('log')
+    ax.set_ylim([0.001, 1000])
+    # ax.set_ylabel(r'$\rho(\theta)$', fontsize=20)
+    
 ##################################################
 # load data
 ixRange = range(0, 29)
@@ -42,19 +51,25 @@ N = len(ixRange)
 
 folder = './anglePOs64/ppo/space/'
 fileName = [folder + 'ang' + str(i) + '.dat' for i in ixRange]
+folder2 = './anglePOs64/rpo/space/'
+fileName2 = [folder2 + 'ang' + str(i) + '.dat' for i in ixRange]
 ns = 1000
 
 angs = []
 for i in range(N):
     print i
-    ang = arccos(loadtxt(fileName[i]))
-    angs.append(ang);
-    
+    # ang = arccos(loadtxt(fileName[i]))
+    ang2 = arccos(loadtxt(fileName2[i]))
+    # angs.append(np.append(ang, ang2));
+    angs.append(ang2)
 ##################################################
 
 case = 1
 
 if case == 1:
+    """
+    angle distribution in ppo and rpo
+    """
     a = []
     b = []
     angNum = []
@@ -66,33 +81,30 @@ if case == 1:
         at, bt = histogram(angs[i], ns)
         a.append(at)
         b.append(bt)
+
+    labs = [ 'k='+str(i+1) for i in ixRange]
     
-    # plot 
-    fig = plt.figure(figsize = (7,5))
+    fig = plt.figure(figsize = (6, 3))
     ax = fig.add_subplot(111)
+    for i in range(7):
+        ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), label=labs[i])
+    setAxis(ax)
+    plt.tight_layout(pad=0)
+    plt.show()
 
-    colors = cm.rainbow(linspace(0, 1, N))
-    #labs = ['(1-' + str(i+1) + ',' + str(i+2) + '-30)' for i in ixRange]
-    labs = ['(' + str(i+1) + ',' + str(i+2) + ')' for i in ixRange]
-    laby =[0.9, 0.02, 0.1, 0.05, 0.005]
-
-
-    ax.set_xlabel(r'$\theta$',size='large')
-    ax.set_xticks([0., .125*pi, 0.25*pi, 0.375*pi, 0.5*pi])
-    ax.set_xticklabels(["$0$", r"$\frac{1}{8}\pi$", r"$\frac{1}{4}\pi$",
-                        r"$\frac{3}{8}\pi$", r"$\frac{1}{2}\pi$"])
-
-    for i in range(N):
-        ax.scatter(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), s = 7, 
-                   c = colors[i], edgecolor='none', label=labs[i])
-
-    ax.legend(fontsize='small', loc='upper center', ncol = 1,
-              bbox_to_anchor=(1.1, 1), fancybox=True)
-    ax.set_yscale('log')
-    ax.set_ylim([0.001, 1000])
-    ax.set_ylabel(r'$\rho(\theta)$',size='large')
-
-
+    
+    fig = plt.figure(figsize = (6, 3))
+    ax = fig.add_subplot(111)
+    colors = cm.rainbow(linspace(0, 1, 11))
+    for ix in range(11):
+        i = 7 + 2*ix
+        ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), c=colors[ix])
+        # ax.scatter(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), s = 7, 
+        #            c = colors[ix], edgecolor='none', label=labs[i])
+    ax.arrow(0.5, 1, 0.5, 100,
+             width=0.1, head_length=0.001, head_width=0.01,
+             fc='k')
+    setAxis(ax)
     plt.tight_layout(pad=0)
     plt.show()
 

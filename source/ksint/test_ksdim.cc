@@ -17,7 +17,7 @@ using namespace Eigen;
 int main(){
     cout.precision(16);
 
-    switch (4) {
+    switch (2) {
 
     case 1: {
 	MatrixXi subspDim(4,3); 
@@ -47,7 +47,7 @@ int main(){
     case 2: {			/* test the angle tangency */
 	string fileName("../../data/ks22h001t120x64EV.h5");
 	string ppType("rpo");
-	anglePOs(fileName, ppType, 30, 200, "./anglePOs64/rpo/space/", "space", 29);
+	anglePOs(fileName, ppType, 30, 200, "./anglePOs64/rpo/vector/", "vector", 29);
 	break;
     }
 

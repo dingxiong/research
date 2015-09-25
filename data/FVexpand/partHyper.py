@@ -14,7 +14,7 @@ def setAxis(ax, xr, xlabel=r'$t$', ylabel=r'$\lambda_k(t)$'):
 
 if __name__ == '__main__':
 
-    case = 3
+    case = 1
 
     if case == 1:
         """
@@ -31,13 +31,12 @@ if __name__ == '__main__':
         ax.plot(expand[3], lw=1.5, ls='-')
         ax.plot(expand[4], lw=1.5, ls='-')
         ax.plot(expand[5], lw=1.5, ls='-')
-        ax.plot(expand[6], lw=1.5, ls='-')
         ax.plot(expand[7], lw=1.5, ls='-')
 
         ax.plot(expand[8], lw=1.5, ls='-')
         ax.plot(expand[9], lw=1.5, ls='-')
 
-        ax.text(expand.shape[1]/3, -0.6, r'$k=1, 3, 4, 5, 6, 7, 8$', fontsize=20)
+        ax.text(expand.shape[1]/3, -0.6, r'$k=1, 3, 4, 5, 6, 8$', fontsize=20)
         ax.text(expand.shape[1]/2, -1.8, r'$k=9, 10$', fontsize=20)
         
         setAxis(ax, expand.shape[1])

@@ -9,6 +9,10 @@
 *.dat
 *.swp
 *.aux
-*.log
 *.toc
 *.el
+
+*.mat
+*.h5
+*.tar.gz
+*.zip

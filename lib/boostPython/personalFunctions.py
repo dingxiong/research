@@ -29,7 +29,7 @@ def plot1dfig(x, c='r', lw=1, ls='-', marker=None, labs=['x', 'y'],
     if yscale is not None:
         ax.set_yscale(yscale)
     fig.tight_layout(pad=0)
-    plt.show(block=False)
+    plt.show(block=False) 
 
 
 def plot2dfig(x, y, c='r', lw=1, ls='-', labs=['x', 'y'],
@@ -447,11 +447,8 @@ def KSreadPO(fileName, poType, idx):
     s = 0
     if poType == 'rpo':
         s = f[po+'s'].value[0]
-        f.close()
-        return a, T, nstp, r, s
-    else :
-        f.close()
-        return a, T, nstp, r, s
+    f.close()
+    return a, T, nstp, r, s
 
 def KSreadFE(fileName, poType, idx):
     f = h5py.File(fileName, 'r')

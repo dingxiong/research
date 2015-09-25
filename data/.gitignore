@@ -8,6 +8,9 @@ ergodicShadow/*/
 tangency/*/
 !tangency/figs/
 
+FVexpand/*/
+!FVexpand/figs/
+
 !*.py
 !*.png
 !*.sh

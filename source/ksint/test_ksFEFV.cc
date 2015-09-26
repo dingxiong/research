@@ -23,15 +23,17 @@ int main(){
     case 1: {
 	const double L = 22;
 	const int nqr = 5; // spacing 	
-	const int MaxN = 8000;  // maximal iteration number for PED
+	const int MaxN = 2000;  // maximal iteration number for PED
 	const double tol = 1e-15; // torlearance for PED   
 	const int trunc = 30; // number of vectors	
-	const size_t ppId = 13;
+	const size_t ppId = 33;
 	const string inputfileName = "../../data/ks22h001t120x64EV.h5";
 	const string outputfileName = "ex.h5";
 	const string ppType = "rpo";
-	KScalWriteFEFVInit(inputfileName, outputfileName, ppType, ppId, L, MaxN, tol, nqr, trunc);
-	// auto tmp = KScalFEFV("../../data/ks22h001t120x64EV.h5", "ppo", ppId, L, MaxN, tol, nqr, trunc);
+	// KScalWriteFEFVInit(inputfileName, outputfileName, ppType, ppId, L, MaxN, tol, nqr, trunc);
+	auto tmp = KScalFEFV(inputfileName, ppType, ppId, L, MaxN, tol, nqr, trunc);
+	cout << tmp.second.col(0) << endl;
+	
 	break;
     }
 	

@@ -35,14 +35,15 @@ def add_subplot_axes(ax, rect, axisbg='w'):
     return subax
 
 def setAxis(ax):
-    ax.set_xlabel(r'$\theta$', fontsize=20)
+    # ax.set_xlabel(r'$\theta$', fontsize=20, labelpad=-40)
     ax.set_xticks([0., .125*pi, 0.25*pi, 0.375*pi, 0.5*pi])
     ax.set_xticklabels(["$0$", r"$\frac{1}{8}\pi$", r"$\frac{1}{4}\pi$",
                         r"$\frac{3}{8}\pi$", r"$\frac{1}{2}\pi$"])
-    ax.legend(loc='best', fontsize=10)
+    ax.legend(loc='best', fontsize=12)
     ax.set_yscale('log')
-    ax.set_ylim([0.001, 1000])
-    # ax.set_ylabel(r'$\rho(\theta)$', fontsize=20)
+    ax.set_ylim([0.01, 100])
+    ax.text(0.02, 20, r'$\rho(\theta)$', fontsize=20)
+    # ax.set_ylabel(r'$\rho(\theta)$', fontsize=20, labelpad=-55)
     
 ##################################################
 # load data
@@ -58,10 +59,10 @@ ns = 1000
 angs = []
 for i in range(N):
     print i
-    # ang = arccos(loadtxt(fileName[i]))
+    ang = arccos(loadtxt(fileName[i]))
     ang2 = arccos(loadtxt(fileName2[i]))
-    # angs.append(np.append(ang, ang2));
-    angs.append(ang2)
+    angs.append(np.append(ang, ang2));
+    # angs.append(ang2)
 ##################################################
 
 case = 1
@@ -84,7 +85,7 @@ if case == 1:
 
     labs = [ 'k='+str(i+1) for i in ixRange]
     
-    fig = plt.figure(figsize = (6, 3))
+    fig = plt.figure(figsize = (6, 2.5))
     ax = fig.add_subplot(111)
     for i in range(7):
         ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), label=labs[i])
@@ -93,17 +94,12 @@ if case == 1:
     plt.show()
 
     
-    fig = plt.figure(figsize = (6, 3))
+    fig = plt.figure(figsize = (6, 2.5))
     ax = fig.add_subplot(111)
     colors = cm.rainbow(linspace(0, 1, 11))
     for ix in range(11):
         i = 7 + 2*ix
         ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), c=colors[ix])
-        # ax.scatter(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), s = 7, 
-        #            c = colors[ix], edgecolor='none', label=labs[i])
-    ax.arrow(0.5, 1, 0.5, 100,
-             width=0.1, head_length=0.001, head_width=0.01,
-             fc='k')
     setAxis(ax)
     plt.tight_layout(pad=0)
     plt.show()
@@ -151,3 +147,11 @@ if case == 2:
 
     plt.tight_layout(pad=0)
     plt.show()
+
+
+if case == 3:
+    nstps = []
+    for i in range(200):
+        a, T, nstp, r, s = KSreadPO('../ks22h001t120x64EV.h5', 'rpo', i+1)
+        nstps.append(nstp)
+    nstps = np.array(nstps)

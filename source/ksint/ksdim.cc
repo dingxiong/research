@@ -202,3 +202,55 @@ void partialHyperbAll(const string fileName, const int NNppo, const int NNrpo,
     partialHyperbOneType(fileName, "ppo", NNppo, saveFolder + "ppo/");
     partialHyperbOneType(fileName, "rpo", NNrpo, saveFolder + "rpo/");
 }
+
+
+
+void orbitAndFvWholeSlice(const ArrayXd a, const string ppType, const MatrixXd ve){
+    int N = a.size();
+    assert(ve.rows() % N == 0);
+    const int NFV = ve.rows() / N;
+
+    const int Nks = N + 2;
+    KS ks(Nks, T/nstp, L);
+    ArrayXXd aa = ks.intg(a.col(0), nstp, space, nstp);
+    
+}
+
+void expandDifvAngle(const string fileName, const string ppType,
+		     const int ppId, const int gTpos,
+		     const MatrixXd difv, const VectorXi indexPO){
+    int num = difv.cols();
+    int N = difv.rows();
+    assert(num == indexPO.size());
+    
+    auto tmp = MyH5::KSreadRPO(fileName, ppType, ppId);
+    MatrixXd &a = std::get<0>(tmp);
+    double T = std::get<1>(tmp);
+    int nstp = (int) std::get<2>(tmp);
+    double r = std::get<3>(tmp);
+    double s = std::get<4>(tmp);
+    MatrixXd eigVecs = MyH5::KSreadFV(fileName, ppType, ppId); // Floquet vectors
+    
+    assert ( eigVecs.rows()  % N == 0);
+    const int NFV = eigVecs.rows() / N;
+    const int M = eigVecs.cols();    
+    const int Nks = a.rows() + 2;
+    const double L = 22;
+    assert(nstp % M == 0);
+    const int space = nstp / M;
+    KS ks(Nks, T/nstp, L);
+    ArrayXXd aa = ks.intg(a.col(0), nstp, space);
+
+    if(ppType.compare("ppo") == 0) {
+	aaWhole = ks.half2whole(aa.leftCols(aa.cols()-1));
+	eigVecsWhole = ks.half2whole(eigVecs); // this is correct. Think carefully.
+    } else {
+	aaWhole = aa.leftCols(aa.cols()-1); // one less
+	eigVecsWhole = eigVecs;
+    }
+
+    MatrixXd veSlice = ks.veToSliceAll(eigVecsWhole, aaWhole, NFV);
+    MatrixXd ve_trunc = veTrunc(veSlice, gTpos, Trunc);
+    
+    
+}

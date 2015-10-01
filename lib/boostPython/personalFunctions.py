@@ -442,7 +442,7 @@ def KSreadPO(fileName, poType, idx):
     po = '/' + poType + '/' + str(idx) + '/'
     a = f[po+'a'].value
     T = f[po+'T'].value[0]
-    nstp = f[po+'nstp'].value[0]
+    nstp = np.int(f[po+'nstp'].value[0])
     r = f[po+'r'].value[0]
     s = 0
     if poType == 'rpo':
@@ -519,3 +519,35 @@ def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
         plt.savefig(name+'.eps', format='eps')
     else:
         plt.show(block=False)
+
+
+def pAngleVQ(V, Q):
+    """
+    compute the angle between a vector V and set of vectors Q
+    Q is an orthonormal matrix
+    """
+    assert V.ndim == 1
+    V = V / LA.norm(V)
+    c = LA.norm(dot(Q.T, V))    # cos 
+    return np.arccos(c)
+
+def pAngle(V, U):
+    """
+    compute the principle angle between a vector V and a subspace U
+    """
+    q = LA.qr(U)[0]
+    return pAngleVQ(V, q)
+
+
+def seqAng(seqDifv, U):
+    """
+    seqDifv is a sequence of row vector
+    """
+    q = LA.qr(U)[0]
+    M, N = seqDifv.shape
+    ang = np.zeros(M)
+    for i in range(M):
+        ang[i] = pAngle(seqDifv[i, :], q)
+    return ang
+    
+    

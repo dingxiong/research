@@ -474,6 +474,90 @@ MatrixXd KS::veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa,
   return newVe;
 }
 
+
+/**
+ * @brief get the full orbit and full set of Fvs
+ * 
+ * Given the inital point and the set of Fvs, the whole set is
+ * twice bigger for ppo, but for rpo, it is the single piece.
+ *
+ * @param[in] a0       the inital condition of the ppo/rpo
+ * @param[in] ve       the set of Fvs. Dimension [(N-2)*NFV, M]
+ * @param[in] nstp     number of integration steps
+ * @param[in] ppTpe    ppo/rpo
+ * @return             the full orbit and full set of Fvs.
+ */
+std::pair<ArrayXXd, ArrayXXd>
+KS::orbitAndFvWhole(const ArrayXd &a0, const ArrayXXd &ve,
+		    const size_t nstp, const std::string ppType
+		    ){
+    assert(N-2 == a0.rows());
+    const int M = ve.cols();
+    assert(nstp % M == 0);
+    const int space = nstp / M;
+    
+    ArrayXXd aa = intg(a0, nstp, space);
+    if(ppType.compare("ppo") == 0) 
+	return std::make_pair(
+			      half2whole(aa.leftCols(aa.cols()-1)),
+			      half2whole(ve) // this is correct. Think carefully.
+			      );
+    
+    else 
+	return std::make_pair(
+			      aa.leftCols(aa.cols()-1), // one less
+			      ve
+			      );
+}
+
+/**
+ * @brief get rid of the marginal direction of the Fvs
+ * 
+ * @param[in] ve        dimension [N, M*trunc]
+ * @param[in] pos       the location of the group tangent margianl Floquet vector.
+ *                      pos starts from 0.
+ * @param[in] return    the clean set of Fvs
+ */
+MatrixXd KS::veTrunc(const MatrixXd ve, const int pos, const int trunc /* = 0 */){
+    int Trunc = trunc;
+    if(trunc == 0) Trunc = ve.rows();
+
+    const int N = ve.rows();
+    const int M = ve.cols() / Trunc;
+    assert(ve.cols()%M == 0);
+  
+    MatrixXd newVe(N, (Trunc-1)*M);
+    for(size_t i = 0; i < M; i++){
+	newVe.middleCols(i*(Trunc-1), pos) = ve.middleCols(i*Trunc, pos);
+	newVe.middleCols(i*(Trunc-1)+pos, Trunc-1-pos) = 
+	    ve.middleCols(i*Trunc+pos+1, Trunc-1-pos);
+    }
+    return newVe;
+}
+
+
+/**
+ * @brief get the full orbit and full set of Fvs on the slice
+ *
+ * @return             the full orbit and full set of Fvs on slice
+ * @see                orbitAndFvWhole(),  veTrunc()
+ */
+std::pair<ArrayXXd, ArrayXXd>
+KS::orbitAndFvWholeSlice(const ArrayXd &a0, const ArrayXXd &ve,
+			 const size_t nstp, const std::string ppType,
+			 const int pos
+			 ){
+    assert(ve.rows() % (N-2) == 0);
+    const int NFV = ve.rows() / (N-2);
+    auto tmp = orbitAndFvWhole(a0, ve, nstp, ppType);
+    auto tmp2 = orbitToSlice(tmp.first);
+    MatrixXd veSlice = veToSliceAll(tmp.second, tmp.first, NFV);
+    MatrixXd ve_trunc = veTrunc(veSlice, pos, NFV);
+
+    return std::make_pair(tmp2.first, ve_trunc);
+}
+
+
 /**
  * @brief calculate the changed indices under reflection symmetry
  *

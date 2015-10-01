@@ -84,7 +84,7 @@ double angleSpaceVector(const Ref<const MatrixXd> &Q,
 			const Ref<const VectorXd> &V){
   assert( Q.rows() == V.rows());
   VectorXd P = Q.transpose() * V;
-  double cos2 = P.squaredNorm() / V.squaredNorm();
+  double cos2 = P.squaredNorm() / V.squaredNorm(); /* cos^2 */
 
   return sqrt(1-cos2);
 }

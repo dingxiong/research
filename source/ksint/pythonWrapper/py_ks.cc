@@ -11,6 +11,51 @@ using namespace Eigen;
 namespace bp = boost::python;
 namespace bn = boost::numpy;
 
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+/* get the dimension of an array */
+inline void getDims(bn::ndarray x, int &m, int &n){
+    if(x.get_nd() == 1){
+	m = 1;
+	n = x.shape(0);
+    } else {
+	m = x.shape(0);
+	n = x.shape(1);
+    }
+}
+
+/*
+ * @brief used to copy content in Eigen array to boost.numpy array.
+ *
+ *  Only work for double array/matrix
+ */
+inline bn::ndarray copy2bn(const Ref<const ArrayXXd> &x){
+    int m = x.cols();
+    int n = x.rows();
+
+    Py_intptr_t dims[2];
+    int ndim;
+    if(m == 1){
+	ndim = 1;
+	dims[0] = n;
+    }
+    else {
+	ndim = 2;
+	dims[0] = m;
+	dims[1] = n;
+    }
+    bn::ndarray px = bn::empty(ndim, dims, bn::dtype::get_builtin<double>());
+    memcpy((void*)px.get_data(), (void*)x.data(), sizeof(double) * m * n);
+	    
+    return px;
+}
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
 
 class pyKS : public KS {
   /*
@@ -24,17 +69,6 @@ class pyKS : public KS {
   
 public:
     pyKS(int N, double h, double d) : KS(N, h, d) {}
-    
-    /* get the dimension of an array */
-    void getDims(bn::ndarray x, int &m, int &n){
-	if(x.get_nd() == 1){
-	    m = 1;
-	    n = x.shape(0);
-	} else {
-	    m = x.shape(0);
-	    n = x.shape(1);
-	}
-    }
     
     /* wrap the velocity */
     bn::ndarray PYvelocity(bn::ndarray a0){
@@ -243,6 +277,20 @@ public:
 	return vep;
     }
 
+    /* orbitAndFvWholeSlice  */
+    bp::tuple PYorbitAndFvWholeSlice(bn::ndarray a, bn::ndarray ve,
+				     const int nstp, const string ppType,
+				     const int pos){
+	int m, n;
+	getDims(a, m, n);
+	Map<ArrayXd> tmpa((double*)a.get_data(), n*m);
+	getDims(ve, m, n);
+	Map<ArrayXXd> tmpve((double*)ve.get_data(), n, m);
+	auto tmpav = orbitAndFvWholeSlice(tmpa, tmpve, nstp, ppType, pos);
+
+	return bp::make_tuple(copy2bn(tmpav.first), copy2bn(tmpav.second));
+    }
+
     /* reduceReflection */
     bn::ndarray PYreduceReflection(bn::ndarray aa){
 	
@@ -384,6 +432,7 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def("orbitToSlice", &pyKS::PYorbitToSlice)
 	.def("veToSlice", &pyKS::PYveToSlice)
 	.def("veToSliceAll", &pyKS::PYveToSliceAll)
+	.def("orbitAndFvWholeSlice", &pyKS::PYorbitAndFvWholeSlice)
 	.def("reduceReflection", &pyKS::PYreduceReflection)
 	.def("reflectVe", &pyKS::PYreflectVe)
 	.def("reflectVeAll", &pyKS::PYreflectVeAll)

@@ -74,6 +74,16 @@ public:
     MatrixXd 
     veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa,
 		 const int trunc = 0);
+    std::pair<ArrayXXd, ArrayXXd>
+    orbitAndFvWhole(const ArrayXd &a0, const ArrayXXd &ve,
+		    const size_t nstp, const std::string ppType
+		    );
+    MatrixXd veTrunc(const MatrixXd ve, const int pos, const int trunc = 0);
+    std::pair<ArrayXXd, ArrayXXd>
+    orbitAndFvWholeSlice(const ArrayXd &a0, const ArrayXXd &ve,
+			 const size_t nstp, const std::string ppType,
+			 const int pos
+			 );
     std::vector<int> reflectIndex();
     ArrayXXd reduceReflection(const Ref<const ArrayXXd> &aaHat);
     MatrixXd GammaMat(const Ref<const ArrayXd> &xHat);

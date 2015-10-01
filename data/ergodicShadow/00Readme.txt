@@ -17,6 +17,14 @@ are projected onto the slice, so
 ----------------------------------------
 Folder details:
 
+case32modes: experiments with nqr = 10.
+	     the po data file is "ks22h001t50x64.h5"
+	     but the FVs file seems lost.
+	     
+case32modes_x5: experimens with nqr = 5
+		the po data file is "ks22h001t120x64.h5"
+	
+
 'ppo4': distance - angle distribution data for ppo4.
 	numbers of FVs used to span subspaces are:
 	3, 4, 5, 6, 7, 8, 9, 11, 13, 15, 21, 28 

@@ -450,6 +450,7 @@ def KSreadPO(fileName, poType, idx):
     f.close()
     return a, T, nstp, r, s
 
+
 def KSreadFE(fileName, poType, idx):
     f = h5py.File(fileName, 'r')
     po = '/' + poType + '/' + str(idx) + '/'
@@ -457,12 +458,14 @@ def KSreadFE(fileName, poType, idx):
     f.close()
     return fe
 
+
 def KSreadFV(fileName, poType, idx):
     f = h5py.File(fileName, 'r')
     po = '/' + poType + '/' + str(idx) + '/'
     fv = f[po+'ve'].value
     f.close()
     return fv
+
 
 def KSreadFEFV(fileName, poType, idx):
     f = h5py.File(fileName, 'r')
@@ -531,6 +534,7 @@ def pAngleVQ(V, Q):
     c = LA.norm(dot(Q.T, V))    # cos 
     return np.arccos(c)
 
+
 def pAngle(V, U):
     """
     compute the principle angle between a vector V and a subspace U
@@ -549,5 +553,3 @@ def seqAng(seqDifv, U):
     for i in range(M):
         ang[i] = pAngle(seqDifv[i, :], q)
     return ang
-    
-    

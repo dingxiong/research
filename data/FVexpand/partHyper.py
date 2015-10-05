@@ -14,7 +14,7 @@ def setAxis(ax, xr, xlabel=r'$t$', ylabel=r'$\lambda_k(t)$'):
 
 if __name__ == '__main__':
 
-    case = 3
+    case = 4
 
     if case == 1:
         """
@@ -112,13 +112,15 @@ if __name__ == '__main__':
 
         ph = pn + rn
 
-        fig = plt.figure(figsize=[6, 5])
+        # np.savetxt('ph.dat', ph)
+
+        fig = plt.figure(figsize=[3, 3])
         ax = fig.add_subplot(111)
         ax.scatter(range(1, 30), ph, s=30, facecolor='b', edgecolors='none')
-        ax.set_xticks(range(0, 31, 2))
+        ax.set_xticks(range(0, 31, 4))
         ax.set_xlim([0, 30])
-        # ax.set_ylim([-200, 600])
-        ax.set_xlabel('k', fontsize=20)
+        ax.set_ylim([-50, 450])
+        # ax.set_xlabel('k', fontsize=20)
         ax.grid('on')
         fig.tight_layout(pad=0)
         plt.show()

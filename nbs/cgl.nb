@@ -2847,7 +2847,7 @@ Cell[BoxData[
 },
 WindowToolbars->{"RulerBar", "EditBar"},
 WindowSize->{1271, 886},
-WindowMargins->{{Automatic, 157}, {-35, Automatic}},
+WindowMargins->{{Automatic, 501}, {152, Automatic}},
 FrontEndVersion->"9.0 for Linux x86 (64-bit) (January 25, 2013)",
 StyleDefinitions->"Default.nb"
 ]

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# usage:
+# ./createAll 0 => compile all cases
+# ./createAll 1 => single thread caes
 
 # compile single thread library
 if [ $1 -eq 0 ] || [ $1 -eq 1 ]; then

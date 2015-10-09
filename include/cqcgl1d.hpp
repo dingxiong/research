@@ -64,6 +64,11 @@ public:
 	    double Mu = -0.1, double Br = 1.0, double Bi = 0.8,
 	    double Dr = 0.125, double Di = 0.5, double Gr = -0.1,
 	    double Gi = -0.6, int threadNum = 4);
+    Cqcgl1d(int N, double d, double h,
+	    bool enableJacv, int Njacv,
+	    double b, double c,
+	    double dr, double di,
+	    int threadNum);
     ~Cqcgl1d();
     Cqcgl1d & operator=(const Cqcgl1d &x);
 
@@ -159,12 +164,31 @@ protected:
   
     void CGLInit();
     void calculateCoefficients();
-    void NL( FFT &f);
-    void jNL(FFT &f);
+    virtual void NL( FFT &f);
+    virtual void jNL(FFT &f);
     void dealias(FFT &Fv);
     inline int calNe();
     inline int calJacv();
 };
+
+
+
+//////////////////////////////////////////////////////////////////////
+//                        Class Cgl1d                             //
+//////////////////////////////////////////////////////////////////////
+
+class Cgl1d : public Cqcgl1d {
+    
+public:
+    Cgl1d(int N, double d, double h,
+		 bool enableJacv, int Njacv,
+		 double b, double c,
+		 int threadNum);
+protected:
+    void NL(FFT &f);
+    void jNL(FFT &f);
+};
+
 
 
 #endif  /* CQCGL1D_H */

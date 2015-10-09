@@ -13,9 +13,9 @@ typedef std::complex<double> dcp;
 
 int main(){
 
-    switch(1){
+    switch(5){
 	
-    case 1: {
+    case 1: {			/* test integrator */
 	const int N = 512; 
 	const int L = 50;
 	double h = 0.001;
@@ -90,6 +90,50 @@ int main(){
 	cout << AA.rows() << 'x' << AA.cols() << endl << "--------------" << endl;
 	//cout << AA.col(2) << endl;
 	//cout << A0 << endl;
+	break;
+    }
+
+    case 4:{			/* test the new constructor */
+	const int N = 512;
+	const int L = 50;
+	double h = 0.001;
+	Cqcgl1d cgl(N, L, h, false, 0, 0.1, 0.1, 0.1, 0.1, 4);
+	const int Ndim = cgl.Ndim;
+	
+	int nstp = 1000;
+	
+	ArrayXd A0(2*N) ; 
+	// prepare Gaussian curve initial condition
+	for(int i = 0; i < N; i++) {
+	    double x = (double)i/N*L - L/2.0; 
+	    A0(2*i) =  exp(-x*x/8.0);
+	} 
+	ArrayXd a0 = cgl.Config2Fourier(A0).col(0);
+
+	ArrayXXd AA = cgl.intg(a0, nstp, 1);
+	
+	cout << AA.rows() << 'x' << AA.cols() << endl << "--------------" << endl;
+	cout << cgl.trueNjacv << endl;
+	
+	break;
+    }
+
+    case 5:{			/* test the cgl constructor */
+	const int N = 512;
+	const int L = 50;
+	double h = 0.001;
+	Cgl1d cgl(N, L, h, false, 0, 0.1, 0.2, 4);
+	const int Ndim = cgl.Ndim;
+
+	cout << cgl.Mu << endl;
+	cout << cgl.Br << endl;
+	cout << cgl.Bi << endl;
+	cout << cgl.Dr << endl;
+	cout << cgl.Di << endl;
+	cout << cgl.Gr << endl;
+	cout << cgl.Gi << endl;
+	cout << cgl.trueNjacv << endl;
+	
 	break;
     }
     default: {

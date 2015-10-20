@@ -9,7 +9,7 @@ from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
 
-case = 4
+case = 6
 
 
 if case == 1:
@@ -21,7 +21,7 @@ if case == 1:
     N = 256
     d = 50
     h = 0.005
-    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    cgl = pyCqcgl1d(N, d, h,  True, 0, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6, 4)
     Ndim = cgl.Ndim
 
     A0 = centerRand(2*N, 0.2)
@@ -150,3 +150,43 @@ if case == 4:
     veRefHat = cgl.ve2slice(veRef, a0Ref)
     veRefTilde = cgl.reflectVe(veRefHat, a0RefHat)
     # why the hell is veHat the same as veRefHat ?
+
+if case == 5:
+    """
+    use the new form of cqcgl
+    test the transition with respect to di
+    """
+    N = 512
+    # d = 50 / (1.25)**0.5
+    d = 40
+    h = 0.0005
+
+    # cgl = pyCqcgl1d(N, d, h, True, 0,
+    #                 -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
+    #                 4)
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.04, 4)
+    A0 = 5*centerRand(2*N, 0.2)
+    a0 = cgl.Config2Fourier(A0)
+    nstp = 15000
+    aa = cgl.intg(a0, nstp, 1)
+    aa = cgl.intg(aa[-1], nstp, 1)
+    aa = cgl.intg(aa[-1], nstp, 1)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+    plotOneConfigFromFourier(cgl, aa[-1], d)
+
+if case == 6:
+    """
+    use the new form of cqcgl with larger di to find
+    candidate of periodic orbit initial conditon
+    """
+    N = 512*4
+    d = 40
+    h = 0.0005
+
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.04, 4)
+    A0 = 5*centerRand(2*N, 0.2)
+    a0 = cgl.Config2Fourier(A0)
+    nstp = 15000
+    aa = cgl.intg(a0, nstp, 1)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+    

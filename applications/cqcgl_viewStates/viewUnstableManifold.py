@@ -150,3 +150,55 @@ if case == 3:
     
     scatter2dfig(totalPoints[:, 0], totalPoints[:, 1], s=10,
                  labs=[r'$e_2$', r'$e_3$'])
+
+if case == 4:
+    """
+    use the new constructor of cqcgl
+    try to obtain the Poincare intersection points
+    """
+    N = 1024
+    d = 40
+    h = 0.0005
+
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.04, 4)
+    a0, wth0, wphi0, err = cqcglReadReq('../../data/cgl/reqN1024.h5', '1')
+    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
+    eigvectors = realve(eigvectors)
+    eigvectors = Tcopy(eigvectors)
+    a0Hat = cgl.orbit2slice(a0)[0].squeeze()
+    a0Tilde = cgl.reduceReflection(a0Hat)
+    veHat = cgl.ve2slice(eigvectors, a0)
+    veTilde = cgl.reflectVe(veHat, a0Hat)
+    e1, e2, e3 = orthAxes(veTilde[0], veTilde[1], veTilde[6])
+
+    nstp = 60000
+
+    M = 10
+    a0Erg = np.empty((M, cgl.Ndim))
+    for i in range(M):
+        a0Erg[i] = a0 + (i+1) * eigvectors[0]*1e-4
+    PointsProj = np.zeros((0, 2))
+    PointsFull = np.zeros((0, cgl.Ndim))
+    for i in range(30):
+        for j in range(M):
+            aaErg = cgl.intg(a0Erg[j], nstp, 1)
+            aaErgHat, th, phi = cgl.orbit2slice(aaErg)
+            aaErgTilde = cgl.reduceReflection(aaErgHat)
+            aaErgTilde -= a0Tilde
+            aaErgTildeProj = np.dot(aaErgTilde, np.vstack((e1, e2, e3)).T)
+
+            # plotConfigSpace(cgl.Fourier2Config(aaErg),
+            #                 [0, d, nstp*h*i, nstp*h*(i+1)])
+            points, index, ratios = PoincareLinearInterp(aaErgTildeProj, getIndex=True)
+            PointsProj = np.vstack((PointsProj, points))
+            for i in range(len(index)):
+                dif = aaErgTilde[index[i]+1] - aaErgTilde[index[i]]
+                p = dif * ratios[i] + aaErgTilde[index[i]]
+                PointsFull = np.vstack((PointsFull, p))
+            a0Erg[j] = aaErg[-1]
+
+    upTo = PointsProj.shape[0]
+    scatter2dfig(PointsProj[:upTo, 0], PointsProj[:upTo, 1], s=10,
+                 labs=[r'$e_2$', r'$e_3$'])
+    dis = getCurveCoor(PointsFull)
+    # np.savez_compressed('PoincarePoints', totalPoints=totalPoints)

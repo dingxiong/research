@@ -7,6 +7,8 @@ using std::endl;
 using namespace sparseRoutines;
 using namespace iterMethod;
 using namespace Eigen;
+
+
 //////////////////////////////////////////////////////////////////////
 //                      constructor                                 //
 //////////////////////////////////////////////////////////////////////
@@ -36,13 +38,13 @@ CqcglRPO & CqcglRPO::operator=(const CqcglRPO &x){
 //////////////////////////////////////////////////////////////////////
 
 /**
- * @brief form g*f(x,t) - x
+ * @brief         form g*f(x,t) - x
  * @param[in] x   [Ndim + 3, 1] dimensional vector: (x, t, theta, phi)
- * @return    vector F(x, t) =
- *               | g*f(x, t) - x|
- *               |       0      |
- *               |       0      |
- *               |       0      |
+ * @return        vector F(x, t) =
+ *                  | g*f(x, t) - x|
+ *                  |       0      |
+ *                  |       0      |
+ *                  |       0      |
  */
 VectorXd CqcglRPO::Fx(const VectorXd & x){
     Vector3d t = x.tail<3>();
@@ -126,7 +128,8 @@ VectorXd CqcglRPO::MFx(const VectorXd &x){
 }
 
 /* 
- * @brief get the multishooting product J * dx
+ * @brief get the multishooting product J * dx. Dimension [nstp*M+3, 1]
+ * @see MFx()
  */
 VectorXd CqcglRPO::MDFx(const VectorXd &x, const VectorXd &dx){
     Vector3d t = x.tail<3>();
@@ -235,10 +238,13 @@ CqcglRPO::findRPOM(const MatrixXd &x0, const double T,
     assert(x0.cols() == M && x0.rows() == Ndim);
     auto fx = std::bind(&CqcglRPO::MFx, this, ph::_1);
     auto dfx = std::bind(&CqcglRPO::MDFx, this, ph::_1, ph::_2);
+    
+    // initialize input 
     VectorXd x(M * Ndim + 3);
     MatrixXd tmp(x0);
     tmp.resize(M * Ndim, 1);
     x << tmp, T, th0, phi0;
+    
     auto result = InexactNewtonBacktrack(fx, dfx, x, tol, btMaxIt, maxit, eta0,
 					 t, theta_min, theta_max, GmresRestart, GmresMaxit);
     if(std::get<2>(result) != 0){

@@ -540,9 +540,11 @@ namespace iterMethod {
 			  delta, innerMaxit);
     }
 
+    
     //////////////////////////////////////////////////////////////////////
     //                    Netwon methods related                        //
     //////////////////////////////////////////////////////////////////////
+
     
     /**
      * @brief Inexact Newton Backtracking method

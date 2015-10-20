@@ -34,18 +34,15 @@ int main(){
 	const double d = 50;
 	const double h = 0.001;
 
+	// read initial condition
 	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo.h5");
-	auto tmp = CqcglReadRPO(file, "1");
-	MatrixXd &x = std::get<0>(tmp);
-	double T = std::get<1>(tmp);
-	int nstp = std::get<2>(tmp);
-	double th = std::get<3>(tmp);
-	double phi = std::get<4>(tmp);
-	double err = std::get<5>(tmp);
-
+	int nstp;
+	double T, th, phi, err;
+	MatrixXd x;
+	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
 	
 	int M = x.cols();
-	int S = 10;
+	int S = 1;
 	M /= S;
 	nstp *= S;
 

@@ -73,6 +73,14 @@ public:
 	      int threadNum) :
 	Cqcgl1d(N, d, h, enableJacv, Njacv,
 		Mu, Br, Bi, Dr, Di, Gr, Gi, threadNum) {}
+
+    pyCqcgl1d(int N, double d, double h,
+	      bool enableJacv, int Njacv,
+	      double b, double c,
+	      double dr, double di,
+	      int threadNum) :
+	Cqcgl1d(N, d, h, enableJacv, Njacv,
+		b, c, dr, di, threadNum) {}
     
     /* wrap changeh */
     void PYchangeh(const double hnew){
@@ -748,7 +756,9 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
 			bool, int,
 			double, double, double, double, double,
 			double, double,
-			int>()) ;
+			int>())
+	.def(bp::init<int, double, double, bool, int, double, double, double, double, int>())
+	;
     
     bp::class_<Cgl1d>("Cgl1d", bp::init<
 			int, double, double,
@@ -780,6 +790,7 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
 	.def_readonly("Gr", &pyCqcgl1d::Gr)
 	.def_readonly("Gi", &pyCqcgl1d::Gi)
 	.def_readonly("Ndim", &pyCqcgl1d::Ndim)
+	.def(bp::init<int, double, double, bool, int, double, double, double, double, int>()) /* second constructor */
 	.def("changeh", &pyCqcgl1d::PYchangeh)
 	.def("velocity", &pyCqcgl1d::PYvelocity)
 	.def("velocityReq", &pyCqcgl1d::PYvelocityReq)

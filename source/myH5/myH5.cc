@@ -283,4 +283,23 @@ namespace MyH5 {
     
     }
 
+    /**
+     * @brief read rpo info from hdf5 file for cqcgl
+     *
+     *  This is a short version
+     */
+    void CqcglReadRPO(const string fileName, const string groupName,
+		      MatrixXd &x, double &T, int &nstp,
+		      double &th, double &phi, double &err){
+	H5File file(fileName, H5F_ACC_RDONLY);
+	string DS = "/" + groupName + "/";
+	
+	x = readMatrixXd(file, DS + "x");
+	T = readScalar<double>(file, DS + "T");
+	nstp =  readScalar<int>(file, DS + "nstp");
+	th = readScalar<double>(file, DS + "th");
+	phi = readScalar<double>(file, DS + "phi");
+	err = readScalar<double>(file, DS + "err");
+    }
+    
 }

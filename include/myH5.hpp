@@ -56,6 +56,10 @@ namespace MyH5 {
 		       const double th, const double phi, double err);
     std::tuple<MatrixXd, double, int, double, double, double>
     CqcglReadRPO(const string fileName, const string groupName);
+    void
+    CqcglReadRPO(const string fileName, const string groupName,
+		      MatrixXd &x, double &T, int &nstp,
+		      double &th, double &phi, double &err);
     
 }
 

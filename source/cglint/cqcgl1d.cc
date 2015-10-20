@@ -17,9 +17,13 @@ using namespace Eigen;
 /**
  * Constructor of cubic quintic complex Ginzburg-Landau equation
  * A_t = Mu A + (Dr + Di*i) A_{xx} + (Br + Bi*i) |A|^2 A + (Gr + Gi*i) |A|^4 A
- * 
+ *
+ * @param[in] N            the number of Fourier modes
+ * @param[in] d            the spacial period, size
+ * @param[in] h            integration time step
  * @param[in] enableJacv   false : forbid tangent space integration 
  * @param[in] Njacv        <= 0 integrate Jacobian
+ * @param[in] threadNum    number of threads for integration
  */
 Cqcgl1d::Cqcgl1d(int N, double d, double h,
 		 bool enableJacv, int Njacv,
@@ -458,6 +462,40 @@ ArrayXd Cqcgl1d::velocityReq(const ArrayXd &a0, const double wth,
 			     const double wphi){
     return velocity(a0) + wth*transTangent(a0) + wphi*phaseTangent(a0);    
 }
+
+/* -------------------------------------------------- */
+/* --------         Lyapunov functional   ----------- */
+/* -------------------------------------------------- */
+
+/**
+ * @brief calculate the Lyapunov functional
+ *
+ *  L = \int dx [ -\mu |A|^2 + D |A_x|^2 - 1/2 \beta |A|^4 - 1/3 \gamma |A|^6 ]
+ *  Here FFT[ A_{x} ]_k = iq_k a_k, so 
+ *          \int dx |A_x|^2 = 1/N \sum (q_k^2 |a_k|^2)
+ *  The rest term can be obtained by invere FFT
+ *  =>
+ *  L = \sum_{k=1}^N [ -\mu |A_k|^2 - 1/2 \beta |A_k|^4 - 1/3 \gamma |A_k|^6]
+ *     +\sum_{k=1}^N 1/N D [ q_k^2 |a_k|^2 ]
+ *
+ *  Note, there are may be pitfalls, but there is indeed asymmetry here:
+ *  \sum_n |A_n|^2 = 1/N \sum_k |a_k|^2
+ */
+Cqcgl1d::dcp
+Cqcgl1d::Lyap(const ArrayXd &a0){
+    ArrayXcd a = R2C(pad(a0));
+    ArrayXcd a2 = a * a.conjugate();
+    Fv.v1 = a;
+    Fv.ifft();
+    ArrayXcd A = Fv.v2;
+    ArrayXcd A2 = A * A.conjugate();
+
+    return	-Mu * A2.sum()
+	- 1.0/2 * dcp(Br, Bi) * (A2*A2).sum()
+	- 1.0/3 * dcp(Gr, Gi) * (A2*A2*A2).sum()
+	+ 1.0/N * dcp(Dr, Di) * (K * a2).sum();
+}
+
 
 /* -------------------------------------------------- */
 /* --------          stability matrix     ----------- */
@@ -1240,7 +1278,8 @@ Cqcgl1d::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
 /**
  * The constructor of complex Ginzburg-Landau equation
  * A_t = A + (1 + b*i) A_{xx} - (1 + c*i) |A|^2 A
- * 
+ *
+ * @see Cqcgl1d()
  */
 Cgl1d::Cgl1d(int N, double d, double h,
 	     bool enableJacv, int Njacv,

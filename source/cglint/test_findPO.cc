@@ -27,9 +27,12 @@ int main(){
     
     cout.precision(15);
     
-    switch (1){
+    switch (2){
 	
     case 1:{
+	/* try to find periodic orbit with the old form of cqcgl
+	 * space resolution N = 512 is small  
+	 */
 	const int N = 512; 
 	const double d = 50;
 	const double h = 0.001;
@@ -60,7 +63,34 @@ int main(){
     }
 	
     case 2: {
+	/* try to find periodic orbit with the new form of cqcgl
+	 * space resolution is large
+	 */
+	const int N = 512*4;
+	const double d = 40;
+	const double h = 0.0005;
+
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo2.h5");
+	int nstp;
+	double T, th, phi, err;
+	MatrixXd x;
+	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
 	
+	int M = x.cols();
+	int S = 1;
+	M /= S;
+	nstp *= S;
+
+	MatrixXd xp(x.rows(), M);
+	for(int i = 0; i < M; i++){
+	    xp.col(i) = x.col(S*i);
+	}
+
+	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
+	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, -0.01, -0.04, 4);
+	auto result = cglrpo.findRPOM(xp, T, th, phi, 1e-12, 20, 100, 1e-7, 1e-2, 0.1, 0.5, 6000, 10);
+	
+	break;
     }
 	
     default: {

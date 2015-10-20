@@ -27,6 +27,15 @@ CqcglRPO::CqcglRPO(int nstp, int M,
     Ndim = cgl1.Ndim;
 }
 
+CqcglRPO::CqcglRPO(int nstp, int M,
+		   int N, double d, double h,
+		   double b, double c,
+		   double dr, double di,
+		   int threadNum)
+    : CqcglRPO(nstp, M, N, d, h, -1, 1, c, 1, b, dr, di, threadNum)
+{ }
+
+
 CqcglRPO::~CqcglRPO(){}
 
 CqcglRPO & CqcglRPO::operator=(const CqcglRPO &x){

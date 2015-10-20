@@ -189,4 +189,17 @@ if case == 6:
     nstp = 15000
     aa = cgl.intg(a0, nstp, 1)
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
-    
+
+    aaTilde, ths, phis = cgl.reduceAllSymmetries(aa)
+    i1 = 2370*2
+    i2 = 3370*2+100
+    nstp = i2-i1
+    T = nstp * h
+    th = ths[i1] - ths[i2]
+    phi = phis[i1] - phis[i2]
+    err = norm(aaTilde[i1]-aaTilde[i2])
+    M = 20
+    nstp /= M
+    x = aa[i1:i2:nstp]
+    print err, nstp, T, th, phi
+    cqcglSaveRPO('rpo2.h5', '1', x, T, nstp, th, phi, err)

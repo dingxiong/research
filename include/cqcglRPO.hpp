@@ -17,7 +17,7 @@ class CqcglRPO{
     typedef Eigen::Triplet<double> Tri;
 
     Cqcgl1d cgl1, cgl2;
-    int nstp;			/* integration steps */
+    int nstp;			/* integration steps for each piece */
     int M;			/* pieces of multishoot */
     const int N;		/* dimension of FFT */
     int Ndim;			/* dimension of state space */
@@ -28,6 +28,11 @@ class CqcglRPO{
 	     double Mu = -0.1, double Br = 1.0, double Bi = 0.8,
 	     double Dr = 0.125, double Di = 0.5, double Gr = -0.1,
 	     double Gi = -0.6, int threadNum = 4);
+    CqcglRPO(int nstp, int M,
+	     int N, double d, double h,
+	     double b, double c,
+	     double dr, double di,
+	     int threadNum);
     
     ~CqcglRPO();
     CqcglRPO & operator=(const CqcglRPO &x);

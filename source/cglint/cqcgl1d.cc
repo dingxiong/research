@@ -930,6 +930,11 @@ Cqcgl1d::orbit2sliceWrap(const Ref<const ArrayXXd> &aa){
     return std::make_tuple(raa, th, phi);
 }
 
+/**
+ * @brief reduce the continous symmetries without wrapping the phase
+ *        so there is no continuity
+ * @see orbit2sliceWrap()
+ */
 std::tuple<ArrayXXd, ArrayXd, ArrayXd>
 Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();

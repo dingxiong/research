@@ -21,6 +21,11 @@ class CqcglRPO{
     int M;			/* pieces of multishoot */
     const int N;		/* dimension of FFT */
     int Ndim;			/* dimension of state space */
+
+    // Non-static Data Member Initializers => new feature of C++11
+    double alpha1 = 0.002;	/* strength scale for v constraint */
+    double alpha2 = 0.005;	/* strength scale for t1 constraint */
+    double alpha3 = 0.005;	/* strength scale for t2 constraint */
     
     /*---------------   constructors    ------------------------- */
     CqcglRPO(int nstp, int M,
@@ -69,6 +74,25 @@ class CqcglRPO{
 	     const int GmresRestart = 30,
 	     const int GmresMaxit = 100);
 
+    std::tuple<MatrixXd, double, double, double, double>
+    findRPO_hook(const VectorXd &x0, const double T,
+		 const double th0, const double phi0,
+		 const double tol,
+		 const int maxit,
+		 const int maxInnIt,
+		 const double GmresRtol,
+		 const int GmresRestart,
+		 const int GmresMaxit);
+    
+    std::tuple<MatrixXd, double, double, double, double>
+    findRPOM_hook(const MatrixXd &x0, const double T,
+		  const double th0, const double phi0,
+		  const double tol = 1e-12,
+		  const int maxit = 100,
+		  const int maxInnIt = 8,
+		  const double GmresRtol = 1e-3,
+		  const int GmresRestart = 100,
+		  const int GmresMaxit = 100);
  
 #if 0				
     inline VectorXd cgSolver(ConjugateGradient<SpMat> &CG, Eigen::SparseLU<SpMat> &solver,

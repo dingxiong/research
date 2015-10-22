@@ -136,6 +136,21 @@ int main(){
 	
 	break;
     }
+
+    case 6:{
+	const int N = 1024;
+	const int L = 50;
+	const double h = 0.0005;
+	Cqcgl1d cgl(N, L, h, true, 1, 1, 4.0, 0.8, -0.01, -0.04, 4);
+	const int Ndim = cgl.Ndim;
+	
+	ArrayXd A0(2*N);
+	for
+	    A0 = 5*centerRand(2*N, 0.2)
+    a0 = cgl.Config2Fourier(A0)
+	
+
+    }
     default: {
 	fprintf(stderr, "please indicate a valid case number \n");
 	

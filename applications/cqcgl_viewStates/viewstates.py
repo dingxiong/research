@@ -157,20 +157,19 @@ if case == 5:
     test the transition with respect to di
     """
     N = 512
-    # d = 50 / (1.25)**0.5
-    d = 40
+    d = 30
     h = 0.0005
 
     # cgl = pyCqcgl1d(N, d, h, True, 0,
     #                 -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
     #                 4)
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.04, 4)
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, 0.01, 4)
     A0 = 5*centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
-    nstp = 15000
+    nstp = 20000
     aa = cgl.intg(a0, nstp, 1)
-    aa = cgl.intg(aa[-1], nstp, 1)
-    aa = cgl.intg(aa[-1], nstp, 1)
+    # aa = cgl.intg(aa[-1], nstp, 1)
+    # aa = cgl.intg(aa[-1], nstp, 1)
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
     plotOneConfigFromFourier(cgl, aa[-1], d)
 
@@ -179,20 +178,20 @@ if case == 6:
     use the new form of cqcgl with larger di to find
     candidate of periodic orbit initial conditon
     """
-    N = 512*4
-    d = 40
-    h = 0.0005
+    N = 512*2
+    d = 30
+    h = 0.0002
 
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.04, 4)
     A0 = 5*centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
-    nstp = 15000
+    nstp = 10000
     aa = cgl.intg(a0, nstp, 1)
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
 
     aaTilde, ths, phis = cgl.reduceAllSymmetries(aa)
-    i1 = 2370*2
-    i2 = 3370*2+100
+    i1 = 2000
+    i2 = 7000
     nstp = i2-i1
     T = nstp * h
     th = ths[i1] - ths[i2]
@@ -202,4 +201,39 @@ if case == 6:
     nstp /= M
     x = aa[i1:i2:nstp]
     print err, nstp, T, th, phi
-    cqcglSaveRPO('rpo2.h5', '1', x, T, nstp, th, phi, err)
+    # cqcglSaveRPO('rpo2.h5', '1', x, T, nstp, th, phi, err)
+
+    aa2 = cgl.intg(x[0], nstp*M, 1)
+    plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, nstp*M*h])
+    aa3 = cgl.intg(x[0]*(1+0.00001*rand(cgl.Ndim)), nstp*M, 1)
+    plotConfigSpaceFromFourier(cgl, aa3, [0, d, 0, nstp*M*h])
+    dif = aa3-aa2
+    plot1dfig(norm(dif, axis=1))
+    plot1dfig(norm(dif, axis=1) / norm(aa2, axis=1), yscale='log')
+
+if case == 7:
+    """
+    test intgv() function of the new form of cqcgl
+    """
+    N = 512*2
+    d = 30
+    h = 0.0005
+
+    cgl = pyCqcgl1d(N, d, h, True, 1, 4.0, 0.8, -0.01, -0.04, 4)
+    A0 = 5*centerRand(2*N, 0.2)
+    a0 = cgl.Config2Fourier(A0)
+    nstp = 6000
+    aa = cgl.intg(a0, 1000, 1)
+    aa = cgl.intg(aa[-1], nstp, 1)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+
+    i1 = 4000
+    i2 = 4100
+    v0 = rand(cgl.Ndim)
+    v0 /= norm(v0)
+    av = cgl.intgv(aa[i1], v0, i2-i1)
+    av2 = cgl.intgv(aa[i1], v0/10.0, i2-i1)
+
+    plotOneConfigFromFourier(cgl, av[0], d)
+    plotConfigSpaceFromFourier(cgl, aa[i1:i2], [0, d, 0, nstp*h])
+    print norm(av[0]), norm(av[1]), norm(av2[1])

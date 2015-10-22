@@ -158,7 +158,7 @@ public:
 	getDims(a0, m, n);
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
 	getDims(v, m, n);
-	Map<ArrayXXd> tmpv((double*)v.get_data(), m, n);
+	Map<ArrayXXd> tmpv((double*)v.get_data(), n, m);
 	return copy2bn( intgv(tmpa, tmpv, nstp));
     }
 

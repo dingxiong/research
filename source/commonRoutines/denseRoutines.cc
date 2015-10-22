@@ -157,3 +157,13 @@ denseRoutines::subspBound(const MatrixXi subspDim, const MatrixXi ixSp){
   
     return std::make_pair(bound, boundStrict);
 }
+
+
+VectorXd denseRoutines::centerRand(const int N, const double frac){
+    VectorXd a(VectorXd::Random(N)); /* -1 to 1 */
+    int N2 = (int) 0.5 * N * (1-frac);
+    a.head(N2) = VectorXd::Zeros(N2);
+    a.tail(N2) = VectorXd::Zeros(N2);
+
+    return a;
+}

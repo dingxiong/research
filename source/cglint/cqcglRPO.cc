@@ -92,9 +92,9 @@ VectorXd CqcglRPO::DFx(const VectorXd &x, const VectorXd &dx){
 	+ cgl2.transTangent(gfx).matrix() * dt(1)
 	+ cgl2.phaseTangent(gfx).matrix() * dt(2),
 	
-	v1.matrix().dot(dx.head(Ndim)),
-	t1.matrix().dot(dx.head(Ndim)),
-	t2.matrix().dot(dx.head(Ndim))
+	alpha1 * v1.matrix().dot(dx.head(Ndim)), /* strength scale */
+	alpha2 * t1.matrix().dot(dx.head(Ndim)),
+	alpha3 * t2.matrix().dot(dx.head(Ndim))
 	;
 
     return DF;
@@ -155,7 +155,7 @@ VectorXd CqcglRPO::MDFx(const VectorXd &x, const VectorXd &dx){
 	ArrayXd xt = x.segment(i*Ndim, Ndim);
 	ArrayXd dxt = dx.segment(i*Ndim, Ndim);
 	ArrayXXd tmp = cgl2.intgv(xt, dxt, nstp); /* f(x, t) and J(x, t)*dx */
-
+	
 	VectorXd v1 = cgl2.velocity(xt); /* v(x) */
 	VectorXd v2 = cgl2.velocity(tmp.col(0));   /* v(f(x, t)) */
 	VectorXd t1 = cgl2.transTangent(xt);
@@ -167,8 +167,8 @@ VectorXd CqcglRPO::MDFx(const VectorXd &x, const VectorXd &dx){
 	{
 	    // update the last 3 elements
 	    DF(M * Ndim) += v1.dot(dxt.matrix());
-	    DF(M * Ndim + 1) += t1.dot(dxt.matrix());
-	    DF(M * Ndim + 2) += t2.dot(dxt.matrix());
+	    DF(M * Ndim + 1) += 0.01 * t1.dot(dxt.matrix());
+	    DF(M * Ndim + 2) += 0.01 * t2.dot(dxt.matrix());
 	}
 	
 	if(i != M-1){
@@ -187,6 +187,12 @@ VectorXd CqcglRPO::MDFx(const VectorXd &x, const VectorXd &dx){
 		;
 	}
     }
+
+    // scale the strength of constraints
+    DF(M * Ndim) *= alpha1;
+    DF(M * Ndim + 1) *= alpha2;
+    DF(M * Ndim + 2) *= alpha3;
+    
     return DF;
     
 }
@@ -269,6 +275,97 @@ CqcglRPO::findRPOM(const MatrixXd &x0, const double T,
 			   std::get<1>(result).back()	  /* err */
 			   );
 }
+
+/**
+ * @brief single shooting to find rpo with GMRES HOOK algorithm 
+ *
+ * @param[in]  x0            initial guess state
+ * @param[in]  T             initial guess period
+ * @param[in]  th0           initial guess of translation angle
+ * @param[in]  phi0          initial guess of phase angle
+ * @param[in]  tol           tolerance of the orbit ||x(0)-X(T)||
+ * @param[in]  maxit         maximal number of iterations for Newton steps
+ * @param[in]  maxInnIt      maximal number of iterations for Hook steps
+ * @param[in]  GmresRtol     relative tolerence of GMRES
+ * @param[in]  GmresRestart  maximal Krylov subspace dimension => inner loop size
+ * @param[in]  GmresMaxit    maximal outer iteration number
+ * @return     [x, T, theta, phi, err]
+ *
+ * @see  findRPOM_hook() for multishooting method
+ */
+std::tuple<MatrixXd, double, double, double, double>
+CqcglRPO::findRPO_hook(const VectorXd &x0, const double T,
+		       const double th0, const double phi0,
+		       const double tol,
+		       const int maxit,
+		       const int maxInnIt,
+		       const double GmresRtol,
+		       const int GmresRestart,
+		       const int GmresMaxit){
+    assert(x0.size() == Ndim);
+    auto fx = std::bind(&CqcglRPO::Fx, this, ph::_1);
+    auto dfx = std::bind(&CqcglRPO::DFx, this, ph::_1, ph::_2);
+    VectorXd x(Ndim + 3);
+    x << x0, T, th0, phi0;
+    
+    auto result = Gmres0Hook(fx, dfx, x, tol, maxit, maxInnIt,
+			     GmresRtol, GmresRestart, GmresMaxit);
+    if(std::get<2>(result) != 0){
+	fprintf(stderr, "RPO not converged ! \n");
+    }
+
+    return std::make_tuple(std::get<0>(result).head(Ndim), /* x */
+			   std::get<0>(result)(Ndim),	   /* T */
+			   std::get<0>(result)(Ndim+1),	   /* theta */
+			   std::get<0>(result)(Ndim+2),	   /* phi */
+			   std::get<1>(result).back()	   /* err */
+			   );
+}
+
+
+
+/**
+ * @brief find rpo in cqcgl 1d system
+ *
+ * @return [x, T, theta, phi, err]
+ * @see findRPO_hook() for single shooting method
+ */
+std::tuple<MatrixXd, double, double, double, double>
+CqcglRPO::findRPOM_hook(const MatrixXd &x0, const double T,
+			const double th0, const double phi0,
+			const double tol,
+			const int maxit,
+			const int maxInnIt,
+			const double GmresRtol,
+			const int GmresRestart,
+			const int GmresMaxit){
+    assert(x0.cols() == M && x0.rows() == Ndim);
+    auto fx = std::bind(&CqcglRPO::MFx, this, ph::_1);
+    auto dfx = std::bind(&CqcglRPO::MDFx, this, ph::_1, ph::_2);
+    
+    // initialize input 
+    VectorXd x(M * Ndim + 3);
+    MatrixXd tmp(x0);
+    tmp.resize(M * Ndim, 1);
+    x << tmp, T, th0, phi0;
+    
+    auto result = Gmres0Hook(fx, dfx, x, tol, maxit, maxInnIt,
+			     GmresRtol, GmresRestart, GmresMaxit);
+    if(std::get<2>(result) != 0){
+	fprintf(stderr, "RPO not converged ! \n");
+    }
+
+    MatrixXd tmp2(std::get<0>(result).head(M*Ndim));
+    tmp2.resize(Ndim, M);
+    return std::make_tuple(tmp2, /* x */
+			   std::get<0>(result)(M*Ndim),	  /* T */
+			   std::get<0>(result)(M*Ndim+1), /* theta */
+			   std::get<0>(result)(M*Ndim+2), /* phi */
+			   std::get<1>(result).back()	  /* err */
+			   );
+}
+
+
 
 //////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////

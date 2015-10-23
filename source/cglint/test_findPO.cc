@@ -103,7 +103,7 @@ int main(){
 	const double d = 30;
 	const double h = 0.0002;
 
-	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo4.h5");
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo2.h5");
 	int nstp;
 	double T, th, phi, err;
 	MatrixXd x;
@@ -121,8 +121,8 @@ int main(){
 
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
 	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, -0.01, -0.04, 4);
-	auto result = cglrpo.findRPOM_hook(xp, T, th, phi, 1e-12, 100, 8, 1e-4, 500, 10);
-	CqcglWriteRPO("rpo2x2.h5", "2",
+	auto result = cglrpo.findRPOM_hook(xp, T, th, phi, 1e-12, 100, 8, 1e-2, 500, 10);
+	CqcglWriteRPO("rpo3.h5", "1",
 		      std::get<0>(result), /* x */
 		      std::get<1>(result), /* T */
 		      nstp,		   /* nstp */
@@ -162,6 +162,38 @@ int main(){
 	
 	break;
 	
+    }
+
+    case 32:{
+	/* use the inexact new to refine rpo 
+	 * which is obtain from GMRES HOOK method
+	 *
+	 * ==> this trial almost fails.
+	 */
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpoT2x2.h5");
+	int nstp;
+	double T, th, phi, err;
+	MatrixXd x;
+	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
+
+	int M = x.cols();
+	const int N = 1024;
+	const double d = 30;
+	const double h = T / (M * nstp);
+
+	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
+	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, -0.01, -0.04, 4);
+	auto result = cglrpo.findRPOM(x, T, th, phi, 1e-12, 20, 100, 1e-2, 1e-2, 0.1, 0.5, 1000, 10);
+	CqcglWriteRPO("rpo2x2.h5", "2",
+		      std::get<0>(result), /* x */
+		      std::get<1>(result), /* T */
+		      nstp,		   /* nstp */
+		      std::get<2>(result), /* th */
+		      std::get<3>(result), /* phi */
+		      std::get<4>(result)  /* err */
+		      );
+	
+	break;
     }
 	
     case 40: {			/* test the strength factor a1, a2, a3 */

@@ -96,6 +96,26 @@ public:
 	ArrayXd tmpv = velocity(tmpa);
 	return copy2bn(tmpv);
     }
+
+    /* wrap the Lyap */
+    bp::tuple PYLyap(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXcd lya = Lyap(tmpaa);
+	return bp::make_tuple(copy2bn( lya.real() ),
+			      copy2bn( lya.imag() )
+			      );
+    }
+    
+    /* wrap the LyapVel */
+    bn::ndarray PYLyapVel(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	ArrayXd lyavel = LyapVel(tmpaa);
+	return copy2bn(lyavel);
+    }
     
     /* wrap velocityReq */
     bn::ndarray PYvelocityReq(bn::ndarray a0, double th, double phi){
@@ -794,6 +814,8 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
 	.def("changeh", &pyCqcgl1d::PYchangeh)
 	.def("velocity", &pyCqcgl1d::PYvelocity)
 	.def("velocityReq", &pyCqcgl1d::PYvelocityReq)
+	.def("Lyap", &pyCqcgl1d::PYLyap)
+	.def("LyapVel", &pyCqcgl1d::PYLyapVel)
 	.def("pad", &pyCqcgl1d::PYpad)
 	.def("generalPadding", &pyCqcgl1d::PYgeneralPadding)
 	.def("unpad", &pyCqcgl1d::PYunpad)

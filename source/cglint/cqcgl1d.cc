@@ -481,21 +481,46 @@ ArrayXd Cqcgl1d::velocityReq(const ArrayXd &a0, const double wth,
  *  Note, there are may be pitfalls, but there is indeed asymmetry here:
  *  \sum_n |A_n|^2 = 1/N \sum_k |a_k|^2
  */
-Cqcgl1d::dcp
-Cqcgl1d::Lyap(const ArrayXd &a0){
-    ArrayXcd a = R2C(pad(a0));
-    ArrayXcd a2 = a * a.conjugate();
-    Fv.v1 = a;
-    Fv.ifft();
-    ArrayXcd A = Fv.v2;
-    ArrayXcd A2 = A * A.conjugate();
-
-    return	-Mu * A2.sum()
-	- 1.0/2 * dcp(Br, Bi) * (A2*A2).sum()
-	- 1.0/3 * dcp(Gr, Gi) * (A2*A2*A2).sum()
-	+ 1.0/N * dcp(Dr, Di) * (K * a2).sum();
+ArrayXcd
+Cqcgl1d::Lyap(const Ref<const ArrayXXd> &aa){
+    int M = aa.cols();
+    VectorXcd lya(M);
+    for (size_t i = 0; i < M; i++){
+	ArrayXcd a = R2C(pad(aa.col(i)));
+	ArrayXcd a2 = a * a.conjugate();
+	Fv.v1 = a;
+	Fv.ifft();
+	ArrayXcd A = Fv.v2;
+	ArrayXcd A2 = A * A.conjugate();
+	lya(i) =  -Mu * A2.sum()
+	    - 1.0/2 * dcp(Br, Bi) * (A2*A2).sum()
+	    - 1.0/3 * dcp(Gr, Gi) * (A2*A2*A2).sum()
+	    + 1.0/N * dcp(Dr, Di) * (K.square() * a2).sum();
+    }
+    
+    return lya;
 }
 
+/**
+ * @brief calculate the time derivative of Lyapunov functional
+ *
+ * The time derivative of Lyapunov functional is L_t = -2 \int dx |A_t|^2
+ * 
+ * @see Lyap(), velocity()
+ */
+ArrayXd
+Cqcgl1d::LyapVel(const Ref<const ArrayXXd> &aa){
+    int M = aa.cols();
+    VectorXd lyavel(M);
+    for (size_t i = 0; i < M; i++){
+	ArrayXd vel = velocity(aa.col(i)); // Fourier mode of velocity
+	ArrayXcd cvel = R2C(pad(vel));
+	Fv.v1 = cvel;
+	Fv.ifft();		// Fv.v2 is A_t
+	lyavel(i) = -2 * (Fv.v2 * Fv.v2.conjugate()).sum().real();
+    }
+    return lyavel;
+}
 
 /* -------------------------------------------------- */
 /* --------          stability matrix     ----------- */

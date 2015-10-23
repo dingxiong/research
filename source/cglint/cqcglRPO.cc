@@ -309,7 +309,8 @@ CqcglRPO::findRPO_hook(const VectorXd &x0, const double T,
     x << x0, T, th0, phi0;
     
     auto result = Gmres0Hook(fx, dfx, x, tol, maxit, maxInnIt,
-			     GmresRtol, GmresRestart, GmresMaxit);
+			     GmresRtol, GmresRestart, GmresMaxit,
+			     true, 3);
     if(std::get<2>(result) != 0){
 	fprintf(stderr, "RPO not converged ! \n");
     }
@@ -350,7 +351,8 @@ CqcglRPO::findRPOM_hook(const MatrixXd &x0, const double T,
     x << tmp, T, th0, phi0;
     
     auto result = Gmres0Hook(fx, dfx, x, tol, maxit, maxInnIt,
-			     GmresRtol, GmresRestart, GmresMaxit);
+			     GmresRtol, GmresRestart, GmresMaxit,
+			     true, 3);
     if(std::get<2>(result) != 0){
 	fprintf(stderr, "RPO not converged ! \n");
     }

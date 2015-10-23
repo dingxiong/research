@@ -101,7 +101,10 @@ public:
     ArrayXd velocity(const ArrayXd &a0);
     ArrayXd velocityReq(const ArrayXd &a0, const double th,
 			const double phi);
-    dcp Lyap(const ArrayXd &a0);
+    ArrayXcd
+    Lyap(const Ref<const ArrayXXd> &aa);
+    ArrayXd
+    LyapVel(const Ref<const ArrayXXd> &aa);
     MatrixXd stab(const ArrayXd &a0);
     MatrixXd stabReq(const ArrayXd &a0, double th, double phi);
 

@@ -101,7 +101,9 @@ namespace iterMethod {
 		const int maxInnIt,
 		const double GmresRtol,
 		const int GmresRestart,
-		const int GmresMaxit);
+		const int GmresMaxit,
+		const bool testT,
+		const bool Tindex);
 
     
     /* -------------------------------------------------- */
@@ -536,8 +538,13 @@ namespace iterMethod {
 	}
 	
     }
-
     
+    /**
+     * @brief use GMRES HOOK method to fin the solution of A x = b
+     *
+     * @param[in] testT     whether test the updated period T is postive
+     * @param[in] Tindex    the index of T in the state vector counting from the tail
+     */
     template<class Fx, class Jacv>
     std::tuple<VectorXd, std::vector<double>, int>
     Gmres0Hook( Fx &fx, Jacv &jacv,
@@ -547,7 +554,9 @@ namespace iterMethod {
 		const int maxInnIt,
 		const double GmresRtol,
 		const int GmresRestart,
-		const int GmresMaxit){
+		const int GmresMaxit,
+		const bool testT,
+		const int Tindex){
 
 	const int N = x0.size();
 	VectorXd x(x0);
@@ -572,22 +581,22 @@ namespace iterMethod {
 	    ArrayXd &D = std::get<3>(tmp);
 	    MatrixXd &V2 = std::get<4>(tmp);
 	    MatrixXd &V = std::get<5>(tmp);
-
-	    VectorXd xxx = s.tail(3);
-	    cout << xxx(0) << endl;
 	    
 	    ArrayXd D2 = D * D;
 	    ArrayXd pd = p.array() * D;
 	    ArrayXd mu = ArrayXd::Ones(p.size());
 	    for(size_t j = 0; j < maxInnIt; j++){
-#ifdef GMRES_PRINT	    
-		fprintf(stderr, " %zd,  ", j);
-#endif
 		VectorXd newx = x + s;
-		VectorXd newF = fx(newx);
-		if(newF.norm() < Fnorm){
-		    x = newx;
-		    break;
+		double newT = newx(N - Tindex);
+#ifdef GMRES_PRINT	    
+		fprintf(stderr, " %zd, %g |", j, newT);
+#endif
+		if(!testT || newT > 0){
+		    VectorXd newF = fx(newx);
+		    if(newF.norm() < Fnorm){
+			x = newx;
+			break;
+		    }
 		}
 		ArrayXd z = pd / (D2 + mu);
 		VectorXd y = V2 * z.matrix();

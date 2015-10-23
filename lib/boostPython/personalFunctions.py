@@ -290,7 +290,7 @@ def cqcglReadRPO(fileName, groupName):
     phi = f[req+'phi'].value
     err = f[req+'err'].value
     f.close()
-    return x, T[0], nstp[0], th[0], phi[0], err[0]
+    return x, T[0], np.int(nstp[0]), th[0], phi[0], err[0]
 
 
 def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):

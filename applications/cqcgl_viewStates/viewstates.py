@@ -9,7 +9,7 @@ from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
 
-case = 8
+case = 6
 
 
 if case == 1:
@@ -185,18 +185,20 @@ if case == 6:
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.04, 4)
     A0 = 5*centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
-    nstp = 10000
+    nstp = 15000
     aa = cgl.intg(a0, nstp, 1)
+    for i in range(2):
+        aa = cgl.intg(aa[-1], nstp, 1)
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
 
-    aaTilde, ths, phis = cgl.reduceAllSymmetries(aa)
-    i1 = 3000
-    i2 = 8000
+    aaHat, ths, phis = cgl.orbit2sliceWrap(aa)
+    i1 = 900
+    i2 = 4900
     nstp = i2-i1
     T = nstp * h
     th = ths[i1] - ths[i2]
     phi = phis[i1] - phis[i2]
-    err = norm(aaTilde[i1]-aaTilde[i2])
+    err = norm(aaHat[i1]-aaHat[i2])
     M = 20
     nstp /= M
     x = aa[i1:i2:nstp]
@@ -237,17 +239,3 @@ if case == 7:
     plotOneConfigFromFourier(cgl, av[0], d)
     plotConfigSpaceFromFourier(cgl, aa[i1:i2], [0, d, 0, nstp*h])
     print norm(av[0]), norm(av[1]), norm(av2[1])
-
-if case == 8:
-    """
-    view the rpo I found
-    """
-    N = 1024
-    d = 30
-    M = 2
-    x, T, nstp, th, phi, err = cqcglReadRPO('../../data/cgl/rpo1x2.h5', '1')
-    h = T / nstp / M
-    cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, -0.01, -0.04, 4)
-    aa = cgl.intg(x[0], nstp*2, 1)
-    aa1 = cgl.intg(x[0], nstp*1, 1)
-    aa2 = cgl.intg(x[1], nstp*1, 1)

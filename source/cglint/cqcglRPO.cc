@@ -293,7 +293,7 @@ CqcglRPO::findRPOM(const MatrixXd &x0, const double T,
  *
  * @see  findRPOM_hook() for multishooting method
  */
-std::tuple<MatrixXd, double, double, double, double>
+std::tuple<VectorXd, double, double, double, double>
 CqcglRPO::findRPO_hook(const VectorXd &x0, const double T,
 		       const double th0, const double phi0,
 		       const double tol,

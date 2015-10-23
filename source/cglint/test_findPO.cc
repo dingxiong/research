@@ -27,7 +27,7 @@ int main(){
     
     cout.precision(15);
     
-    switch (4){
+    switch (30){
 	
     case 1:{
 	/* try to find periodic orbit with the old form of cqcgl
@@ -94,16 +94,16 @@ int main(){
     }
 
 
-    case 3: {
+    case 30: {
 	/* try to find periodic orbit with the new form of cqcgl
-	 * using GMRES Hook method
+	 * using GMRES Hook method with multishooting method
 	 * space resolution is large
 	 */
 	const int N = 512*2;
 	const double d = 30;
 	const double h = 0.0002;
 
-	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo2.h5");
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo4.h5");
 	int nstp;
 	double T, th, phi, err;
 	MatrixXd x;
@@ -121,12 +121,50 @@ int main(){
 
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
 	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, -0.01, -0.04, 4);
-	auto result = cglrpo.findRPOM_hook(xp, T, th, phi, 1e-12, 100, 8, 1e-1, 1000, 10);
+	auto result = cglrpo.findRPOM_hook(xp, T, th, phi, 1e-12, 100, 8, 1e-4, 500, 10);
+	CqcglWriteRPO("rpo2x2.h5", "2",
+		      std::get<0>(result), /* x */
+		      std::get<1>(result), /* T */
+		      nstp,		   /* nstp */
+		      std::get<2>(result), /* th */
+		      std::get<3>(result), /* phi */
+		      std::get<4>(result)  /* err */
+		      );
 	
 	break;
     }
 
-    case 4: {			/* test the strength factor a1, a2, a3 */
+    case 31: {
+	/* same as case = 3, but here use single shooting method */
+	const int N = 512*2;
+	const double d = 30;
+	const double h = 0.0002;
+
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo2.h5");
+	int nstp;
+	double T, th, phi, err;
+	MatrixXd x;
+	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
+	
+	int M = x.cols();
+	nstp *= M;
+	printf("T %g, nstp %d, th %g, phi %g, err %g\n", T, nstp, th, phi, err);
+	CqcglRPO cglrpo(nstp, 1, N, d, h, 4.0, 0.8, -0.01, -0.04, 4);
+	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 1e-12, 30, 8, 1e-6, 500, 10);
+	CqcglWriteRPO("rpoX1.h5", "1",
+		      std::get<0>(result), /* x */
+		      std::get<1>(result), /* T */
+		      nstp,		   /* nstp */
+		      std::get<2>(result), /* th */
+		      std::get<3>(result), /* phi */
+		      std::get<4>(result)  /* err */
+		      );
+	
+	break;
+	
+    }
+	
+    case 40: {			/* test the strength factor a1, a2, a3 */
 
 	CqcglRPO cglrpo(2000, 10, 512, 30, 0.0001, 4.0, 0.8, -0.01, -0.04, 4);
 

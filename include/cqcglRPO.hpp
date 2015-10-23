@@ -23,9 +23,9 @@ class CqcglRPO{
     int Ndim;			/* dimension of state space */
 
     // Non-static Data Member Initializers => new feature of C++11
-    double alpha1 = 0.002;	/* strength scale for v constraint */
-    double alpha2 = 0.005;	/* strength scale for t1 constraint */
-    double alpha3 = 0.005;	/* strength scale for t2 constraint */
+    double alpha1 = 0.01;	/* strength scale for v constraint */
+    double alpha2 = 0.01;	/* strength scale for t1 constraint */
+    double alpha3 = 0.01;	/* strength scale for t2 constraint */
     
     /*---------------   constructors    ------------------------- */
     CqcglRPO(int nstp, int M,
@@ -74,7 +74,7 @@ class CqcglRPO{
 	     const int GmresRestart = 30,
 	     const int GmresMaxit = 100);
 
-    std::tuple<MatrixXd, double, double, double, double>
+    std::tuple<VectorXd, double, double, double, double>
     findRPO_hook(const VectorXd &x0, const double T,
 		 const double th0, const double phi0,
 		 const double tol,

@@ -283,14 +283,14 @@ def cqcglReadReq(fileName, groupName):
 def cqcglReadRPO(fileName, groupName):
     f = h5py.File(fileName, 'r')
     req = '/' + groupName + '/'
-    a = f[req+'a'].value
+    x = f[req+'x'].value
     T = f[req+'T'].value
     nstp = f[req+'nstp'].value
     th = f[req+'th'].value
     phi = f[req+'phi'].value
     err = f[req+'err'].value
     f.close()
-    return a, T, nstp, th, phi, err
+    return x, T[0], nstp[0], th[0], phi[0], err[0]
 
 
 def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):

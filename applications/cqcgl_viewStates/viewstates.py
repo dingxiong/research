@@ -9,7 +9,7 @@ from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
 
-case = 6
+case = 8
 
 
 if case == 1:
@@ -190,8 +190,8 @@ if case == 6:
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
 
     aaTilde, ths, phis = cgl.reduceAllSymmetries(aa)
-    i1 = 2000
-    i2 = 7000
+    i1 = 3000
+    i2 = 8000
     nstp = i2-i1
     T = nstp * h
     th = ths[i1] - ths[i2]
@@ -237,3 +237,17 @@ if case == 7:
     plotOneConfigFromFourier(cgl, av[0], d)
     plotConfigSpaceFromFourier(cgl, aa[i1:i2], [0, d, 0, nstp*h])
     print norm(av[0]), norm(av[1]), norm(av2[1])
+
+if case == 8:
+    """
+    view the rpo I found
+    """
+    N = 1024
+    d = 30
+    M = 2
+    x, T, nstp, th, phi, err = cqcglReadRPO('../../data/cgl/rpo1x2.h5', '1')
+    h = T / nstp / M
+    cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, -0.01, -0.04, 4)
+    aa = cgl.intg(x[0], nstp*2, 1)
+    aa1 = cgl.intg(x[0], nstp*1, 1)
+    aa2 = cgl.intg(x[1], nstp*1, 1)

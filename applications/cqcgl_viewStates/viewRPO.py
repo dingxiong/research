@@ -61,6 +61,6 @@ if case == 1:
     fig.tight_layout(pad=0)
     plt.show(block=False)
 
-    # Lyapunov functional and its time derivative
-    lyapR, lyapI = cgl.Lyap(aa)
-    lyapvel = cgl.LyapVel(aa)
+    # see the profile fo exposion part
+    plotOneConfigFromFourier(cgl, aa[1500], d)
+

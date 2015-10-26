@@ -144,7 +144,8 @@ def plotConfigSpaceFromFourier(cgl, aa, ext, barTicks=[0, 3],
                     colortype, percent, size, save, name)
 
 
-def plotOneConfig(A, d=50, size=[8, 6], save=False, name='out.png'):
+def plotOneConfig(A, d=50, size=[6, 4], axisLabelSize=20,
+                  save=False, name='out.png'):
     """
     plot the configuration at one point
     """
@@ -152,8 +153,8 @@ def plotOneConfig(A, d=50, size=[8, 6], save=False, name='out.png'):
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
     ax.plot(np.linspace(0, d, Aamp.size), Aamp)
-    ax.set_xlabel('x')
-    ax.set_ylabel(r'$|A|$')
+    ax.set_xlabel('x', fontsize=axisLabelSize)
+    ax.set_ylabel(r'$|A|$', fontsize=axisLabelSize)
     fig.tight_layout(pad=0)
     if save:
         plt.savefig(name)
@@ -161,12 +162,13 @@ def plotOneConfig(A, d=50, size=[8, 6], save=False, name='out.png'):
         plt.show(block=False)
 
 
-def plotOneConfigFromFourier(cgl, a0, d=50, size=[8, 6],
+def plotOneConfigFromFourier(cgl, a0, d=50, size=[6, 4], axisLabelSize=20,
                              save=False, name='out.png'):
     """
     plot the configuration at one point from Fourier mode
     """
-    plotOneConfig(cgl.Fourier2Config(a0).squeeze(), d, size, save, name)
+    plotOneConfig(cgl.Fourier2Config(a0).squeeze(), d, size,
+                  axisLabelSize, save, name)
 
 
 def plotOneFourier(a, color='r', size=[8, 6]):

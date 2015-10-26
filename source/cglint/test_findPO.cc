@@ -110,7 +110,7 @@ int main(){
 	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
 	
 	int M = x.cols();
-	int S = 10;
+	int S = 1;
 	M /= S;
 	nstp *= S;
  
@@ -122,7 +122,7 @@ int main(){
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
 	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, -0.01, -0.04, 4);
 	auto result = cglrpo.findRPOM_hook(xp, T, th, phi, 1e-12, 100, 8, 1e-2, 500, 10);
-	CqcglWriteRPO("rpo3.h5", "1",
+	CqcglWriteRPO("rpo3.h5", "2",
 		      std::get<0>(result), /* x */
 		      std::get<1>(result), /* T */
 		      nstp,		   /* nstp */

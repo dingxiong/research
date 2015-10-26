@@ -192,8 +192,8 @@ if case == 6:
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
 
     aaHat, ths, phis = cgl.orbit2sliceWrap(aa)
-    i1 = 900
-    i2 = 4900
+    i1 = int(0.22/h)
+    i2 = int(1.2/h)
     nstp = i2-i1
     T = nstp * h
     th = ths[i1] - ths[i2]

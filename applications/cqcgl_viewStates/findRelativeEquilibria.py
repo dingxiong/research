@@ -1,6 +1,3 @@
-import h5py
-from pylab import *
-import numpy as np
 from time import time
 from py_cqcgl1d_threads import pyCqcgl1d, pyCqcglRPO
 from personalFunctions import *
@@ -54,7 +51,7 @@ def cqcglConvertReq(N2, inputFile, outputFile, indices,
         cqcglSaveReq(outputFile, str(i), a, wth, wphi, err)
 
 
-case = 5
+case = 2
 
 if case == 1:
     """
@@ -81,23 +78,24 @@ if case == 2:
     try different guesses to find relative equilibria
     Just for test purpose
     """
-    N = 512
-    d = 50
-    h = 0.005
-    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    N = 1024
+    d = 30
+    h = 0.0002
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.075, 4)
 
-    A0 = 3*centerRand(2*N, 0.25)
-    a0 = cgl.Config2Fourier(A0).squeeze()
+    A0 = 5*centerRand(2*N, 0.2)
+    # A0 = 5*centerOne(2*N, 0.25)
+    a0 = cgl.Config2Fourier(A0)
     wth0 = rand()
     wphi0 = rand()
-    a, wth, wphi, err = cgl.findReq(a0, wth0, wphi0, 200, 1e-12, True, True)
+    a, wth, wphi, err = cgl.findReq(a0, wth0, wphi0, 100, 1e-12, True, True)
     nstp = 10000
     aa = cgl.intg(a, nstp, 1)
     plotConfigSpace(cgl.Fourier2Config(aa), [0, d, 0, nstp*h])
     plot1dfig(a)
     plotOneConfigFromFourier(cgl, a)
     print wth, wphi
-    # cqcglSaveReq("req2.hdf5", '16', a, wth, wphi, err)
+    # cqcglSaveReq("req2.h5", '1', a, wth, wphi, err)
 
 if case == 3:
     """

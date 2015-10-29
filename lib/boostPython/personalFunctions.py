@@ -339,9 +339,6 @@ def cqcglExtractReq(inputFile, outputFile, groups, startId=1):
         ix += 1
 
 
-
-
-
 def centerRand(N, frac):
     """
     generate a localized random vector.

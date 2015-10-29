@@ -1195,10 +1195,10 @@ Cqcgl1d::newtonReq(const ArrayXd &a0, const double wth, const double wphi){
     int n = a0.rows();
     assert(Ndim == n);
     
-    MatrixXd DF(n, n+2);
+    MatrixXd DF(n, n+2); 
     ArrayXd tx_trans = transTangent(a0);
     ArrayXd tx_phase = phaseTangent(a0);
-    DF.leftCols(n) = stabReq(a0, wth, wphi);
+    DF.leftCols(n) = stabReq(a0, wth, wphi); 
     DF.col(n)= tx_trans;
     DF.col(n+1) = tx_phase;
 
@@ -1251,12 +1251,12 @@ Cqcgl1d::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
 	VectorXd JF = p.first.transpose() * p.second;
 	
 
-	for(size_t j = 0; j < 20; j++){
+	for(size_t j = 0; j < 20; j++){ 
 	    // printf("inner iteration j = %zd\n", j);
 	    //MatrixXd H = JJ + lam * JJ.diagonal().asDiagonal(); 
 	    MatrixXd H = JJ;
 	    H.diagonal() *= (1+lam);
-	    VectorXd dF;
+	    VectorXd dF; 
 	    if(doesUseMyCG){
 		std::pair<VectorXd, std::vector<double> > cg = iterMethod::ConjGradSSOR<MatrixXd>
 		    (H, -JF, solver, VectorXd::Zero(H.rows()), H.rows(), 1e-6);

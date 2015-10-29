@@ -9,7 +9,7 @@ from py_cqcgl1d import pyCqcgl1d
 from personalFunctions import *
 
 
-case = 6
+case = 5
 
 
 if case == 1:
@@ -156,22 +156,22 @@ if case == 5:
     use the new form of cqcgl
     test the transition with respect to di
     """
-    N = 512
+    N = 512*2
     d = 30
     h = 0.0005
 
     # cgl = pyCqcgl1d(N, d, h, True, 0,
     #                 -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
     #                 4)
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, 0.01, 4)
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.045, 4)
     A0 = 5*centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
     nstp = 20000
-    aa = cgl.intg(a0, nstp, 1)
-    # aa = cgl.intg(aa[-1], nstp, 1)
-    # aa = cgl.intg(aa[-1], nstp, 1)
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
-    plotOneConfigFromFourier(cgl, aa[-1], d)
+    for i in range(3):
+        aa = cgl.intg(a0, nstp, 1)
+        a0 = aa[-1]
+        # plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+        plotOneConfigFromFourier(cgl, aa[-1], d)
 
 if case == 6:
     """

@@ -392,6 +392,7 @@ Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
 /* -------------------------------------------------- */
 /* -------  Fourier/Configure transformation -------- */
 /* -------------------------------------------------- */
+
 /**
  * @brief back Fourier transform of the states. xInput and output are both real.
  */
@@ -437,6 +438,21 @@ ArrayXXd Cqcgl1d::calMag(const Ref<const ArrayXXd> &AA){
 ArrayXXd Cqcgl1d::Fourier2ConfigMag(const Ref<const ArrayXXd> &aa){
     return calMag(Fourier2Config(aa));
 }
+
+ArrayXXd Cqcgl1d::calPhase(const Ref<const ArrayXXd> &AA){
+    int m = AA.cols();
+    int n = AA.rows();
+    assert(2*N == n);
+    ArrayXXd phase(n/2, m);
+    for(size_t i = 0; i < m; i++)
+	for(size_t j =0; j < n/2; j++)
+	    phase(j, i) = atan2(AA(2*j, i), AA(2*j+1, i));
+    return phase;
+}
+ArrayXXd Cqcgl1d::Fourier2Phase(const Ref<const ArrayXXd> &aa){
+    return calPhase(Fourier2Config(aa));
+}
+
 
 /* -------------------------------------------------- */
 /* --------            velocity field     ----------- */

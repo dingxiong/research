@@ -29,7 +29,7 @@ def plot1dfig(x, c='r', lw=1, ls='-', marker=None, labs=['x', 'y'],
     if yscale is not None:
         ax.set_yscale(yscale)
     fig.tight_layout(pad=0)
-    plt.show(block=False) 
+    plt.show(block=False)
 
 
 def plot2dfig(x, y, c='r', lw=1, ls='-', labs=['x', 'y'],
@@ -183,6 +183,14 @@ def plotOneFourier(a, color='r', size=[8, 6]):
     fig.tight_layout(pad=0)
     plt.show(block=False)
 
+
+def plotPhase(aa, size=[6, 4]):
+    """
+    plot phase of filed A in cqcgl
+    """
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111)
+    
 
 class Arrow3D(FancyArrowPatch):
     """
@@ -487,6 +495,7 @@ def KScopyTo(inFile, outFile, poType, r):
     inF.close()
     outF.close()
     
+
 def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
                         percent='5%', size=[3, 6],
                         axisOn=True, barOn=True,
@@ -498,8 +507,8 @@ def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
     half2 = aa[:, 0::2] - 1j*aa[:, 1::2]
     M = half1.shape[0]
     aaWhole = np.hstack((np.zeros((M, 1)), half1,
-                         np.zeros((M, 1)), half2[:,::-1]))
-    AA = np.fft.ifftn(aaWhole, axes=(1,)).real # only the real part
+                         np.zeros((M, 1)), half2[:, ::-1]))
+    AA = np.fft.ifftn(aaWhole, axes=(1,)).real  # only the real part
     
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)

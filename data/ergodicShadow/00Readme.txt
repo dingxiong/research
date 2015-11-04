@@ -68,14 +68,3 @@ File details:
        of these numbers should be the number of rows in the
        corresponding 'angle_*'
 
-disAng.mat:
-	Pos: the start, end, start, end postion for shadowing part in each
-	     incidence.
-	Sdis: the real shadowing distance extracted from experimental data
-	Sang: the real shadowing angles extracted from experimental data.
-
-angAver.mat:
-	x: the distance coordiate window.
-	angleAverage: the average angle in each window
-Note: for ppo4, average angles from ppo4 and ppo4_old2 are combined.
-

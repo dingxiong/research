@@ -206,6 +206,22 @@ public:
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	return copy2bn( Fourier2ConfigMag(tmpaa) );
     }
+
+    /* wrap calPhase */
+    bn::ndarray PYcalPhase(bn::ndarray AA){
+	int m, n;
+	getDims(aa, m, n);
+	Map<ArrayXXd> tmpAA((double*)AA.get_data(), n, m);
+	return copy2bn( calPhase(tmpAA) );
+    }
+    
+    /* wrap Fourier2Phase */
+    bn::ndarray PYFourier2Phase(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	return copy2bn( Fourier2Phase(tmpaa) );
+    }
     
     /* orbit2slice */
     bp::tuple PYorbit2slice(const bn::ndarray &aa){
@@ -767,7 +783,7 @@ public:
 };
 
 
-BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
+BOOST_PYTHON_MODULE(py_cqcgl1d) {
     bn::initialize();
 
     // must provide the constructor

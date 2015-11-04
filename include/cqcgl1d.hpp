@@ -97,6 +97,8 @@ public:
     ArrayXXd Config2Fourier(const Ref<const ArrayXXd> &AA);
     ArrayXXd calMag(const Ref<const ArrayXXd> &AA);
     ArrayXXd Fourier2ConfigMag(const Ref<const ArrayXXd> &aa);
+    ArrayXXd calPhase(const Ref<const ArrayXXd> &AA);
+    ArrayXXd Fourier2Phase(const Ref<const ArrayXXd> &aa);
     
     ArrayXd velocity(const ArrayXd &a0);
     ArrayXd velocityReq(const ArrayXd &a0, const double th,

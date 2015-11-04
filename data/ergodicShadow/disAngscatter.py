@@ -273,16 +273,17 @@ if __name__ == "__main__":
         # ax.set_xlabel(r'$||\Delta x||_2$', size='large')
         fig.tight_layout(pad=0)
         plt.show()
+        # savez_compressed('rpo4Scatter.npz', dis=dis[ii], ang=ang[ii][:, cix])
 
     if case == 7:
         """
         plot only one shadowing incidence
         """
-        ppType = 'ppo'
+        ppType = 'rpo'
         ppId = 4
         sps = calSpacing('../ks22h001t120x64EV.h5', ppType, ppId, 5)
 
-        folder = 'cases32modes_x5/case4ppo4x5sT30/'
+        folder = 'cases32modes_x5/case4rpo4x5sT30/'
         ang = np.sin(np.arccos(np.loadtxt(folder + 'angle')))
         dis = np.loadtxt(folder + 'dis')
         idx = np.loadtxt(folder + 'indexPo')
@@ -290,7 +291,7 @@ if __name__ == "__main__":
 
         # midx = 1 for rpo4; midx = 6 for ppo4;
         # midx = np.argmax(No)
-        midx = 6
+        midx = 1
         i1 = np.int(np.sum(No[:midx]))
         i2 = np.int(np.sum(No[:midx+1]))
         ii = [i for i in range(i1, i2) if dis[i] > 4*sps[idx[i]]]
@@ -307,11 +308,13 @@ if __name__ == "__main__":
             ax.scatter(dis[ii], ang[ii, cix[i]], s=10, c=colors[i], marker=markers[i],
                        edgecolor='none', label='1-'+str(spix[i]))
 
-        # setAxis(ax, 1e-3, 1e-1, 2e-4, 5e-1, 3.5e-3, 1.5e-1)  # for rpo4
-        setAxis(ax, 7e-3, 1e-1, 5e-4, 8e-2, 8e-3, 4e-2)  # for ppo4
+        setAxis(ax, 7e-3, 1e-1, 1e-3, 5e-1, 8e-3, 2e-1)  # for rpo4
+        # setAxis(ax, 7e-3, 1e-1, 5e-4, 8e-2, 8e-3, 4e-2)  # for ppo4
 
         fig.tight_layout(pad=0)
         plt.show()
+
+        # savez_compressed('rpo4OneShadow.npz', dis=dis[ii], ang=ang[ii][:, cix])
 
     if case == 8:
         """
@@ -404,3 +407,5 @@ if __name__ == "__main__":
         ax.set_yticks([1e-6, 1e-4, 1e-2, 1e0])
         fig.tight_layout(pad=0)
         plt.show()
+
+        # savez_compressed('rpo4Average.npz', x=x, aver=aver)

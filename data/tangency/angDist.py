@@ -46,6 +46,22 @@ def setAxis(ax):
     ax.set_ylim([0.01, 100])
     ax.text(0.02, 20, r'$\rho(\theta)$', fontsize=20)
     # ax.set_ylabel(r'$\rho(\theta)$', fontsize=20, labelpad=-55)
+
+
+def filterAng(a, ns, angSpan, angNum):
+    """
+    filter the bad statistic points
+    because a very small fraction of Floquet vectors corresponding
+    to high Fourier modes are not well told apart, so there are
+    a small fraction of misleading close to zeros angles for
+    non-physical space.
+    """
+    for i in range(29):
+        n = a[0].shape[0]
+        for j in range(n):
+            y = a[i][j]*ns/(angSpan[i]*angNum[i])
+            if y < 2e-2:
+                a[i][j] = 0
     
 ##################################################
 # load data
@@ -58,6 +74,7 @@ folder2 = './anglePOs64/rpo/space/'
 fileName2 = [folder2 + 'ang' + str(i) + '.dat' for i in ixRange]
 ns = 1000
 
+# collect the data with rpo, ppo combined
 angs = []
 for i in range(N):
     print i
@@ -83,17 +100,19 @@ if case == 1:
         angSpan.append(max(angs[i])-min(angs[i]))
         at, bt = histogram(angs[i], ns)
         a.append(at)
-        b.append(bt)
-
+        
+    b = bt
+    filterAng(a, ns, angSpan, angNum)
     labs = ['k='+str(i+1) for i in ixRange]
-
+    
+    
     np.savez_compressed('ab', a=a, b=b, ns=ns, angSpan=angSpan,
-                        angNum=angNum, labs=labs)
+                        angNum=angNum)
 
     fig = plt.figure(figsize=(4, 1.5))
     ax = fig.add_subplot(111)
     for i in range(7):
-        ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), label=labs[i], lw=1.5)
+        ax.plot(b[:-1], a[i]*ns/(angSpan[i]*angNum[i]), label=labs[i], lw=1.5)
     setAxis(ax)
     plt.tight_layout(pad=0)
     plt.show()
@@ -103,12 +122,11 @@ if case == 1:
     colors = cm.rainbow(linspace(0, 1, 11))
     for ix in range(11):
         i = 7 + 2*ix
-        ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), c=colors[ix], lw=1.5)
+        ax.plot(b[:-1], a[i]*ns/(angSpan[i]*angNum[i]), c=colors[ix], lw=1.5)
     setAxis(ax)
     plt.tight_layout(pad=0)
     plt.show()
-
-
+    
 if case == 2:
     a = []
     b = []

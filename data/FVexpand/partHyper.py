@@ -14,7 +14,7 @@ def setAxis(ax, xr, xlabel=r'$t$', ylabel=r'$\lambda_k(t)$'):
 
 if __name__ == '__main__':
 
-    case = 4
+    case = 2
 
     if case == 1:
         """
@@ -65,6 +65,8 @@ if __name__ == '__main__':
         ax.legend(loc='best', fontsize=13, frameon=False)
         fig.tight_layout(pad=0)
         plt.show()
+
+        # savez_compressed('ppo1', T=T, nstp=nstp, fe=fe)
 
     if case == 3:
         """

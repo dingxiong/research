@@ -23,8 +23,10 @@ import python ;
 variant release_assert : <optimization>speed <inlining>full <debug-symbols>off <runtime-debugging>off ;
 
 lib np : : <name>boost_numpy <file>/usr/local/home/xiong/apps/BoostNumpy/lib/libboost_numpy.so ;
-lib fftw3 : : <name>fftw3 <file>/usr/lib/libfftw3.so ;
-lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/libfftw3_threads.so ;
+# lib fftw3 : : <name>fftw3 <file>/usr/lib/libfftw3.so ;
+lib fftw3 : : <name>fftw3 <file>/usr/lib/x86_64-linux-gnu/libfftw3.so ;
+# lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/libfftw3_threads.so ;
+lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/x86_64-linux-gnu/libfftw3_threads.so ;
 lib sparse : : <name>sparseRoutines <file>/usr/local/home/xiong/00git/research/lib/libsparseRoutines.so ;
 lib iter : : <name>iterMethod <file>/usr/local/home/xiong/00git/research/lib/libiterMethod.so ;
 lib myfft : : <name>myfft_clean <file>/usr/local/home/xiong/00git/research/lib/libmyfft_clean.so ;
@@ -32,7 +34,7 @@ lib myfft_threads : : <name>myfft_clean_threads <file>/usr/local/home/xiong/00gi
 lib cqcgl : : <name>cqcgl1d <file>/usr/local/home/xiong/00git/research/lib/libcqcgl1d.so ;
 
 
-choice = 3 ;
+choice = 1 ;
 
 if $(choice) = 1 {		# single thread case
   python-extension py_cqcgl1d : py_cqcgl1d.cc np sparse fftw3 iter ../../myfft/myfft.cc ../cqcgl1d.cc ../cqcglRPO.cc

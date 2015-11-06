@@ -163,15 +163,17 @@ if case == 5:
     # cgl = pyCqcgl1d(N, d, h, True, 0,
     #                 -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
     #                 4)
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.045, 4)
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.06, 4)
     A0 = 5*centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
-    nstp = 20000
-    for i in range(3):
+    nstp = 10000
+    for i in range(1):
         aa = cgl.intg(a0, nstp, 1)
         a0 = aa[-1]
-        # plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+        plotPhase(cgl, aa, [0, d, 0, nstp*h])
         plotOneConfigFromFourier(cgl, aa[-1], d)
+        plotOnePhase(cgl, aa[-1], d)
 
 if case == 6:
     """

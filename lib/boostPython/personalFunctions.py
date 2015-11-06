@@ -184,13 +184,45 @@ def plotOneFourier(a, color='r', size=[8, 6]):
     plt.show(block=False)
 
 
-def plotPhase(aa, size=[6, 4]):
+def plotPhase(cgl, aa, ext, barTicks=[-3, 0, 3],
+              colortype='jet',
+              percent='5%', size=[4, 5],
+              save=False, name='out.png'):
     """
     plot phase of filed A in cqcgl
     """
+    phi = cgl.Fourier2Phase(aa)
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    im = ax.imshow(phi, cmap=plt.get_cmap(colortype), extent=ext,
+                   aspect='auto', origin='lower')
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax = dr.append_axes('right', size=percent, pad=0.05)
+    bar = plt.colorbar(im, cax=cax, ticks=barTicks)
+    fig.tight_layout(pad=0)
+    if save:
+        plt.savefig(name)
+    else:
+        plt.show(block=False)
     
+
+def plotOnePhase(cgl, a0, d=50, size=[6, 4], axisLabelSize=20,
+                 save=False, name='out.png'):
+    phi = cgl.Fourier2Phase(a0)
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111)
+    ax.plot(np.linspace(0, d, phi.size), phi)
+    ax.set_xlabel('x', fontsize=axisLabelSize)
+    ax.set_ylabel(r'$\phi$', fontsize=axisLabelSize)
+    fig.tight_layout(pad=0)
+    if save:
+        plt.savefig(name)
+    else:
+        plt.show(block=False)
+
 
 class Arrow3D(FancyArrowPatch):
     """

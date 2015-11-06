@@ -210,7 +210,7 @@ public:
     /* wrap calPhase */
     bn::ndarray PYcalPhase(bn::ndarray AA){
 	int m, n;
-	getDims(aa, m, n);
+	getDims(AA, m, n);
 	Map<ArrayXXd> tmpAA((double*)AA.get_data(), n, m);
 	return copy2bn( calPhase(tmpAA) );
     }
@@ -783,7 +783,7 @@ public:
 };
 
 
-BOOST_PYTHON_MODULE(py_cqcgl1d) {
+BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
     bn::initialize();
 
     // must provide the constructor
@@ -841,6 +841,8 @@ BOOST_PYTHON_MODULE(py_cqcgl1d) {
 	.def("Fourier2Config", &pyCqcgl1d::PYFourier2Config)
 	.def("Config2Fourier", &pyCqcgl1d::PYConfig2Fourier)
 	.def("Fourier2ConfigMag", &pyCqcgl1d::PYFourier2ConfigMag)
+	.def("calPhase", &pyCqcgl1d::PYcalPhase)
+	.def("Fourier2Phase", &pyCqcgl1d::PYFourier2Phase)
 	.def("orbit2sliceWrap", &pyCqcgl1d::PYorbit2sliceWrap)
 	.def("orbit2slice", &pyCqcgl1d::PYorbit2slice)
 	.def("stab", &pyCqcgl1d::PYstab)

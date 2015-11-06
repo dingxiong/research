@@ -5,6 +5,8 @@
 #     calls fftw3.so, so it is not in the bottom rank. The same goes to cqcgl1d.so
 #     
 #  2) It is better to use lib rather than cxxflags
+#
+#  3) after version 1.47.0 bjam is replace by b2
 # 
 use-project /boost : /usr/local/home/xiong/apps/sources/boost_1_57_0 ;
 
@@ -34,7 +36,7 @@ lib myfft_threads : : <name>myfft_clean_threads <file>/usr/local/home/xiong/00gi
 lib cqcgl : : <name>cqcgl1d <file>/usr/local/home/xiong/00git/research/lib/libcqcgl1d.so ;
 
 
-choice = 1 ;
+choice = 3 ;
 
 if $(choice) = 1 {		# single thread case
   python-extension py_cqcgl1d : py_cqcgl1d.cc np sparse fftw3 iter ../../myfft/myfft.cc ../cqcgl1d.cc ../cqcglRPO.cc

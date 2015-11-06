@@ -51,7 +51,7 @@ def cqcglConvertReq(N2, inputFile, outputFile, indices,
         cqcglSaveReq(outputFile, str(i), a, wth, wphi, err)
 
 
-case = 2
+case = 10
 
 if case == 1:
     """
@@ -81,7 +81,7 @@ if case == 2:
     N = 1024
     d = 30
     h = 0.0002
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.075, 4)
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, -0.08, 4)
 
     A0 = 5*centerRand(2*N, 0.2)
     # A0 = 5*centerOne(2*N, 0.25)
@@ -96,6 +96,28 @@ if case == 2:
     plotOneConfigFromFourier(cgl, a)
     print wth, wphi
     # cqcglSaveReq("req2.h5", '1', a, wth, wphi, err)
+
+if case == 10:
+    """
+    use existing req to find the req with slightly different di
+    """
+    N = 1024
+    d = 30
+    h = 0.0002
+    di = -0.07985
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, di, 4)
+    
+    a0, wth0, wphi0, err = cqcglReadReq('req0798.h5', '1')
+    a, wth, wphi, err = cgl.findReq(a0, wth0, wphi0, 100, 1e-12, True, True)
+    nstp = 10000
+    aa = cgl.intg(a, nstp, 1)
+    plotConfigSpace(cgl.Fourier2Config(aa), [0, d, 0, nstp*h])
+    plot1dfig(a)
+    plotOneConfigFromFourier(cgl, a)
+    print wth, wphi
+    # cqcglSaveReq("req2.h5", '1', a, wth, wphi, err)
+    eigvalues, eigvectors = eigReq(cgl, a, wth, wphi)
+    print eigvalues[:10]
 
 if case == 3:
     """

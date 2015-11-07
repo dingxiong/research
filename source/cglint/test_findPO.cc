@@ -27,7 +27,7 @@ int main(){
     
     cout.precision(15);
     
-    switch (30){
+    switch (50){
 	
     case 1:{
 	/* try to find periodic orbit with the old form of cqcgl
@@ -208,7 +208,84 @@ int main(){
 	
 	break;
     }
+
+    case 50: {
+	/*  Similar to case 31. But we try to use different di such that
+	 *  the base relative equilbirum has only pair of expanding
+	 *  direction.
+	 */
+	const int N = 1024;
+	const double d = 30;
+	const double h = 0.0002;
+	const double di = -0.0799;
+
+	// std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo3.h5");
+	std::string file("rpoT2X1.h5");
+	int nstp;
+	double T, th, phi, err;
+	MatrixXd x;
+	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
 	
+	int M = x.cols();
+	nstp *= M;
+	printf("T %g, nstp %d, th %g, phi %g, err %g\n", T, nstp, th, phi, err);
+	CqcglRPO cglrpo(nstp, 1, N, d, h, 4.0, 0.8, -0.01, di, 4);
+	cglrpo.alpha1 = 0.1;
+	cglrpo.alpha2 = 0.1;
+	cglrpo.alpha3 = 0.0;
+	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 1e-12, 10, 8, 1e-6, 500, 10);
+	CqcglWriteRPO("rpoT2X1.h5", "1",
+		      std::get<0>(result), /* x */
+		      std::get<1>(result), /* T */
+		      nstp,		   /* nstp */
+		      std::get<2>(result), /* th */
+		      std::get<3>(result), /* phi */
+		      std::get<4>(result)  /* err */
+		      );
+
+	break;
+	
+	
+    }
+	
+    case 60: {
+	/*  same as 50 but use smaller time step
+	 */
+	const int N = 1024;
+	const double d = 30;
+	const double h = 0.0001;
+	const double di = -0.0799;
+	
+	// std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo3.h5");
+	std::string file("rpoT2X1.h5");
+	int nstp;
+	double T, th, phi, err;
+	MatrixXd x;
+	CqcglReadRPO(file, "3", x, T, nstp, th, phi, err);
+	
+	int M = x.cols();
+	nstp *= 2 * M;
+	printf("T %g, nstp %d, th %g, phi %g, err %g\n", T, nstp, th, phi, err);
+	CqcglRPO cglrpo(nstp, 1, N, d, h, 4.0, 0.8, -0.01, di, 4);
+	cglrpo.alpha1 = 0.0;
+	cglrpo.alpha2 = 0.0;
+	cglrpo.alpha3 = 0.0;
+	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 1e-12, 10, 8, 1e-5, 500, 10);
+	CqcglWriteRPO("rpoT2X1.h5", "3",
+		      std::get<0>(result), /* x */
+		      std::get<1>(result), /* T */
+		      nstp,		   /* nstp */
+		      std::get<2>(result), /* th */
+		      std::get<3>(result), /* phi */
+		      std::get<4>(result)  /* err */
+		      );
+
+	break;
+	
+	
+    }
+	
+
     default: {
 	cout << "please choose a case" << endl;
     }

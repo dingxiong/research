@@ -286,6 +286,19 @@ def realve(ve):
     return rve
 
 
+def orthAxes2(e1, e2):
+    """
+    construct an orthogonal two vectors from 2 general vectors.
+    """
+    n = e1.shape[0]
+    x = np.zeros((n, 2))
+    x[:, 0] = e1
+    x[:, 1] = e2
+    q, r = LA.qr(x)
+
+    return q[:, 0], q[:, 1]
+
+
 def orthAxes(e1, e2, e3):
     n = e1.shape[0]
     x = np.zeros((n, 3))
@@ -320,6 +333,24 @@ def cqcglReadReq(fileName, groupName):
     err = f[req+'err'].value
     f.close()
     return a, wth, wphi, err
+
+
+def cqcglAddEV2Req(fileName, groupName, er, ei, vr, vi):
+    """
+    try to write stability exponents and vectors
+    to the existing rpo data group.
+    parameters:
+    er : real part of exponents
+    ei : imaginary part of exponents
+    vr : real part of vectors
+    vi : imaginary part of vectors
+    """
+    f = h5py.File(fileName, 'a')
+    f.create_dataset(groupName + '/' + 'er', data=er)
+    f.create_dataset(groupName + '/' + 'ei', data=ei)
+    f.create_dataset(groupName + '/' + 'vr', data=vr)
+    f.create_dataset(groupName + '/' + 'vi', data=vi)
+    f.close()
 
 
 def cqcglReadRPO(fileName, groupName):

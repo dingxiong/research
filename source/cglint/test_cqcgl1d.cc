@@ -142,31 +142,48 @@ int main(){
 	break;
     }
 
-    case 6: {			/* test reflectVe() */
+    case 6: {			
+	/* test reflectVe()
+	 * Find the reason why discrete symmetry reduction will produce NAN elements.
+	 * I find the answer is that my transformation is singular at point (0, 0).
+	 */
 	const int N = 1024;
 	const int L = 30;
 	const double h = 0.0002;
 	const double di = 0.0799;
 
 	std::string file("/usr/local/home/xiong/00git/research/data/cgl/req_different_di/req0799.h5");
-	VectorXd a;
+	VectorXd a0;
 	double wth, wphi, err;
-	CqcglReadReq(file, "1", a, wth, wphi, err);
+	CqcglReadReq(file, "1", a0, wth, wphi, err);
 	    
 	Cqcgl1d cgl(N, L, h, true, 0, 4.0, 0.8, 0.01, di, 4);
 	
-	auto tmp = cgl.evReq(a, wth, wphi);
+	auto tmp = cgl.evReq(a0, wth, wphi);
 	VectorXcd &e = tmp.first;
 	MatrixXd v = realv(tmp.second);
-	
-	
 	cout << e.head(10) << endl;
-	/* a0Hat = cgl.orbit2slice(a0)[0] */
-	/* a0Tilde = cgl.reduceReflection(a0Hat) */
-	/* veHat = cgl.ve2slice(eigvectors, a0) */
-	/* 	veTilde = cgl.reflectVe(veHat, a0Hat) */
-
 	
+	ArrayXd a0Hat = cgl.orbit2sliceSimple(a0);
+	ArrayXd a0Tilde = cgl.reduceReflection(a0Hat);
+	MatrixXd vHat = cgl.ve2slice(v, a0);
+	MatrixXd vTilde = cgl.reflectVe(vHat, a0Hat);
+	
+	MatrixXd G = cgl.refGradMat(a0Hat);
+	MatrixXd G1 = cgl.refGrad1();
+	ArrayXd step1 = cgl.reduceRef1(a0Hat);
+	ArrayXd step2 = cgl.reduceRef2(step1);
+	MatrixXd G2 = cgl.refGrad2(step1);
+	MatrixXd G3 = cgl.refGrad3(step2);
+
+	cout << G.maxCoeff() << endl;
+	cout << G.minCoeff() << endl << endl;
+	MatrixXd tmp2(step1.size(), 4);
+	tmp2 << a0Hat, step1, step2, a0Tilde;
+	cout << tmp2 << endl << endl;
+	// cout << G3.row(42) << endl << endl;
+	// cout << (G * vHat.col(0)).head(50) << endl;
+	// cout << vTilde.col(0).head(60) << endl;
 	break;
 
     }

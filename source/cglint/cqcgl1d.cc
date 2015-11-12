@@ -616,7 +616,6 @@ inline ArrayXd Cqcgl1d::rcos2th(const ArrayXd &x, const ArrayXd &y){
  */
 inline ArrayXd Cqcgl1d::rsin2th(const ArrayXd &x, const ArrayXd &y){
     return x * y / (x.square() + y.square()).sqrt();
-
 }
 
 /**
@@ -649,7 +648,8 @@ inline double Cqcgl1d::rsin2thGrad(const double x, const double y){
 
 /**
  * @brief the first step to reduce the discrete symmetry
- * 
+ *
+ * @param[in] aaHat   states after reducing continous symmetries
  */
 ArrayXXd Cqcgl1d::reduceRef1(const Ref<const ArrayXXd> &aaHat){
     const int m = aaHat.cols(); 
@@ -702,6 +702,8 @@ std::vector<int> Cqcgl1d::refIndex3(){
     }
     return index;
 }
+
+
 /**
  * @brief the 3rd step to reduce the discrete symmetry
  *
@@ -831,7 +833,8 @@ MatrixXd Cqcgl1d::refGradMat(const ArrayXd &x){
 /**
  * @brief transform covariant vectors after reducing reflection
  *
- * @input veHat    covariant vectors after reducing the constinuous symmetry.
+ * @param[in] veHat    covariant vectors after reducing the continuous symmetries.
+ * @param[in] xHat     orbit point after reducing continuous symmetries.
  */
 MatrixXd Cqcgl1d::reflectVe(const MatrixXd &veHat, const Ref<const ArrayXd> &xHat){
     MatrixXd Gamma = refGradMat(xHat);

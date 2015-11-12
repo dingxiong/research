@@ -1,19 +1,24 @@
 /* to comiple:
- * g++ -O3 test_cqcgl1d.cc  -L../../lib -I../../include -I $XDAPPS/eigen/include/eigen3 -std=c++0x -lcqcgl1d -lsparseRoutines -lmyfft_threads -lfftw3_threads -lfftw3 -lm -lpthread
+ * h5c++ -O3 test_cqcgl1d.cc  -L../../lib -I../../include -I $XDAPPS/eigen/include/eigen3 -std=c++0x -lcqcgl1d -lsparseRoutines -ldenseRoutines -lmyH5 -lmyfft_threads -lfftw3_threads -lfftw3 -lm -lpthread
  */
 #include "cqcgl1d.hpp"
+#include "myH5.hpp"
 #include <iostream>
 #include <fstream>
 #include <eigen3/Eigen/Dense>
 #include <complex>
+#include <H5Cpp.h>
 
 using namespace std;
 using namespace Eigen;
+using namespace MyH5;
+using namespace denseRoutines;
+
 typedef std::complex<double> dcp;
 
 int main(){
 
-    switch(5){
+    switch(6){
 	
     case 1: {			/* test integrator */
 	const int N = 512; 
@@ -137,20 +142,36 @@ int main(){
 	break;
     }
 
-    case 6:{
+    case 6: {			/* test reflectVe() */
 	const int N = 1024;
-	const int L = 50;
-	const double h = 0.0005;
-	Cqcgl1d cgl(N, L, h, true, 1, 1, 4.0, 0.8, -0.01, -0.04, 4);
-	const int Ndim = cgl.Ndim;
+	const int L = 30;
+	const double h = 0.0002;
+	const double di = 0.0799;
+
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/req_different_di/req0799.h5");
+	VectorXd a;
+	double wth, wphi, err;
+	CqcglReadReq(file, "1", a, wth, wphi, err);
+	    
+	Cqcgl1d cgl(N, L, h, true, 0, 4.0, 0.8, 0.01, di, 4);
 	
-	ArrayXd A0(2*N);
-	for
-	    A0 = 5*centerRand(2*N, 0.2)
-    a0 = cgl.Config2Fourier(A0)
+	auto tmp = cgl.evReq(a, wth, wphi);
+	VectorXcd &e = tmp.first;
+	MatrixXd v = realv(tmp.second);
 	
+	
+	cout << e.head(10) << endl;
+	/* a0Hat = cgl.orbit2slice(a0)[0] */
+	/* a0Tilde = cgl.reduceReflection(a0Hat) */
+	/* veHat = cgl.ve2slice(eigvectors, a0) */
+	/* 	veTilde = cgl.reflectVe(veHat, a0Hat) */
+
+	
+	break;
 
     }
+	
+	
     default: {
 	fprintf(stderr, "please indicate a valid case number \n");
 	

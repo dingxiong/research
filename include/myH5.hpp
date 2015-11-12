@@ -60,6 +60,16 @@ namespace MyH5 {
     CqcglReadRPO(const string fileName, const string groupName,
 		      MatrixXd &x, double &T, int &nstp,
 		      double &th, double &phi, double &err);
+    std::tuple<VectorXd, double, double ,double>
+    CqcglReadReq(const string fileName, const string groupName);
+    void 
+    CqcglReadReq(const string fileName, const string groupName, 
+		 VectorXd &a, double &wth, double &wphi, 
+		 double &err);
+    void 
+    CqcglWriteReq(const string fileName, const string groupName,
+		  const MatrixXd &a, const double wth, 
+		  const double wphi, const double err);
     
 }
 

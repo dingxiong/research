@@ -302,4 +302,63 @@ namespace MyH5 {
 	err = readScalar<double>(file, DS + "err");
     }
     
+    /**
+     * @brief read req (relative equibrium) info from hdf5 file for cqcgl
+     *
+     * Note, the return a is a vector not a matrix.
+     * 
+     * @see the short version
+     */
+    std::tuple<VectorXd, double, double ,double>
+    CqcglReadReq(const string fileName, const string groupName){
+	H5File file(fileName, H5F_ACC_RDONLY);
+	string DS = "/" + groupName + "/";
+	
+	return make_tuple(readMatrixXd(file, DS + "a").col(0),
+			  readScalar<double>(file, DS + "wth"),
+			  readScalar<double>(file, DS + "wphi"),
+			  readScalar<double>(file, DS + "err")
+			  );
+    }
+
+    /**
+     * @brief read req (relative equibrium) info from hdf5 file for cqcgl
+     *
+     *  This is a short version
+     */
+    void 
+    CqcglReadReq(const string fileName, const string groupName, 
+		 VectorXd &a, double &wth, double &wphi, 
+		 double &err){
+	H5File file(fileName, H5F_ACC_RDONLY);
+	string DS = "/" + groupName + "/";
+	
+	a = readMatrixXd(file, DS + "a").col(0);
+	wth = readScalar<double>(file, DS + "wth");
+	wphi = readScalar<double>(file, DS + "wphi");
+	err = readScalar<double>(file, DS + "err");
+
+    }
+    
+
+    /**
+     * @brief write [a, wth, wphi, err] of Req of cqcgl into a group
+     * 
+     * @note group should be a new group
+     */
+    void 
+    CqcglWriteReq(const string fileName, const string groupName,
+		  const MatrixXd &a, const double wth, 
+		  const double wphi, const double err){
+	
+	H5File file(fileName, H5F_ACC_RDWR);
+	Group group(file.createGroup("/"+groupName));
+	string DS = "/" + groupName + "/";
+	
+	writeMatrixXd(file, DS + "a", a);
+	writeScalar<double>(file, DS + "wth", wth);
+	writeScalar<double>(file, DS + "wphi", wphi);
+	writeScalar<double>(file, DS + "err", err);
+    }
+    
 }

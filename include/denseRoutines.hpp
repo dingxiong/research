@@ -24,7 +24,7 @@ namespace denseRoutines {
 			 const Ref<const MatrixXd> &B);
     double angleSpaceVector(const Ref<const MatrixXd> &Q,
 			    const Ref<const VectorXd> &V);
-    void normc(MatrixXd &A);
+   
     std::vector< std::pair<double, int> > 
     findMarginal(const Ref<const VectorXd> &Exponent,
 		 const int k = 2 );
@@ -33,6 +33,18 @@ namespace denseRoutines {
 		  const Ref<const VectorXd> &Exponent);
     std::pair<MatrixXi, MatrixXi> 
     subspBound(const MatrixXi subspDim, const MatrixXi ixSp);
+
+    void normc(MatrixXd &A);
+    std::vector<int> csort(const VectorXcd &e);
+    VectorXcd eEig(const MatrixXd &A);
+    MatrixXcd vEig(const MatrixXd &A);
+    std::pair<VectorXcd, MatrixXcd> evEig(const MatrixXd &A);
+    VectorXd centerRand(const int N, const double frac);
+    MatrixXd realv(const MatrixXcd &v);
+    MatrixXd orthAxes(const MatrixXd &v);
+    MatrixXd orthAxes(const VectorXd &e1, const VectorXd &e2);
+    MatrixXd orthAxes(const VectorXd &e1, const VectorXd &e2, 
+		      const VectorXd &e3);
 }
 
 #endif	// DENSEROUTINES_H

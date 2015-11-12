@@ -284,7 +284,6 @@ int main(){
 	
 	
     }
-	
 
     default: {
 	cout << "please choose a case" << endl;

@@ -1,4 +1,4 @@
-from py_cqcgl1d import pyCqcgl1d
+from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
 case = 1
@@ -10,22 +10,15 @@ if case == 1:
     """
     N = 1024
     d = 30
-    M = 2
-    x, T, nstp, th, phi, err = cqcglReadRPO('../../data/cgl/rpoT2x2.h5', '2')
-    h = T / nstp / M
-    cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, -0.01, -0.04, 4)
-    aa0 = cgl.intg(x[0], nstp*M, 1)
-    aa1 = cgl.intg(x[0], nstp, 1)
-    aa2 = cgl.intg(x[1], nstp, 1)
-    aa = np.vstack((aa1, aa2))
+    x, T, nstp, th, phi, err = cqcglReadRPO('../../data/cgl/rpo/rpo0799T2X1.h5', '1')
+    h = T / nstp
+    cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, -0.01, -0.0799, 4)
+    aa = cgl.intg(x[0], nstp, 1)
     aaHat, thAll, phiAll = cgl.orbit2slice(aa)
-    aaTilde = cgl.reduceReflection(aaHat)
     
     # print the errors and plot the color map
-    print norm(cgl.Rotate(aa0[-1], th, phi) - aa0[0])
-    print norm(aa1[-1]-x[1]), norm(cgl.Rotate(aa2[-1], th, phi) - x[0])
-    plotConfigSpaceFromFourier(cgl, aa0, [0, d, 0, nstp*h*M])
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h*M])
+    print norm(cgl.Rotate(aa[-1], th, phi) - aa[0])
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
 
     # Fourier trajectory in the full state space
     i1 = 0
@@ -64,3 +57,9 @@ if case == 1:
     # see the profile fo exposion part
     plotOneConfigFromFourier(cgl, aa[1500], d)
 
+
+if case == 20:
+    """
+    view the rpo I found
+    view its color map, error, Fourier modes and symmetry reduced Fourier modes
+    """

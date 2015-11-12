@@ -4,6 +4,7 @@
 using std::cout;
 using std::endl;
 using namespace sparseRoutines;
+using namespace denseRoutines;
 using namespace Eigen;
 
 //////////////////////////////////////////////////////////////////////
@@ -52,14 +53,14 @@ Cqcgl1d::Cqcgl1d(int N, double d, double h,
 
 /**
  * Constructor of cubic quintic complex Ginzburg-Landau equation
- * A_t = -A + (1 + b*i) A_{xx} + (1 + c*i) |A|^2 A + (dr + di*i) |A|^4 A
+ * A_t = -A + (1 + b*i) A_{xx} + (1 + c*i) |A|^2 A - (dr + di*i) |A|^4 A
  */
 Cqcgl1d::Cqcgl1d(int N, double d, double h,
 		 bool enableJacv, int Njacv,
 		 double b, double c,
 		 double dr, double di,
 		 int threadNum)
-    : Cqcgl1d(N, d, h, enableJacv, Njacv, -1, 1, c, 1, b, dr, di, threadNum)
+    : Cqcgl1d(N, d, h, enableJacv, Njacv, -1, 1, c, 1, b, -dr, -di, threadNum)
 { }
 
 Cqcgl1d::~Cqcgl1d(){}
@@ -558,6 +559,29 @@ MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double wth, double wphi){
     return z + wth*transGenerator() + wphi*phaseGenerator();
 }
 
+/**
+ * @brief stability exponents of req
+ */
+VectorXcd Cqcgl1d::eReq(const ArrayXd &a0, double wth, double wphi){
+    return eEig(stabReq(a0, wth, wphi));
+}
+
+/**
+ * @brief stability vectors of req
+ */
+MatrixXcd Cqcgl1d::vReq(const ArrayXd &a0, double wth, double wphi){
+    return vEig(stabReq(a0, wth, wphi));
+}
+
+/**
+ * @brief stability exponents and vectors of req
+ */
+std::pair<VectorXcd, MatrixXcd>
+Cqcgl1d::evReq(const ArrayXd &a0, double wth, double wphi){
+    return evEig(stabReq(a0, wth, wphi));
+}
+
+
 /* -------------------------------------------------- */
 /* ------           symmetry related           ------ */
 /* -------------------------------------------------- */
@@ -806,6 +830,8 @@ MatrixXd Cqcgl1d::refGradMat(const ArrayXd &x){
 
 /**
  * @brief transform covariant vectors after reducing reflection
+ *
+ * @input veHat    covariant vectors after reducing the constinuous symmetry.
  */
 MatrixXd Cqcgl1d::reflectVe(const MatrixXd &veHat, const Ref<const ArrayXd> &xHat){
     MatrixXd Gamma = refGradMat(xHat);
@@ -1014,6 +1040,14 @@ Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
     }
 
     return std::make_tuple(raa, th, phi);
+}
+
+/**
+ * @ simple version of orbit2slice(). Discard translation and phase information.
+ */
+ArrayXXd Cqcgl1d::orbit2sliceSimple(const Ref<const ArrayXXd> &aa){
+    auto tmp = orbit2slice(aa);
+    return std::get<0>(tmp);
 }
 
 

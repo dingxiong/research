@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 50
+case = 20
 
 if case == 10:
     """
@@ -49,24 +49,23 @@ if case == 20:
     N = 1024
     d = 30
     h = 0.0002
-    di = -0.08
-    a0, wth0, wphi0, err = cqcglReadReq('req08.h5', '1')
+    di = -0.0799
+    a0, wth0, wphi0, err = cqcglReadReq('req0799.h5', '1')
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, di, 4)
 
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
-    eigvectors = realve(eigvectors)
-    eigvectors = Tcopy(eigvectors)
+    eigvectors = Tcopy(realve(eigvectors))
     a0Hat = cgl.orbit2slice(a0)[0]
     a0Tilde = cgl.reduceReflection(a0Hat)
     veHat = cgl.ve2slice(eigvectors, a0)
     # veTilde = cgl.reflectVe(veHat, a0Hat)
     
-    nstp = 20000
-    a0Erg = a0 + eigvectors[0]*1e-3
-    for i in range(10):
+    nstp = 10000
+    a0Erg = a0 + eigvectors[0]*1e-2
+    for i in range(1):
         aaErg = cgl.intg(a0Erg, nstp, 1)
         a0Erg = aaErg[-1]
-        
+
     aaErgHat, th, phi = cgl.orbit2slice(aaErg)
     # aaErgTilde = cgl.reduceReflection(aaErgHat)
     # aaErgTilde -= a0Tilde
@@ -83,12 +82,14 @@ if case == 20:
     #         aaErgTildeProj[:, 2], c='r', lw=1)
     ax.plot(aaErgHatProj[:, 0], aaErgHatProj[:, 1],
             c='r', lw=1)
+    ax.scatter(aaErgHatProj[0, 0], aaErgHatProj[0, 1], s=30, facecolor='g')
+    ax.scatter(aaErgHatProj[-1, 0], aaErgHatProj[-1, 1], s=30, facecolor='k')
     ax.scatter([0], [0], s=160)
     ax.set_xlabel(r'$e_1$', fontsize=25)
     ax.set_ylabel(r'$e_2$', fontsize=25)
     fig.tight_layout(pad=0)
     plt.show(block=False)
-
+ 
 if case == 30:
     """
     compare the Hopf bifurcation limit cycle with slightly different di
@@ -137,8 +138,8 @@ if case == 30:
 
 if case == 40:
     """
-    visualize the Hopf limit cycle and the explosion in the same
-    figure.
+    visualize a few explosion examples in the covariant coordinate.
+    Only care about the part after explosion.
     """
     N = 1024
     d = 30
@@ -152,43 +153,41 @@ if case == 40:
     eigvectors = Tcopy(realve(eigvectors))
     a0Hat = cgl.orbit2slice(a0)[0]
     veHat = cgl.ve2slice(eigvectors, a0)
+    e1, e2, e3 = orthAxes(veHat[0], veHat[1], veHat[4])
 
-    nstp = 20000
-    a0Erg = a0 + eigvectors[0]*1e-3
-    for i in range(5):
-        aaErg = cgl.intg(a0Erg, nstp, 1)
-        a0Erg = aaErg[-1]
-
-    aaErgHat, th, phi = cgl.orbit2slice(aaErg)
-    aaErgHat -= a0Hat
-
-    e1, e2 = orthAxes2(veHat[0], veHat[1])
-    aaErgHatProj = np.dot(aaErgHat, np.vstack((e1, e2)).T)
-    
-    fig = plt.figure(figsize=[6, 4])
-    ax = fig.add_subplot(111)
-    ax.plot(aaErgHatProj[:, 0], aaErgHatProj[:, 1],
-            c='r', lw=1)
-    ax.scatter([0], [0], s=160)
-    ax.set_xlabel(r'$e_1$', fontsize=25)
-    ax.set_ylabel(r'$e_2$', fontsize=25)
-    fig.tight_layout(pad=0)
-    plt.show(block=False)
-
-    aa1 = load('0799_v4.npz')['x']
+    aa1 = load('0799_v6.npz')['x']
     aa1Hat, th1, phi1 = cgl.orbit2slice(aa1)
     aa1Hat -= a0Hat
-    aa1HatProj = np.dot(aa1Hat, np.vstack((e1, e2)).T)
+    aa1HatProj = np.dot(aa1Hat, np.vstack((e1, e2, e3)).T)
+
+    plotConfigSpaceFromFourier(cgl, aa1, [0, d, 0, aa1.shape[0]*h])
+    
+    id1 = 4000
+    id2 = aa1.shape[0] - 12000
+
     fig = plt.figure(figsize=[6, 4])
     ax = fig.add_subplot(111)
-    ax.plot(aa1HatProj[19800:, 0], aa1HatProj[19800:, 1],
+    ax.plot(aa1HatProj[id1:id2, 0], aa1HatProj[id1:id2, 1],
             c='r', lw=1)
+    ax.scatter(aa1HatProj[id1, 0], aa1HatProj[id1, 1], s=30)
     ax.scatter([0], [0], s=160)
     ax.set_xlabel(r'$e_1$', fontsize=25)
     ax.set_ylabel(r'$e_2$', fontsize=25)
     fig.tight_layout(pad=0)
     plt.show(block=False)
 
+    fig = plt.figure(figsize=[6, 4])
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(aa1HatProj[id1:id2, 0], aa1HatProj[id1:id2, 1],
+            aa1HatProj[id1:id2, 2], c='r', lw=1)
+    ax.scatter(aa1HatProj[id1, 0], aa1HatProj[id1, 1],
+               aa1HatProj[id1, 2], s=30)
+    ax.scatter([0], [0], [0], s=160)
+    ax.set_xlabel(r'$e_1$', fontsize=25)
+    ax.set_ylabel(r'$e_2$', fontsize=25)
+    ax.set_zlabel(r'$e_3$', fontsize=25)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
 
 if case == 50:
     """
@@ -223,3 +222,39 @@ if case == 50:
     err = 1000.0
     print T, th, phi, err
     cqcglSaveRPO('rpo3.h5', '1', x, T, nstp, th, phi, err)
+
+if case == 60:
+    """
+    Ater we find the rpo, we want to visualize it.
+    """
+    N = 1024
+    d = 30
+    h = 0.0002
+
+    di = -0.0799
+    a0, wth0, wphi0, err = cqcglReadReq('req0799.h5', '1')
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, di, 4)
+
+    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
+    eigvectors = Tcopy(realve(eigvectors))
+    a0Hat = cgl.orbit2slice(a0)[0]
+    veHat = cgl.ve2slice(eigvectors, a0)
+
+    e1, e2 = orthAxes2(veHat[0], veHat[1])
+
+    x1, T1, nstp1, th1, phi1, err1 = cqcglReadRPO(
+        '../../data/cgl/rpo/rpo0799T2X1.h5', '1')
+    h1 = T1 / nstp1
+    cgl2 = pyCqcgl1d(N, d, h1, False, 0, 4.0, 0.8, -0.01, di, 4)
+    aa1 = cgl2.intg(x1[0], nstp1, 1)
+    aa1Hat, th2, phi2 = cgl2.orbit2slice(aa1)
+    aa1Hat -= a0Hat
+    aa1HatProj = np.dot(aa1Hat, np.vstack((e1, e2)).T)
+    fig = plt.figure(figsize=[6, 4])
+    ax = fig.add_subplot(111)
+    ax.plot(aa1HatProj[:, 0], aa1HatProj[:, 1], c='r', lw=1)
+    ax.scatter([0], [0], s=160)
+    ax.set_xlabel(r'$e_1$', fontsize=25)
+    ax.set_ylabel(r'$e_2$', fontsize=25)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)

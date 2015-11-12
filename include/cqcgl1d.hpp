@@ -13,10 +13,12 @@
 // #include <fftw3.h>
 #include <complex>
 #include <utility>
+#include <algorithm>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <vector>
 #include "sparseRoutines.hpp"
+#include "denseRoutines.hpp"
 #include "iterMethod.hpp"
 #include "myfft.hpp"
 using std::pair; using std::make_pair;
@@ -109,6 +111,10 @@ public:
     LyapVel(const Ref<const ArrayXXd> &aa);
     MatrixXd stab(const ArrayXd &a0);
     MatrixXd stabReq(const ArrayXd &a0, double th, double phi);
+    VectorXcd eReq(const ArrayXd &a0, double wth, double wphi);
+    MatrixXcd vReq(const ArrayXd &a0, double wth, double wphi);
+    std::pair<VectorXcd, MatrixXcd>
+    evReq(const ArrayXd &a0, double wth, double wphi);
 
     ArrayXXd reflect(const Ref<const ArrayXXd> &aa);
     inline ArrayXd rcos2th(const ArrayXd &x, const ArrayXd &y);
@@ -143,6 +149,7 @@ public:
     orbit2sliceWrap(const Ref<const ArrayXXd> &aa);
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
     orbit2slice(const Ref<const ArrayXXd> &aa);
+    ArrayXXd orbit2sliceSimple(const Ref<const ArrayXXd> &aa);
     MatrixXd ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x);
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
     reduceAllSymmetries(const Ref<const ArrayXXd> &aa);

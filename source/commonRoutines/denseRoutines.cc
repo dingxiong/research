@@ -48,13 +48,6 @@ double denseRoutines::angleSpaceVector(const Ref<const MatrixXd> &Q,
 }
 
 
-/** @brief normalize each column of a matrix  */
-void denseRoutines::normc(MatrixXd &A){
-    int m = A.cols();
-    for(size_t i = 0; i < m; i++) 
-	A.col(i).array() = A.col(i).array() / A.col(i).norm();
-}
-
 //////////////////////////////////////////////////////////////////////
 //                   eigenspace related                             //
 //////////////////////////////////////////////////////////////////////
@@ -159,11 +152,137 @@ denseRoutines::subspBound(const MatrixXi subspDim, const MatrixXi ixSp){
 }
 
 
+/**
+ * Generate center localized random initial condition
+ */
 VectorXd denseRoutines::centerRand(const int N, const double frac){
     VectorXd a(VectorXd::Random(N)); /* -1 to 1 */
     int N2 = (int) 0.5 * N * (1-frac);
-    a.head(N2) = VectorXd::Zeros(N2);
-    a.tail(N2) = VectorXd::Zeros(N2);
-
+    a.head(N2) = VectorXd::Zero(N2);
+    a.tail(N2) = VectorXd::Zero(N2);
+    
     return a;
+}
+
+
+/** @brief normalize each column of a matrix  */
+void denseRoutines::normc(MatrixXd &A){
+    int m = A.cols();
+    for(size_t i = 0; i < m; i++) 
+	A.col(i).array() = A.col(i).array() / A.col(i).norm();
+}
+
+/**
+ * @brief get the sorted indices of a complex vector in descending order
+ */
+std::vector<int>
+denseRoutines::csort(const VectorXcd &e){
+    int n = e.size(); 
+    std::vector<int> id(n);
+    for(int i = 0; i < n; i++) id[i] = i;
+    std::sort(id.begin(), id.end(), 
+	      [&e](int i, int j){return e(i).real() > e(j).real();}
+	      ); 
+    return id;
+}
+
+/**
+ * @brief calculate the eigenvalues of a real matrix.
+ *
+ * The eigenvalues are sorted by their real part. It returns a complex vector.
+ */
+VectorXcd denseRoutines::eEig(const MatrixXd &A){
+    EigenSolver<MatrixXd> es(A);
+    std::vector<int> id = csort(es.eigenvalues());
+    int n = id.size();
+    VectorXcd re(n);
+    for(size_t i = 0; i < n; i++) re(i) = es.eigenvalues()(id[i]);
+    return re;
+}
+
+/**
+ * @brief calculate the eigenvectors of a real matrix. It returns a complex matrix.
+ *
+ * The eigenvalues are sorted by their real part. It returns a complex matrix.
+ */
+MatrixXcd denseRoutines::vEig(const MatrixXd &A){
+    EigenSolver<MatrixXd> es(A);
+    std::vector<int> id = csort(es.eigenvalues());
+    int n = id.size();
+    MatrixXcd rv(n, n);
+    for(size_t i = 0; i < n; i++) rv.col(i) = es.eigenvectors().col(id[i]);
+    return rv;
+}
+
+/**
+ * @brief calculate the eigenvalues and eigenvectors of a real matrix. 
+ *
+ * The eigenvalues are sorted by their real part. 
+ */
+std::pair<VectorXcd, MatrixXcd>
+denseRoutines::evEig(const MatrixXd &A){
+    EigenSolver<MatrixXd> es(A);
+    std::vector<int> id = csort(es.eigenvalues());
+    int n = id.size();
+    VectorXcd re(n);
+    MatrixXcd rv(n, n);
+    for(size_t i = 0; i < n; i++){
+	re(i) = es.eigenvalues()(id[i]);
+	rv.col(i) = es.eigenvectors().col(id[i]);
+    }
+    return make_pair(re, rv);   
+}
+
+/**
+ * @brief  Reform complex eigenvector matrix to real format
+ */
+MatrixXd denseRoutines::realv(const MatrixXcd &v){
+    int n = v.rows();
+    int m = v.cols();
+    MatrixXd vp(n, m);
+
+    VectorXd tmp = v.imag().array().abs().colwise().sum();
+    for(size_t i = 0; i < m; i++){
+	if(tmp(i) < 1e-6) vp.col(i) = v.col(i).real();
+	else {
+	    vp.col(i) = v.col(i).real();
+	    vp.col(i+1) = v.col(i).imag();
+	    i++;
+	}
+    }
+    
+    return vp;
+}
+
+/**
+ * @brief construct orthonormal bases from the coloumn vectors of a matrix
+ *
+ * Note: we do not use ColPivHouseHolderQR because we want to preserve the order.
+ */
+MatrixXd denseRoutines::orthAxes(const MatrixXd &v){
+    int n = v.rows();
+    int m = v.cols();
+    HouseholderQR<MatrixXd> qr(v);
+    return qr.householderQ() * MatrixXd::Identity(n, m);
+}
+
+/**
+ * @brief construct orthonormal vectors from a 2 vectors
+ */
+MatrixXd denseRoutines::orthAxes(const VectorXd &e1, const VectorXd &e2){
+    int n = e1.size();
+    MatrixXd tmp(n, 2);
+    tmp << e1, e2;
+    return orthAxes(tmp);
+}
+
+/**
+ * @brief construct orthonormal vectors from a 3 vectors
+ */
+MatrixXd denseRoutines::orthAxes(const VectorXd &e1, const VectorXd &e2, 
+				 const VectorXd &e3){
+    int n = e1.size();
+    MatrixXd tmp(n, 3);
+    tmp << e1, e2, e3;
+    return orthAxes(tmp);
 }

@@ -23,3 +23,9 @@ data structure:
      ei    : imaginary part of stability exponents
      vr    : real part of stability vectors (if not full, then the leading few)
      vi    : imaginary part of stability vectors
+
+
+classification:
+	-0.081              : stable solition
+	-0.08 -- -0.0795    : one unstable conjugate pair
+	-0.079 -- 	

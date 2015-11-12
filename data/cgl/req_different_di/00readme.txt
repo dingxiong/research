@@ -10,7 +10,7 @@ of cqcgl with fixed paramters:
    d  = 30
    b  = 4
    c  = 0.8
-   dr = -0.01
+   dr = 0.01
     
 di can be read from the file name: req0799.h5 => di = -0.0799
 
@@ -26,6 +26,7 @@ data structure:
 
 
 classification:
-	-0.081              : stable solition
-	-0.08 -- -0.0795    : one unstable conjugate pair
-	-0.079 -- 	
+	0.081              : stable solition
+	0.0795 -- -0.08    : one unstable conjugate pair
+	0.026  -- 0.079    : more than one unstable pair. 
+	       	  	     Some may have 20 pairs.

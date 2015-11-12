@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 20
+case = 11
 
 if case == 10:
     """
@@ -27,20 +27,25 @@ if case == 11:
     d = 30
     h = 0.0002
     
-    dis = [-0.04, -0.05, -0.06, -0.07, -0.075, -0.078, -0.079,
-           -0.0796, -0.0798, -0.07985, -0.0799, -0.08]
-    files = ['req04.h5', 'req05.h5', 'req06.h5', 'req07.h5', 'req075.h5',
-             'req078.h5', 'req079.h5', 'req0796.h5', 'req0798.h5',
-             'req07985.h5', 'req0799.h5', 'req08.h5']
+    # dis = [-0.04, -0.05, -0.06, -0.07, -0.075, -0.078, -0.079,
+    #        -0.0796, -0.0798, -0.07985, -0.0799, -0.08]
+    # files = ['req04.h5', 'req05.h5', 'req06.h5', 'req07.h5', 'req075.h5',
+    #          'req078.h5', 'req079.h5', 'req0796.h5', 'req0798.h5',
+    #          'req07985.h5', 'req0799.h5', 'req08.h5']
+    dis = [0.081, 0.039, 0.038, 0.037, 0.036, 0.035, 0.034, 0.033, 0.032,
+           0.031, 0.03, 0.029, 0.028, 0.027, 0.026]
+    files = ['req081.h5', 'req039.h5', 'req038.h5', 'req037.h5', 'req036.h5',
+             'req035.h5', 'req034.h5', 'req033.h5', 'req032.h5', 'req031.h5',
+             'req03.h5', 'req029.h5', 'req028.h5', 'req027.h5', 'req026.h5']
     for i in range(len(dis)):
         a0, wth0, wphi0, err = cqcglReadReq(files[i], '1')
-        cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, dis[i], 4)
+        cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, dis[i], 4)
         e, v = eigReq(cgl, a0, wth0, wphi0)
         print e[:8]
         cqcglAddEV2Req(files[i], '1', e.real, e.imag,
                        v[:, :10].real, v[:, :10].imag)
-        
-    
+
+
 if case == 20:
     """
     Try to locate the Hopf bifurcation limit cycle.
@@ -49,9 +54,9 @@ if case == 20:
     N = 1024
     d = 30
     h = 0.0002
-    di = -0.0799
+    di = 0.0799
     a0, wth0, wphi0, err = cqcglReadReq('req0799.h5', '1')
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, di, 4)
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
 
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
     eigvectors = Tcopy(realve(eigvectors))

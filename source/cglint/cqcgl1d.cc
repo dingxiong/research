@@ -61,7 +61,13 @@ Cqcgl1d::Cqcgl1d(int N, double d, double h,
 		 double dr, double di,
 		 int threadNum)
     : Cqcgl1d(N, d, h, enableJacv, Njacv, -1, 1, c, 1, b, -dr, -di, threadNum)
-{ }
+{				
+    // delegating constructor forbids other initialization in the list
+    this->b = b;
+    this->c = c;
+    this->dr = dr;
+    this->di = di;
+}
 
 Cqcgl1d::~Cqcgl1d(){}
 
@@ -1351,6 +1357,63 @@ Cqcgl1d::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
 
     ArrayXd velReq = velocityReq(a, wth, wphi);
     return std::make_tuple(a, wth, wphi, velReq.matrix().norm());
+}
+
+/**************************************************************/
+/*                plane wave related                          */
+/**************************************************************/
+
+/**
+ * @brief Return plane waves.
+ *
+ * @param[in] k            the wave index of the plane wave
+ * @paran[in] isPositive   whether the sign in amplitude is positive or not
+ * @return [a0, a, w]     Fourier state, amplitude, omega
+ * 
+ * @note This function only works for the b, c, dr, di construction
+ */
+std::tuple<ArrayXd, double, double>
+Cqcgl1d::planeWave(int k, bool isPositve){
+    double qk, a2, w;
+    
+    qk = 2 * M_PI * k / d;
+    if(isPositve) a2 = 1/(2*dr) * (1 + sqrt(1-4*dr*(qk*qk+1)));
+    else a2 = 1/(2*dr) * (1 - sqrt(1-4*dr*(qk*qk+1)));
+    w = b*qk*qk - c*a2 + di*a2*a2;
+    
+    ArrayXd a0(ArrayXd::Zero(Ndim));
+    if(k >= 0) a0(2*k) = sqrt(a2) * N;
+    else a0(Ndim + 2*k) = sqrt(a2) * N; // please check
+    
+    return std::make_tuple(a0, sqrt(a2), w);
+}
+
+/**
+ * @brief Return plane waves.  -- short version
+ */
+void 
+Cqcgl1d::planeWave(ArrayXd &a0, double &a, double &w, 
+		   int k, bool isPositve){
+    auto tmp = planeWave(k, isPositve);
+    a0 = std::get<0>(tmp);
+    a = std::get<1>(tmp);
+    w = std::get<2>(tmp);
+}
+
+/**
+ * @brief Stability exponents of plane wave
+ *
+ * @see planeWave(), eReq()
+ */
+VectorXcd Cqcgl1d::planeWaveStabE(int k, bool isPositve){
+    auto tmp = planeWave(k, isPositve);
+    return eReq(std::get<0>(tmp), 0, std::get<2>(tmp));
+}
+
+std::pair<VectorXcd, MatrixXcd>
+Cqcgl1d::planeWaveStabEV(int k, bool isPositve){
+    auto tmp = planeWave(k, isPositve);
+    return evReq(std::get<0>(tmp), 0, std::get<2>(tmp));
 }
 
 

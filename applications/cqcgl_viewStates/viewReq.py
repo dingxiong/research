@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 11
+case = 20
 
 if case == 10:
     """
@@ -40,6 +40,23 @@ if case == 11:
         cqcglAddEV2Req(files[i], '1', e.real, e.imag,
                        v[:, :10].real, v[:, :10].imag)
 
+if case == 12:
+    """
+    simply view the heat map of relative equilibria
+    """
+    N = 1024
+    d = 30
+    h = 0.0002
+    di = 0.38
+    a0, wth0, wphi0, err = cqcglReadReq('req38.h5', '1')
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+
+    nstp = 10000
+    for i in range(3):
+        aa = cgl.intg(a0, nstp, 1)
+        a0 = aa[-1]
+        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+
 
 if case == 20:
     """
@@ -48,9 +65,9 @@ if case == 20:
     """
     N = 1024
     d = 30
-    h = 0.0002
-    di = 0.0799
-    a0, wth0, wphi0, err = cqcglReadReq('req0799.h5', '1')
+    h = 0.0005
+    di = 0.36
+    a0, wth0, wphi0, err = cqcglReadReq('req36.h5', '1')
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
 
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)

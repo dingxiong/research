@@ -5,7 +5,7 @@ from numpy.linalg import norm, eig
 from numpy.random import rand
 from numpy.fft import fft, ifft
 from time import time
-from py_cqcgl1d import pyCqcgl1d
+from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
 
@@ -163,7 +163,7 @@ if case == 5:
     # cgl = pyCqcgl1d(N, d, h, True, 0,
     #                 -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
     #                 4)
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, 0.6, 4)
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, 0.37, 4)
     A0 = 3*centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
     nstp = 20000

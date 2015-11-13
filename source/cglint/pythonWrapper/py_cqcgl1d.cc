@@ -409,6 +409,13 @@ public:
 	return copy2bn( rotateOrbit(tmpaa, tmpth, tmpphi) );
     }
     
+    /* planeWave */
+    bp::tuple PYplaneWave(int k, bool isPositve){
+	auto tmp = planeWave(k, isPositve);
+	return bp::make_tuple(copy2bn(std::get<0>(tmp)),
+			      std::get<1>(tmp),
+			      std::get<2>(tmp));
+    }
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -826,6 +833,10 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
 	.def_readonly("Gr", &pyCqcgl1d::Gr)
 	.def_readonly("Gi", &pyCqcgl1d::Gi)
 	.def_readonly("Ndim", &pyCqcgl1d::Ndim)
+	.def_readonly("b", &pyCqcgl1d::b)
+	.def_readonly("c", &pyCqcgl1d::c)
+	.def_readonly("dr", &pyCqcgl1d::dr)
+	.def_readonly("di", &pyCqcgl1d::di)
 	.def(bp::init<int, double, double, bool, int, double, double, double, double, int>()) /* second constructor */
 	.def("changeh", &pyCqcgl1d::PYchangeh)
 	.def("velocity", &pyCqcgl1d::PYvelocity)
@@ -861,6 +872,7 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
 	.def("phaseRotate", &pyCqcgl1d::PYphaseRotate)
 	.def("Rotate", &pyCqcgl1d::PYRotate)
 	.def("rotateOrbit", &pyCqcgl1d::PYrotateOrbit)
+	.def("planeWave", &pyCqcgl1d::PYplaneWave)
 	;
 
     bp::class_<pyCgl1d, bp::bases<Cgl1d> >("pyCgl1d", bp::init<

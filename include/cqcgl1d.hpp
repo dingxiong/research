@@ -43,9 +43,9 @@ public:
     
     const int N;		/* dimension of FFT */
     const double d;		/* system domain size */
-    const bool enableJacv;
-    const int Njacv;
-
+    const bool enableJacv;	/* wether turn on tangent dynamics */
+    const int Njacv;		/* number of tangent dimension. 0 => full */
+    
     double h;			/* integration time step */
     int trueNjacv;    		/* true tangent space dimension */
     int Ne;			/* effective number of modes */
@@ -54,14 +54,20 @@ public:
 				   dealias part */
     int Nplus, Nminus, Nalias;
     
-    double Br, Bi, Gr, Gi, Dr, Di, Mu;
-    ArrayXd K, Kindex, KindexUnpad;
+    double Br, Bi, Gr, Gi, Dr, Di, Mu; 
+    ArrayXd K, Kindex, KindexUnpad;    
     ArrayXcd L, E, E2, Q, f1, f2, f3;
+
+    // parameters only work for the second constructor
+    double b = 0;		
+    double c = 0;
+    double dr = 0;
+    double di = 0;
 
     ////////////////////////////////////////////////////////////
     //         constructor, destructor, copy assignment.      //
     ////////////////////////////////////////////////////////////
-    Cqcgl1d(int N = 512, double d = 50, double h = 0.01,
+    Cqcgl1d(int N = 1024, double d = 30, double h = 0.01,
 	    bool enableJacv = false, int Njacv = 1,
 	    double Mu = -0.1, double Br = 1.0, double Bi = 0.8,
 	    double Dr = 0.125, double Di = 0.5, double Gr = -0.1,
@@ -167,6 +173,14 @@ public:
     findReq(const ArrayXd &a0, const double wth0, const double wphi0,
 	    const int MaxN = 100, const double tol = 1e-14,
 	    const bool doesUseMyCG = true, const bool doesPrint = true);
+
+    std::tuple<ArrayXd, double, double>
+    planeWave(int k, bool isPositve);
+    void planeWave(ArrayXd &a0, double &a, double &w, 
+		   int k, bool isPositve);
+    VectorXcd planeWaveStabE(int k, bool isPositve);
+    std::pair<VectorXcd, MatrixXcd>
+    planeWaveStabEV(int k, bool isPositve);
     
 protected:
     /****    global variable definition.   *****/

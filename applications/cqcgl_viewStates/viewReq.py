@@ -27,16 +27,11 @@ if case == 11:
     d = 30
     h = 0.0002
     
-    # dis = [-0.04, -0.05, -0.06, -0.07, -0.075, -0.078, -0.079,
-    #        -0.0796, -0.0798, -0.07985, -0.0799, -0.08]
-    # files = ['req04.h5', 'req05.h5', 'req06.h5', 'req07.h5', 'req075.h5',
-    #          'req078.h5', 'req079.h5', 'req0796.h5', 'req0798.h5',
-    #          'req07985.h5', 'req0799.h5', 'req08.h5']
-    dis = [0.081, 0.039, 0.038, 0.037, 0.036, 0.035, 0.034, 0.033, 0.032,
-           0.031, 0.03, 0.029, 0.028, 0.027, 0.026]
-    files = ['req081.h5', 'req039.h5', 'req038.h5', 'req037.h5', 'req036.h5',
-             'req035.h5', 'req034.h5', 'req033.h5', 'req032.h5', 'req031.h5',
-             'req03.h5', 'req029.h5', 'req028.h5', 'req027.h5', 'req026.h5']
+    # dis = [0.54, 0.55, 0.56, 0.57, 0.59, 0.61, 0.63, 0.65, 0.67,
+    #        0.69, 0.71, 0.74, 0.77, 0.8, 0.83]
+    # files = ['req54.h5', 'req55.h5', 'req56.h5', 'req57.h5', 'req59.h5',
+    #          'req61.h5', 'req63.h5', 'req65.h5', 'req67.h5', 'req69.h5',
+    #          'req71.h5', 'req74.h5', 'req77.h5', 'req8.h5', 'req83.h5']
     for i in range(len(dis)):
         a0, wth0, wphi0, err = cqcglReadReq(files[i], '1')
         cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, dis[i], 4)
@@ -263,3 +258,33 @@ if case == 60:
     ax.set_ylabel(r'$e_2$', fontsize=25)
     fig.tight_layout(pad=0)
     plt.show(block=False)
+
+if case == 70:
+    """
+    construct the plane wave solutions and get their stability
+    """
+    N = 1024
+    L = 30
+    h = 0.0002
+    b = 4.0
+    c = 0.8
+    dr = 0.01
+    di = 0.07985
+
+    cgl = pyCqcgl1d(N, L, h, True, 0, b, c, dr, di, 4)
+
+    m = 14
+    k = 2*np.pi / L * m
+    a2 = 1/(2*dr) * (1 + np.sqrt(1-4*dr*(k**2+1)))
+    w = b*k**2 - c*a2 + di*a2**2
+
+    a0 = np.zeros(cgl.Ndim)
+    a0[2*m] = sqrt(a2) * N
+    nstp = 5000
+    aa = cgl.intg(a0, nstp, 1)
+    plotConfigSpaceFromFourier(cgl, aa, [0, L, 0, nstp*h])
+
+    eigvalues, eigvectors = eigReq(cgl, a0, 0, w)
+    eigvectors = Tcopy(realve(eigvectors))
+    print eigvalues[:20]
+    

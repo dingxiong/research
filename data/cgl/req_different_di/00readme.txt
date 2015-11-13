@@ -26,7 +26,8 @@ data structure:
 
 
 classification:
-	0.081              : stable solition
+	0.36 -- 0.96       : one unstable conjugate pair.
+	0.081 --0.35       : stable solition.
 	0.0795 -- -0.08    : one unstable conjugate pair
 	0.026  -- 0.079    : more than one unstable pair. 
 	       	  	     Some may have 20 pairs.

@@ -566,7 +566,7 @@ namespace iterMethod {
 	    VectorXd F = fx(x);
 	    double Fnorm = F.norm();
 #ifdef GMRES_PRINT	    
-	    fprintf(stderr, "\n+++++++++++ GHOOK: i = %zd, r = %g ++++++++++ \n", i, Fnorm);
+	    fprintf(stderr, "\n+++++++++++ GHOOK: i = %zd/%d, r = %g ++++++++++ \n", i, maxit, Fnorm);
 #endif
 	    errVec.push_back(Fnorm);
 	    if(Fnorm < tol) return std::make_tuple(x, errVec, 0);

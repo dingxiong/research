@@ -32,8 +32,19 @@ CqcglRPO::CqcglRPO(int nstp, int M,
 		   double b, double c,
 		   double dr, double di,
 		   int threadNum)
-    : CqcglRPO(nstp, M, N, d, h, -1, 1, c, 1, b, dr, di, threadNum)
-{ }
+    : CqcglRPO(nstp, M, N, d, h, -1, 1, c, 1, b, -dr, -di, threadNum)
+{ 
+    // delegating constructor forbids other initialization in the list
+    cgl1.b = b;
+    cgl1.c = c;
+    cgl1.dr = dr;
+    cgl1.di = di;
+
+    cgl2.b = b;
+    cgl2.c = c;
+    cgl2.dr = dr;
+    cgl2.di = di;
+}
 
 
 CqcglRPO::~CqcglRPO(){}

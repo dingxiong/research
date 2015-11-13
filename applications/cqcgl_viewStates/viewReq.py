@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 20
+case = 60
 
 if case == 10:
     """
@@ -66,8 +66,8 @@ if case == 20:
     N = 1024
     d = 30
     h = 0.0005
-    di = 0.36
-    a0, wth0, wphi0, err = cqcglReadReq('req36.h5', '1')
+    di = 0.39
+    a0, wth0, wphi0, err = cqcglReadReq('req39.h5', '1')
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
 
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
@@ -78,8 +78,8 @@ if case == 20:
     # veTilde = cgl.reflectVe(veHat, a0Hat)
     
     nstp = 10000
-    a0Erg = a0 + eigvectors[0]*1e-2
-    for i in range(1):
+    a0Erg = a0 + eigvectors[0]*1e-1
+    for i in range(3):
         aaErg = cgl.intg(a0Erg, nstp, 1)
         a0Erg = aaErg[-1]
 
@@ -107,6 +107,43 @@ if case == 20:
     fig.tight_layout(pad=0)
     plt.show(block=False)
  
+if case == 21:
+    """
+    Try to find the guess of the limit cycle for di large enough
+    such that the soliton is unstable.
+    """
+    N = 1024
+    d = 30
+    h = 0.0008
+    di = 0.39
+
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+    A0 = 3*centerRand(2*N, 0.2)
+    a0 = cgl.Config2Fourier(A0)
+    nstp = 5000
+    x = []
+    for i in range(3):
+        aa = cgl.intg(a0, nstp, 1)
+        a0 = aa[-1]
+        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+        # plotPhase(cgl, aa, [0, d, 0, nstp*h])
+        # plotOneConfigFromFourier(cgl, aa[-1], d)
+        # plotOnePhase(cgl, aa[-1], d)
+        # plot1dfig(aa[:, 0])
+        x.append(aa)
+        
+    aaHat, th, phi = cgl.orbit2slice(aa)
+    i1 = 0
+    i2 = 730
+    plot3dfig(aaHat[i1:i2, 0], aaHat[i1:i2, 1], aaHat[i1:i2, 2])
+    nstp = i2 - i1
+    T = nstp * h
+    th0 = th[i1] - th[i2]
+    phi0 = phi[i1] - phi[i2]
+    err = norm(aaHat[i1] - aaHat[i2])
+    print nstp, T, th0, phi0, err
+    cqcglSaveRPO('rpot.h5', '1', aa[i1], T, nstp, th0, phi0, err)
+    
 if case == 30:
     """
     compare the Hopf bifurcation limit cycle with slightly different di
@@ -248,9 +285,9 @@ if case == 60:
     d = 30
     h = 0.0002
 
-    di = -0.0799
-    a0, wth0, wphi0, err = cqcglReadReq('req0799.h5', '1')
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, di, 4)
+    di = 0.39
+    a0, wth0, wphi0, err = cqcglReadReq('req39.h5', '1')
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
 
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
     eigvectors = Tcopy(realve(eigvectors))
@@ -258,11 +295,11 @@ if case == 60:
     veHat = cgl.ve2slice(eigvectors, a0)
 
     e1, e2 = orthAxes2(veHat[0], veHat[1])
-
+    
     x1, T1, nstp1, th1, phi1, err1 = cqcglReadRPO(
-        '../../data/cgl/rpo/rpo0799T2X1.h5', '1')
+        '../../data/cgl/rpo/rpo39T2X1.h5', '1')
     h1 = T1 / nstp1
-    cgl2 = pyCqcgl1d(N, d, h1, False, 0, 4.0, 0.8, -0.01, di, 4)
+    cgl2 = pyCqcgl1d(N, d, h1, False, 0, 4.0, 0.8, 0.01, di, 4)
     aa1 = cgl2.intg(x1[0], nstp1, 1)
     aa1Hat, th2, phi2 = cgl2.orbit2slice(aa1)
     aa1Hat -= a0Hat

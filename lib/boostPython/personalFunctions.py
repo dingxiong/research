@@ -324,6 +324,20 @@ def cqcglSaveReq(fileName, groupName, a, wth, wphi, err):
     f.close()
 
 
+def cqcglSaveReqEV(fileName, groupName, a, wth, wphi, err, er, ei, vr, vi):
+    f = h5py.File(fileName, 'a')
+    req = f.create_group(groupName)
+    req.create_dataset("a", data=a)
+    req.create_dataset("wth", data=wth)
+    req.create_dataset('wphi', data=wphi)
+    req.create_dataset('err', data=err)
+    req.create_dataset('er', data=er)
+    req.create_dataset('ei', data=ei)
+    req.create_dataset('vr', data=vr)
+    req.create_dataset('vi', data=vi)
+    f.close()
+
+
 def cqcglReadReq(fileName, groupName):
     f = h5py.File(fileName, 'r')
     req = '/' + groupName + '/'
@@ -333,6 +347,21 @@ def cqcglReadReq(fileName, groupName):
     err = f[req+'err'].value
     f.close()
     return a, wth, wphi, err
+
+
+def cqcglReadReqEV(fileName, groupName):
+    f = h5py.File(fileName, 'r')
+    req = '/' + groupName + '/'
+    a = f[req+'a'].value
+    wth = f[req+'wth'].value
+    wphi = f[req+'wphi'].value
+    err = f[req+'err'].value
+    er = f[req+'er'].value
+    ei = f[req+'ei'].value
+    vr = f[req+'vr'].value
+    vi = f[req+'vi'].value
+    f.close()
+    return a, wth, wphi, err, er, ei, vr, vi
 
 
 def cqcglAddEV2Req(fileName, groupName, er, ei, vr, vi):
@@ -378,11 +407,19 @@ def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):
     f.close()
 
 
+def cqcglMoveReqEV(inputFile, ingroup, outputFile, outgroup):
+    """
+    move a group from one file to another group of a another file
+    """
+    a, wth, wphi, err, er, ei, vr, vi = cqcglReadReqEV(inputFile, ingroup)
+    cqcglSaveReqEV(outputFile, outgroup, a, wth, wphi, err, er, ei, vr, vi)
+
+
 def cqcglRemoveReq(inputFile, outputFile, Num, groups):
     """
     remove some groups in relative equilibria file
     Num: the total number of groups in original file
-         The group names are: 
+         The group names are:
          1, 2, 3, 4, ..., Num
     groups: the group names that need to be removed
     """
@@ -460,12 +497,13 @@ def PoincareLinearInterp(x, getIndex=False):
     else:
         return points
 
+
 def getCurveIndex(points):
     """
     Obtain the curvalinear Index of a set of points.
     
     parameter:
-    points   :  each row is a point 
+    points   :  each row is a point
     """
     n = points.shape[0]         # number of points
     indices = range(n)
@@ -479,18 +517,19 @@ def getCurveIndex(points):
     for i in range(n-1):
         last = sortedIndices[-1]
         norms = [np.linalg.norm(points[i] - points[last]) for i in indices]
-        minimal = indices[np.argmin(norms)] # careful
+        minimal = indices[np.argmin(norms)]  # careful
         sortedIndices.append(minimal)
         indices.remove(minimal)
 
     return sortedIndices
+
 
 def getCurveCoor(points):
     """
     Obtain the curvalinear coordinate of a set of points.
     
     parameter:
-    points   :  each row is a point 
+    points   :  each row is a point
     """
     n = points.shape[0]         # number of points
     indices = getCurveIndex(points)

@@ -601,7 +601,7 @@ namespace iterMethod {
 		ArrayXd z = pd / (D2 + mu);
 		VectorXd y = V2 * z.matrix();
 		s = sold + V * y;
-		mu *= 10;
+		mu *= 2;
 	    }
 	    
 	}

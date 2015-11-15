@@ -43,9 +43,8 @@ namespace MyH5 {
 	item.write(mat.data(), PredType::NATIVE_DOUBLE);
     }
 
-    //////////////////////////////////////////////////////////////////////
-    ///////////////         ks related          //////////////////////////
-    //////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////         ks related          ////////////////////////////////////////////////////////////////////////////
 
     /** @brief check the existence of Floquet vectors.
      *
@@ -242,9 +241,9 @@ namespace MyH5 {
     }
 
     
-    //////////////////////////////////////////////////////////////////////
-    ///////////////       cqcgl related         //////////////////////////
-    //////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////       cqcgl related         ////////////////////////////////////////////////////////////////////////////
+
     
     /**
      * @note group should be a new group
@@ -301,6 +300,111 @@ namespace MyH5 {
 	phi = readScalar<double>(file, DS + "phi");
 	err = readScalar<double>(file, DS + "err");
     }
+
+    /**
+     * @brief move rpo from one file, group to another file, group
+     */
+    void
+    CqcglMoveRPO(string infile, string ingroup, 
+		 string outfile, string outgroup){
+	auto result = CqcglReadRPO(infile, ingroup);
+	CqcglWriteRPO(outfile, outgroup,
+		      std::get<0>(result), /* x */
+		      std::get<1>(result), /* T */
+		      std::get<2>(result), /* nstp */
+		      std::get<3>(result), /* th */
+		      std::get<4>(result), /* phi */
+		      std::get<5>(result)  /* err */
+		      );
+
+    }
+
+    /*------------------------------------------------------------  */
+    /* The following are overloading functions specific to di groups */
+    /*------------------------------------------------------------  */
+
+    /**
+     * form the group name with di
+     */
+    std::string formDiGroupName(double di){
+	char buffer [20];
+	int cx = snprintf ( buffer, 20, "%.6f", di);
+	assert(cx > 6);
+	string groupName = "/" + std::string(buffer);
+	
+	return groupName;
+    }
+    
+    /**
+     * check the existence of group. If not, then crate it.
+     */
+    void CqcglCheckDiExist(const string fileName, double di){
+	
+	H5File file(fileName, H5F_ACC_RDWR);
+	string groupName = formDiGroupName(di);
+	if(H5Lexists(file.getId(), groupName.c_str(), H5P_DEFAULT) == false)
+	    file.createGroup(groupName.c_str());
+    }
+    
+    /**
+     * @brief read rpo info from hdf5 file for cqcgl
+     *
+     *  This is specific to di group.
+     *  This is a short version.
+     */
+    void CqcglReadRPO(const string fileName, double di, int index,
+		      MatrixXd &x, double &T, int &nstp,
+		      double &th, double &phi, double &err){
+	string groupName = formDiGroupName(di) + "/" + std::to_string(index);	
+	CqcglReadRPO(fileName, groupName, x, T, nstp, th, phi, err);
+    }
+
+
+    /**
+     * @brief move rpo from one file, group to another file, group
+     *
+     *  The output group is formed as '/di/index'
+     *
+     *  @see CqcglMoveRPO()
+     */
+    void CqcglMoveRPO(string infile, string ingroup,
+		      string outfile, double di, int index){
+	CqcglCheckDiExist(outfile, di);
+	
+	string outgroup = formDiGroupName(di) + "/" + std::to_string(index);
+	CqcglMoveRPO(infile, ingroup, outfile, outgroup);
+    }
+   
+    /**
+     * @brief move rpo from one file, group to another file, group
+     *
+     *  The input and output group are all '/di/index'
+     *
+     *  @see CqcglMoveRPO()
+     */
+    void CqcglMoveRPO(string infile, string outfile, double di, int index){
+	CqcglCheckDiExist(outfile, di);
+	string groupName = formDiGroupName(di) + "/" + std::to_string(index);
+	CqcglMoveRPO(infile, groupName, outfile, groupName); 
+    }
+
+
+    /**
+     * @brief The output group is formed as '/di/index'
+     * 
+     * @see CqcglWriteRPO(), formDiGroupName()
+     */
+    void CqcglWriteRPO(const string fileName, double di, int index,
+		       const MatrixXd &x, const double T, const int nstp,
+		       const double th, const double phi, double err){
+	CqcglCheckDiExist(fileName, di);
+	
+	string groupName = formDiGroupName(di) + "/" + std::to_string(index);
+	CqcglWriteRPO(fileName, groupName, x, T, nstp, th, phi, err);
+    }
+    
+
+    /**** -------------------------------------------------- ****/
     
     /**
      * @brief read req (relative equibrium) info from hdf5 file for cqcgl
@@ -320,6 +424,7 @@ namespace MyH5 {
 			  readScalar<double>(file, DS + "err")
 			  );
     }
+
 
     /**
      * @brief read req (relative equibrium) info from hdf5 file for cqcgl
@@ -361,4 +466,5 @@ namespace MyH5 {
 	writeScalar<double>(file, DS + "err", err);
     }
     
+
 }

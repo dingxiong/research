@@ -109,6 +109,7 @@ def plot3dfig2lines(x1, y1, z1, x2, y2, z2, c1='r', lw1=1,
 
 def plotConfigSpace(AA, ext, barTicks=[0, 3], colortype='jet',
                     percent='5%', size=[4, 5],
+                    axisLabelSize=20,
                     save=False, name='out.png'):
     """
     plot the color map of the states
@@ -118,14 +119,14 @@ def plotConfigSpace(AA, ext, barTicks=[0, 3], colortype='jet',
     Aamp = abs(Ar + 1j*Ai)
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
-    ax.set_xlabel('x')
-    ax.set_ylabel('t')
+    ax.set_xlabel('x', fontsize=axisLabelSize)
+    ax.set_ylabel('t', fontsize=axisLabelSize)
     im = ax.imshow(Aamp, cmap=plt.get_cmap(colortype), extent=ext,
                    aspect='auto', origin='lower')
     ax.grid('on')
     dr = make_axes_locatable(ax)
     cax = dr.append_axes('right', size=percent, pad=0.05)
-    bar = plt.colorbar(im, cax=cax, ticks=barTicks)
+    plt.colorbar(im, cax=cax, ticks=barTicks)
     fig.tight_layout(pad=0)
     if save:
         plt.savefig(name)
@@ -136,12 +137,61 @@ def plotConfigSpace(AA, ext, barTicks=[0, 3], colortype='jet',
 def plotConfigSpaceFromFourier(cgl, aa, ext, barTicks=[0, 3],
                                colortype='jet',
                                percent='5%', size=[4, 5],
+                               axisLabelSize=20,
                                save=False, name='out.png'):
     """
     plot the configuration from Fourier mode
     """
     plotConfigSpace(cgl.Fourier2Config(aa), ext, barTicks,
-                    colortype, percent, size, save, name)
+                    colortype, percent, size,
+                    axisLabelSize, save, name)
+
+
+def plotConfigSurface(AA, ext, barTicks=[2, 4], colortype='jet',
+                      percent='5%', size=[7, 5], axisLabelSize=25,
+                      save=False, name='out.png'):
+    """
+    plot the color map of the states
+    """
+    Ar = AA[:, 0::2]
+    Ai = AA[:, 1::2]
+    Aamp = abs(Ar + 1j*Ai)
+    
+    X = np.linspace(ext[0], ext[1], Aamp.shape[1])
+    Y = np.linspace(ext[2], ext[3], Aamp.shape[0])
+    X, Y = np.meshgrid(X, Y)
+    
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111, projection='3d')
+    surf = ax.plot_surface(X, Y, Aamp, rstride=10, cstride=10,
+                           cmap=plt.get_cmap(colortype),
+                           linewidth=0, antialiased=False)
+
+    fig.colorbar(surf, fraction=0.05, shrink=0.6, aspect=20, ticks=barTicks)
+    
+    ax.set_xlabel('x', fontsize=axisLabelSize)
+    ax.set_ylabel('t', fontsize=axisLabelSize)
+    ax.set_zlabel(r'$|A|$', fontsize=axisLabelSize)
+
+    # dr = make_axes_locatable(ax)
+    # cax = dr.append_axes('right', size=percent, pad=0.05)
+    # plt.colorbar(surf, cax=cax, ticks=barTicks)
+    fig.tight_layout(pad=0)
+    if save:
+        plt.savefig(name)
+    else:
+        plt.show(block=False)
+
+
+def plotConfigSurfaceFourier(cgl, aa, ext, barTicks=[2, 4],
+                             colortype='jet',
+                             percent='5%', size=[7, 5],
+                             axisLabelSize=25,
+                             save=False, name='out.png'):
+    plotConfigSurface(cgl.Fourier2Config(aa), ext, barTicks,
+                      colortype, percent, size,
+                      axisLabelSize,
+                      save, name)
 
 
 def plotOneConfig(A, d=50, size=[6, 4], axisLabelSize=20,
@@ -349,6 +399,11 @@ def cqcglReadReq(fileName, groupName):
     return a, wth, wphi, err
 
 
+def cqcglReadReqdi(fileName, di, index):
+    groupName = format(di, '.6f') + '/' + str(index)
+    return cqcglReadReq(fileName, groupName)
+
+
 def cqcglReadReqEV(fileName, groupName):
     f = h5py.File(fileName, 'r')
     req = '/' + groupName + '/'
@@ -393,6 +448,11 @@ def cqcglReadRPO(fileName, groupName):
     err = f[req+'err'].value
     f.close()
     return x, T[0], np.int(nstp[0]), th[0], phi[0], err[0]
+
+
+def cqcglReadRPOdi(fileName, di, index):
+    groupName = format(di, '.6f') + '/' + str(index)
+    return cqcglReadRPO(fileName, groupName)
 
 
 def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):

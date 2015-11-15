@@ -292,7 +292,7 @@ int main(){
 	const int N = 1024;
 	const double d = 30;
 	const double h = 0.0002;
-	const double di = 0.39;
+	const double di = 0.4;
 
 	// std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo3.h5");
 	std::string file("rpot.h5");
@@ -319,6 +319,66 @@ int main(){
 		      );
 
 	break;
+    }
+
+    case 71: {
+	/* Move one rpo
+	 */
+	std::string infile("/usr/local/home/xiong/00git/research/data/cgl/rpo39T2X1.h5");
+	std::string outfile("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1.h5");
+	CqcglMoveRPO(infile, "1", outfile, 0.39, 1);
+	
+	break;
+    }
+
+    case 72:{
+	/* move several rpos */
+	std::string infile("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1.h5");
+	std::string outfile("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1_v2.h5");
+	double dis[] = {0.39, 0.392, 0.394, 0.396, 0.398};
+	for(int i = 0; i < 5; i++) CqcglMoveRPO(infile, outfile, dis[i], 1);
+
+	break;
+    }
+
+    case 80: {
+	/* After we find the Hopf limit cycle for di = 0.39, we need to find
+	 * how it evoles with different di
+	 */
+	const int N = 1024;
+	const double d = 30;
+	const double di = 0.398;
+	const double diInc = 0.002;
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1.h5");
+	
+	for(int i = 0; i < 200; i++){
+	    double diOld = di + i * diInc;
+	    int nstp;
+	    double T, th, phi, err;
+	    MatrixXd x;
+	    CqcglReadRPO(file, diOld, 1, x, T, nstp, th, phi, err);
+
+	    nstp += 600;
+	    double diNew = di + (i+1)*diInc;
+	    double h = T / nstp;
+	    printf("T %g, nstp %d, h %g th %g, phi %g, err %g\n", T, nstp, h, th, phi, err);
+	    CqcglRPO cglrpo(nstp, 1, N, d, h, 4.0, 0.8, 0.01, diNew, 4);
+	    cglrpo.alpha1 = 0;
+	    cglrpo.alpha2 = 0.1;
+	    cglrpo.alpha3 = 0.1;
+	    auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 2e-11, 30, 8, 1e-6, 500, 10);
+	    CqcglWriteRPO(file, diNew, 1, 
+			  std::get<0>(result), /* x */
+			  std::get<1>(result), /* T */
+			  nstp,		   /* nstp */
+			  std::get<2>(result), /* th */
+			  std::get<3>(result), /* phi */
+			  std::get<4>(result)  /* err */
+			  );
+	}
+	
+	break;
+	
     }
 
     default: {

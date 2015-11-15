@@ -10,9 +10,11 @@ if case == 1:
     """
     N = 1024
     d = 30
-    x, T, nstp, th, phi, err = cqcglReadRPO('../../data/cgl/rpo/rpo0799T2X1.h5', '1')
+    di = 0.398
+    x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
+                                              di, 1)
     h = T / nstp
-    cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, -0.01, -0.0799, 4)
+    cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, 0.01, di, 4)
     aa = cgl.intg(x[0], nstp, 1)
     aaHat, thAll, phiAll = cgl.orbit2slice(aa)
     

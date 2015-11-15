@@ -60,6 +60,24 @@ namespace MyH5 {
     CqcglReadRPO(const string fileName, const string groupName,
 		      MatrixXd &x, double &T, int &nstp,
 		      double &th, double &phi, double &err);
+    void
+    CqcglMoveRPO(string infile, string ingroup, 
+		 string outfile, string outgroup);
+    std::string formDiGroupName(double di);
+    void CqcglCheckDiExist(const string fileName, double di);
+    void CqcglReadRPO(const string fileName, double di, int index,
+		      MatrixXd &x, double &T, int &nstp,
+		      double &th, double &phi, double &err);
+    void 
+    CqcglMoveRPO(string infile, string ingroup,
+		 string outfile, double di, int index);
+    void 
+    CqcglMoveRPO(string infile, string outfile, double di, int index);
+    void 
+    CqcglWriteRPO(const string fileName, double di, int index,
+		  const MatrixXd &x, const double T, const int nstp,
+		  const double th, const double phi, double err);
+    
     std::tuple<VectorXd, double, double ,double>
     CqcglReadReq(const string fileName, const string groupName);
     void 

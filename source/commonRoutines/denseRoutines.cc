@@ -286,3 +286,44 @@ MatrixXd denseRoutines::orthAxes(const VectorXd &e1, const VectorXd &e2,
     tmp << e1, e2, e3;
     return orthAxes(tmp);
 }
+
+/**
+ * @brief return the spacing between adjacent vectors
+ *
+ * @param[in] v    mxn matrix
+ * @return         n-1 vector 
+ */
+VectorXd denseRoutines::spacing(const Ref<const MatrixXd> &v){
+    int m = v.rows();
+    int n = v.cols();
+    
+    VectorXd sp(n-1);
+    for(size_t i = 0; i < n-1; i++) sp(i) = (v.col(i) - v.col(i+1)).norm();
+    
+    return sp;
+}
+
+/**
+ * @brief return the index of vector which is closest to the sample point
+ *
+ * @param[in] a    sample pointx
+ * @param[in] v    a trajectory
+ * @return         index of v closest to a
+ */
+int
+denseRoutines::minDisIndex(const Ref<const VectorXd> &a, 
+			   const Ref<const MatrixXd> &v){
+    int m = v.rows();
+    int n = v.cols();
+
+    int id = 0;
+    double minD = (a - v.col(0)).norm();
+    for(size_t i = 0; i < n; i++){
+	double d = (a - v.col(i)).norm();
+	if(d < minD) {
+	    id = i;
+	    minD = d;
+	}
+    }
+    return id;
+}

@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 60
+case = 21
 
 if case == 10:
     """
@@ -66,8 +66,9 @@ if case == 20:
     N = 1024
     d = 30
     h = 0.0005
-    di = 0.39
-    a0, wth0, wphi0, err = cqcglReadReq('req39.h5', '1')
+    di = 0.4
+    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                          di, 1)
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
 
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
@@ -78,8 +79,8 @@ if case == 20:
     # veTilde = cgl.reflectVe(veHat, a0Hat)
     
     nstp = 10000
-    a0Erg = a0 + eigvectors[0]*1e-1
-    for i in range(3):
+    a0Erg = a0 + eigvectors[0]*1e-2
+    for i in range(1):
         aaErg = cgl.intg(a0Erg, nstp, 1)
         a0Erg = aaErg[-1]
 
@@ -115,7 +116,7 @@ if case == 21:
     N = 1024
     d = 30
     h = 0.0008
-    di = 0.39
+    di = 0.4
 
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
     A0 = 3*centerRand(2*N, 0.2)
@@ -134,7 +135,7 @@ if case == 21:
         
     aaHat, th, phi = cgl.orbit2slice(aa)
     i1 = 0
-    i2 = 730
+    i2 = 920
     plot3dfig(aaHat[i1:i2, 0], aaHat[i1:i2, 1], aaHat[i1:i2, 2])
     nstp = i2 - i1
     T = nstp * h
@@ -286,7 +287,9 @@ if case == 60:
     h = 0.0002
 
     di = 0.39
-    a0, wth0, wphi0, err = cqcglReadReq('req39.h5', '1')
+    groupName = format(di, '.6f') + '/1'
+    a0, wth0, wphi0, err = cqcglReadReq('../../data/cgl/reqDi.h5',
+                                        groupName)
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
 
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
@@ -312,6 +315,8 @@ if case == 60:
     ax.set_ylabel(r'$e_2$', fontsize=25)
     fig.tight_layout(pad=0)
     plt.show(block=False)
+
+    # plotConfigSurfaceFourier(cgl, aa1, [0, d, 0, T1])
 
 if case == 70:
     """

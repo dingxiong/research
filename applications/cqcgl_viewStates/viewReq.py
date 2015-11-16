@@ -66,7 +66,7 @@ if case == 20:
     N = 1024
     d = 30
     h = 0.0005
-    di = 0.4
+    di = 0.35
     a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
                                           di, 1)
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
@@ -79,8 +79,10 @@ if case == 20:
     # veTilde = cgl.reflectVe(veHat, a0Hat)
     
     nstp = 10000
-    a0Erg = a0 + eigvectors[0]*1e-2
-    for i in range(1):
+    # a0Erg = a0 + eigvectors[0]*1e2
+    A0 = 2*centerRand(2*N, 0.2)
+    a0Erg = cgl.Config2Fourier(A0)
+    for i in range(2):
         aaErg = cgl.intg(a0Erg, nstp, 1)
         a0Erg = aaErg[-1]
 
@@ -116,12 +118,12 @@ if case == 21:
     N = 1024
     d = 30
     h = 0.0004
-    di = 0.414
+    di = 0.423
 
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
     A0 = 2*centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
-    nstp = 5000
+    nstp = 10000
     x = []
     for i in range(3):
         aa = cgl.intg(a0, nstp, 1)
@@ -134,8 +136,8 @@ if case == 21:
         x.append(aa)
         
     aaHat, th, phi = cgl.orbit2slice(aa)
-    i1 = 1000
-    i2 = 3220
+    i1 = 5000
+    i2 = 7180
     plot3dfig(aaHat[i1:i2, 0], aaHat[i1:i2, 1], aaHat[i1:i2, 2])
     nstp = i2 - i1
     T = nstp * h
@@ -143,7 +145,7 @@ if case == 21:
     phi0 = phi[i1] - phi[i2]
     err = norm(aaHat[i1] - aaHat[i2])
     print nstp, T, th0, phi0, err
-    cqcglSaveRPO('rpot.h5', '1', aa[i1], T, nstp, th0, phi0, err)
+    cqcglSaveRPOdi('rpot.h5', di, 1, aa[i1], T, nstp, th0, phi0, err)
     
 if case == 30:
     """
@@ -286,10 +288,9 @@ if case == 60:
     d = 30
     h = 0.0002
 
-    di = 0.39
-    groupName = format(di, '.6f') + '/1'
-    a0, wth0, wphi0, err = cqcglReadReq('../../data/cgl/reqDi.h5',
-                                        groupName)
+    di = 0.32
+    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                          di, 1)
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
 
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
@@ -299,8 +300,8 @@ if case == 60:
 
     e1, e2 = orthAxes2(veHat[0], veHat[1])
     
-    x1, T1, nstp1, th1, phi1, err1 = cqcglReadRPO(
-        '../../data/cgl/rpo/rpo39T2X1.h5', '1')
+    x1, T1, nstp1, th1, phi1, err1 = cqcglReadRPOdi(
+        '../../data/cgl/rpoT2X1.h5', di, 1)
     h1 = T1 / nstp1
     cgl2 = pyCqcgl1d(N, d, h1, False, 0, 4.0, 0.8, 0.01, di, 4)
     aa1 = cgl2.intg(x1[0], nstp1, 1)

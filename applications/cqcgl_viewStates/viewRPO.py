@@ -10,8 +10,8 @@ if case == 1:
     """
     N = 1024
     d = 30
-    di = 0.414
-    x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1t.h5',
+    di = 0.424
+    x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
                                               di, 1)
     h = T / nstp
     cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, 0.01, di, 4)
@@ -55,10 +55,11 @@ if case == 1:
     ax.set_zlabel('z', fontsize=25)
     fig.tight_layout(pad=0)
     plt.show(block=False)
-
-    # see the profile fo exposion part
-    plotOneConfigFromFourier(cgl, aa[1500], d)
-
+    
+    # plot 4 periods
+    M = 6
+    aa2 = cgl.intg(x[0], nstp*M, 1)
+    plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, nstp*h*M])
 
 if case == 20:
     """

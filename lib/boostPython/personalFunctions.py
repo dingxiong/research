@@ -467,6 +467,11 @@ def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):
     f.close()
 
 
+def cqcglSaveRPOdi(fileName, di, index, x, T, nstp, th, phi, err):
+    groupName = format(di, '.6f') + '/' + str(index)
+    return cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err)
+
+
 def cqcglMoveReqEV(inputFile, ingroup, outputFile, outgroup):
     """
     move a group from one file to another group of a another file

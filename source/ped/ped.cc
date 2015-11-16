@@ -87,13 +87,13 @@ MatrixXd PED::EigVals(MatrixXd &J, const int MaxN /* = 100 */,
  * MatrixXd J(5,15);
  * J << J3, J2, J1;
  * PED ped;
- * std::pair<MatrixXd, MatrixXd> eigs = ped.Eigvals(J, 1000, 1e-16, false);
+ * std::pair<MatrixXd, MatrixXd> eigs = ped.EigVecs(J, 1000, 1e-16, false);
  * cout << eigs.first << endl << endl; // print eigenvalues
  * cout << eigs.second << endl << endl; // print eigenvectors.
  * \endcode
  * The above code return the eigenvalues (in the format of
  * \f$ \exp(\mu+i\omega)\f$) and
- * eigenvectors of \f$ J_3J_2J1\f$, \f$ J_1J_3J2\f$, \f$ J_2J_1J3\f$. 
+ * eigenvectors of \f$ J_3J_2J_1\f$, \f$ J_1J_3J_2\f$, \f$ J_2J_1J_3\f$. 
  * 
  *  @param[in] MaxN Maximal number of periodic QR iteration.
  *  @param[in] J a sequence of matrices. Dimension [N, N*M].
@@ -222,7 +222,7 @@ pair<MatrixXd, vector<int> > PED::PerSchur(MatrixXd &J, const int MaxN /* = 100 
  *        has dimension [n,n], so J has dimension [mn,n]. Note the storage is columnwise   * 
  *        We are interested in the product J_0 = J_m * J_{m-1} *,...,* J_1.		   * 
  * Output: J' = [J'_m, J'_{m_1}, ..., J'_1] in the Hessenberg upper-triangular form.	   * 
- *         J'_m: Hessenber matrix; the others are upper-triangular.			   * 
+ *         J'_m: Hessenberg matrix; the others are upper-triangular.			   * 
  *         Q = [Q_m, Q_{m-1}, ..., Q_1], a sequence of orthogonal matrices, which satisfy  *   
  *         Q_i^{T} * J_i * Q_{i-1} = J'_i, with Q_0 = Q_m.                                 *
  *         
@@ -907,3 +907,113 @@ PED::truncVec(const vector<int> &v, const int trunc){
   
   return v_trunc;
 }
+
+/* ====================================================================== */
+/*                      part related to power iteration                   */
+/* ====================================================================== */
+
+/**
+ * @brief my wrapper to HouseHolderQR 
+ */
+std::pair<MatrixXd, MatrixXd>
+PED::QR(const Ref<const MatrixXd> &A){
+    int n = A.rows();
+    int m = A.cols();
+    HouseholderQR<MatrixXd> qr(A);
+    MatrixXd Q = qr.householderQ() * MatrixXd::Identity(n, m);
+    MatrixXd R = qr.matrixQR().triangularView<Upper>();
+    return std::make_pair(Q, R);
+}
+
+
+/**
+ *  @param[in] J a sequence of matrices. Dimension [N, N*M].
+ */
+void
+PED::PowerIter(const Ref<const MatrixXd> &J, 
+	       const Ref<const MatrixXd> &Q,
+	       int maxit, double Qtol){
+    const int N = J.rows();
+    const int M = J.cols() / N;
+    
+    // form the sequential QR funciton
+    auto sqr = [&J, N, M](MatrixXd Q) -> std::pair<MatrixXd, MatrixXd> {
+	MatrixXd R(N, N*M);
+	for(int i = M-1; i >= 0; i++){ // start from the right side
+	    auto qr = QR(J.middleCols(i*N, N) * Q);
+	    R.middleCols(i*N, N) = qr.second;
+	    Q = qr.first;
+	}
+	return std::make_pair(Q, R);
+    };
+    
+    // call the general funciton
+    return PowerIter(sqr, Q, maxit, Qtol);
+}
+
+/**
+ * @brief check the convergence of the orthonormal matrices in the power iteration
+ *
+ * J*Q = Qp * R. Here we assume that each column of Q and Qp is normalized.
+ * Note, when the last column correpsonds to a complex one, we do not check it.
+ *
+ * @param[in] Q     initial orthonormal matrix
+ * @param[in] Qp    orthonormal matrix after one iteration
+ * @param[in] Qtol  tolerance
+ * @return          true => converged.  false => not converged
+ */
+bool
+PED::checkQconverge(MatrixXd Q, MatrixXd Qp, double Qtol){
+    int M = Q.cols();
+    assert(M == Qp.cols());
+
+    VectorXd status(M);
+    for(size_t i = 0; i < M; i++){
+	int e = checkOneQ(Q.col(i), Qp.col(i), Qtol);
+	if (e == 0 && i < M-1){	// check whether it is complex pair
+	    int e2 = checkPairQ(Q.col(i), Q.col(i+1), 
+				Qp.col(i), Qp.col(i+1), Qtol);
+	    if (e2 == 0) return false;
+	    else i++;		// remember to go to the next next one
+	}
+    }
+
+    return true;
+}
+
+/**
+ * @brief check the converge of real Q
+ *
+ * @see checkQconverge()
+ */
+int
+PED::checkOneQ(const Ref<const VectorXd> &u, 
+	  const Ref<const VectorXd> &v,
+	  double Qtol){
+    if((u - v).norm() < Qtol) return 1;
+    else((u + v).norm() < Qtol) return -1;
+    return 0;
+}
+
+/**
+ * @brief check the converge of complex Q
+ *
+ * @see checkQconverge()
+ */
+int
+PED::checkPairQ(const Ref<const VectorXd> &u1, 
+	   const Ref<const VectorXd> &u2,
+	   const Ref<const VectorXd> &v1, 
+	   const Ref<const VectorXd> &v2,
+	   double Qtol){
+    double a1 = v1.dot(u1);
+    double a2 = v1.dot(u2);
+    double b1 = v2.dot(u1);
+    double b2 = v2.dot(u2);
+    
+    double e1 = fabs(sqrt(a1**a1 + a2**a2) - 1);
+    double e2 = fabs(sqrt(b1**b1 + b2**b2) - 1);
+    if( e1 < Qtol && e2 < Qtol) return 1;
+    else return 0;
+}
+

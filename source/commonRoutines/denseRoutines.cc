@@ -259,7 +259,7 @@ MatrixXd denseRoutines::realv(const MatrixXcd &v){
  *
  * Note: we do not use ColPivHouseHolderQR because we want to preserve the order.
  */
-MatrixXd denseRoutines::orthAxes(const MatrixXd &v){
+MatrixXd denseRoutines::orthAxes(const Ref<const MatrixXd> &v){
     int n = v.rows();
     int m = v.cols();
     HouseholderQR<MatrixXd> qr(v);
@@ -269,7 +269,8 @@ MatrixXd denseRoutines::orthAxes(const MatrixXd &v){
 /**
  * @brief construct orthonormal vectors from a 2 vectors
  */
-MatrixXd denseRoutines::orthAxes(const VectorXd &e1, const VectorXd &e2){
+MatrixXd denseRoutines::orthAxes(const Ref<const VectorXd> &e1, 
+				 const Ref<const VectorXd> &e2){
     int n = e1.size();
     MatrixXd tmp(n, 2);
     tmp << e1, e2;
@@ -279,13 +280,60 @@ MatrixXd denseRoutines::orthAxes(const VectorXd &e1, const VectorXd &e2){
 /**
  * @brief construct orthonormal vectors from a 3 vectors
  */
-MatrixXd denseRoutines::orthAxes(const VectorXd &e1, const VectorXd &e2, 
-				 const VectorXd &e3){
+MatrixXd denseRoutines::orthAxes(const Ref<const VectorXd> &e1, 
+				 const Ref<const VectorXd> &e2, 
+				 const Ref<const VectorXd> &e3){
     int n = e1.size();
     MatrixXd tmp(n, 3);
     tmp << e1, e2, e3;
     return orthAxes(tmp);
 }
+
+/**
+ * @brief my wrapper to HouseHolderQR 
+ */
+std::pair<MatrixXd, MatrixXd>
+denseRoutines::QR(const Ref<const MatrixXd> &A){
+    int n = A.rows();
+    int m = A.cols();
+    HouseholderQR<MatrixXd> qr(A);
+    MatrixXd Q = qr.householderQ() * MatrixXd::Identity(n, m);
+    MatrixXd R = qr.matrixQR().triangularView<Upper>();
+    return std::make_pair(Q, R);
+}
+
+/**
+ * @brief My personal implimentation of Gram-Schmidt orthonormalization method
+ *
+ * We suggest using HouseholderQR instead of our method.
+ */
+std::pair<MatrixXd, MatrixXd>
+denseRoutines::GS(const Ref<const MatrixXd> &A){
+    const int N = A.rows();
+    const int M = A.cols();
+    
+    MatrixXd Q(N, M);
+    MatrixXd R(MatrixXd::Zero(N, M)); // make sure the lower part is zero
+
+    R(0, 0) = A.col(0).norm();
+    Q.col(0) = A.col(0) / R(0, 0);
+    for(int j = 1; j < M; j++){
+	VectorXd v = A.col(j);
+	VectorXd coe = Q.leftCols(j-1).transpose() * v;
+	R.col(j).head(j-1) = coe;
+	v -= Q.leftCols(j-1) * coe;
+	R(j, j) = v.norm();
+	Q.col(j) = v / R(j, j);
+    }
+
+    return std::make_pair(Q, R);
+}
+
+MatrixXd
+denseRoutines::GSsimple(const Ref<const MatrixXd> &A){
+    return GS(A).first;
+}
+
 
 /**
  * @brief return the spacing between adjacent vectors
@@ -337,3 +385,6 @@ denseRoutines::minDisIndex(const Ref<const VectorXd> &a,
     double minD;
     return minDisIndex(a, v, minD);
 }
+
+
+

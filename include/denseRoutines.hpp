@@ -41,15 +41,27 @@ namespace denseRoutines {
     std::pair<VectorXcd, MatrixXcd> evEig(const MatrixXd &A);
     VectorXd centerRand(const int N, const double frac);
     MatrixXd realv(const MatrixXcd &v);
-    MatrixXd orthAxes(const MatrixXd &v);
-    MatrixXd orthAxes(const VectorXd &e1, const VectorXd &e2);
-    MatrixXd orthAxes(const VectorXd &e1, const VectorXd &e2, 
-		      const VectorXd &e3);
+    MatrixXd orthAxes(const Ref<const MatrixXd> &v);
+    MatrixXd orthAxes(const Ref<const VectorXd> &e1, 
+		      const Ref<const VectorXd> &e2);
+    MatrixXd orthAxes(const Ref<const VectorXd> &e1, 
+		      const Ref<const VectorXd> &e2, 
+		      const Ref<const VectorXd> &e3);
     VectorXd spacing(const Ref<const MatrixXd> &v);
     int minDisIndex(const Ref<const VectorXd> &a, 
 		    const Ref<const MatrixXd> &v, double &minD);
     int minDisIndex(const Ref<const VectorXd> &a, 
 		    const Ref<const MatrixXd> &v);
+    std::pair<MatrixXd, MatrixXd>
+    GS(const Ref<const MatrixXd> &A);
+    MatrixXd
+    GSsimple(const Ref<const MatrixXd> &A);
+
+    std::pair<MatrixXd, MatrixXd>
+    QR(const Ref<const MatrixXd> &A);
+
+    /////////////////////////// template function implementation /////////////////////////////////////////////////////////////////////////////////////////////
+    
 }
 
 #endif	// DENSEROUTINES_H

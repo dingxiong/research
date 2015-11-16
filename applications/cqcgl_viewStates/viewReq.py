@@ -115,11 +115,11 @@ if case == 21:
     """
     N = 1024
     d = 30
-    h = 0.0008
-    di = 0.4
+    h = 0.0004
+    di = 0.414
 
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
-    A0 = 3*centerRand(2*N, 0.2)
+    A0 = 2*centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
     nstp = 5000
     x = []
@@ -134,8 +134,8 @@ if case == 21:
         x.append(aa)
         
     aaHat, th, phi = cgl.orbit2slice(aa)
-    i1 = 0
-    i2 = 920
+    i1 = 1000
+    i2 = 3220
     plot3dfig(aaHat[i1:i2, 0], aaHat[i1:i2, 1], aaHat[i1:i2, 2])
     nstp = i2 - i1
     T = nstp * h

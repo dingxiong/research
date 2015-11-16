@@ -18,7 +18,7 @@ typedef std::complex<double> dcp;
 
 int main(){
 
-    switch(6){
+    switch(7){
 	
     case 1: {			/* test integrator */
 	const int N = 512; 
@@ -187,7 +187,32 @@ int main(){
 	break;
 
     }
+    case 7:{
+	/* see the spacing along a orbit
+	 *   I find h = 0.0002 seems too large
+	 */
+	const int N = 1024;
+	const int L = 30;
+	const double h = 0.0002;
+	const double di = 0.4;
 	
+	Cqcgl1d cgl(N, L, h, true, 0, 4.0, 0.8, 0.01, di, 4);
+
+	std::string file("rpot.h5");
+	int nstp;
+	double T, th, phi, err;
+	MatrixXd x;
+	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
+	printf("T %g, nstp %d, th %g, phi %g, err %g\n", T, nstp, th, phi, err);
+
+	ArrayXXd aa = cgl.intg(x.col(0), nstp*10, 1);
+	VectorXd sp = spacing(aa);
+	
+	cout << sp.maxCoeff() << endl;
+	cout << aa.rightCols(1).matrix().norm() << endl;
+	break;
+	
+    }
 	
     default: {
 	fprintf(stderr, "please indicate a valid case number \n");

@@ -78,6 +78,7 @@ class CqcglRPO{
     findRPO_hook(const VectorXd &x0, const double T,
 		 const double th0, const double phi0,
 		 const double tol,
+		 const double minRD,
 		 const int maxit,
 		 const int maxInnIt,
 		 const double GmresRtol,
@@ -88,9 +89,10 @@ class CqcglRPO{
     findRPOM_hook(const MatrixXd &x0, const double T,
 		  const double th0, const double phi0,
 		  const double tol = 1e-12,
+		  const double minRD = 1e-3,
 		  const int maxit = 100,
-		  const int maxInnIt = 8,
-		  const double GmresRtol = 1e-3,
+		  const int maxInnIt = 20,
+		  const double GmresRtol = 1e-6,
 		  const int GmresRestart = 100,
 		  const int GmresMaxit = 100);
  

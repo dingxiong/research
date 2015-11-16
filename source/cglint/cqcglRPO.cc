@@ -295,6 +295,7 @@ CqcglRPO::findRPOM(const MatrixXd &x0, const double T,
  * @param[in]  th0           initial guess of translation angle
  * @param[in]  phi0          initial guess of phase angle
  * @param[in]  tol           tolerance of the orbit ||x(0)-X(T)||
+ * @param[in]  minRD         mininal relative descrease at each step
  * @param[in]  maxit         maximal number of iterations for Newton steps
  * @param[in]  maxInnIt      maximal number of iterations for Hook steps
  * @param[in]  GmresRtol     relative tolerence of GMRES
@@ -308,6 +309,7 @@ std::tuple<VectorXd, double, double, double, double>
 CqcglRPO::findRPO_hook(const VectorXd &x0, const double T,
 		       const double th0, const double phi0,
 		       const double tol,
+		       const double minRD,
 		       const int maxit,
 		       const int maxInnIt,
 		       const double GmresRtol,
@@ -319,7 +321,7 @@ CqcglRPO::findRPO_hook(const VectorXd &x0, const double T,
     VectorXd x(Ndim + 3);
     x << x0, T, th0, phi0;
     
-    auto result = Gmres0Hook(fx, dfx, x, tol, maxit, maxInnIt,
+    auto result = Gmres0Hook(fx, dfx, x, tol, minRD, maxit, maxInnIt,
 			     GmresRtol, GmresRestart, GmresMaxit,
 			     true, 3);
     if(std::get<2>(result) != 0){
@@ -346,6 +348,7 @@ std::tuple<MatrixXd, double, double, double, double>
 CqcglRPO::findRPOM_hook(const MatrixXd &x0, const double T,
 			const double th0, const double phi0,
 			const double tol,
+			const double minRD,
 			const int maxit,
 			const int maxInnIt,
 			const double GmresRtol,
@@ -361,7 +364,7 @@ CqcglRPO::findRPOM_hook(const MatrixXd &x0, const double T,
     tmp.resize(M * Ndim, 1);
     x << tmp, T, th0, phi0;
     
-    auto result = Gmres0Hook(fx, dfx, x, tol, maxit, maxInnIt,
+    auto result = Gmres0Hook(fx, dfx, x, tol, minRD, maxit, maxInnIt,
 			     GmresRtol, GmresRestart, GmresMaxit,
 			     true, 3);
     if(std::get<2>(result) != 0){
@@ -380,9 +383,7 @@ CqcglRPO::findRPOM_hook(const MatrixXd &x0, const double T,
 
 
 
-//////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if 0				
 //////////////////////////////////////////////////////////////////////

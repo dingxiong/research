@@ -306,18 +306,21 @@ VectorXd denseRoutines::spacing(const Ref<const MatrixXd> &v){
 /**
  * @brief return the index of vector which is closest to the sample point
  *
- * @param[in] a    sample pointx
- * @param[in] v    a trajectory
- * @return         index of v closest to a
+ * @param[in]   a       sample pointx
+ * @param[in]   v       a trajectory
+ * @param[out] minD     minimal distance
+ * @return              index of v closest to a
  */
-int
+int 
 denseRoutines::minDisIndex(const Ref<const VectorXd> &a, 
-			   const Ref<const MatrixXd> &v){
+			   const Ref<const MatrixXd> &v,
+			   double &minD){
+    
     int m = v.rows();
     int n = v.cols();
-
+    
     int id = 0;
-    double minD = (a - v.col(0)).norm();
+    minD = (a - v.col(0)).norm();
     for(size_t i = 0; i < n; i++){
 	double d = (a - v.col(i)).norm();
 	if(d < minD) {
@@ -326,4 +329,11 @@ denseRoutines::minDisIndex(const Ref<const VectorXd> &a,
 	}
     }
     return id;
+}
+
+int
+denseRoutines::minDisIndex(const Ref<const VectorXd> &a, 
+			   const Ref<const MatrixXd> &v){
+    double minD;
+    return minDisIndex(a, v, minD);
 }

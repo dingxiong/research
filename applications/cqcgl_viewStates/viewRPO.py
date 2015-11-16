@@ -10,8 +10,8 @@ if case == 1:
     """
     N = 1024
     d = 30
-    di = 0.398
-    x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
+    di = 0.414
+    x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1t.h5',
                                               di, 1)
     h = T / nstp
     cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, 0.01, di, 4)

@@ -27,7 +27,7 @@ int main(){
     
     cout.precision(15);
     
-    switch (70){
+    switch (80){
 	
     case 1:{
 	/* try to find periodic orbit with the old form of cqcgl
@@ -121,7 +121,7 @@ int main(){
 
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
 	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, -0.01, -0.04, 4);
-	auto result = cglrpo.findRPOM_hook(xp, T, th, phi, 1e-12, 100, 8, 1e-2, 500, 10);
+	auto result = cglrpo.findRPOM_hook(xp, T, th, phi, 1e-12, 1e-3, 100, 8, 1e-2, 500, 10);
 	CqcglWriteRPO("rpo3.h5", "2",
 		      std::get<0>(result), /* x */
 		      std::get<1>(result), /* T */
@@ -150,7 +150,7 @@ int main(){
 	nstp *= M;
 	printf("T %g, nstp %d, th %g, phi %g, err %g\n", T, nstp, th, phi, err);
 	CqcglRPO cglrpo(nstp, 1, N, d, h, 4.0, 0.8, -0.01, -0.04, 4);
-	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 1e-12, 30, 8, 1e-6, 500, 10);
+	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 1e-12, 1e-3, 30, 8, 1e-6, 500, 10);
 	CqcglWriteRPO("rpoX1.h5", "1",
 		      std::get<0>(result), /* x */
 		      std::get<1>(result), /* T */
@@ -228,12 +228,12 @@ int main(){
 	
 	int M = x.cols();
 	nstp *= M;
-	printf("T %g, nstp %d, th %g, phi %g, err %g\n", T, nstp, th, phi, err);
+	printf("\n T %g, nstp %d, th %g, phi %g, err %g\n", T, nstp, th, phi, err);
 	CqcglRPO cglrpo(nstp, 1, N, d, h, 4.0, 0.8, -0.01, di, 4);
 	cglrpo.alpha1 = 0.1;
 	cglrpo.alpha2 = 0.1;
 	cglrpo.alpha3 = 0.0;
-	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 1e-12, 10, 8, 1e-6, 500, 10);
+	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 1e-12, 1e-3, 10, 8, 1e-6, 500, 10);
 	CqcglWriteRPO("rpoT2X1.h5", "1",
 		      std::get<0>(result), /* x */
 		      std::get<1>(result), /* T */
@@ -265,12 +265,12 @@ int main(){
 	
 	int M = x.cols();
 	nstp *= 2 * M;
-	printf("T %g, nstp %d, th %g, phi %g, err %g\n", T, nstp, th, phi, err);
+	printf("\n T %g, nstp %d, th %g, phi %g, err %g\n", T, nstp, th, phi, err);
 	CqcglRPO cglrpo(nstp, 1, N, d, h, 4.0, 0.8, -0.01, di, 4);
 	cglrpo.alpha1 = 0.0;
 	cglrpo.alpha2 = 0.0;
 	cglrpo.alpha3 = 0.0;
-	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 1e-12, 10, 8, 1e-5, 500, 10);
+	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 1e-12, 1e-3, 10, 8, 1e-5, 500, 10);
 	CqcglWriteRPO("rpoT2X1.h5", "3",
 		      std::get<0>(result), /* x */
 		      std::get<1>(result), /* T */
@@ -292,7 +292,7 @@ int main(){
 	const int N = 1024;
 	const double d = 30;
 	const double h = 0.0002;
-	const double di = 0.4;
+	const double di = 0.414;
 
 	// std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo3.h5");
 	std::string file("rpot.h5");
@@ -302,14 +302,14 @@ int main(){
 	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
 	
 	int M = x.cols();
-	nstp *= M*4;
-	printf("T %g, nstp %d, th %g, phi %g, err %g\n", T, nstp, th, phi, err);
+	nstp *= M*2;
+	printf("\n T %g, nstp %d, th %g, phi %g, err %g\n", T, nstp, th, phi, err);
 	CqcglRPO cglrpo(nstp, 1, N, d, h, 4.0, 0.8, 0.01, di, 4);
-	/* cglrpo.alpha1 = 1; */
-	/* cglrpo.alpha2 = 1; */
-	/* cglrpo.alpha3 = 1; */
-	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 1e-12, 30, 8, 1e-6, 500, 10);
-	CqcglWriteRPO("rpoT2X1.h5", "1",
+	/* cglrpo.alpha1 = 0; */
+	/* cglrpo.alpha2 = 0; */
+	/* cglrpo.alpha3 = 0; */
+	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 1e-12, 1e-3, 30, 30, 1e-6, 500, 10);
+	CqcglWriteRPO("rpoT2X1.h5", di, 1,
 		      std::get<0>(result), /* x */
 		      std::get<1>(result), /* T */
 		      nstp,		   /* nstp */
@@ -317,16 +317,16 @@ int main(){
 		      std::get<3>(result), /* phi */
 		      std::get<4>(result)  /* err */
 		      );
-
+	
 	break;
     }
 
     case 71: {
 	/* Move one rpo
 	 */
-	std::string infile("/usr/local/home/xiong/00git/research/data/cgl/rpo39T2X1.h5");
-	std::string outfile("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1.h5");
-	CqcglMoveRPO(infile, "1", outfile, 0.39, 1);
+	std::string infile("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1t.h5");
+	std::string outfile("/usr/local/home/xiong/00git/research/data/cgl/rpoT1X1.h5");
+	CqcglMoveRPO(infile, "1", outfile, 0.4, 1);
 	
 	break;
     }
@@ -347,7 +347,7 @@ int main(){
 	 */
 	const int N = 1024;
 	const double d = 30;
-	const double di = 0.398;
+	const double di = 0.412;
 	const double diInc = 0.002;
 	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1.h5");
 	
@@ -358,15 +358,16 @@ int main(){
 	    MatrixXd x;
 	    CqcglReadRPO(file, diOld, 1, x, T, nstp, th, phi, err);
 
-	    nstp += 600;
+	    nstp += 800;
 	    double diNew = di + (i+1)*diInc;
 	    double h = T / nstp;
-	    printf("T %g, nstp %d, h %g th %g, phi %g, err %g\n", T, nstp, h, th, phi, err);
+	    printf("\n diNew %g, T %g, nstp %d, h %g th %g, phi %g, err %g\n", 
+		   diNew, T, nstp, h, th, phi, err);
 	    CqcglRPO cglrpo(nstp, 1, N, d, h, 4.0, 0.8, 0.01, diNew, 4);
-	    cglrpo.alpha1 = 0;
-	    cglrpo.alpha2 = 0.1;
-	    cglrpo.alpha3 = 0.1;
-	    auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 2e-11, 30, 8, 1e-6, 500, 10);
+	    /* cglrpo.alpha1 = 0.1; */
+	    /* cglrpo.alpha2 = 0.1; */
+	    /* cglrpo.alpha3 = 0.1; */
+	    auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 5e-11, 1e-9, 30, 30, 1e-6, 500, 10);
 	    CqcglWriteRPO(file, diNew, 1, 
 			  std::get<0>(result), /* x */
 			  std::get<1>(result), /* T */

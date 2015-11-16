@@ -45,6 +45,11 @@ namespace denseRoutines {
     MatrixXd orthAxes(const VectorXd &e1, const VectorXd &e2);
     MatrixXd orthAxes(const VectorXd &e1, const VectorXd &e2, 
 		      const VectorXd &e3);
+    VectorXd spacing(const Ref<const MatrixXd> &v);
+    int minDisIndex(const Ref<const VectorXd> &a, 
+		    const Ref<const MatrixXd> &v, double &minD);
+    int minDisIndex(const Ref<const VectorXd> &a, 
+		    const Ref<const MatrixXd> &v);
 }
 
 #endif	// DENSEROUTINES_H

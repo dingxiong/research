@@ -544,12 +544,14 @@ namespace iterMethod {
      *
      * @param[in] testT     whether test the updated period T is postive
      * @param[in] Tindex    the index of T in the state vector counting from the tail
+     * @param[in] minRD      minimal relative descrease at each step
      */
     template<class Fx, class Jacv>
     std::tuple<VectorXd, std::vector<double>, int>
     Gmres0Hook( Fx &fx, Jacv &jacv,
 		const ArrayXd &x0,
 		const double tol,
+		const double minRD,
 		const int maxit,
 		const int maxInnIt,
 		const double GmresRtol,
@@ -562,6 +564,7 @@ namespace iterMethod {
 	VectorXd x(x0);
 	std::vector<double> errVec;
 
+	bool fail = false;
 	for(size_t i = 0; i < maxit; i++){
 	    VectorXd F = fx(x);
 	    double Fnorm = F.norm();
@@ -584,7 +587,8 @@ namespace iterMethod {
 	    
 	    ArrayXd D2 = D * D;
 	    ArrayXd pd = p.array() * D;
-	    ArrayXd mu = ArrayXd::Ones(p.size());
+	    // ArrayXd mu = ArrayXd::Ones(p.size()) * 0.1; 
+	    ArrayXd mu = ArrayXd::Ones(p.size()) * 0.1 * D2.minCoeff(); 
 	    for(size_t j = 0; j < maxInnIt; j++){
 		VectorXd newx = x + s;
 		double newT = newx(N - Tindex);
@@ -593,7 +597,7 @@ namespace iterMethod {
 #endif
 		if(!testT || newT > 0){
 		    VectorXd newF = fx(newx);
-		    if(newF.norm() < Fnorm){
+		    if(newF.norm() < (1 - minRD)*Fnorm){
 			x = newx;
 			break;
 		    }
@@ -602,8 +606,12 @@ namespace iterMethod {
 		VectorXd y = V2 * z.matrix();
 		s = sold + V * y;
 		mu *= 2;
+		
+		if(j == maxInnIt-1) fail = true;
 	    }
 	    
+	    if(fail) break; // if all inner loop finish, it means state not changed
+			    // then no need to iterate more.
 	}
 
 	return std::make_tuple(x, errVec, 0);

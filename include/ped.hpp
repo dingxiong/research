@@ -60,6 +60,7 @@
 #include <vector> 
 #include <utility>
 #include <tuple>
+#include <iostream>
 
 
 using std::vector;
@@ -75,6 +76,8 @@ using Eigen::Triplet;
 using Eigen::SparseMatrix;
 using Eigen::SparseLU; 
 using Eigen::COLAMDOrdering;
+using Eigen::HouseholderQR;
+using Eigen::Upper;
 
 /*============================================================ *
  *                 Class : periodic Eigendecomposition         *
@@ -84,7 +87,7 @@ class PED{
 public:
     MatrixXd 
     EigVals(MatrixXd &J, const int MaxN  = 100,
-	    const double tol = 1e-16 , bool Print  = true);
+	    const double tol = 1e-16 , bool Print = true);
     pair<MatrixXd, MatrixXd>
     EigVecs(MatrixXd &J, const int MaxN  = 100,
 	    const double tol = 1e-16, bool Print = true, const int trunc = 0);
@@ -158,20 +161,22 @@ public:
     vector<int> 
     truncVec(const vector<int> &v, const int trunc);
     
-    bool
-    checkQconverge(MatrixXd Q, MatrixXd Qp, double Qtol);
-    int
-    checkOneQ(const Ref<const VectorXd> &u, 
-	      const Ref<const VectorXd> &v,
-	      double Qtol);
-    int
-    checkPairQ(const Ref<const VectorXd> &u1, 
-	       const Ref<const VectorXd> &u2,
-	       const Ref<const VectorXd> &v1, 
-	       const Ref<const VectorXd> &v2,
-	       double Qtol);
     std::pair<MatrixXd, MatrixXd>
     QR(const Ref<const MatrixXd> &A);
+    std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
+    PowerIter(const Ref<const MatrixXd> &J, 
+	      const Ref<const MatrixXd> &Q,
+	      int maxit, double Qtol, bool Print);
+    bool
+    checkQconverge(const Ref<const MatrixXd> &D, double Qtol);
+    std::vector<int>
+    getCplPs(const Ref<const MatrixXd> D, double Qtol);
+    std::vector<int>
+    getCplPs(MatrixXd Q, MatrixXd Qp, double Qtol);
+    template<class Sqr>
+    std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
+    PowerIter0(Sqr &sqr, const Ref<const MatrixXd> &Q0, 
+	      int maxit, double Qtol, bool Print);
 };
 
 
@@ -181,25 +186,46 @@ public:
  * For a sequence J = [J_m, J_{m_1}, ..., J_1] and an inital orthonormal matrix Q_0,
  * we use QR decomposition J_i Q_{i-1} = Q_i R_i, so J Q_0 = Q_m R_m...R_2R_1
  *  
- * @param[in]
+ * @param[in] sqr     funtion to perform sequence QR decomposition
  * @param[in] Q       initial orthonormal matrix
- * @return            
+ * @param[in] maxit   maximal number of iterations
+ * @param[in] Qtol    tolerance for convergence
+ * @param[in] print   print info or not
+ * 
+ * @return   [Q, R, D, cp]   D is the diagonal matrix. cp is the complex eigenvalue positions
  * @see PerSchur
  */
-tmplate<class Sqr>
-std::tuple<MatrixXd, MatrixXd, vector<int> >
-PED::PowerIter(Sqr &sqr, const Ref<const MatrixXd> &Q, 
-	       int maxit, double Qtol){
+template<class Sqr>
+std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
+PED::PowerIter0(Sqr &sqr, const Ref<const MatrixXd> &Q0, 
+		int maxit, double Qtol, bool Print){
+    
+    MatrixXd Q(Q0); std::cout << Q.cols() << Q.rows() << std::endl;
+    int N = Q.rows();
+    int M = Q.cols();
+    
     for(size_t i = 0; i < maxit; i++){
 	auto qr = sqr(Q);
-	MatrixXd &Qp = qr.firt;
-	MatrixXd &R = qr.second;
-	if(checkQconverge(Q, Qp)){
-	    
-	    return std::make_tuple(Q, R, cp);;
+	MatrixXd &Qp = qr.first; 
+	MatrixXd &R = qr.second; 
+	MatrixXd D = Q.transpose() * Qp;
+	if(checkQconverge(D, Qtol)){
+	    if(Print) printf("Power iteration converges at : i = %zd\n", i);
+	    std::vector<int> cp = getCplPs(D, Qtol);	    
+	    return std::make_tuple(Q, R, D, cp);;
 	}
-	Q = Qp;
+	
+	if(i == maxit-1){
+	    // not converge, but still return
+	    if(Print) fprintf(stderr, "Power iteration not converge at i = %d.\n", maxit);
+	    std::vector<int> cp = getCplPs(D, Qtol);
+	    return std::make_tuple(Q, R, D, cp);
+	}
+	
+	Q = Qp;	// this should be the last line, otherwise there is error.
     }
+    
+
 }
 
 #endif	/* PED_H */

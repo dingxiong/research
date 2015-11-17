@@ -22,3 +22,6 @@ $(STATIC): $(SRC:.cc=.o)
 	$(AR) crs $@ $^
 clean:
 	rm -f *.so *.o *.a
+move:
+	mv *.so *.a /usr/local/home/xiong/00git/research/lib
+

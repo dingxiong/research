@@ -2,11 +2,10 @@
  *  @brief Source file for the periodic eigendecomposition algorithm.
  */
 
-
 #include "ped.hpp"
 #include <cmath>
 #include <complex>
-#include <iostream>
+
 typedef Eigen::SparseMatrix<double> SpMat;
 typedef Eigen::Triplet<double> Tri;
 
@@ -929,91 +928,74 @@ PED::QR(const Ref<const MatrixXd> &A){
 /**
  *  @param[in] J a sequence of matrices. Dimension [N, N*M].
  */
-void
+std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
 PED::PowerIter(const Ref<const MatrixXd> &J, 
-	       const Ref<const MatrixXd> &Q,
-	       int maxit, double Qtol){
+	       const Ref<const MatrixXd> &Q0,
+	       int maxit, double Qtol, bool Print){
     const int N = J.rows();
-    const int M = J.cols() / N;
+    const int M = J.cols() / N; 
     
     // form the sequential QR funciton
-    auto sqr = [&J, N, M](MatrixXd Q) -> std::pair<MatrixXd, MatrixXd> {
+    auto sqr = [&J, this, N, M](MatrixXd Q) -> std::pair<MatrixXd, MatrixXd> {
 	MatrixXd R(N, N*M);
-	for(int i = M-1; i >= 0; i++){ // start from the right side
+	for(int i = M-1; i >= 0; i--){ // start from the right side
 	    auto qr = QR(J.middleCols(i*N, N) * Q);
-	    R.middleCols(i*N, N) = qr.second;
+	    R.middleCols(i*N, N) = qr.second; 
 	    Q = qr.first;
 	}
 	return std::make_pair(Q, R);
     };
     
     // call the general funciton
-    return PowerIter(sqr, Q, maxit, Qtol);
+    return PowerIter0(sqr, Q0, maxit, Qtol, Print);
 }
 
 /**
  * @brief check the convergence of the orthonormal matrices in the power iteration
  *
  * J*Q = Qp * R. Here we assume that each column of Q and Qp is normalized.
+ * If Q converges, Qp = Q*D. Here D is a quasi-diagonal matrix.
+ * D has diagonal element 1, -1, or 2x2 rotation blocks whose determinant is 1 or -1.
  * Note, when the last column correpsonds to a complex one, we do not check it.
  *
- * @param[in] Q     initial orthonormal matrix
- * @param[in] Qp    orthonormal matrix after one iteration
+ * @param[in] D     Q'*Qp
  * @param[in] Qtol  tolerance
  * @return          true => converged.  false => not converged
  */
 bool
-PED::checkQconverge(MatrixXd Q, MatrixXd Qp, double Qtol){
-    int M = Q.cols();
-    assert(M == Qp.cols());
-
-    VectorXd status(M);
-    for(size_t i = 0; i < M; i++){
-	int e = checkOneQ(Q.col(i), Qp.col(i), Qtol);
-	if (e == 0 && i < M-1){	// check whether it is complex pair
-	    int e2 = checkPairQ(Q.col(i), Q.col(i+1), 
-				Qp.col(i), Qp.col(i+1), Qtol);
-	    if (e2 == 0) return false;
-	    else i++;		// remember to go to the next next one
+PED::checkQconverge(const Ref<const MatrixXd> &D, double Qtol){
+    int N = D.rows();
+    int M = D.cols();
+    assert(N == M);
+    
+    for(size_t i = 0; i < M; i++ ){
+	double e = fabs(D(i, i)) - 1;  
+	if (fabs(e) > Qtol && i < M-1){	// check whether it is complex pair
+	    double e2 = fabs(D(i, i)*D(i+1, i+1) - D(i+1, i)*D(i, i+1)) - 1;
+	    if(fabs(e2) > Qtol) return false;
+	    else i++;
 	}
     }
-
     return true;
 }
 
 /**
- * @brief check the converge of real Q
+ * @brief Get the complex eigenvalue positions for the power iteration
+ *        method
  *
  * @see checkQconverge()
  */
-int
-PED::checkOneQ(const Ref<const VectorXd> &u, 
-	  const Ref<const VectorXd> &v,
-	  double Qtol){
-    if((u - v).norm() < Qtol) return 1;
-    else((u + v).norm() < Qtol) return -1;
-    return 0;
-}
+std::vector<int>
+PED::getCplPs(const Ref<const MatrixXd> D, double Qtol){
+    int N = D.rows();
+    int M = D.cols();
+    assert(N == M);
 
-/**
- * @brief check the converge of complex Q
- *
- * @see checkQconverge()
- */
-int
-PED::checkPairQ(const Ref<const VectorXd> &u1, 
-	   const Ref<const VectorXd> &u2,
-	   const Ref<const VectorXd> &v1, 
-	   const Ref<const VectorXd> &v2,
-	   double Qtol){
-    double a1 = v1.dot(u1);
-    double a2 = v1.dot(u2);
-    double b1 = v2.dot(u1);
-    double b2 = v2.dot(u2);
-    
-    double e1 = fabs(sqrt(a1**a1 + a2**a2) - 1);
-    double e2 = fabs(sqrt(b1**b1 + b2**b2) - 1);
-    if( e1 < Qtol && e2 < Qtol) return 1;
-    else return 0;
-}
+    std::vector<int> ps;
+    for(int i = 0; i < M; i++){
+	double e = fabs(D(i, i)) - 1;  
+	if(fabs(e) > Qtol) ps.push_back(i++);
+    }
 
+    return ps;
+}

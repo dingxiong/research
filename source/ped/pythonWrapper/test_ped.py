@@ -22,8 +22,8 @@ if case == 2:
     Q can be square or rectangle
     """
     ped = pyPED()
-    n = 5
-    m = 2
+    n = 8
+    m = 3
     m2 = 4
     J = rand(m*n, n)
     Q = rand(m2, n)

@@ -960,7 +960,13 @@ PED::PowerIter(const Ref<const MatrixXd> &J,
  *
  * J*Q = Qp * R. Here we assume that each column of Q and Qp is normalized.
  * If Q converges, Qp = Q*D. Here D is a quasi-diagonal matrix.
- * D has diagonal element 1, -1, or 2x2 rotation blocks whose determinant is 1 or -1.
+ * D has diagonal element 1, -1, or 2x2 rotatio blocks whose determinant is 1 or -1.
+ * 
+ * Our criteria for convergence:
+ *     real   =>     diagonal element is close to 1 and
+ *                   subdiagonal elements are close to 0
+ *     complext =>   determinant of 2x2 matrix is close to 1 and
+ *                   subdiagonal elements are close to 0
  * Note, when the last column correpsonds to a complex one, we do not check it.
  *
  * @param[in] D     Q'*Qp
@@ -974,11 +980,18 @@ PED::checkQconverge(const Ref<const MatrixXd> &D, double Qtol){
     assert(N == M);
     
     for(size_t i = 0; i < M; i++ ){
-	double e = fabs(D(i, i)) - 1;  
-	if (fabs(e) > Qtol && i < M-1){	// check whether it is complex pair
-	    double e2 = fabs(D(i, i)*D(i+1, i+1) - D(i+1, i)*D(i, i+1)) - 1;
-	    if(fabs(e2) > Qtol) return false;
-	    else i++;
+	double er = fabs(D(i, i)) - 1;  
+	if(fabs(er) < Qtol){	// real case
+	    double er2 = (i < M -1) && (fabs(D(i+1, i)) > Qtol || fabs(D(i, i+1)) > Qtol);
+	    if(er2) return false;
+	}
+	else{			//  complex pair case
+	    if(i < M-1){	
+		double ec = fabs(D(i, i)*D(i+1, i+1) - D(i+1, i)*D(i, i+1)) - 1;
+		bool ec2 = (i < M -2) && (fabs(D(i+2, i+1)) > Qtol ||  fabs(D(i+1, i+2)) > Qtol);
+		if(fabs(ec) > Qtol || ec2) return false;
+		else i++;
+	    }
 	}
     }
     return true;

@@ -85,6 +85,7 @@ public:
     ////////////////////////////////////////////////////////////
     
     void changeh(const double hnew);
+    
     ArrayXXd
     intg(const ArrayXd &a0, const size_t nstp, const size_t np = 1);
     pair<ArrayXXd, ArrayXXd>
@@ -93,12 +94,17 @@ public:
     ArrayXXd
     intgv(const ArrayXd &a0, const ArrayXXd &v,
 	  const size_t nstp);
+    std::tuple<ArrayXXd, MatrixXd, MatrixXd> 
+    intgQ(const ArrayXd &a0, const size_t nstp, const size_t nqr);
+    void 
+    intgjOneStep();
 
     ArrayXXd pad(const Ref<const ArrayXXd> &aa);
     ArrayXXd generalPadding(const Ref<const ArrayXXd> &aa);
     ArrayXXcd padcp(const Ref<const ArrayXXcd> &x);
     ArrayXXd unpad(const Ref<const ArrayXXd> &paa);
     ArrayXXcd initJ();
+    ArrayXXcd initQ();
     ArrayXXd C2R(const ArrayXXcd &v);
     ArrayXXcd R2C(const ArrayXXd &v);
     ArrayXXd Fourier2Config(const Ref<const ArrayXXd> &aa);
@@ -200,9 +206,9 @@ protected:
 
 
 
-//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                        Class Cgl1d                             //
-//////////////////////////////////////////////////////////////////////
+
 
 class Cgl1d : public Cqcgl1d {
     

@@ -254,6 +254,7 @@ ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
     return aa;
 }
 
+
 void Cqcgl1d::dealias(FFT &Fv){
     Fv.v1.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, Fv.v1.cols());
 }
@@ -378,7 +379,7 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
 ArrayXXd
 Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
 	       const size_t nstp){
-    assert( Ndim == a0.rows() ); // check the dimension of initial condition.
+    assert( Ndim == a0.rows() && trueNjacv == v.cols()); // check the dimension of initial condition.
     jFv.v1 << R2C(pad(a0)), R2C(pad(v));
 
     for(size_t i = 1; i < nstp + 1; i++){
@@ -394,6 +395,77 @@ Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
     }
     //return unpad(C2R(jFv.v1.rightCols(trueNjacv)));
     return unpad(C2R(jFv.v1)); //both the orbit and the perturbation
+}
+
+
+std::tuple<ArrayXXd, MatrixXd, MatrixXd>
+Cqcgl1d::intgQ(const ArrayXd &a0, const MatrixXd &Q0, 
+	       const size_t nstp, const size_t nqr){
+    assert(Ndim == a0.rows());
+    jFv.v1 << R2C(pad(a0)), R2C(pad(Q0));
+    
+    int M;			// number of pieces
+    if(nstp%np == 0) M = nstp / np;
+    else M = nstp / np + 1;
+    
+    ArrayXXd ssp(Ndim, M+1);
+    ssp.col(0) = a0;
+    MatrixXd Q;
+    MatrixXd R( MatrixXd::Zero(trueNjacv, trueNjacv * M) );
+    
+    int k = 0;
+    for(size_t i = 1; i < nstp + 1; i++){
+	intgjOneStep();
+	
+	if( 0 == i%nqr || i == nstp){
+	    ssp.col(k+1) = unpad(C2R(jFv.v1.col(0)));
+	    MatrixXd aa = unpad(C2R(jFv.v1.middleCols(1, trueNjacv)));
+	    auto qr = QR(aa);
+	    R.middleCols(k*trueNjacv, trueNjacv) = qr.second;
+	    Q = qr.first;
+	    jFv.v1.middleCols(1, trueNjacv) << R2C(pad(Q));
+	    k++;
+	}
+    }
+    return std::make_tuple(ssp, Q, R);
+}
+
+/**
+ * @brief construct an orthonormal matrix for calculate a few
+ *        leading Floquet vectors
+ *  Note, we can use any initial matrix, but here we make perturbation
+ *  only in the first few modes. This function is quite different
+ *  from initJ().
+ *
+ *  @see initJ()
+ */
+MatrixXd Cqcgl1d::initQ(){
+    MatrixXd Q0 = ArrayXXcd::Zero(Ne, trueNjacv);
+    for(size_t i = 0; i < Ne; i++) {
+	Q0(i, 2*i) = dcp(1, 0);
+	Q0(i, 2*i+1) = dcp(0, 1);
+    }
+    return C2R(Q0);
+}
+
+std::tuple<ArrayXXd, MatrixXd, MatrixXd> 
+Cqcgl1d::intgQ(const ArrayXd &a0, const size_t nstp, const size_t nqr){
+    MatrixXd Q0 = initQ();
+    return intgQ(a0, Q0, nstp, nqr);
+}
+
+
+void 
+Cqcgl1d::intgjOneStep(){
+    jNL(jFv); jFa.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q; 
+    jNL(jFa); jFb.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q;
+    jNL(jFb); jFc.v1 = jFa.v1.colwise() * E2 + (2.0*jFb.v3 - jFv.v3).colwise() * Q;
+    jNL(jFc); 
+    
+    jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 +
+	(jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
+	
+    dealias(jFv);
 }
 
 /* -------------------------------------------------- */
@@ -1417,9 +1489,19 @@ Cqcgl1d::planeWaveStabEV(int k, bool isPositve){
 }
 
 
-//////////////////////////////////////////////////////////////////////
+/**************************************************************/
+/*                Floquet spectrum/vectors                    */
+/**************************************************************/
+void
+Cqcgl1d::FE(const Ref<const ArrayXd> &a0, int nstp, int nqr){
+    MatrixXd Q0(MatrixXd::)
+    intgv()
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                        Class Cgl1d                             //
-//////////////////////////////////////////////////////////////////////
+
 
 /**
  * The constructor of complex Ginzburg-Landau equation

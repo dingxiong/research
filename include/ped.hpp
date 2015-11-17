@@ -187,7 +187,7 @@ public:
  * we use QR decomposition J_i Q_{i-1} = Q_i R_i, so J Q_0 = Q_m R_m...R_2R_1
  *  
  * @param[in] sqr     funtion to perform sequence QR decomposition
- * @param[in] Q       initial orthonormal matrix
+ * @param[in] Q0       initial orthonormal matrix
  * @param[in] maxit   maximal number of iterations
  * @param[in] Qtol    tolerance for convergence
  * @param[in] print   print info or not
@@ -200,14 +200,14 @@ std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
 PED::PowerIter0(Sqr &sqr, const Ref<const MatrixXd> &Q0, 
 		int maxit, double Qtol, bool Print){
     
-    MatrixXd Q(Q0); std::cout << Q.cols() << Q.rows() << std::endl;
+    MatrixXd Q(Q0);
     int N = Q.rows();
-    int M = Q.cols();
+    int M = Q.cols(); 
     
     for(size_t i = 0; i < maxit; i++){
 	auto qr = sqr(Q);
 	MatrixXd &Qp = qr.first; 
-	MatrixXd &R = qr.second; 
+	MatrixXd &R = qr.second;
 	MatrixXd D = Q.transpose() * Qp;
 	if(checkQconverge(D, Qtol)){
 	    if(Print) printf("Power iteration converges at : i = %zd\n", i);

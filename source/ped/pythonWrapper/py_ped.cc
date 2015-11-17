@@ -88,6 +88,17 @@ public:
 			      toList(std::get<3>(tmp))   
 			      );
     }
+    
+    /* QR */
+    bp::tuple PYQR(bn::ndarray A){
+	int m, n;
+	getDims(A, m, n);
+	Map<MatrixXd> tmpA((double*)A.get_data(), n, m);
+	auto tmp = QR(tmpA);
+	return bp::make_tuple(copy2bn(tmp.first),
+			      copy2bn(tmp.second)
+			      );
+    }
 
 };
 
@@ -105,6 +116,7 @@ BOOST_PYTHON_MODULE(py_ped) {
     
     bp::class_<pyPED, bp::bases<PED> >("pyPED")
 	.def("PowerIter", &pyPED::PYPowerIter)
+	.def("QR", &pyPED::PYQR)
 	;
 
 }

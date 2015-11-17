@@ -296,9 +296,13 @@ std::pair<MatrixXd, MatrixXd>
 denseRoutines::QR(const Ref<const MatrixXd> &A){
     int n = A.rows();
     int m = A.cols();
+    assert(n >= m);
+    
+    // this is the only correct way to extract Q and R
+    // which makes sure the returned matrices have continous memory layout 
     HouseholderQR<MatrixXd> qr(A);
     MatrixXd Q = qr.householderQ() * MatrixXd::Identity(n, m);
-    MatrixXd R = qr.matrixQR().triangularView<Upper>();
+    MatrixXd R = MatrixXd::Identity(m, n) * qr.matrixQR().triangularView<Upper>();
     return std::make_pair(Q, R);
 }
 
@@ -329,6 +333,9 @@ denseRoutines::GS(const Ref<const MatrixXd> &A){
     return std::make_pair(Q, R);
 }
 
+/**
+ * @see GS()
+ */
 MatrixXd
 denseRoutines::GSsimple(const Ref<const MatrixXd> &A){
     return GS(A).first;

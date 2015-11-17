@@ -918,9 +918,13 @@ std::pair<MatrixXd, MatrixXd>
 PED::QR(const Ref<const MatrixXd> &A){
     int n = A.rows();
     int m = A.cols();
+    assert(n >= m);
+
+    // this is the only correct way to extract Q and R
+    // which makes sure the returned matrices have continous memory layout 
     HouseholderQR<MatrixXd> qr(A);
     MatrixXd Q = qr.householderQ() * MatrixXd::Identity(n, m);
-    MatrixXd R = qr.matrixQR().triangularView<Upper>();
+    MatrixXd R = MatrixXd::Identity(m, n) * qr.matrixQR().triangularView<Upper>();
     return std::make_pair(Q, R);
 }
 
@@ -934,13 +938,14 @@ PED::PowerIter(const Ref<const MatrixXd> &J,
 	       int maxit, double Qtol, bool Print){
     const int N = J.rows();
     const int M = J.cols() / N; 
-    
+    const int M2 = Q0.cols();	
+
     // form the sequential QR funciton
-    auto sqr = [&J, this, N, M](MatrixXd Q) -> std::pair<MatrixXd, MatrixXd> {
-	MatrixXd R(N, N*M);
+    auto sqr = [&J, this, N, M, M2](MatrixXd Q) -> std::pair<MatrixXd, MatrixXd> {
+	MatrixXd R(M2, M2*M);
 	for(int i = M-1; i >= 0; i--){ // start from the right side
 	    auto qr = QR(J.middleCols(i*N, N) * Q);
-	    R.middleCols(i*N, N) = qr.second; 
+	    R.middleCols(i*M2, M2) = qr.second; 
 	    Q = qr.first;
 	}
 	return std::make_pair(Q, R);

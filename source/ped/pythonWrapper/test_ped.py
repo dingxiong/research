@@ -18,20 +18,32 @@ if case == 1:
 
 if case == 2:
     """
-    test power iteration for multiple J
+    test power iteration for multiple J.
+    Q can be square or rectangle
     """
     ped = pyPED()
-    n = 4
-    m = 30
+    n = 5
+    m = 2
+    m2 = 4
     J = rand(m*n, n)
-    Q = rand(n, n)
+    Q = rand(m2, n)
     
     q, r, d, c = ped.PowerIter(J, Q, 1000, 1e-15, True)
     JJ = eye(n)
-    rr = eye(n)
+    rr = eye(m2)
     for i in range(m):
         JJ = dot(JJ, J[i*n:(i+1)*n, :].T)  # be cautious of the order
-        rr = dot(rr, r[i*n:(i+1)*n, :].T)  # use dot for multiplication
-    print eig(JJ)[0]
+        rr = dot(rr, r[i*m2:(i+1)*m2, :].T)  # use dot for multiplication
+    print sort(eig(JJ)[0])
     print diag(rr)
     print d.T
+
+if case == 3:
+    """
+    test my QR
+    """
+    ped = pyPED()
+    A = rand(4, 10)
+    q, r = ped.QR(A)
+    print q
+    print r.T

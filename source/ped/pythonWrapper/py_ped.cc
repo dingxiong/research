@@ -64,6 +64,15 @@ bp::list toList(std::vector<T> vector) {
     return list;
 }
 
+template <class T>
+std::vector<T> toVector(bp::list bl){
+    std::vector<T> v;
+    for(int i = 0; i < bp::len(bl); i++){
+	v.push_back( bp::extract<T>(bl[i]) );
+    }
+    return v;
+}
+
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -90,7 +99,15 @@ public:
 			      toList(std::get<3>(tmp))   
 			      );
     }
-    
+
+    /* getE */
+    bn::ndarray PYgetE(bn::ndarray R, bp::list ci){
+	int m, n;
+	getDims(R, m, n);
+	Map<MatrixXd> tmpR((double*)R.get_data(), n, m);
+	return copy2bn(getE(tmpR, toVector<int>(ci)));
+    }
+
     /* QR */
     bp::tuple PYQR(bn::ndarray A){
 	int m, n;
@@ -100,6 +117,20 @@ public:
 	return bp::make_tuple(copy2bn(tmp.first),
 			      copy2bn(tmp.second)
 			      );
+    }
+
+    /* PowerEigE */
+    bn::ndarray PYPowerEigE(bn::ndarray J, bn::ndarray Q, 
+			    int maxit, double Qtol, bool Print,
+			    int PrintFreqency){
+	int m, n;
+	getDims(J, m, n);
+	Map<MatrixXd> tmpJ((double*)J.get_data(), n, m);
+	getDims(Q, m, n);
+	Map<MatrixXd> tmpQ((double*)Q.get_data(), n, m); 
+	
+	auto tmp = PowerEigE(tmpJ, tmpQ, maxit, Qtol, Print, PrintFreqency);
+	return copy2bn(tmp);	
     }
 
 };
@@ -119,6 +150,8 @@ BOOST_PYTHON_MODULE(py_ped) {
     bp::class_<pyPED, bp::bases<PED> >("pyPED")
 	.def("PowerIter", &pyPED::PYPowerIter)
 	.def("QR", &pyPED::PYQR)
+	.def("PowerEigE", &pyPED::PYPowerEigE)
+	.def("getE", &pyPED::PYgetE)
 	;
 
 }

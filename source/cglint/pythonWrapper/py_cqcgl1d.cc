@@ -432,7 +432,7 @@ public:
     }
     
     /* powIt */
-    bp::tuple PYpowIt(bn::ndarray a0, bn::ndarray Q0, 
+    bp::tuple PYpowIt(bn::ndarray a0, double th, double phi, bn::ndarray Q0, 
 		      bool onlyLastQ, int nstp, int nqr, 
 		      int maxit, double Qtol, bool Print, int PrintFreqency){
 	int m, n;
@@ -440,7 +440,7 @@ public:
 	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
 	getDims(Q0, m, n);	
 	Map<MatrixXd> tmpQ0((double*)Q0.get_data(), n, m);
-	auto tmp = powIt(tmpa0, tmpQ0, onlyLastQ, nstp, nqr, maxit, Qtol, Print, PrintFreqency);
+	auto tmp = powIt(tmpa0, th, phi, tmpQ0, onlyLastQ, nstp, nqr, maxit, Qtol, Print, PrintFreqency);
 	return bp::make_tuple(copy2bn(std::get<0>(tmp)),
 			      copy2bn(std::get<1>(tmp)),
 			      copy2bn(std::get<2>(tmp)),
@@ -449,7 +449,7 @@ public:
     }
 
     /* powEigE */
-    bn::ndarray PYpowEigE(bn::ndarray a0, bn::ndarray Q0, 
+    bn::ndarray PYpowEigE(bn::ndarray a0, double th, double phi, bn::ndarray Q0, 
 			  int nstp, int nqr, 
 			  int maxit, double Qtol, bool Print, int PrintFreqency){
 	int m, n;
@@ -457,7 +457,7 @@ public:
 	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
 	getDims(Q0, m, n);	
 	Map<MatrixXd> tmpQ0((double*)Q0.get_data(), n, m);
-	MatrixXd tmp = powEigE(tmpa0, tmpQ0, nstp, nqr, maxit, Qtol, Print, PrintFreqency);
+	MatrixXd tmp = powEigE(tmpa0, th, phi, tmpQ0, nstp, nqr, maxit, Qtol, Print, PrintFreqency);
 	return copy2bn(tmp);
     }
     
@@ -833,7 +833,7 @@ public:
 };
 
 
-BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
+BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
     bn::initialize();
 
     // must provide the constructor

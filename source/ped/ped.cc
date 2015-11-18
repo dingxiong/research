@@ -19,12 +19,12 @@ using std::cout; using std::endl;
 /*---------------        member methods          --------------- */
 
 /** @brief Eigvals() calculate the eigenvalues of the product of a sequence of
- *         matrices in the form of \f$ \exp(\mu+i\omega)\f$.
+ *         matrices in the form of \f$ \exp(\mu+i\omega) \f$.
  *
  * It returns a
  * [N,3] matrix, with the first column  stores \f$ \mu \f$, the second
  * column stores
- * \f$\pm 1\f$ for real eigenvalues or \f$\omega\f$ for complex
+ * \f$ \pm 1\f$ for real eigenvalues or \f$ \omega  \f$ for complex
  * eigenvalues, and the third column states whether the eigenvalue
  * is real (0) or complex (1).
  *
@@ -177,10 +177,10 @@ PED::eigenvalues(MatrixXd &J, const int MaxN /* = 100 */,
 }
 
 /** 
- * @brief calculate eigenvalues givenv a sequence of (quasi-)upper triangular matrices
+ * @brief calculate eigenvalues given a sequence of (quasi-)upper triangular matrices
  *
- * @param[in] R                   a sequence of upper triangular matrices [R_m, ... R_2, R_1]
- *                                among which R_m is quasi-upper triangular
+ * @param[in] R                   a sequence of upper triangular matrices \f$ [R_m, ... R_2, R_1] \f$
+ *                                among which \f$ R_m \f$ is quasi-upper triangular
  * @param[in] complex_index       indices of complex eigenvalue positions
  * @return   eigenvalues in form of [log, phase, complex indication]
  */
@@ -623,7 +623,7 @@ pair<Vector2d, Matrix2d> PED::complexEigsMat2(const Matrix2d &A){
 /**
  * @brief obtain the 1x1 diagonal produce of a sequence of matrices
  *
- * @param[in] J       a sequence of matrices [J_m, ..., J_2, J_1]
+ * @param[in] J       a sequence of matrices \f$ [J_m, ..., J_2, J_1] \f$
  * @param[in] k       position of the diagonal element
  * @return            [log product, sign]
  */
@@ -640,6 +640,13 @@ pair<double, int> PED::product1dDiag(const MatrixXd &J, const int k){
     return make_pair(logProduct, signProduct);
 }
 
+/**
+ * @brief obtain the 2x2 diagonal produce of a sequence of matrices
+ *
+ * @param[in] J       a sequence of matrices \f$ [J_m, ..., J_2, J_1] \f$
+ * @param[in] k       position of the diagonal element
+ * @return            [log product, sign]
+ */
 pair<Matrix2d, double> PED::product2dDiag(const MatrixXd &J, const int k){
     const int N = J.rows();
     const int M = J.cols() / N;
@@ -1118,6 +1125,10 @@ PED::checkQconverge(const Ref<const MatrixXd> &D, double Qtol){
  * @brief Get the complex eigenvalue positions for the power iteration
  *        method
  *
+ * @note The last index will not be considered because it could not be
+ *       if we want the full spectrum, or it should not be if only part of spectrum
+ *       is wanted. Otherwise the next element will be retrieved and it
+ *       gives memory error.
  * @see checkQconverge()
  */
 std::vector<int>
@@ -1127,7 +1138,7 @@ PED::getCplPs(const Ref<const MatrixXd> D, double Qtol){
     assert(N == M);
 
     std::vector<int> ps;
-    for(int i = 0; i < M; i++){
+    for(int i = 0; i < M-1; i++){ // note we use M-1
 	double e = fabs(D(i, i)) - 1;  
 	if(fabs(e) > Qtol) ps.push_back(i++);
     }

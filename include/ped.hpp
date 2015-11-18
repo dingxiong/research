@@ -1,8 +1,10 @@
-/** @file
+/**
+ *  @file
  *  @brief Header file for periodic eigendecomposition algorithm.
  */
 
-/** \mainpage Periodic Eigendecomposition
+/**
+ * \mainpage Periodic Eigendecomposition
  *
  * \section sec_intro Introduction 
  * This package contains the source file of implementing periodic 
@@ -36,7 +38,8 @@
  * \section sec_usage How to compile
  * This package is developed under template library
  * <a href="http://eigen.tuxfamily.org/index.php?title=Main_Page"><b>Eigen</b></a>.
- * In order to use this package, make sure you have Eigen3.2 or above,
+ * In order to use this package, make sure you have
+ * [Eigen3.2](http://eigen.tuxfamily.org/) or above,
  * and your C++ compiler support C++11.
  *
  * For example, the command line compilation in linux is
@@ -191,8 +194,6 @@ public:
     bool checkQconverge(const Ref<const MatrixXd> &D, double Qtol);
     std::vector<int>
     getCplPs(const Ref<const MatrixXd> D, double Qtol);
-    std::vector<int>
-    getCplPs(MatrixXd Q, MatrixXd Qp, double Qtol);
     template<class Sqr>
     std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
     PowerIter0(Sqr &sqr, const Ref<const MatrixXd> &Q0, 
@@ -209,13 +210,15 @@ public:
 /**
  * @brief Power iteration to obtain quasi-upper triangular form
  *
- * For a sequence J = [J_m, J_{m_1}, ..., J_1] and an inital orthonormal matrix Q_0,
- * we use QR decomposition J_i Q_{i-1} = Q_i R_i, so J Q_m = Q_m R_m...R_2R_1.
+ * For a sequence J = \f$[ J_m, J_{m_1}, ..., J_1] \f$ and an inital orthonormal
+ * matrix \f$ Q_0 \f$,
+ * we use QR decomposition \f$ J_i Q_{i-1} = Q_i R_i \f$,
+ * so \f$ J Q_m = Q_m R_m...R_2R_1 \f$.
  * 
  * Template function sqr is use to perform this squential QR decompostion.
- * It takes 2 arguments:sqr(Q0, onlyLastQ). 
- * onlyLastQ == true,  It returns Q_m and [R_m,..., R_2, R_1]
- * onlyLastQ == false, It returns [Q_m, ..., Q_2, Q_1] and [R_m,..., R_2, R_1]
+ * It takes 2 arguments: `sqr(Q0, onlyLastQ)`. 
+ * * onlyLastQ == true,  It returns \f$ Q_m \f$ and \f$ [R_m,..., R_2, R_1] \f$
+ * * onlyLastQ == false, It returns \f$ [Q_m, ..., Q_2, Q_1]\f$ and \f$ [R_m,..., R_2, R_1] \f$
  *  
  * @param[in] sqr                  funtion to perform sequence QR decomposition
  * @param[in] onlyLastQ            only the last Q is returned
@@ -225,7 +228,7 @@ public:
  * @param[in] Print                print info or not
  * @param[in] PrintFrequency       print frequency                
  * 
- * @return   [Q, R, D, cp]   D is the diagonal matrix. cp is the complex eigenvalue positions
+ * @return   [Q, R, D, cp].   D is the diagonal matrix. cp is the complex eigenvalue positions
  * @see PerSchur
  */
 template<class Sqr>
@@ -255,7 +258,8 @@ PED::PowerIter0(Sqr &sqr, const Ref<const MatrixXd> &Q0,
 		else fprintf(stderr, "Power iteration not converge at i = %d.\n", maxit);
 	    }
 	    std::vector<int> cp = getCplPs(D, Qtol);
-	    Qp.leftCols(M) = Q;
+	    Qp.leftCols(M) = Q;		        
+	    R.leftCols(M) = D * R.leftCols(M); // apply D to R_m
 	    return std::make_tuple(Qp, R, D, cp);
 	}
 	

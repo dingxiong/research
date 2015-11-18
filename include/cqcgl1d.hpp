@@ -95,10 +95,24 @@ public:
     ArrayXXd
     intgv(const ArrayXd &a0, const ArrayXXd &v,
 	  const size_t nstp);
+
     std::tuple<ArrayXXd, MatrixXd, MatrixXd>
-    intgQ(const ArrayXd &a0, const MatrixXd &Q0,  
+    intgQgGeneral(const ArrayXd &a0,
+		  const double th, const double phi,
+		  const bool useSym,
+		  const MatrixXd &Q0, 
+		  const bool onlyLastQ,
+		  const size_t nstp, const size_t nqr);
+    std::tuple<ArrayXXd, MatrixXd, MatrixXd>
+    intgQ(const ArrayXd &a0, const MatrixXd &Q0, 
 	  const bool onlyLastQ,
 	  const size_t nstp, const size_t nqr);
+    std::tuple<ArrayXXd, MatrixXd, MatrixXd>
+    intgQg(const ArrayXd &a0,
+	   const double th, const double phi,
+	   const MatrixXd &Q0, 
+	   const bool onlyLastQ,
+	   const size_t nstp, const size_t nqr);
     std::tuple<ArrayXXd, MatrixXd, MatrixXd> 
     intgQ(const ArrayXd &a0, const bool onlyLastQ, 
 	  const size_t nstp, const size_t nqr);
@@ -194,15 +208,18 @@ public:
     planeWaveStabEV(int k, bool isPositve);
     
     std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
-    powIt(const ArrayXd &a0, const MatrixXd &Q0, 
-	  const bool onlyLastQ, 
-	  int nstp, int nqr,
+    powIt(const ArrayXd &a0, const double th, const double phi,
+	  const MatrixXd &Q0, 
+	  const bool onlyLastQ, int nstp, int nqr,
 	  const int maxit, const double Qtol, const bool Print,
 	  const int PrintFreqency);
     MatrixXd
-    powEigE(const ArrayXd &a0, const MatrixXd &Q0, int nstp, int nqr,
+    powEigE(const ArrayXd &a0, const double th, const double phi,
+	    const MatrixXd &Q0, int nstp, int nqr,
 	    const int maxit, const double Qtol, const bool Print,
 	    const int PrintFreqency);
+   VectorXcd directEigE(const ArrayXd &a0, const double th, const double phi, 
+			const int nstp);
     
 protected:
     /****    global variable definition.   *****/

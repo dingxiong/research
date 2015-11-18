@@ -28,7 +28,7 @@ if case == 2:
     J = rand(m*n, n)
     Q = rand(m2, n)
     
-    q, r, d, c = ped.PowerIter(J, Q, 1000, 1e-15, True)
+    q, r, d, c = ped.PowerIter(J, Q, True, 1000, 1e-15, True, 20)
     JJ = eye(n)
     rr = eye(m2)
     for i in range(m):

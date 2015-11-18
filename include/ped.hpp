@@ -18,6 +18,15 @@
  * Note all of these products have same eigenvalues and their
  * eigenvectors are related by similarity transformation.
  * This package is designed to solve this problem.
+ *
+ * The basic idea is the periodic Schur decompositon:
+ * \f[
+ *  J_i = Q_i R_i Q_{i-1}^\top
+ * \f]
+ * Such that
+ * \f[
+ *  J_M J_{M-1} \cdots J_1 = Q_M R_M R_{M-1}\cdots R_1 Q_M^\top
+ * \f]
  * 
  * There is only one class PED which has only
  * member functions, no member variables. For the detailed usage,
@@ -85,6 +94,8 @@ using Eigen::Upper;
 class PED{
   
 public:
+    PED() {}
+
     MatrixXd 
     EigVals(MatrixXd &J, const int MaxN  = 100,
 	    const double tol = 1e-16 , bool Print = true);
@@ -94,6 +105,10 @@ public:
     std::tuple<MatrixXd, vector<int>, MatrixXd> 
     eigenvalues(MatrixXd &J, const int MaxN = 100,
 		const double tol = 1e-16, bool Print = true);
+    MatrixXd getE(const MatrixXd &R, const std::vector<int> complex_index);
+    MatrixXd getVbyPSE(const MatrixXd &R, const MatrixXd &Q, 
+		       const std::vector<int> complex_index,
+		       bool Print);
     pair<MatrixXd, vector<int> >
     PerSchur(MatrixXd &J, const int MaxN = 100,
 	     const double tol = 1e-16, bool Print = true);
@@ -166,9 +181,14 @@ public:
     std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
     PowerIter(const Ref<const MatrixXd> &J, 
 	      const Ref<const MatrixXd> &Q,
-	      int maxit, double Qtol, bool Print);
-    bool
-    checkQconverge(const Ref<const MatrixXd> &D, double Qtol);
+	      const bool onlyLastQ,
+	      int maxit, double Qtol, bool Print,
+	      int PrintFreqency);
+    MatrixXd PowerEigE(const Ref<const MatrixXd> &J, 
+		       const Ref<const MatrixXd> &Q0,
+		       int maxit, double Qtol, bool Print,
+		       int PrintFreqency);
+    bool checkQconverge(const Ref<const MatrixXd> &D, double Qtol);
     std::vector<int>
     getCplPs(const Ref<const MatrixXd> D, double Qtol);
     std::vector<int>
@@ -176,7 +196,13 @@ public:
     template<class Sqr>
     std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
     PowerIter0(Sqr &sqr, const Ref<const MatrixXd> &Q0, 
-	      int maxit, double Qtol, bool Print);
+	       const bool onlyLastQ,
+	       int maxit, double Qtol, bool Print, 
+	       int PrintFreqency);
+    template<class Sqr>
+    MatrixXd PowerEigE0(Sqr &sqr, const Ref<const MatrixXd> &Q0, 
+			int maxit, double Qtol, bool Print, 
+			int PrintFreqency);
 };
 
 
@@ -184,13 +210,20 @@ public:
  * @brief Power iteration to obtain quasi-upper triangular form
  *
  * For a sequence J = [J_m, J_{m_1}, ..., J_1] and an inital orthonormal matrix Q_0,
- * we use QR decomposition J_i Q_{i-1} = Q_i R_i, so J Q_0 = Q_m R_m...R_2R_1
+ * we use QR decomposition J_i Q_{i-1} = Q_i R_i, so J Q_m = Q_m R_m...R_2R_1.
+ * 
+ * Template function sqr is use to perform this squential QR decompostion.
+ * It takes 2 arguments:sqr(Q0, onlyLastQ). 
+ * onlyLastQ == true,  It returns Q_m and [R_m,..., R_2, R_1]
+ * onlyLastQ == false, It returns [Q_m, ..., Q_2, Q_1] and [R_m,..., R_2, R_1]
  *  
- * @param[in] sqr     funtion to perform sequence QR decomposition
- * @param[in] Q0       initial orthonormal matrix
- * @param[in] maxit   maximal number of iterations
- * @param[in] Qtol    tolerance for convergence
- * @param[in] print   print info or not
+ * @param[in] sqr                  funtion to perform sequence QR decomposition
+ * @param[in] onlyLastQ            only the last Q is returned
+ * @param[in] Q0                   initial orthonormal matrix
+ * @param[in] maxit                maximal number of iterations
+ * @param[in] Qtol                 tolerance for convergence
+ * @param[in] Print                print info or not
+ * @param[in] PrintFrequency       print frequency                
  * 
  * @return   [Q, R, D, cp]   D is the diagonal matrix. cp is the complex eigenvalue positions
  * @see PerSchur
@@ -198,35 +231,52 @@ public:
 template<class Sqr>
 std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
 PED::PowerIter0(Sqr &sqr, const Ref<const MatrixXd> &Q0, 
-		int maxit, double Qtol, bool Print){
+		const bool onlyLastQ,
+		int maxit, double Qtol, bool Print, 
+		int PrintFreqency){
     
     MatrixXd Q(Q0);
     int N = Q.rows();
     int M = Q.cols(); 
     
     for(size_t i = 0; i < maxit; i++){
-	auto qr = sqr(Q);
+	if(Print && i%PrintFreqency == 0) printf("** power iter i = %zd/%d **\n", i, maxit);
+	
+	auto qr = sqr(Q, onlyLastQ);
 	MatrixXd &Qp = qr.first; 
 	MatrixXd &R = qr.second;
-	MatrixXd D = Q.transpose() * Qp;
-	if(checkQconverge(D, Qtol)){
-	    if(Print) printf("Power iteration converges at : i = %zd\n", i);
-	    std::vector<int> cp = getCplPs(D, Qtol);	    
-	    return std::make_tuple(Q, R, D, cp);;
-	}
+	MatrixXd D = Q.transpose() * Qp.leftCols(M); // true for both onlyLastQ
 	
-	if(i == maxit-1){
-	    // not converge, but still return
-	    if(Print) fprintf(stderr, "Power iteration not converge at i = %d.\n", maxit);
+	bool c = checkQconverge(D, Qtol);
+	bool e = (i == maxit - 1);
+	if( c || e ){
+	    if(Print){
+		if(c)  printf("Power iteration converges at : i = %zd\n", i);
+		else fprintf(stderr, "Power iteration not converge at i = %d.\n", maxit);
+	    }
 	    std::vector<int> cp = getCplPs(D, Qtol);
-	    return std::make_tuple(Q, R, D, cp);
+	    Qp.leftCols(M) = Q;
+	    return std::make_tuple(Qp, R, D, cp);
 	}
 	
-	Q = Qp;	// this should be the last line, otherwise there is error.
+	Q = Qp.leftCols(M); // this should be the last line, otherwise there is error.
     }
-    
-
 }
+
+/** 
+ * @brief use power iteration to obtain the eigenvalues
+ *
+ * @see PowerIter0(), getE() 
+ */
+template<class Sqr>
+MatrixXd
+PED::PowerEigE0(Sqr &sqr, const Ref<const MatrixXd> &Q0, 
+		int maxit, double Qtol, bool Print, 
+		int PrintFreqency){
+    auto power = PowerIter0(sqr, Q0, true, maxit, Qtol, Print, PrintFreqency);
+    return  getE(std::get<1>(power), std::get<3>(power));
+}
+
 
 #endif	/* PED_H */
 

@@ -52,6 +52,20 @@ inline bn::ndarray copy2bn(const Ref<const ArrayXXd> &x){
     return px;
 }
 
+/**
+ * @brief std::vector to bp::list
+ */
+template <class T>
+bp::list toList(std::vector<T> vector) {
+    typename std::vector<T>::iterator iter;
+    bp::list list;
+    for (iter = vector.begin(); iter != vector.end(); ++iter) {
+	list.append(*iter);
+    }
+    return list;
+}
+
+
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -416,11 +430,41 @@ public:
 			      std::get<1>(tmp),
 			      std::get<2>(tmp));
     }
+    
+    /* powIt */
+    bp::tuple PYpowIt(bn::ndarray a0, bn::ndarray Q0, 
+		      bool onlyLastQ, int nstp, int nqr, 
+		      int maxit, double Qtol, bool Print, int PrintFreqency){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
+	getDims(Q0, m, n);	
+	Map<MatrixXd> tmpQ0((double*)Q0.get_data(), n, m);
+	auto tmp = powIt(tmpa0, tmpQ0, onlyLastQ, nstp, nqr, maxit, Qtol, Print, PrintFreqency);
+	return bp::make_tuple(copy2bn(std::get<0>(tmp)),
+			      copy2bn(std::get<1>(tmp)),
+			      copy2bn(std::get<2>(tmp)),
+			      toList(std::get<3>(tmp))
+			      );
+    }
+
+    /* powEigE */
+    bn::ndarray PYpowEigE(bn::ndarray a0, bn::ndarray Q0, 
+			  int nstp, int nqr, 
+			  int maxit, double Qtol, bool Print, int PrintFreqency){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
+	getDims(Q0, m, n);	
+	Map<MatrixXd> tmpQ0((double*)Q0.get_data(), n, m);
+	MatrixXd tmp = powEigE(tmpa0, tmpQ0, nstp, nqr, maxit, Qtol, Print, PrintFreqency);
+	return copy2bn(tmp);
+    }
+    
 };
 
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 class pyCgl1d : public Cgl1d {
     /*
@@ -728,9 +772,8 @@ public :
 };
 
 
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 class pyCqcglRPO : public CqcglRPO {
     
@@ -873,6 +916,8 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
 	.def("Rotate", &pyCqcgl1d::PYRotate)
 	.def("rotateOrbit", &pyCqcgl1d::PYrotateOrbit)
 	.def("planeWave", &pyCqcgl1d::PYplaneWave)
+	.def("powIt", &pyCqcgl1d::PYpowIt)
+	.def("powEigE", &pyCqcgl1d::PYpowEigE)
 	;
 
     bp::class_<pyCgl1d, bp::bases<Cgl1d> >("pyCgl1d", bp::init<

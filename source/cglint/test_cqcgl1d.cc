@@ -1,5 +1,5 @@
 /* to comiple:
- * h5c++ -O3 test_cqcgl1d.cc  -L../../lib -I../../include -I $XDAPPS/eigen/include/eigen3 -std=c++0x -lcqcgl1d -lsparseRoutines -ldenseRoutines -lmyH5 -lmyfft_threads -lfftw3_threads -lfftw3 -lm -lpthread
+ * h5c++ -O3 test_cqcgl1d.cc  -L../../lib -I../../include -I $XDAPPS/eigen/include/eigen3 -std=c++0x -lcqcgl1d -lsparseRoutines -ldenseRoutines -lmyH5 -lped -lmyfft_threads -lfftw3_threads -lfftw3 -lm -lpthread
  */
 #include "cqcgl1d.hpp"
 #include "myH5.hpp"

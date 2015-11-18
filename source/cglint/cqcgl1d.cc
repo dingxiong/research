@@ -397,20 +397,36 @@ Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
     return unpad(C2R(jFv.v1)); //both the orbit and the perturbation
 }
 
-
+/**
+ * @brief Integrate the system and the tangent dynamics with consecutive QR decomposition
+ *
+ * This integration is different from the others because no matter whether nqr divides
+ * nstp or not, the final point will be recored.
+ *
+ * @param[in] a0      initial state
+ * @param[in] Q0      initial tangent matrix
+ * @param[in] nstp    number of integration steps
+ * @param[in] nqr     QR freqency
+ * @return            [ssp, Q, R]:
+ *                    state space trajactory,
+ *                    only last Q or the sequence of Q in form [Q_m, Q_{m-1}, ... Q_1]
+ *                    the sequence of R in form [R_m, R_{m-1}, ... R_1]
+ */
 std::tuple<ArrayXXd, MatrixXd, MatrixXd>
 Cqcgl1d::intgQ(const ArrayXd &a0, const MatrixXd &Q0, 
+	       const bool onlyLastQ,
 	       const size_t nstp, const size_t nqr){
     assert(Ndim == a0.rows());
     jFv.v1 << R2C(pad(a0)), R2C(pad(Q0));
     
     int M;			// number of pieces
-    if(nstp%np == 0) M = nstp / np;
-    else M = nstp / np + 1;
+    if(nstp%nqr == 0) M = nstp / nqr;
+    else M = nstp / nqr + 1;
     
     ArrayXXd ssp(Ndim, M+1);
     ssp.col(0) = a0;
-    MatrixXd Q;
+    MatrixXd Q, Qp;
+    if(!onlyLastQ) Qp = MatrixXd(Ndim, trueNjacv * M);
     MatrixXd R( MatrixXd::Zero(trueNjacv, trueNjacv * M) );
     
     int k = 0;
@@ -421,40 +437,48 @@ Cqcgl1d::intgQ(const ArrayXd &a0, const MatrixXd &Q0,
 	    ssp.col(k+1) = unpad(C2R(jFv.v1.col(0)));
 	    MatrixXd aa = unpad(C2R(jFv.v1.middleCols(1, trueNjacv)));
 	    auto qr = QR(aa);
-	    R.middleCols(k*trueNjacv, trueNjacv) = qr.second;
-	    Q = qr.first;
+	    if(!onlyLastQ) Qp.middleCols((M-k-1)*trueNjacv, trueNjacv) = qr.first;
+	    R.middleCols((M-k-1)*trueNjacv, trueNjacv) = qr.second;
+	    Q = qr.first; 
 	    jFv.v1.middleCols(1, trueNjacv) << R2C(pad(Q));
 	    k++;
 	}
     }
-    return std::make_tuple(ssp, Q, R);
+    if(onlyLastQ) return std::make_tuple(ssp, Q, R);
+    else return std::make_tuple(ssp, Qp, R);
 }
 
 /**
  * @brief construct an orthonormal matrix for calculate a few
  *        leading Floquet vectors
  *  Note, we can use any initial matrix, but here we make perturbation
- *  only in the first few modes. This function is quite different
- *  from initJ().
+ *  only in the first few modes because we think the iteration weill
+ *  terminate earily othen random initial Q0.
+ *  Also, this function is quite different from initJ().
  *
  *  @see initJ()
  */
 MatrixXd Cqcgl1d::initQ(){
-    MatrixXd Q0 = ArrayXXcd::Zero(Ne, trueNjacv);
-    for(size_t i = 0; i < Ne; i++) {
-	Q0(i, 2*i) = dcp(1, 0);
-	Q0(i, 2*i+1) = dcp(0, 1);
-    }
-    return C2R(Q0);
+    int k1 = trueNjacv / 2;
+    int k2 = trueNjacv - k1;
+    
+    MatrixXd Q0 ( MatrixXd::Zero(Ndim, trueNjacv));
+    for(int i = 0; i < k1; i++) Q0(i, i) = 1;
+    for(int i = 0; i < k2; i++) Q0(Ndim-1-i, trueNjacv-1-i) = 1;
+
+    return Q0;
 }
 
 std::tuple<ArrayXXd, MatrixXd, MatrixXd> 
-Cqcgl1d::intgQ(const ArrayXd &a0, const size_t nstp, const size_t nqr){
+Cqcgl1d::intgQ(const ArrayXd &a0, const bool onlyLastQ, 
+	       const size_t nstp, const size_t nqr){
     MatrixXd Q0 = initQ();
-    return intgQ(a0, Q0, nstp, nqr);
+    return intgQ(a0, Q0, onlyLastQ, nstp, nqr);
 }
 
-
+/**
+ * @brief one step of intgj()
+ */
 void 
 Cqcgl1d::intgjOneStep(){
     jNL(jFv); jFa.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q; 
@@ -1492,12 +1516,38 @@ Cqcgl1d::planeWaveStabEV(int k, bool isPositve){
 /**************************************************************/
 /*                Floquet spectrum/vectors                    */
 /**************************************************************/
-void
-Cqcgl1d::FE(const Ref<const ArrayXd> &a0, int nstp, int nqr){
-    MatrixXd Q0(MatrixXd::)
-    intgv()
+std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
+Cqcgl1d::powIt(const ArrayXd &a0, const MatrixXd &Q0, 
+	       const bool onlyLastQ, int nstp, int nqr,
+	       const int maxit, const double Qtol, const bool Print,
+	       const int PrintFreqency){
+    
+    auto sqr = [&a0, nstp, nqr, this](MatrixXd Q, bool onlyLastQ) 
+	-> std::pair<MatrixXd, MatrixXd> {
+	auto qr = intgQ(a0, Q, onlyLastQ, nstp, nqr);
+	return std::make_pair(std::get<1>(qr), 	// Q
+			      std::get<2>(qr)	// R
+			      );
+    };
+    PED ped;
+    return ped.PowerIter0(sqr, Q0, onlyLastQ, maxit, Qtol, Print, PrintFreqency);
 }
 
+MatrixXd
+Cqcgl1d::powEigE(const ArrayXd &a0, const MatrixXd &Q0, int nstp, int nqr,
+		 const int maxit, const double Qtol, const bool Print,
+		 const int PrintFreqency){
+
+    auto sqr = [&a0, nstp, nqr, this](MatrixXd Q, bool onlyLastQ) 
+	-> std::pair<MatrixXd, MatrixXd> {
+	auto qr = intgQ(a0, Q, onlyLastQ, nstp, nqr);
+	return std::make_pair(std::get<1>(qr), 	// Q
+			      std::get<2>(qr)	// R
+			      );
+    };
+    PED ped;
+    return ped.PowerEigE0(sqr, Q0, maxit, Qtol, Print, PrintFreqency);
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                        Class Cgl1d                             //

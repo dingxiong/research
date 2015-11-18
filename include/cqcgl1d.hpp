@@ -20,6 +20,7 @@
 #include "sparseRoutines.hpp"
 #include "denseRoutines.hpp"
 #include "iterMethod.hpp"
+#include "ped.hpp"
 #include "myfft.hpp"
 using std::pair; using std::make_pair;
 using Eigen::MatrixXd; using Eigen::VectorXd;
@@ -94,17 +95,21 @@ public:
     ArrayXXd
     intgv(const ArrayXd &a0, const ArrayXXd &v,
 	  const size_t nstp);
+    std::tuple<ArrayXXd, MatrixXd, MatrixXd>
+    intgQ(const ArrayXd &a0, const MatrixXd &Q0,  
+	  const bool onlyLastQ,
+	  const size_t nstp, const size_t nqr);
     std::tuple<ArrayXXd, MatrixXd, MatrixXd> 
-    intgQ(const ArrayXd &a0, const size_t nstp, const size_t nqr);
-    void 
-    intgjOneStep();
+    intgQ(const ArrayXd &a0, const bool onlyLastQ, 
+	  const size_t nstp, const size_t nqr);
+    void intgjOneStep();
 
     ArrayXXd pad(const Ref<const ArrayXXd> &aa);
     ArrayXXd generalPadding(const Ref<const ArrayXXd> &aa);
     ArrayXXcd padcp(const Ref<const ArrayXXcd> &x);
     ArrayXXd unpad(const Ref<const ArrayXXd> &paa);
     ArrayXXcd initJ();
-    ArrayXXcd initQ();
+    MatrixXd initQ();
     ArrayXXd C2R(const ArrayXXcd &v);
     ArrayXXcd R2C(const ArrayXXd &v);
     ArrayXXd Fourier2Config(const Ref<const ArrayXXd> &aa);
@@ -187,6 +192,17 @@ public:
     VectorXcd planeWaveStabE(int k, bool isPositve);
     std::pair<VectorXcd, MatrixXcd>
     planeWaveStabEV(int k, bool isPositve);
+    
+    std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
+    powIt(const ArrayXd &a0, const MatrixXd &Q0, 
+	  const bool onlyLastQ, 
+	  int nstp, int nqr,
+	  const int maxit, const double Qtol, const bool Print,
+	  const int PrintFreqency);
+    MatrixXd
+    powEigE(const ArrayXd &a0, const MatrixXd &Q0, int nstp, int nqr,
+	    const int maxit, const double Qtol, const bool Print,
+	    const int PrintFreqency);
     
 protected:
     /****    global variable definition.   *****/

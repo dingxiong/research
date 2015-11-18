@@ -32,6 +32,7 @@ lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/x86_64-linux-gnu/libfft
 lib sparse : : <name>sparseRoutines <file>/usr/local/home/xiong/00git/research/lib/libsparseRoutines.so ;
 lib dense : : <name>denseRoutines <file>/usr/local/home/xiong/00git/research/lib/libdenseRoutines.so ;
 lib iter : : <name>iterMethod <file>/usr/local/home/xiong/00git/research/lib/libiterMethod.so ;
+lib ped : : <name>iterMethod <file>/usr/local/home/xiong/00git/research/lib/libped.so ;
 lib myfft : : <name>myfft_clean <file>/usr/local/home/xiong/00git/research/lib/libmyfft_clean.so ;
 lib myfft_threads : : <name>myfft_clean_threads <file>/usr/local/home/xiong/00git/research/lib/libmyfft_clean_threads.so ;
 lib cqcgl : : <name>cqcgl1d <file>/usr/local/home/xiong/00git/research/lib/libcqcgl1d.so ;
@@ -40,7 +41,7 @@ lib cqcgl : : <name>cqcgl1d <file>/usr/local/home/xiong/00git/research/lib/libcq
 choice = 3 ;
 
 if $(choice) = 1 {		# single thread case
-  python-extension py_cqcgl1d : py_cqcgl1d.cc np sparse dense fftw3 iter ../../myfft/myfft.cc ../cqcgl1d.cc ../cqcglRPO.cc
+  python-extension py_cqcgl1d : py_cqcgl1d.cc np sparse dense fftw3 iter ped ../../myfft/myfft.cc ../cqcgl1d.cc ../cqcglRPO.cc
   : <variant>release_assert <optimization>speed
   : <link>shared <cxxflags>"-std=c++11 -DGMRES_PRINT -DINB_PRINT -DCLEAN" 
   ;
@@ -50,7 +51,7 @@ if $(choice) = 1 {		# single thread case
 }
 
 else if $(choice) = 2 {		# multi fftw threads case
-  python-extension py_cqcgl1d_threads : py_cqcgl1d.cc np sparse dense fftw3 fftw3_threads iter ../../myfft/myfft.cc ../cqcglRPO.cc ../cqcgl1d.cc 
+  python-extension py_cqcgl1d_threads : py_cqcgl1d.cc np sparse dense fftw3 fftw3_threads iter ped ../../myfft/myfft.cc ../cqcglRPO.cc ../cqcgl1d.cc 
   : <variant>release_assert <optimization>speed 
   : <link>shared <cxxflags>"-std=c++11 -DGMRES_PRINT -DINB_PRINT -lpthread -DCLEAN -DTFFT" 
   ;
@@ -59,7 +60,7 @@ else if $(choice) = 2 {		# multi fftw threads case
 }
 
 else if $(choice) = 3 {		# multi openmp threads case 
-  python-extension py_cqcgl1d_omp : py_cqcgl1d.cc np sparse dense fftw3 iter ../../myfft/myfft.cc ../cqcglRPO.cc ../cqcgl1d.cc  
+  python-extension py_cqcgl1d_omp : py_cqcgl1d.cc np sparse dense fftw3 iter ped ../../myfft/myfft.cc ../cqcglRPO.cc ../cqcgl1d.cc  
   : <variant>release_assert <optimization>speed 
   : <link>shared <cxxflags>"-std=c++11 -fopenmp -DGMRES_PRINT -DINB_PRINT -DCLEAN -DRPO_OMP=5" 
   ;

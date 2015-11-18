@@ -74,14 +74,16 @@ public:
 
     /* PowerIter */
     bp::tuple PYPowerIter(bn::ndarray J, bn::ndarray Q, 
-			  int maxit, double Qtol, bool Print){
+			  bool onlyLastQ,
+			  int maxit, double Qtol, bool Print,
+			  int PrintFreqency){
 	int m, n;
 	getDims(J, m, n);
 	Map<MatrixXd> tmpJ((double*)J.get_data(), n, m);
 	getDims(Q, m, n);
 	Map<MatrixXd> tmpQ((double*)Q.get_data(), n, m); 
 	
-	auto tmp = PowerIter(tmpJ, tmpQ, maxit, Qtol, Print);
+	auto tmp = PowerIter(tmpJ, tmpQ, onlyLastQ, maxit, Qtol, Print, PrintFreqency);
 	return bp::make_tuple(copy2bn(std::get<0>(tmp)), 
 			      copy2bn(std::get<1>(tmp)),
 			      copy2bn(std::get<2>(tmp)),

@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 21
+case = 80
 
 if case == 10:
     """
@@ -66,7 +66,7 @@ if case == 20:
     N = 1024
     d = 30
     h = 0.0005
-    di = 0.35
+    di = 0.37
     a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
                                           di, 1)
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
@@ -118,7 +118,7 @@ if case == 21:
     N = 1024
     d = 30
     h = 0.0004
-    di = 0.423
+    di = 0.43
 
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
     A0 = 2*centerRand(2*N, 0.2)
@@ -136,16 +136,17 @@ if case == 21:
         x.append(aa)
         
     aaHat, th, phi = cgl.orbit2slice(aa)
-    i1 = 5000
-    i2 = 7180
+    i1 = 3000
+    i2 = 6800
     plot3dfig(aaHat[i1:i2, 0], aaHat[i1:i2, 1], aaHat[i1:i2, 2])
+    plotConfigSpaceFromFourier(cgl, aa[i1:i2], [0, d, 0, nstp*h])
     nstp = i2 - i1
     T = nstp * h
     th0 = th[i1] - th[i2]
     phi0 = phi[i1] - phi[i2]
     err = norm(aaHat[i1] - aaHat[i2])
     print nstp, T, th0, phi0, err
-    cqcglSaveRPOdi('rpot.h5', di, 1, aa[i1], T, nstp, th0, phi0, err)
+    # cqcglSaveRPOdi('rpot.h5', di, 1, aa[i1], T, nstp, th0, phi0, err)
     
 if case == 30:
     """
@@ -348,3 +349,35 @@ if case == 70:
     eigvectors = Tcopy(realve(eigvectors))
     print eigvalues[:20]
     
+
+if case == 80:
+    """
+    plot the figure show the stability of solition solutions for
+    different di
+    """
+    N = 1024
+    d = 30
+    
+    dis, reqs = cqcglReadReqEVAll('../../data/cgl/reqDi.h5', 1)
+    ers = []
+    for i in range(len(reqs)):
+        a, wth, wphi, err, er, ei, vr, vi = reqs[i]
+        k = 0
+        while abs(er[k]) < 1e-8:
+            k += 1
+        ers.append(er[k])
+        
+    fig = plt.figure(figsize=[6, 4])
+    ax = fig.add_subplot(111)
+    ax.plot([min(dis), max(dis)], [0, 0], c='r', ls='--', lw=1.5)
+    ax.scatter(dis, ers, s=10, marker='o', facecolor='b', edgecolors='none')
+    ax.set_xlabel(r'$d_i$', fontsize=20)
+    ax.set_ylabel(r'$\mu$', fontsize=20)
+    # ax.set_yscale('log')
+    ax.set_xlim(0, 1)
+    # ax.set_ylim(-2, 18)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+
+

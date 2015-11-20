@@ -833,7 +833,7 @@ public:
 };
 
 
-BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
+BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
     bn::initialize();
 
     // must provide the constructor

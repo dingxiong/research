@@ -1,24 +1,25 @@
 Thu Oct 23 14:53:38 EDT 2014
 ###################################################
-req.h5: relative equilibria
+rpoT2X1.h5: Hopf cycles for different di. Group name is di
 
-	Each group contains:	  
-	      a0   : initial condition
-	      wth  : shift of translation (in angle)
-	      wphi : shift of complex phase
+	 fixed paramters:
+	 N = 1024
+	 L = 30
+	 b = 4.0
+	 c = 0.8
+	 dr = 0.01
+
+	Each group contains a few indices. Each index contains	  
+	      x    : initial condition
+	      T    : period
+	      nstp : integration steps
+	      th   : shift of translation (in angle)
+	      phi  : shift of complex phase
 	      err  : absolute err
 
-reqOrigin.h5: the origin data which contains a lot of plan waves.
-
-##################################################
-folder rpo:
-
-      rpo0799T2X1.h5 : periodic orbits for di = -0.0799, h = 0.0002, 1 column of a.
-      
 ############################################################
-files:
 	      
-reqDi.h5 : store soliton solutions for different di	
+reqDi.h5 : store soliton solutions for different di. Group name is di	
 	 
 	 fixed paramters:
 	 N = 1024
@@ -43,3 +44,8 @@ reqDi.h5 : store soliton solutions for different di
 	0.0795 -- -0.08    : one unstable conjugate pair
 	0.026  -- 0.079    : more than one unstable pair. 
 	       	  	     Some may have 20 pairs.
+
+############################################################
+req_N: previous soliton solutions for different N. for L = 50
+
+

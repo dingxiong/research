@@ -1,10 +1,10 @@
 /* to comiple:
  * (Note : libreadks.a is static library, so the following order is important)
  *
- * h5c++ test_findPO.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lcqcglRPO_print -lcqcgl1d -lmyfft_threads -lfftw3_threads -lfftw3 -lm -lpthread -lsparseRoutines -ldenseRoutines -literMethod -lmyH5
+ * h5c++ test_findPO.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lcqcglRPO_print -lcqcgl1d -lmyfft_threads -lfftw3_threads -lfftw3 -lm -lpthread -lsparseRoutines -ldenseRoutines -literMethod -lped -lmyH5
  *
  * or
- * h5c++ test_findPO.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lcqcglRPO_omp -lcqcgl1d -lmyfft -lfftw3 -lm -fopenmp -lsparseRoutines -ldenseRoutines -literMethod -lmy5H
+ * h5c++ test_findPO.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lcqcglRPO_omp -lcqcgl1d -lmyfft -lfftw3 -lm -fopenmp -lsparseRoutines -ldenseRoutines -literMethod -lped -lmy5H
  * 
  */
 
@@ -292,7 +292,7 @@ int main(){
 	const int N = 1024;
 	const double d = 30;
 	const double h = 0.0002;
-	const double di = 0.43;
+	const double di = 0.422;
 
 	// std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo3.h5");
 	std::string file("rpot.h5");
@@ -301,15 +301,14 @@ int main(){
 	MatrixXd x;
 	CqcglReadRPO(file, di, 1, x, T, nstp, th, phi, err);
 	
-	int M = x.cols();
-	nstp *= M*2;
+	nstp *= 2;
 	printf("\n di %g, T %g, nstp %d, th %g, phi %g, err %g\n", di, T, nstp, th, phi, err);
 	CqcglRPO cglrpo(nstp, 1, N, d, h, 4.0, 0.8, 0.01, di, 4);
 	/* cglrpo.alpha1 = 0; */
 	/* cglrpo.alpha2 = 0; */
 	/* cglrpo.alpha3 = 0; */
 	auto result = cglrpo.findRPO_hook(x.col(0), T, th, phi, 5e-11, 1e-3, 30, 30, 1e-6, 500, 10);
-	CqcglWriteRPO("rpoT2X1.h5", di, 1,
+	CqcglWriteRPO("rpot2.h5", di, 1,
 		      std::get<0>(result), /* x */
 		      std::get<1>(result), /* T */
 		      nstp,		   /* nstp */
@@ -324,9 +323,9 @@ int main(){
     case 71: {
 	/* Move one rpo
 	 */
-	std::string infile("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1t.h5");
+	std::string infile("/usr/local/home/xiong/00git/research/data/cgl/rpot2.h5");
 	std::string outfile("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1.h5");
-	CqcglMoveRPO(infile, outfile, 0.34, 1);
+	CqcglMoveRPO(infile, outfile, 0.422, 1);
 	
 	break;
     }
@@ -347,8 +346,8 @@ int main(){
 	 */
 	const int N = 1024;
 	const double d = 30;
-	const double di = 0.422;
-	const double diInc = 0.001;
+	const double di = 0.4225;
+	const double diInc = 0.0001;
 	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1.h5");
 	
 	for(int i = 0; i < 200; i++){
@@ -358,7 +357,8 @@ int main(){
 	    MatrixXd x;
 	    CqcglReadRPO(file, diOld, 1, x, T, nstp, th, phi, err);
 
-	    nstp += 200;
+	    /* nstp += 20; */
+	    /* T += 0.003; */
 	    double diNew = di + (i+1)*diInc;
 	    double h = T / nstp;
 	    printf("\n diNew %g, T %g, nstp %d, h %g th %g, phi %g, err %g\n", 

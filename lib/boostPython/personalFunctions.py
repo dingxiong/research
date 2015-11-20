@@ -404,6 +404,20 @@ def cqcglReadReqdi(fileName, di, index):
     return cqcglReadReq(fileName, groupName)
 
 
+def cqcglReadReqAll(fileName, index):
+    f = h5py.File(fileName, 'r')
+    gs = f.keys()
+    f.close()
+    xx = []                     # all req
+    dis = []                    # all di
+    for i in gs:
+        di = float(i)
+        dis.append(di)
+        x = cqcglReadReqdi(fileName, di, index)
+        xx.append(x)
+    return dis, xx
+
+
 def cqcglReadReqEV(fileName, groupName):
     f = h5py.File(fileName, 'r')
     req = '/' + groupName + '/'
@@ -417,6 +431,25 @@ def cqcglReadReqEV(fileName, groupName):
     vi = f[req+'vi'].value
     f.close()
     return a, wth, wphi, err, er, ei, vr, vi
+
+
+def cqcglReadReqEVdi(fileName, di, index):
+    groupName = format(di, '.6f') + '/' + str(index)
+    return cqcglReadReqEV(fileName, groupName)
+
+
+def cqcglReadReqEVAll(fileName, index):
+    f = h5py.File(fileName, 'r')
+    gs = f.keys()
+    f.close()
+    xx = []                     # all req
+    dis = []                    # all di
+    for i in gs:
+        di = float(i)
+        dis.append(di)
+        x = cqcglReadReqEVdi(fileName, di, index)
+        xx.append(x)
+    return dis, xx
 
 
 def cqcglAddEV2Req(fileName, groupName, er, ei, vr, vi):
@@ -453,6 +486,20 @@ def cqcglReadRPO(fileName, groupName):
 def cqcglReadRPOdi(fileName, di, index):
     groupName = format(di, '.6f') + '/' + str(index)
     return cqcglReadRPO(fileName, groupName)
+
+    
+def cqcglReadRPOAll(fileName, index):
+    f = h5py.File(fileName, 'r')
+    gs = f.keys()
+    f.close()
+    xx = []                     # all rpo
+    dis = []                    # all di
+    for i in gs:
+        di = float(i)
+        dis.append(di)
+        x = cqcglReadRPOdi(fileName, di, index)
+        xx.append(x)
+    return dis, xx
 
 
 def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):

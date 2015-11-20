@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 21
+case = 1
 
 if case == 1:
     """
@@ -10,7 +10,7 @@ if case == 1:
     """
     N = 1024
     d = 30
-    di = 0.39
+    di = 0.422
     x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
                                               di, 1)
     h = T / nstp
@@ -114,21 +114,60 @@ if case == 21:
 if case == 30:
     """
     calculate the Floquet exponents of limit cycles
+    by power iteration
     """
     N = 1024
     d = 30
-    di = 0.39
-    M = 4
+    di = 0.4225
+    M = 10
     
     x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
                                               di, 1)
     h = T / nstp
     cgl = pyCqcgl1d(N, d, h, True, M, 4.0, 0.8, 0.01, di, 4)
-    # aa = cgl.intg(x[0], nstp, 1)
-    # aaHat, thAll, phiAll = cgl.orbit2slice(aa)
     Q0 = rand(M, cgl.Ndim)
     # Q, R, D, C = cgl.powIt(x[0], th, phi, Q0, False, nstp,
     #                        nstp, 1000, 1e-10, True, 10)
     # print D
-    e = cgl.powEigE(x[0], th, phi, Q0, nstp, nstp, 1000, 1e-10, True, 10)
+    e = cgl.powEigE(x[0], th, phi, Q0, nstp, nstp, 2000, 1e-12, True, 10)
     print e
+
+if case == 40:
+    """
+    calculate the Floquet exponents of limit cycles directly
+    """
+    N = 1024
+    d = 30
+    di = 0.4225
+    
+    x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
+                                              di, 1)
+    h = T / nstp
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+    aa, J = cgl.intgj(x[0], nstp, nstp, nstp)
+    e, v = eig(cgl.Rotate(J, th, phi))
+    
+    idx = np.argsort(abs(e))
+    idx = idx[::-1]
+    e = e[idx]
+    v = v[:, idx]
+
+if case == 50:
+    """
+    plot all the rpos I have
+    """
+    N = 1024
+    d = 30
+    
+    dis, rpos = cqcglReadRPOAll('../../data/cgl/rpoT2X1.h5', 1)
+    for i in range(len(rpos)):
+        x, T, nstp, th, phi, err = rpos[i]
+        di = dis[i]
+        h = T / nstp
+        cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, 0.01, di, 4)
+        
+        M = 4
+        aa = cgl.intg(x[0], nstp*M, 1)
+        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h*M],
+                                   save=True,
+                                   name='cqcglHopfCycle' + str(di) + '_4T.eps')

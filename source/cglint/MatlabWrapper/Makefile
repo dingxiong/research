@@ -19,7 +19,7 @@ LINK = -lm -lfftw3_threads -lfftw3 -lped -lsparseRoutines -ldenseRoutines -liter
 SOURCE = ../cqcgl1d.cc ../../myfft/myfft.cc
 
 
-all : cqcglIntgv cqcglNdim
+all : cqcglIntgv cqcglNdim cqcglGintgv
 
 cqcglIntgv : cqcglIntgv.cpp $(SOURCE)
 	$(CC) CXX=$(CXX) CXXFLAGS=$(CXXFLAGS_THREADS) $(INCLUDE) $(LIB) $(LINK) $^
@@ -27,6 +27,11 @@ cqcglIntgv : cqcglIntgv.cpp $(SOURCE)
 	$(CC) CXX=$(CXX) CXXFLAGS=$(CXXFLAGS) $(INCLUDE) $(LIB) $(LINK) $^
 
 cqcglNdim : cqcglNdim.cpp $(SOURCE)
+	$(CC) CXX=$(CXX) CXXFLAGS=$(CXXFLAGS) $(INCLUDE) $(LIB) $(LINK) $^
+
+cqcglGintgv : cqcglGintgv.cpp $(SOURCE)
+	$(CC) CXX=$(CXX) CXXFLAGS=$(CXXFLAGS_THREADS) $(INCLUDE) $(LIB) $(LINK) $^
+	mv $@.mexa64 $@_threads.mexa64
 	$(CC) CXX=$(CXX) CXXFLAGS=$(CXXFLAGS) $(INCLUDE) $(LIB) $(LINK) $^
 
 clean:

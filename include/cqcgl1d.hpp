@@ -95,6 +95,9 @@ public:
     ArrayXXd
     intgv(const ArrayXd &a0, const ArrayXXd &v,
 	  const size_t nstp);
+    ArrayXXd 
+    gintgv(const ArrayXd &a0, const ArrayXXd &v, 
+	   const double th, const double phi, const size_t nstp);
 
     std::tuple<ArrayXXd, MatrixXd, MatrixXd>
     intgQgGeneral(const ArrayXd &a0,

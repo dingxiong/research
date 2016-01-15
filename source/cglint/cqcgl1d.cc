@@ -372,6 +372,9 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
     return make_pair(uu, duu);
 }
 
+/**
+ * @brief integrate the state and a subspace in tangent space
+ */
 ArrayXXd
 Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
 	       const size_t nstp){
@@ -387,6 +390,18 @@ Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
     return unpad(C2R(jFv.v1)); //both the orbit and the perturbation
 }
 
+/**
+ * @brief integrate subspace in tangent space, and also
+ *        perform rotation.
+ *        
+ * @note the state is not included.
+ */
+ArrayXXd 
+Cqcgl1d::gintgv(const ArrayXd &a0, const ArrayXXd &v, 
+	       const double th, const double phi, const size_t nstp){
+    int m = v.cols();
+    return Rotate(intgv(a0, v, nstp).rightCols(m), th, phi);
+}
 
 /**
  * @brief Integrate the system and the tangent dynamics with consecutive QR decomposition

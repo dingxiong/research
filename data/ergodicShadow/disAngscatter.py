@@ -74,7 +74,7 @@ def setAxis2(ax):
     
 if __name__ == "__main__":
 
-    case = 10
+    case = 6
 
     if case == 1:
         """
@@ -238,17 +238,17 @@ if __name__ == "__main__":
         """
         plot one good truncated statistic figure
         """
-        ppType = 'rpo'
+        ppType = 'ppo'
         ppId = 4
         sps = calSpacing('../ks22h001t120x64EV.h5', ppType, ppId, 5)
 
-        folder = 'cases32modes_x5/case4rpo4x5sT30/'
-        ang = np.sin(np.arccos(np.loadtxt(folder + 'angle')))
+        folder = 'cases32modes_x5/case4ppo4x5sT30/'
+        ang = np.sin(np.arccos(np.loadtxt(folder + 'angle2')))
         dis = np.loadtxt(folder + 'dis')
         idx = np.loadtxt(folder + 'indexPo')
 
         ii = [i for i in range(np.size(dis)) if dis[i] > 4*sps[idx[i]]]
-
+        """
         cix = [3, 4, 5]             # column index
         spix = [6, 7, 8, 15]        # subspace index
         colors = ['r', 'b', 'c', 'm']
@@ -274,7 +274,7 @@ if __name__ == "__main__":
         fig.tight_layout(pad=0)
         plt.show()
         # savez_compressed('rpo4Scatter.npz', dis=dis[ii], ang=ang[ii][:, cix])
-
+        """
     if case == 7:
         """
         plot only one shadowing incidence
@@ -347,10 +347,11 @@ if __name__ == "__main__":
     if case == 9:
         """
         calcuate and save the full angle points.
+        modify : ppType, folder, gTpos
         """
-        ppType = 'rpo'
+        ppType = 'ppo'
         ppId = 4
-        gTpos = 3
+        gTpos = 3               # work both for ppo4 and rpo4
         sps = calSpacing('../ks22h001t120x64EV.h5', ppType, ppId, 5)
 
         a, T, nstp, r, s = KSreadPO('../ks22h001t120x64EV.h5', ppType, ppId)
@@ -358,8 +359,8 @@ if __name__ == "__main__":
         veAll = KSreadFV('../ks22h001t120x64EV.h5', ppType, ppId)
         ks = pyKS(64, h, 22)
         aaHat, veHat = ks.orbitAndFvWholeSlice(a, veAll, nstp, ppType, gTpos)
-
-        folder = 'cases32modes_x5/case4rpo4x5sT30/'
+        
+        folder = 'cases32modes_x5/case4ppo4x5sT30/'
         ang = np.sin(np.arccos(np.loadtxt(folder + 'angle')))
         dis = np.loadtxt(folder + 'dis')
         idx = np.loadtxt(folder + 'indexPo')
@@ -382,21 +383,22 @@ if __name__ == "__main__":
     if case == 10:
         """
         plot the statistic avarage also use more subspaces
+        change: ppType, folder
         """
-        ppType = 'rpo'
+        ppType = 'ppo'
         ppId = 4
         sps = calSpacing('../ks22h001t120x64EV.h5', ppType, ppId, 5)
 
-        folder = 'cases32modes_x5/case4rpo4x5sT30/'
+        folder = 'cases32modes_x5/case4ppo4x5sT30/'
         ang = np.sin(np.arccos(np.loadtxt(folder + 'angle2')))
         dis = np.loadtxt(folder + 'dis')
         idx = np.loadtxt(folder + 'indexPo')
 
         ii = [i for i in range(np.size(dis)) if dis[i] > 4*sps[idx[i]]]
-
+        
         cell = 0.2
         x, aver = statisAverage(dis[ii], ang[ii], 0.2)
-
+        """
         fig = plt.figure(figsize=(3, 2))
         ax = fig.add_subplot(111)
         
@@ -407,5 +409,69 @@ if __name__ == "__main__":
         ax.set_yticks([1e-6, 1e-4, 1e-2, 1e0])
         fig.tight_layout(pad=0)
         plt.show()
-
+        """
         # savez_compressed('rpo4Average.npz', x=x, aver=aver)
+
+    if case == 11:
+        """
+        plot the shadowing configuration for one shadowing incidence
+        change : ppType, folder, midx
+        """
+        ppType = 'ppo'
+        ppId = 4
+        sps = calSpacing('../ks22h001t120x64EV.h5', ppType, ppId, 5)
+
+        folder = 'cases32modes_x5/case4ppo4x5sT30/'
+        ang = np.sin(np.arccos(np.loadtxt(folder + 'angle')))
+        dis = np.loadtxt(folder + 'dis')
+        idx = np.loadtxt(folder + 'indexPo')
+        No = np.loadtxt(folder + 'No')
+        difv = np.loadtxt(folder + 'difv')
+
+        # midx = 1 for rpo4; midx = 6 for ppo4;
+        # midx = np.argmax(No)
+        midx = 6
+        i1 = np.int(np.sum(No[:midx]))
+        i2 = np.int(np.sum(No[:midx+1]))
+        # ii = [i for i in range(i1, i2) if dis[i] > 4*sps[idx[i]]]
+        ii = range(i1, i2)
+
+        cix = [3, 4, 5]             # column index
+        spix = [6, 7, 8, 15]        # subspace index
+        colors = ['r', 'b', 'c', 'm']
+        markers = ['o', 's', 'v', '*']
+        Num = np.size(cix)
+
+        a, T, nstp, r, s = KSreadPO('../ks22h001t120x64EV.h5', ppType, ppId)
+        h = T / nstp
+        ks = pyKS(64, h, 22)
+        aa = ks.intg(a, nstp, 5)
+        aa = aa[:-1, :]
+        if ppType == 'ppo':
+            aaWhole = ks.half2whole(aa)
+        else:
+            aaWhole = aa
+        aaHat = ks.orbitToSlice(aaWhole)[0]
+
+        aaErgHat = np.zeros((len(ii), difv.shape[1]))
+        for i in range(len(ii)):
+            aaErgHat[i] = difv[ii[i]] + aaHat[idx[ii[i]]]
+            
+        """
+        fig = plt.figure(figsize=(3, 2))
+        ax = fig.add_subplot(111, projection='3d')
+        f1 = 0
+        f2 = 2
+        f3 = 3
+        ax.plot(aaHat[:, f1], aaHat[:, f2], aaHat[:, f3])
+        ax.plot(aaErgHat[:, f1], aaHat[:, f2], aaHat[:, f3])
+        for i in range(Num):
+            ax.scatter(dis[ii], ang[ii, cix[i]], s=10, c=colors[i], marker=markers[i],
+                       edgecolor='none', label='1-'+str(spix[i]))
+
+        setAxis(ax, 7e-3, 1e-1, 1e-3, 5e-1, 8e-3, 2e-1)  # for rpo4
+        # setAxis(ax, 7e-3, 1e-1, 5e-4, 8e-2, 8e-3, 4e-2)  # for ppo4
+
+        fig.tight_layout(pad=0)
+        plt.show()
+        """

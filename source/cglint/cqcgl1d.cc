@@ -23,7 +23,9 @@ using namespace Eigen;
  * @param[in] d            the spacial period, size
  * @param[in] h            integration time step
  * @param[in] enableJacv   false : forbid tangent space integration 
- * @param[in] Njacv        <= 0 integrate Jacobian
+ * @param[in] Njacv        number of tangent vectors. so the number of fft columns
+ *                         is Njacv + 1.
+ *                         If Njacv <= 0 integrate Jacobian
  * @param[in] threadNum    number of threads for integration
  */
 Cqcgl1d::Cqcgl1d(int N, double d, double h,
@@ -373,7 +375,9 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
 ArrayXXd
 Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
 	       const size_t nstp){
-    assert( Ndim == a0.rows() && trueNjacv == v.cols()); // check the dimension of initial condition.
+    
+    // check the dimension of initial condition.
+    assert( Ndim == a0.rows() && Ndim == v.rows() && trueNjacv == v.cols());
     jFv.v1 << R2C(pad(a0)), R2C(pad(v));
 
     for(size_t i = 1; i < nstp + 1; i++){

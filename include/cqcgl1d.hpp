@@ -4,7 +4,7 @@
  *  g++ cqcgl1d.cc  -shared -fpic -march=corei7 -O3 -msse2 -msse4 -lfftw3_threads -lfftw3 -lm -fopenmp -DTFFT  -I $XDAPPS/eigen/include/eigen3 -I../include -std=c++0x
  *
  *  complile with only one thread:
- *  g++ cqcgl1d.cc -shared -fpic -o libcqcgl1d.so -lfftw3 -lm -fopenmp  -march=corei7 -O3 -msse2 -msse4 -I/usr/include/eigen3 -I../../include -std=c++0x
+ *  g++ cqcgl1d.cc -shared -fpic -lfftw3 -lm -fopenmp  -march=corei7 -O3 -msse2 -msse4 -I/usr/include/eigen3 -I../../include -std=c++0x
  *
  *  */
 #ifndef CQCGL1D_H

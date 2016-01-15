@@ -1,7 +1,7 @@
 from py_ped import pyPED
 from personalFunctions import *
 
-case = 4
+case = 1
 
 if case == 1:
     """
@@ -11,7 +11,7 @@ if case == 1:
     n = 4
     J = rand(n, n)
     Q = rand(n, n)
-    q, r, d, c = ped.PowerIter(J, Q, 1000, 1e-15, True)
+    q, r, d, c = ped.PowerIter(J, Q, True, 1000, 1e-15, True, 100)
     print eig(J.T)[0]
     print r.T
     print d.T

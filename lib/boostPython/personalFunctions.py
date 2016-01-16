@@ -502,21 +502,70 @@ def cqcglReadRPOAll(fileName, index):
     return dis, xx
 
 
+def cqcglReadRPOEV(fileName, groupName):
+    f = h5py.File(fileName, 'r')
+    rpo = '/' + groupName + '/'
+    x = f[rpo+'x'].value
+    T = f[rpo+'T'].value
+    nstp = f[rpo+'nstp'].value
+    th = f[rpo+'th'].value
+    phi = f[rpo+'phi'].value
+    err = f[rpo+'err'].value
+    e = f[rpo+'e'].value
+    v = f[rpo+'v'].value
+    f.close()
+    return x, T[0], np.int(nstp[0]), th[0], phi[0], err[0], e, v
+
+
+def cqcglReadRPOEVdi(fileName, di, index):
+    groupName = format(di, '.6f') + '/' + str(index)
+    return cqcglReadRPOEV(fileName, groupName)
+
+
 def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):
     f = h5py.File(fileName, 'a')
-    req = f.create_group(groupName)
-    req.create_dataset("x", data=x)
-    req.create_dataset("T", data=T)
-    req.create_dataset("nstp", data=nstp)
-    req.create_dataset("th", data=th)
-    req.create_dataset('phi', data=phi)
-    req.create_dataset('err', data=err)
+    rpo = f.create_group(groupName)
+    rpo.create_dataset("x", data=x)
+    rpo.create_dataset("T", data=T)
+    rpo.create_dataset("nstp", data=nstp)
+    rpo.create_dataset("th", data=th)
+    rpo.create_dataset('phi', data=phi)
+    rpo.create_dataset('err', data=err)
     f.close()
 
 
 def cqcglSaveRPOdi(fileName, di, index, x, T, nstp, th, phi, err):
     groupName = format(di, '.6f') + '/' + str(index)
     return cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err)
+
+
+def cqcglSaveRPOEV(fileName, groupName, x, T, nstp, th, phi, err, e, v):
+    f = h5py.File(fileName, 'a')
+    rpo = f.create_group(groupName)
+    rpo.create_dataset("x", data=x)
+    rpo.create_dataset("T", data=T)
+    rpo.create_dataset("nstp", data=nstp)
+    rpo.create_dataset("th", data=th)
+    rpo.create_dataset('phi', data=phi)
+    rpo.create_dataset('err', data=err)
+    rpo.create_dataset('e', data=e)
+    rpo.create_dataset('v', data=v)
+    f.close()
+
+
+def cqcglSaveRPOEVdi(fileName, di, index, x, T, nstp, th, phi, err, e, v):
+    groupName = format(di, '.6f') + '/' + str(index)
+    cqcglSaveRPOEV(fileName, groupName, x, T, nstp, th, phi, err, e, v)
+
+
+def cqcglMoveRPOEV(inputFile, ingroup, outputFile, outgroup):
+    x, T, nstp, th, phi, err, e, v = cqcglReadRPOEV(inputFile, ingroup)
+    cqcglSaveRPOEV(outputFile, outgroup, x, T, nstp, th, phi, err, e, v)
+
+    
+def cqcglMoveRPOEVdi(inputFile, outputFile, di, index):
+    groupName = format(di, '.6f') + '/' + str(index)
+    cqcglMoveRPOEV(inputFile, groupName, outputFile, groupName)
 
 
 def cqcglMoveReqEV(inputFile, ingroup, outputFile, outgroup):
@@ -753,7 +802,9 @@ def pAngleVQ(V, Q):
     """
     assert V.ndim == 1
     V = V / LA.norm(V)
-    c = LA.norm(dot(Q.T, V))    # cos 
+    c = LA.norm(dot(Q.T, V))
+    if (c > 1):
+        c = 1
     return np.arccos(c)
 
 

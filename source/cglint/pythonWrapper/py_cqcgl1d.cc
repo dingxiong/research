@@ -66,9 +66,7 @@ bp::list toList(std::vector<T> vector) {
 }
 
 
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class pyCqcgl1d : public Cqcgl1d {
     /*
@@ -393,12 +391,28 @@ public:
 	return copy2bn( transRotate(tmpaa, th) );
     }
 
+    /* transTangent */
+    bn::ndarray PYtransTangent(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	return copy2bn( transTangent(tmpaa) );
+    }
+
     /* phaseRotate */
     bn::ndarray PYphaseRotate(bn::ndarray aa, double phi){
 	int m, n;
 	getDims(aa, m, n);	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	return copy2bn( transRotate(tmpaa, phi) );
+    }
+    
+    /* phaseTangent */
+    bn::ndarray PYphaseTangent(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	return copy2bn( phaseTangent(tmpaa) );
     }
 
     /* Rotate */
@@ -911,8 +925,10 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
 	.def("reduceIntg", &pyCqcgl1d::PYreduceIntg)
 	.def("reduceVe", &pyCqcgl1d::PYreduceVe)
 	.def("findReq", &pyCqcgl1d::PYfindReq)
-	.def("transRotate", &pyCqcgl1d::PYtransRotate)
+	.def("transRotate", &pyCqcgl1d::PYtransRotate) 
+	.def("transTangent", &pyCqcgl1d::PYtransTangent)
 	.def("phaseRotate", &pyCqcgl1d::PYphaseRotate)
+	.def("phaseTangent", &pyCqcgl1d::PYphaseTangent)
 	.def("Rotate", &pyCqcgl1d::PYRotate)
 	.def("rotateOrbit", &pyCqcgl1d::PYrotateOrbit)
 	.def("planeWave", &pyCqcgl1d::PYplaneWave)

@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 1
+case = 70
 
 if case == 1:
     """
@@ -10,7 +10,7 @@ if case == 1:
     """
     N = 1024
     d = 30
-    di = 0.422
+    di = 0.4211
     x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
                                               di, 1)
     h = T / nstp
@@ -171,3 +171,39 @@ if case == 50:
         plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h*M],
                                    save=True,
                                    name='cqcglHopfCycle' + str(di) + '_4T.eps')
+
+if case == 60:
+    """
+    test the correctness of the Floquet exponents/vectors
+    obtained from the Krylov-Schur algorithm
+    """
+    N = 1024
+    d = 30
+    di = 0.4219
+    x, T, nstp, th, phi, err, es, vs = cqcglReadRPOEVdi('../../data/cgl/rpoT2X1_v2.h5', di, 1)
+    h = T / nstp
+    cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, 0.01, di, 4)
+
+    U = vs[1:4]
+    # angle between velocity and marginal subspace
+    v0 = cgl.velocity(x[0])
+    ang1 = pAngle(v0, U.T)
+
+    # angle between group tangent and marginal subspace
+    tx_tau = cgl.transTangent(x[0])
+    ang2 = pAngle(tx_tau, U.T)
+    tx_rho = cgl.phaseTangent(x[0])
+    ang3 = pAngle(tx_rho, U.T)
+
+    print es
+    print ang1, ang2, ang3
+
+if case == 70:
+    """
+    move rpo with FE/FV 
+    """
+    inFile = '../../data/cgl/rpoT2X1_v3.h5'
+    outFile = '../../data/cgl/tmp3.h5'
+    for di in np.arange(0.4211, 0.422, 0.0001):
+        disp(di)
+        cqcglMoveRPOEVdi(inFile, outFile, di, 1)

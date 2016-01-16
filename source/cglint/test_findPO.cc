@@ -346,8 +346,8 @@ int main(){
 	 */
 	const int N = 1024;
 	const double d = 30;
-	const double di = 0.4225;
-	const double diInc = 0.0001;
+	const double di = 0.422;
+	const double diInc = -0.0001;
 	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1.h5");
 	
 	for(int i = 0; i < 200; i++){

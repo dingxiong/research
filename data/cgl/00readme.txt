@@ -17,6 +17,15 @@ rpoT2X1.h5: Hopf cycles for different di. Group name is di
 	      phi  : shift of complex phase
 	      err  : absolute err
 
+rpoT2X1EV15.h5 : save with rpoT2X1.h5, but has Floquet exponents and
+                 Floquet vectors.
+		 e: [mu, omega] => multiplier = exp(T*mu + 1i*omega)
+		 v: vectors. For complex pairs, real and imaginary
+		    parts are separated.
+
+rpoT2X1EV30.h5 : save with rpoT2X1EV15.h5.
+	       But this one has 30 leading exponents/vectors.
+
 ############################################################
 	      
 reqDi.h5 : store soliton solutions for different di. Group name is di	

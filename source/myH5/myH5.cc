@@ -43,6 +43,18 @@ namespace MyH5 {
 	item.write(mat.data(), PredType::NATIVE_DOUBLE);
     }
 
+    /**
+     * @brief write a double vector
+     */
+    void writeVectorXd(H5File &file, string DSitem, const VectorXd &vec){
+	const int N = vec.size();
+	
+	hsize_t dim[] = {N};
+	DataSpace dsp(1, dim);
+	DataSet item = file.createDataSet(DSitem, PredType::NATIVE_DOUBLE, dsp);
+	item.write(vec.data(), PredType::NATIVE_DOUBLE);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////         ks related          ////////////////////////////////////////////////////////////////////////////
 

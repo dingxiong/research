@@ -470,108 +470,6 @@ def cqcglAddEV2Req(fileName, groupName, er, ei, vr, vi):
     f.close()
 
 
-def cqcglReadRPO(fileName, groupName):
-    f = h5py.File(fileName, 'r')
-    req = '/' + groupName + '/'
-    x = f[req+'x'].value
-    T = f[req+'T'].value
-    nstp = f[req+'nstp'].value
-    th = f[req+'th'].value
-    phi = f[req+'phi'].value
-    err = f[req+'err'].value
-    f.close()
-    return x[0], T[0], np.int(nstp[0]), th[0], phi[0], err[0]
-
-
-def cqcglReadRPOdi(fileName, di, index):
-    groupName = format(di, '.6f') + '/' + str(index)
-    return cqcglReadRPO(fileName, groupName)
-
-    
-def cqcglReadRPOAll(fileName, index, hasEV):
-    f = h5py.File(fileName, 'r')
-    gs = f.keys()
-    f.close()
-    xx = []                     # all rpo
-    dis = []                    # all di
-    for i in gs:
-        di = float(i)
-        dis.append(di)
-        if hasEV:
-            x = cqcglReadRPOEVdi(fileName, di, index)
-        else:
-            x = cqcglReadRPOdi(fileName, di, index)
-        xx.append(x)
-    return dis, xx
-
-
-def cqcglReadRPOEV(fileName, groupName):
-    f = h5py.File(fileName, 'r')
-    rpo = '/' + groupName + '/'
-    x = f[rpo+'x'].value
-    T = f[rpo+'T'].value
-    nstp = f[rpo+'nstp'].value
-    th = f[rpo+'th'].value
-    phi = f[rpo+'phi'].value
-    err = f[rpo+'err'].value
-    e = f[rpo+'e'].value
-    v = f[rpo+'v'].value
-    f.close()
-    # return x, T[0], np.int(nstp[0]), th[0], phi[0], err[0], e, v
-    return x, T, nstp, th, phi, err, e, v
-
-
-def cqcglReadRPOEVdi(fileName, di, index):
-    groupName = format(di, '.6f') + '/' + str(index)
-    return cqcglReadRPOEV(fileName, groupName)
-
-
-def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):
-    f = h5py.File(fileName, 'a')
-    rpo = f.create_group(groupName)
-    rpo.create_dataset("x", data=x)
-    rpo.create_dataset("T", data=T)
-    rpo.create_dataset("nstp", data=nstp)
-    rpo.create_dataset("th", data=th)
-    rpo.create_dataset('phi', data=phi)
-    rpo.create_dataset('err', data=err)
-    f.close()
-
-
-def cqcglSaveRPOdi(fileName, di, index, x, T, nstp, th, phi, err):
-    groupName = format(di, '.6f') + '/' + str(index)
-    return cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err)
-
-
-def cqcglSaveRPOEV(fileName, groupName, x, T, nstp, th, phi, err, e, v):
-    f = h5py.File(fileName, 'a')
-    rpo = f.create_group(groupName)
-    rpo.create_dataset("x", data=x)
-    rpo.create_dataset("T", data=T)
-    rpo.create_dataset("nstp", data=nstp)
-    rpo.create_dataset("th", data=th)
-    rpo.create_dataset('phi', data=phi)
-    rpo.create_dataset('err', data=err)
-    rpo.create_dataset('e', data=e)
-    rpo.create_dataset('v', data=v)
-    f.close()
-
-
-def cqcglSaveRPOEVdi(fileName, di, index, x, T, nstp, th, phi, err, e, v):
-    groupName = format(di, '.6f') + '/' + str(index)
-    cqcglSaveRPOEV(fileName, groupName, x, T, nstp, th, phi, err, e, v)
-
-
-def cqcglMoveRPOEV(inputFile, ingroup, outputFile, outgroup):
-    x, T, nstp, th, phi, err, e, v = cqcglReadRPOEV(inputFile, ingroup)
-    cqcglSaveRPOEV(outputFile, outgroup, x, T, nstp, th, phi, err, e, v)
-
-    
-def cqcglMoveRPOEVdi(inputFile, outputFile, di, index):
-    groupName = format(di, '.6f') + '/' + str(index)
-    cqcglMoveRPOEV(inputFile, groupName, outputFile, groupName)
-
-
 def cqcglMoveReqEV(inputFile, ingroup, outputFile, outgroup):
     """
     move a group from one file to another group of a another file
@@ -612,28 +510,155 @@ def cqcglExtractReq(inputFile, outputFile, groups, startId=1):
         ix += 1
 
 
-def centerRand(N, frac):
-    """
-    generate a localized random vector.
-    frac: the fraction of the nonzero center in the totol size
-    """
-    a = rand(N)
-    N2 = np.int((1-frac)*0.5*N)
-    a[:N2] = 0
-    a[-N2:] = 0
-    return a
+def cqcglReadRPO(fileName, groupName):
+    f = h5py.File(fileName, 'r')
+    req = '/' + groupName + '/'
+    x = f[req+'x'].value
+    T = f[req+'T'].value
+    nstp = f[req+'nstp'].value
+    th = f[req+'th'].value
+    phi = f[req+'phi'].value
+    err = f[req+'err'].value
+    f.close()
+    # return x[0], T[0], nstp[0], th[0], phi[0], err[0]
+    return x, T, nstp, th, phi, err
 
 
-def centerOne(N, frac):
-    """
-    generate a localized random vector.
-    frac: the fraction of the nonzero center in the totol size
-    """
-    a = ones(N)
-    N2 = np.int((1-frac)*0.5*N)
-    a[:N2] = 0
-    a[-N2:] = 0
-    return a
+def cqcglReadRPOdi(fileName, di, index):
+    groupName = format(di, '.6f') + '/' + str(index)
+    return cqcglReadRPO(fileName, groupName)
+
+    
+def cqcglReadRPOAll(fileName, index, hasEV):
+    f = h5py.File(fileName, 'r')
+    gs = f.keys()
+    f.close()
+    xx = []                     # all rpo
+    dis = []                    # all di
+    for i in gs:
+        di = float(i)
+        dis.append(di)
+        if hasEV:
+            x = cqcglReadRPOEVdi(fileName, di, index)
+        else:
+            x = cqcglReadRPOdi(fileName, di, index)
+        xx.append(x)
+    return dis, xx
+
+
+def cqcglMoveRPO(inputFile, ingroup, outputFile, outgroup):
+    x, T, nstp, th, phi, err = cqcglReadRPO(inputFile, ingroup)
+    cqcglSaveRPO(outputFile, outgroup, x, T, nstp, th, phi, err)
+
+    
+def cqcglMoveRPOdi(inputFile, outputFile, di, index):
+    groupName = format(di, '.6f') + '/' + str(index)
+    cqcglMoveRPO(inputFile, groupName, outputFile, groupName)
+
+
+def cqcglReadRPOEV(fileName, groupName):
+    f = h5py.File(fileName, 'r')
+    rpo = '/' + groupName + '/'
+    x = f[rpo+'x'].value
+    T = f[rpo+'T'].value
+    nstp = f[rpo+'nstp'].value
+    th = f[rpo+'th'].value
+    phi = f[rpo+'phi'].value
+    err = f[rpo+'err'].value
+    e = f[rpo+'e'].value
+    v = f[rpo+'v'].value
+    f.close()
+    # return x, T[0], nstp, th[0], phi[0], err[0], e, v
+    return x, T, nstp, th, phi, err, e, v
+
+
+def cqcglReadRPOEVdi(fileName, di, index):
+    groupName = format(di, '.6f') + '/' + str(index)
+    return cqcglReadRPOEV(fileName, groupName)
+
+
+def cqcglReadRPOEVonly(fileName, groupName):
+    f = h5py.File(fileName, 'r')
+    rpo = '/' + groupName + '/'
+    e = f[rpo+'e'].value
+    v = f[rpo+'v'].value
+    f.close()
+    return e, v
+
+
+def cqcglReadRPOEVonlydi(fileName, di, index):
+    groupName = format(di, '.6f') + '/' + str(index)
+    return cqcglReadRPOEVonly(fileName, groupName)
+
+
+def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):
+    f = h5py.File(fileName, 'a')
+    rpo = f.create_group(groupName)
+    rpo.create_dataset("x", data=x)
+    rpo.create_dataset("T", data=T)
+    rpo.create_dataset("nstp", data=nstp)
+    rpo.create_dataset("th", data=th)
+    rpo.create_dataset('phi', data=phi)
+    rpo.create_dataset('err', data=err)
+    f.close()
+
+
+def cqcglSaveRPOdi(fileName, di, index, x, T, nstp, th, phi, err):
+    groupName = format(di, '.6f') + '/' + str(index)
+    return cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err)
+
+
+def cqcglSaveRPOEV(fileName, groupName, x, T, nstp, th, phi, err, e, v):
+    f = h5py.File(fileName, 'a')
+    rpo = f.create_group(groupName)
+    rpo.create_dataset("x", data=x)
+    rpo.create_dataset("T", data=T)
+    rpo.create_dataset("nstp", data=nstp)
+    rpo.create_dataset("th", data=th)
+    rpo.create_dataset('phi', data=phi)
+    rpo.create_dataset('err', data=err)
+    rpo.create_dataset('e', data=e)
+    rpo.create_dataset('v', data=v)
+    f.close()
+
+
+def cqcglSaveRPOEVdi(fileName, di, index, x, T, nstp, th, phi, err, e, v):
+    groupName = format(di, '.6f') + '/' + str(index)
+    cqcglSaveRPOEV(fileName, groupName, x, T, nstp, th, phi, err, e, v)
+
+
+def cqcglSaveRPOEVonly(fileName, groupName, e, v):
+    f = h5py.File(fileName, 'a')
+    # rpo = f.create_group(groupName)
+    rpo = f[groupName]
+    rpo.create_dataset('e', data=e)
+    rpo.create_dataset('v', data=v)
+    f.close()
+
+
+def cqcglSaveRPOEVonlydi(fileName, di, index, e, v):
+    groupName = format(di, '.6f') + '/' + str(index)
+    cqcglSaveRPOEVonly(fileName, groupName, e, v)
+
+
+def cqcglMoveRPOEV(inputFile, ingroup, outputFile, outgroup):
+    x, T, nstp, th, phi, err, e, v = cqcglReadRPOEV(inputFile, ingroup)
+    cqcglSaveRPOEV(outputFile, outgroup, x, T, nstp, th, phi, err, e, v)
+
+    
+def cqcglMoveRPOEVdi(inputFile, outputFile, di, index):
+    groupName = format(di, '.6f') + '/' + str(index)
+    cqcglMoveRPOEV(inputFile, groupName, outputFile, groupName)
+
+
+def cqcglMoveRPOEVonly(inputFile, ingroup, outputFile, outgroup):
+    e, v = cqcglReadRPOEVonly(inputFile, ingroup)
+    cqcglSaveRPOEVonly(outputFile, outgroup, e, v)
+
+
+def cqcglMoveRPOEVonlydi(inputFile, outputFile, di, index):
+    groupName = format(di, '.6f') + '/' + str(index)
+    cqcglMoveRPOEVonly(inputFile, groupName, outputFile, groupName)
 
 
 def PoincareLinearInterp(x, getIndex=False):
@@ -849,3 +874,27 @@ def removeMarginal(e, k):
     ix = findMarginal(e, k)
     ep = [i for i in e if i not in e[ix]]
     return ep
+
+
+def centerRand(N, frac):
+    """
+    generate a localized random vector.
+    frac: the fraction of the nonzero center in the totol size
+    """
+    a = rand(N)
+    N2 = np.int((1-frac)*0.5*N)
+    a[:N2] = 0
+    a[-N2:] = 0
+    return a
+
+
+def centerOne(N, frac):
+    """
+    generate a localized random vector.
+    frac: the fraction of the nonzero center in the totol size
+    """
+    a = ones(N)
+    N2 = np.int((1-frac)*0.5*N)
+    a[:N2] = 0
+    a[-N2:] = 0
+    return a

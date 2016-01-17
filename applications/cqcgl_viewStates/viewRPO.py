@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 60
+case = 80
 
 if case == 1:
     """
@@ -180,19 +180,19 @@ if case == 60:
     N = 1024
     d = 30
     di = 0.36
-    x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5', di, 1)
+    x, T, nstp, th, phi, err, es, vs = cqcglReadRPOEVdi('../../data/cgl/rpoT2X1_v2.h5', di, 1)
     h = T / nstp
     cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, 0.01, di, 4)
 
-    U = vs[1:4]
+    U = vs[0:3]
     # angle between velocity and marginal subspace
-    v0 = cgl.velocity(x[0])
+    v0 = cgl.velocity(x)
     ang1 = pAngle(v0, U.T)
 
     # angle between group tangent and marginal subspace
-    tx_tau = cgl.transTangent(x[0])
+    tx_tau = cgl.transTangent(x)
     ang2 = pAngle(tx_tau, U.T)
-    tx_rho = cgl.phaseTangent(x[0])
+    tx_rho = cgl.phaseTangent(x)
     ang3 = pAngle(tx_rho, U.T)
 
     print es
@@ -202,12 +202,12 @@ if case == 70:
     """
     move rpo with FE/FV
     """
-    inFile = '../../data/cgl/rpoT2X1EV30.h5'
-    outFile = '../../data/cgl/rpoT2X1EV16_v2.h5'
+    inFile = '../../data/cgl/rpoT2X1EV31.h5'
+    outFile = '../../data/cgl/rpoT2X1_v2.h5'
     for di in np.arange(0.36, 0.421, 0.002).tolist() + np.arange(0.421, 0.42201, 0.0001).tolist() + [0.4225, 0.4226]:
     # for di in [0.368]:
         disp(di)
-        cqcglMoveRPOEVdi(inFile, outFile, di, 1)
+        cqcglMoveRPOEVonlydi(inFile, outFile, di, 1)
 
 if case == 80:
     """

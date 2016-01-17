@@ -26,6 +26,10 @@ rpoT2X1EV15.h5 : save with rpoT2X1.h5, but has Floquet exponents and
 rpoT2X1EV30.h5 : save with rpoT2X1EV15.h5.
 	       But this one has 30 leading exponents/vectors.
 
+Similar with
+rpoT2X1EV16.h5
+rpoT2X1EV31.h5
+
 ############################################################
 	      
 reqDi.h5 : store soliton solutions for different di. Group name is di	

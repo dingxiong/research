@@ -27,7 +27,7 @@ int main(){
     
     cout.precision(15);
     
-    switch (80){
+    switch (71){
 	
     case 1:{
 	/* try to find periodic orbit with the old form of cqcgl
@@ -325,8 +325,8 @@ int main(){
 	 */
 	std::string infile("/usr/local/home/xiong/00git/research/data/cgl/rpot2.h5");
 	std::string outfile("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1.h5");
-	CqcglMoveRPO(infile, outfile, 0.422, 1);
-	
+	// CqcglMoveRPO(infile, outfile, 0.422, 1);
+
 	break;
     }
 

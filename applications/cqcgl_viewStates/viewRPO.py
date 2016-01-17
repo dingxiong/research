@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 80
+case = 60
 
 if case == 1:
     """
@@ -10,7 +10,7 @@ if case == 1:
     """
     N = 1024
     d = 30
-    di = 0.4211
+    di = 0.4225
     x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
                                               di, 1)
     h = T / nstp
@@ -179,8 +179,8 @@ if case == 60:
     """
     N = 1024
     d = 30
-    di = 0.364
-    x, T, nstp, th, phi, err, es, vs = cqcglReadRPOEVdi('../../data/cgl/rpoT2X1EV15.h5', di, 1)
+    di = 0.36
+    x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5', di, 1)
     h = T / nstp
     cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, 0.01, di, 4)
 
@@ -203,23 +203,48 @@ if case == 70:
     move rpo with FE/FV
     """
     inFile = '../../data/cgl/rpoT2X1EV30.h5'
-    outFile = '../../data/cgl/tmp3.h5'
-    # for di in np.arange(0.36, 0.42, 0.002):
-    for di in [0.42, 0.421, 0.4225, 0.4226]:
+    outFile = '../../data/cgl/rpoT2X1EV16_v2.h5'
+    for di in np.arange(0.36, 0.421, 0.002).tolist() + np.arange(0.421, 0.42201, 0.0001).tolist() + [0.4225, 0.4226]:
+    # for di in [0.368]:
         disp(di)
         cqcglMoveRPOEVdi(inFile, outFile, di, 1)
 
 if case == 80:
     """
-    plot the largest non-marginal Floquet exponent of all
+    plot the largest non-marginal Floquet exponent and periods of all
     RPO founded.
     """
     dis, xx = cqcglReadRPOAll('../../data/cgl/rpoT2X1EV30.h5', 1, True)
     fe = []
+    T = []
     for i in range(len(dis)):
         e = xx[i][6][0]
         ep = removeMarginal(e, 3)
         fe.append(ep)
+        T.append(xx[i][1])
+
     e1 = []
+    e2 = []
     for i in range(len(dis)):
         e1.append(fe[i][0])
+        e2.append(fe[i][1])
+
+    # plot
+    scale = 1.3
+    fig = plt.figure(figsize=[6/scale, 4/scale])
+    ax = fig.add_subplot(111)
+    ax.plot(dis, e1,  c='b', lw=1, ls='-', marker='o', ms=5, mfc='r', mec='none')
+    ax.plot(dis, np.zeros(len(dis)), c='g', ls='--', lw=2)
+    ax.set_xlabel(r'$d_i$', fontsize=20)
+    ax.set_ylabel(r'$\mu_1$', fontsize=20)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+    
+    scale = 1.3
+    fig = plt.figure(figsize=[6/scale, 4/scale])
+    ax = fig.add_subplot(111)    
+    ax.plot(dis, T,  c='b', lw=1, ls='-', marker='o', ms=5, mfc='r', mec='none')
+    ax.set_xlabel(r'$d_i$', fontsize=20)
+    ax.set_ylabel(r'$T_p$', fontsize=20)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)

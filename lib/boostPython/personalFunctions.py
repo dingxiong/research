@@ -480,7 +480,7 @@ def cqcglReadRPO(fileName, groupName):
     phi = f[req+'phi'].value
     err = f[req+'err'].value
     f.close()
-    return x, T[0], np.int(nstp[0]), th[0], phi[0], err[0]
+    return x[0], T[0], np.int(nstp[0]), th[0], phi[0], err[0]
 
 
 def cqcglReadRPOdi(fileName, di, index):
@@ -518,7 +518,7 @@ def cqcglReadRPOEV(fileName, groupName):
     v = f[rpo+'v'].value
     f.close()
     # return x, T[0], np.int(nstp[0]), th[0], phi[0], err[0], e, v
-    return x, T, np.int(nstp), th, phi, err, e, v
+    return x, T, nstp, th, phi, err, e, v
 
 
 def cqcglReadRPOEVdi(fileName, di, index):

@@ -6,6 +6,11 @@
 #include <cstdio>
 #include "H5Cpp.h"
 
+/**
+ * Note,
+ * scalars have dimension 0,
+ * vectors have dimension 1
+ */
 namespace MyH5 {
     using namespace H5;
     using namespace std;
@@ -125,10 +130,9 @@ namespace MyH5 {
     Scalar readScalar(H5File &file, string DSitem){
 	DataSet item = file.openDataSet(DSitem);
 	DataSpace dsp = item.getSpace();
-	// assert(dsp.getSimpleExtentNdims() == 1);
-	hsize_t dims[1];
-	int ndims = dsp.getSimpleExtentDims(dims, NULL);
-	// assert(dims[0] == 1);
+	// assert(dsp.getSimpleExtentNdims() == 0);
+	// hsize_t dims[1];
+	// int ndims = dsp.getSimpleExtentDims(dims, NULL);
 	Scalar value(0);
 	PredType type = getPredType<Scalar>();
 	item.read(&value, type);
@@ -143,8 +147,8 @@ namespace MyH5 {
      */
     template <typename Scalar>
     void writeScalar(H5File &file, string DSitem, Scalar value){
-	hsize_t dim[] = {1};
-	DataSpace dsp(1, dim);
+	hsize_t dim[0];
+	DataSpace dsp(0, dim);
 	PredType type = getPredType<Scalar>();
 	DataSet item = file.createDataSet(DSitem, type, dsp);
 	item.write(&value, type);

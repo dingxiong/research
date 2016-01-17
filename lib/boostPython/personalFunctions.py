@@ -488,7 +488,7 @@ def cqcglReadRPOdi(fileName, di, index):
     return cqcglReadRPO(fileName, groupName)
 
     
-def cqcglReadRPOAll(fileName, index):
+def cqcglReadRPOAll(fileName, index, hasEV):
     f = h5py.File(fileName, 'r')
     gs = f.keys()
     f.close()
@@ -497,7 +497,10 @@ def cqcglReadRPOAll(fileName, index):
     for i in gs:
         di = float(i)
         dis.append(di)
-        x = cqcglReadRPOdi(fileName, di, index)
+        if hasEV:
+            x = cqcglReadRPOEVdi(fileName, di, index)
+        else:
+            x = cqcglReadRPOdi(fileName, di, index)
         xx.append(x)
     return dis, xx
 
@@ -514,7 +517,8 @@ def cqcglReadRPOEV(fileName, groupName):
     e = f[rpo+'e'].value
     v = f[rpo+'v'].value
     f.close()
-    return x, T[0], np.int(nstp[0]), th[0], phi[0], err[0], e, v
+    # return x, T[0], np.int(nstp[0]), th[0], phi[0], err[0], e, v
+    return x, T, np.int(nstp), th, phi, err, e, v
 
 
 def cqcglReadRPOEVdi(fileName, di, index):
@@ -795,6 +799,11 @@ def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
         plt.show(block=False)
 
 
+############################################################
+#                        Common functions                  #
+############################################################
+
+
 def pAngleVQ(V, Q):
     """
     compute the angle between a vector V and set of vectors Q
@@ -826,3 +835,17 @@ def seqAng(seqDifv, U):
     for i in range(M):
         ang[i] = pAngle(seqDifv[i, :], q)
     return ang
+
+
+def findMarginal(e, k):
+    """
+    find the position of marginal exponents
+    """
+    ix = argsort(abs(e))
+    return ix[:k]
+
+
+def removeMarginal(e, k):
+    ix = findMarginal(e, k)
+    ep = [i for i in e if i not in e[ix]]
+    return ep

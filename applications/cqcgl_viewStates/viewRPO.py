@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 70
+case = 80
 
 if case == 1:
     """
@@ -179,8 +179,8 @@ if case == 60:
     """
     N = 1024
     d = 30
-    di = 0.4219
-    x, T, nstp, th, phi, err, es, vs = cqcglReadRPOEVdi('../../data/cgl/rpoT2X1_v2.h5', di, 1)
+    di = 0.364
+    x, T, nstp, th, phi, err, es, vs = cqcglReadRPOEVdi('../../data/cgl/rpoT2X1EV15.h5', di, 1)
     h = T / nstp
     cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, 0.01, di, 4)
 
@@ -200,10 +200,26 @@ if case == 60:
 
 if case == 70:
     """
-    move rpo with FE/FV 
+    move rpo with FE/FV
     """
-    inFile = '../../data/cgl/rpoT2X1_v3.h5'
+    inFile = '../../data/cgl/rpoT2X1EV30.h5'
     outFile = '../../data/cgl/tmp3.h5'
-    for di in np.arange(0.4211, 0.422, 0.0001):
+    # for di in np.arange(0.36, 0.42, 0.002):
+    for di in [0.42, 0.421, 0.4225, 0.4226]:
         disp(di)
         cqcglMoveRPOEVdi(inFile, outFile, di, 1)
+
+if case == 80:
+    """
+    plot the largest non-marginal Floquet exponent of all
+    RPO founded.
+    """
+    dis, xx = cqcglReadRPOAll('../../data/cgl/rpoT2X1EV30.h5', 1, True)
+    fe = []
+    for i in range(len(dis)):
+        e = xx[i][6][0]
+        ep = removeMarginal(e, 3)
+        fe.append(ep)
+    e1 = []
+    for i in range(len(dis)):
+        e1.append(fe[i][0])

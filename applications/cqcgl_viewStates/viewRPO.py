@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 80
+case = 70
 
 if case == 1:
     """
@@ -10,12 +10,13 @@ if case == 1:
     """
     N = 1024
     d = 30
-    di = 0.4225
+    di = 0.417
     x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
                                               di, 1)
     h = T / nstp
+    nstp = np.int(nstp)
     cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, 0.01, di, 4)
-    aa = cgl.intg(x[0], nstp, 1)
+    aa = cgl.intg(x, nstp, 1)
     aaHat, thAll, phiAll = cgl.orbit2slice(aa)
     
     # print the errors and plot the color map
@@ -57,8 +58,8 @@ if case == 1:
     plt.show(block=False)
     
     # plot 4 periods
-    M = 6
-    aa2 = cgl.intg(x[0], nstp*M, 1)
+    M = 4
+    aa2 = cgl.intg(x, nstp*M, 1)
     plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, nstp*h*M])
 
 if case == 20:
@@ -202,12 +203,12 @@ if case == 70:
     """
     move rpo with FE/FV
     """
-    inFile = '../../data/cgl/rpoT2X1EV31.h5'
+    inFile = '../../data/cgl/rpoT2X1.h5'
     outFile = '../../data/cgl/rpoT2X1_v2.h5'
-    for di in np.arange(0.36, 0.421, 0.002).tolist() + np.arange(0.421, 0.42201, 0.0001).tolist() + [0.4225, 0.4226]:
-    # for di in [0.368]:
+    # for di in np.arange(0.36, 0.411, 0.001).tolist() + np.arange(0.414, 0.418, 0.001).tolist() + [0.4225, 0.4226]:
+    for di in [0.411, 0.42] + np.arange(0.421, 0.422, 0.0001).tolist():
         disp(di)
-        cqcglMoveRPOEVonlydi(inFile, outFile, di, 1)
+        cqcglMoveRPOdi(inFile, outFile, di, 1)
 
 if case == 80:
     """
@@ -242,9 +243,105 @@ if case == 80:
     
     scale = 1.3
     fig = plt.figure(figsize=[6/scale, 4/scale])
-    ax = fig.add_subplot(111)    
-    ax.plot(dis, T,  c='b', lw=1, ls='-', marker='o', ms=5, mfc='r', mec='none')
+    ax = fig.add_subplot(111)
+    ax.plot(dis, T,  c='b', lw=1, ls='-', marker='o', ms=5, mfc='r',
+            mec='none')
     ax.set_xlabel(r'$d_i$', fontsize=20)
     ax.set_ylabel(r'$T_p$', fontsize=20)
     fig.tight_layout(pad=0)
     plt.show(block=False)
+
+
+if case == 90:
+    """
+    calculate the distance of rpo to the zero state
+    because we guess the reason that rpo does not exit
+    after a certain di is that it goes close to zero state
+    which is contracting.
+    """
+    N = 1024
+    d = 30
+    dis = np.arange(0.36, 0.421, 0.002).tolist() + np.arange(0.421, 0.42201, 0.0001).tolist() + [0.4225, 0.4226]
+    minNors = []
+    for di in dis:
+        print di
+        x, T, nstp, th, phi, err = cqcglReadRPOdi(
+            '../../data/cgl/rpoT2X1.h5', di, 1)
+        h = T / nstp
+        nstp = np.int(nstp)
+        cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+        aa = cgl.intg(x, nstp, 1)
+        aaHat, th2, phi2 = cgl.orbit2slice(aa)
+        nors = []
+        for i in range(aaHat.shape[0]):
+            nor = norm(aaHat[i])
+            nors.append(nor)
+
+        minNors.append(min(nors))
+
+    scale = 1.3
+    fig = plt.figure(figsize=[6/scale, 4/scale])
+    ax = fig.add_subplot(111)
+    ax.plot(dis, minNors,  c='b', lw=1, ls='-', marker='o', ms=5, mfc='r',
+            mec='none')
+    ax.set_xlabel(r'$d_i$', fontsize=20)
+    ax.set_ylabel(r'$\min|A|$', fontsize=20)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+
+if case == 100:
+    """
+    view the unstable manifold for some unstable Hopf cycles
+    """
+    N = 1024
+    d = 30
+    di = 0.4226
+
+    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                          di, 1)
+    cgl = pyCqcgl1d(N, d, 0.0002, True, 0, 4.0, 0.8, 0.01, di, 4)
+    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
+    eigvectors = Tcopy(realve(eigvectors))
+    a0Hat = cgl.orbit2slice(a0)[0]
+    veHat = cgl.ve2slice(eigvectors, a0)
+
+    x, T, nstp, th, phi, err, e, v = cqcglReadRPOEVdi(
+        '../../data/cgl/rpoT2X1EV31.h5', di, 1)
+    h = T / nstp
+    nstp = np.int(nstp)
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+    aa = cgl.intg(x, nstp, 1)
+    aaHat, th, phi = cgl.orbit2slice(aa)
+    aaHat -= a0Hat
+
+    h3 = 0.0005
+    cgl3 = pyCqcgl1d(N, d, h3, False, 0, 4.0, 0.8, 0.01, di, 4)
+    a0Erg = x + v[0] * 1e-3
+    nstp = 70000
+    aaErg = cgl3.intg(a0Erg, 10000, 10000)
+    a0Erg = aaErg[-1]
+    aaErg = cgl3.intg(a0Erg, nstp, 2)
+    aaErgHat, th, th = cgl3.orbit2slice(aaErg)
+    aaErgHat -= a0Hat
+    
+    # e1, e2 = orthAxes2(veHat[0], veHat[1])
+    e1, e2, e3 = orthAxes(veHat[0], veHat[1], veHat[6])
+    aaHatProj = np.dot(aaHat, np.vstack((e1, e2, e3)).T)
+    aaErgHatProj = np.dot(aaErgHat, np.vstack((e1, e2, e3)).T)
+    OProj = np.dot(-a0Hat, np.vstack((e1, e2, e3)).T)
+
+    fig = plt.figure(figsize=[6, 4])
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(aaHatProj[:, 0], aaHatProj[:, 1], aaHatProj[:, 2], c='r', lw=2)
+    ax.plot(aaErgHatProj[:, 0], aaErgHatProj[:, 1],
+            aaErgHatProj[:, 2], c='g', lw=1, alpha=0.4)
+    ax.scatter([0], [0], [0], s=80, marker='o', c='b',  edgecolors='none')
+    ax.scatter(OProj[0], OProj[1], OProj[2], s=60, marker='o', c='c',
+               edgecolors='none')
+    ax.set_xlabel(r'$e_1$', fontsize=25)
+    ax.set_ylabel(r'$e_2$', fontsize=25)
+    ax.set_zlabel(r'$e_3$', fontsize=25)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+    # plotConfigSurfaceFourier(cgl, aa1, [0, d, 0, T1])

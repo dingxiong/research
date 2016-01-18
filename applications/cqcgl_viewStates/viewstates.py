@@ -89,7 +89,6 @@ if case == 2:
     plotOneConfig(tmprc, size=[6, 4])
     plotOneConfig(tmpic, size=[6, 4])
 
-
     nstp = 2000
     aa = cgl.intg(a0Reflected, nstp, 1)
     plotConfigSpace(cgl.Fourier2Config(aa), [0, d, 0, nstp*h], [0, 2])

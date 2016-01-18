@@ -27,7 +27,7 @@ int main(){
     
     cout.precision(15);
     
-    switch (71){
+    switch (80){
 	
     case 1:{
 	/* try to find periodic orbit with the old form of cqcgl
@@ -346,11 +346,11 @@ int main(){
 	 */
 	const int N = 1024;
 	const double d = 30;
-	const double di = 0.422;
-	const double diInc = -0.0001;
+	const double di = 0.414;
+	const double diInc = -0.001;
 	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1.h5");
 	
-	for(int i = 0; i < 200; i++){
+	for(int i = 0; i < 1; i++){
 	    double diOld = di + i * diInc;
 	    int nstp;
 	    double T, th, phi, err;

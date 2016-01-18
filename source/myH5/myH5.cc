@@ -31,16 +31,42 @@ namespace MyH5 {
     }
     
     /**
+     * @brief read a double vector
+     */
+    VectorXd readVectorXd(H5File &file, string DSitem){
+	DataSet item = file.openDataSet(DSitem);
+	DataSpace dsp = item.getSpace();
+	const int D = dsp.getSimpleExtentNdims();
+	assert ( D == 1);
+	
+	hsize_t dims[1];
+	int ndims = dsp.getSimpleExtentDims(dims, NULL);
+	VectorXd x(dims[0]);
+	item.read(x.data(), PredType::NATIVE_DOUBLE);
+
+	return x;
+    }
+
+    /**
      * @brief write a double matrix
      */
     void writeMatrixXd(H5File &file, string DSitem, const MatrixXd &mat){
 	const int N = mat.rows();
 	const int M = mat.cols();
-
-	hsize_t dim[] = {M, N};	/* HDF5 uses row major by default */
-	DataSpace dsp(2, dim);
-	DataSet item = file.createDataSet(DSitem, PredType::NATIVE_DOUBLE, dsp);
-	item.write(mat.data(), PredType::NATIVE_DOUBLE);
+	
+	if ( 1 == M){
+	    hsize_t dim[] = {N};
+	    DataSpace dsp(1, dim);
+	    DataSet item = file.createDataSet(DSitem, PredType::NATIVE_DOUBLE, dsp);
+	    item.write(mat.data(), PredType::NATIVE_DOUBLE);
+	}
+	else {
+	    hsize_t dim[] = {M, N};	/* HDF5 uses row major by default */
+	    DataSpace dsp(2, dim);
+	    DataSet item = file.createDataSet(DSitem, PredType::NATIVE_DOUBLE, dsp);
+	    item.write(mat.data(), PredType::NATIVE_DOUBLE);
+	}
+	
     }
 
     /**

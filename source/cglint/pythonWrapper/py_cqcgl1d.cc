@@ -166,7 +166,7 @@ public:
 
     
     /* wrap the integrator */
-    bn::ndarray PYintg(bn::ndarray a0, size_t nstp, size_t np){
+    bn::ndarray PYintg(bn::ndarray a0, int nstp, int np){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);

@@ -10,5 +10,7 @@ di_hopf: contains all figs related to Hopf bifurcation in cqcgl.
 	old : previous wrong Hopf limit cycles
 	4THeatMap : the transition of Hopf cycles with respect to di
 
+rpoStab: contains all figs related to stability of rpo
+
 ######################################################################
 

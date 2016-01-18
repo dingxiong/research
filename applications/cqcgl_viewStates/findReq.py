@@ -51,7 +51,7 @@ def cqcglConvertReq(N2, inputFile, outputFile, indices,
         cqcglSaveReq(outputFile, str(i), a, wth, wphi, err)
 
 
-case = 10
+case = 11
 
 if case == 1:
     """
@@ -104,10 +104,12 @@ if case == 10:
     N = 1024
     d = 30
     h = 0.0002
-    di = 0.98
+    diOld = 0.41
+    di = diOld + 0.001
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
     
-    a0, wth0, wphi0, err = cqcglReadReq('req96.h5', '1')
+    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                          diOld, 1)
     a, wth, wphi, err = cgl.findReq(a0, wth0, wphi0, 40, 1e-12, True, True)
     nstp = 10000
     aa = cgl.intg(a, nstp, 1)
@@ -115,9 +117,40 @@ if case == 10:
     plot1dfig(a)
     plotOneConfigFromFourier(cgl, a)
     print wth, wphi
-    cqcglSaveReq("req98.h5", '1', a, wth, wphi, err)
+    # cqcglSaveReq("req98.h5", '1', a, wth, wphi, err)
     eigvalues, eigvectors = eigReq(cgl, a, wth, wphi)
     print eigvalues[:10]
+
+if case == 11:
+    """
+    use existing req to find the req with slightly different di
+    and do this for a sequence of di s.
+    """
+    N = 1024
+    d = 30
+    h = 0.0002
+
+    diOld = 0.37
+    diInc = 0.001
+    for i in range(9):
+        di = diOld + diInc
+        print di
+
+        cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+
+        fileName = '../../data/cgl/reqDi.h5'
+        a0, wth0, wphi0, err0 = cqcglReadReqdi(fileName, diOld, 1)
+        a, wth, wphi, err = cgl.findReq(a0, wth0, wphi0, 20, 1e-12, True, True)
+
+        plotOneConfigFromFourier(cgl, a, save=True, name=str(di)+'.png')
+        print wth, wphi, err
+        e, v = eigReq(cgl, a, wth, wphi)
+        print e[:8]
+        cqcglSaveReqEVdi(fileName, di, 1, a, wth, wphi, err,
+                         e.real, e.imag, v[:, :10].real, v[:, :10].imag)
+
+        diOld += diInc
+
 
 if case == 3:
     """

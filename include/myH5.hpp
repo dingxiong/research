@@ -24,11 +24,12 @@ namespace MyH5 {
 
     template <typename Scalar>
     void writeScalar(H5File &file, string DSitem, Scalar value);
-
+    
     void writeMatrixXd(H5File &file, string DSitem, const MatrixXd &mat);
     void writeVectorXd(H5File &file, string DSitem, const VectorXd &vec);
     MatrixXd readMatrixXd(H5File &file, string DSitem);
-
+    VectorXd readVectorXd(H5File &file, string DSitem);
+    
     //////////////////////////////////////////////////////////////////////
     /* KS related */
     MatrixXi

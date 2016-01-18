@@ -9,7 +9,8 @@ fileName = '../../data/cgl/rpoT2X1.h5';
 saveFiles = {'../../data/cgl/rpoT2X1_v2.h5', '../../data/cgl/rpoT2X1_v3.h5'};
 
 %for di = [0.36:0.002:0.42, 0.421:0.0001:0.422, 0.4225, 0.4226]
-for di = [0.368]
+for di = [0.361:0.002:0.419]
+%for di = [0.368]
     
     fprintf(1, '==== di = %f ==== \n', di);
     
@@ -19,8 +20,8 @@ for di = [0.368]
 
     gintgv = @(v) cqcglGintgv_threads(N, d, h, 1, 4.0, 0.8, 0.01, di, 4, x, v, ...
                                       th, phi, nstp);
-    k = [16, 31];
-    m = [26, 41];
+    k = [15, 30];
+    m = [25, 40];
     
     for i = 1:length(k)
         

@@ -308,62 +308,6 @@ def eigReq(cgl, a0, wth0, wphi0):
     return eigvalue, eigvector
 
 
-def Tcopy(x):
-    """
-    transpose and change the memory layout
-    """
-    m, n = x.shape
-    y = np.zeros((n, m))
-    for i in range(n):
-        y[i] = x[:, i]
-
-    return y
-
-
-def realve(ve):
-    n, m = ve.shape
-    rve = np.zeros((n, m))
-    i = 0
-    while i < m:
-        if np.sum(np.iscomplex(ve[:, i])) > 0:
-            rve[:, i] = ve[:, i].real
-            rve[:, i+1] = ve[:, i].imag
-            i = i+2
-        else:
-            rve[:, i] = ve[:, i]
-            i = i+1
-
-    return rve
-
-
-def orthAxes2(e1, e2):
-    """
-    construct an orthogonal two vectors from 2 general vectors.
-    """
-    n = e1.shape[0]
-    x = np.zeros((n, 2))
-    x[:, 0] = e1
-    x[:, 1] = e2
-    q, r = LA.qr(x)
-
-    return q[:, 0], q[:, 1]
-
-
-def orthAxes(e1, e2, e3):
-    n = e1.shape[0]
-    x = np.zeros((n, 3))
-    x[:, 0] = e1
-    x[:, 1] = e2
-    x[:, 2] = e3
-    q, r = LA.qr(x)
-
-    return q[:, 0], q[:, 1], q[:, 2]
-
-
-def mag2vec(v1, v2):
-    return np.sqrt(v1**2 + v2**2)
-
-
 def cqcglSaveReq(fileName, groupName, a, wth, wphi, err):
     f = h5py.File(fileName, 'a')
     req = f.create_group(groupName)
@@ -372,6 +316,11 @@ def cqcglSaveReq(fileName, groupName, a, wth, wphi, err):
     req.create_dataset('wphi', data=wphi)
     req.create_dataset('err', data=err)
     f.close()
+
+
+def cqcglSaveReqdi(fileName, di, index, a, wth, wphi, err):
+    groupName = format(di, '.6f') + '/' + str(index)
+    return cqcglSaveReq(fileName, groupName, a, wth, wphi, err)
 
 
 def cqcglSaveReqEV(fileName, groupName, a, wth, wphi, err, er, ei, vr, vi):
@@ -386,6 +335,11 @@ def cqcglSaveReqEV(fileName, groupName, a, wth, wphi, err, er, ei, vr, vi):
     req.create_dataset('vr', data=vr)
     req.create_dataset('vi', data=vi)
     f.close()
+
+
+def cqcglSaveReqEVdi(fileName, di, index, a, wth, wphi, err, er, ei, vr, vi):
+    groupName = format(di, '.6f') + '/' + str(index)
+    cqcglSaveReqEV(fileName, groupName, a, wth, wphi, err, er, ei, vr, vi)
 
 
 def cqcglReadReq(fileName, groupName):
@@ -898,3 +852,62 @@ def centerOne(N, frac):
     a[:N2] = 0
     a[-N2:] = 0
     return a
+
+
+def Tcopy(x):
+    """
+    transpose and change the memory layout
+    """
+    m, n = x.shape
+    y = np.zeros((n, m))
+    for i in range(n):
+        y[i] = x[:, i]
+
+    return y
+
+
+def realve(ve):
+    """
+    transform complex vectors to real format
+    """
+    n, m = ve.shape
+    rve = np.zeros((n, m))
+    i = 0
+    while i < m:
+        if np.sum(np.iscomplex(ve[:, i])) > 0:
+            rve[:, i] = ve[:, i].real
+            rve[:, i+1] = ve[:, i].imag
+            i = i+2
+        else:
+            rve[:, i] = ve[:, i]
+            i = i+1
+
+    return rve
+
+
+def orthAxes2(e1, e2):
+    """
+    construct an orthogonal two vectors from 2 general vectors.
+    """
+    n = e1.shape[0]
+    x = np.zeros((n, 2))
+    x[:, 0] = e1
+    x[:, 1] = e2
+    q, r = LA.qr(x)
+
+    return q[:, 0], q[:, 1]
+
+
+def orthAxes(e1, e2, e3):
+    n = e1.shape[0]
+    x = np.zeros((n, 3))
+    x[:, 0] = e1
+    x[:, 1] = e2
+    x[:, 2] = e3
+    q, r = LA.qr(x)
+
+    return q[:, 0], q[:, 1], q[:, 2]
+
+
+def mag2vec(v1, v2):
+    return np.sqrt(v1**2 + v2**2)

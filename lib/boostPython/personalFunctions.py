@@ -358,7 +358,7 @@ def cqcglReadReqdi(fileName, di, index):
     return cqcglReadReq(fileName, groupName)
 
 
-def cqcglReadReqAll(fileName, index):
+def cqcglReadReqAll(fileName, index, hasEV):
     f = h5py.File(fileName, 'r')
     gs = f.keys()
     f.close()
@@ -367,7 +367,10 @@ def cqcglReadReqAll(fileName, index):
     for i in gs:
         di = float(i)
         dis.append(di)
-        x = cqcglReadReqdi(fileName, di, index)
+        if hasEV:
+            x = cqcglReadReqEVdi(fileName, di, index)
+        else:
+            x = cqcglReadReqdi(fileName, di, index)
         xx.append(x)
     return dis, xx
 

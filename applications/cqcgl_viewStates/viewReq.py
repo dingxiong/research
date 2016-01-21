@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 60
+case = 12
 
 if case == 10:
     """
@@ -47,8 +47,9 @@ if case == 12:
     N = 1024
     d = 30
     h = 0.0002
-    di = 0.38
-    a0, wth0, wphi0, err = cqcglReadReq('req38.h5', '1')
+    di = 0.4226
+    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                          di, 2)
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
 
     nstp = 10000
@@ -341,4 +342,121 @@ if case == 80:
     plt.show(block=False)
 
 
+if case == 90:
+    """
+    view the unstable manifold of the req in the symmetry reduced projected
+    coordinates
+    """
+    N = 1024
+    d = 30
+    h = 0.0002
+
+    di = 0.4227
+    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                          di, 1)
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+
+    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
+    eigvectors = Tcopy(realve(eigvectors))
+    a0Hat = cgl.orbit2slice(a0)[0]
+    veHat = cgl.ve2slice(eigvectors, a0)
+
+    h3 = 0.0005
+    cgl3 = pyCqcgl1d(N, d, h3, False, 0, 4.0, 0.8, 0.01, di, 4)
+    nstp = 70000
+    a0Erg = a0 + eigvectors[0]*1e-3
+    aaErg = cgl3.intg(a0Erg, 50000, 50000)
+    a0Erg = aaErg[-1]
+    aaErg = cgl3.intg(a0Erg, nstp, 2)
+    aaErgHat, th3, th3 = cgl3.orbit2slice(aaErg)
+    aaErgHat -= a0Hat
+    
+    # e1, e2 = orthAxes2(veHat[0], veHat[1])
+    e1, e2, e3 = orthAxes(veHat[0], veHat[1], veHat[6])
+    aaErgHatProj = np.dot(aaErgHat, np.vstack((e1, e2, e3)).T)
+    OProj = np.dot(-a0Hat, np.vstack((e1, e2, e3)).T)
+
+    fig = plt.figure(figsize=[6, 4])
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(aaErgHatProj[:, 0], aaErgHatProj[:, 1],
+            aaErgHatProj[:, 2], c='g', lw=1, alpha=0.4)
+    i1 = -1000
+    ax.plot(aaErgHatProj[i1:, 0], aaErgHatProj[i1:, 1],
+            aaErgHatProj[i1:, 2], c='k', lw=2)
+    ax.scatter([0], [0], [0], s=80, marker='o', c='b',  edgecolors='none')
+    ax.scatter(OProj[0], OProj[1], OProj[2], s=60, marker='o', c='c',
+               edgecolors='none')
+    ax.set_xlabel(r'$e_1$', fontsize=25)
+    ax.set_ylabel(r'$e_2$', fontsize=25)
+    ax.set_zlabel(r'$e_3$', fontsize=25)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+    # plotConfigSurfaceFourier(cgl, aa1, [0, d, 0, T1])
+
+    # vel = []
+    # for i in range(-10000, -000):
+    #     vel.append(norm(cgl.velocity(aaErg[i])))
+
+if case == 100:
+    """
+    view the 2 soliton solution together, and
+    see how the unstable manifold of the first
+    hits the second solition.
+    """
+    N = 1024
+    d = 30
+    h = 0.0002
+
+    di = 0.4227
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                          di, 1)
+    a1, wth1, wphi1, err1 = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                           di, 2)
+
+    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
+    eigvectors = Tcopy(realve(eigvectors))
+    a0Hat = cgl.orbit2slice(a0)[0]
+    veHat = cgl.ve2slice(eigvectors, a0)
+    a1Hat = cgl.orbit2slice(a1)[0]
+    a1Hat -= a0Hat
+
+    h3 = 0.0005
+    cgl3 = pyCqcgl1d(N, d, h3, False, 0, 4.0, 0.8, 0.01, di, 4)
+    nstp = 70000
+    a0Erg = a0 + eigvectors[0]*1e-3
+    aaErg = cgl3.intg(a0Erg, 50000, 50000)
+    a0Erg = aaErg[-1]
+    aaErg = cgl3.intg(a0Erg, nstp, 2)
+    aaErgHat, th3, th3 = cgl3.orbit2slice(aaErg)
+    aaErgHat -= a0Hat
+    
+    # e1, e2 = orthAxes2(veHat[0], veHat[1])
+    e1, e2, e3 = orthAxes(veHat[0], veHat[1], veHat[6])
+    aaErgHatProj = np.dot(aaErgHat, np.vstack((e1, e2, e3)).T)
+    OProj = np.dot(-a0Hat, np.vstack((e1, e2, e3)).T)
+    a1HatProj = np.dot(a1Hat, np.vstack((e1, e2, e3)).T)
+
+    fig = plt.figure(figsize=[6, 4])
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(aaErgHatProj[:, 0], aaErgHatProj[:, 1],
+            aaErgHatProj[:, 2], c='g', lw=1, alpha=0.4)
+    # i1 = -1000
+    # ax.plot(aaErgHatProj[i1:, 0], aaErgHatProj[i1:, 1],
+    #         aaErgHatProj[i1:, 2], c='k', lw=2)
+    ax.scatter([0], [0], [0], s=80, marker='o', c='b',  edgecolors='none')
+    ax.scatter(OProj[0], OProj[1], OProj[2], s=60, marker='o', c='c',
+               edgecolors='none')
+    ax.scatter(a1HatProj[0], a1HatProj[1], a1HatProj[2],
+               s=60, marker='o', c='m', edgecolors='none')
+    ax.set_xlabel(r'$e_1$', fontsize=25)
+    ax.set_ylabel(r'$e_2$', fontsize=25)
+    ax.set_zlabel(r'$e_3$', fontsize=25)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+    # plotConfigSurfaceFourier(cgl, aa1, [0, d, 0, T1])
+
+    # vel = []
+    # for i in range(-10000, -000):
+    #     vel.append(norm(cgl.velocity(aaErg[i])))
 

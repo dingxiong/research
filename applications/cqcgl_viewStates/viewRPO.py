@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 70
+case = 1
 
 if case == 1:
     """
@@ -10,7 +10,7 @@ if case == 1:
     """
     N = 1024
     d = 30
-    di = 0.417
+    di = 0.4226
     x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
                                               di, 1)
     h = T / nstp
@@ -58,7 +58,7 @@ if case == 1:
     plt.show(block=False)
     
     # plot 4 periods
-    M = 4
+    M = 6
     aa2 = cgl.intg(x, nstp*M, 1)
     plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, nstp*h*M])
 
@@ -181,7 +181,8 @@ if case == 60:
     N = 1024
     d = 30
     di = 0.36
-    x, T, nstp, th, phi, err, es, vs = cqcglReadRPOEVdi('../../data/cgl/rpoT2X1_v2.h5', di, 1)
+    x, T, nstp, th, phi, err, es, vs = cqcglReadRPOEVdi(
+        '../../data/cgl/rpoT2X1_v2.h5', di, 1)
     h = T / nstp
     cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, 0.01, di, 4)
 
@@ -199,16 +200,27 @@ if case == 60:
     print es
     print ang1, ang2, ang3
 
+if case == 61:
+    """
+    Test whether the Krylov-Schur algorithm produces the correct
+    number of marginal exponents.
+    This is very import indicator for it to resolve degenercy.
+    """
+    for di in np.arange(0.36, 0.4211, 0.001).tolist() + np.arange(0.4211, 0.42201, 0.0001).tolist() + [0.4225, 0.4226]:
+        x, T, nstp, th, phi, err, es, vs = cqcglReadRPOEVdi(
+            '../../data/cgl/rpoT2X1EV30.h5', di, 1)
+        print di, es[0][:4]
+
 if case == 70:
     """
     move rpo with FE/FV
     """
-    inFile = '../../data/cgl/rpoT2X1.h5'
-    outFile = '../../data/cgl/rpoT2X1_v2.h5'
+    inFile = '../../data/cgl/rpoT2X1_v3.h5'
+    outFile = '../../data/cgl/rpoT2X1EV30.h5'
     # for di in np.arange(0.36, 0.411, 0.001).tolist() + np.arange(0.414, 0.418, 0.001).tolist() + [0.4225, 0.4226]:
-    for di in [0.411, 0.42] + np.arange(0.421, 0.422, 0.0001).tolist():
+    for di in np.arange(0.361, 0.4191, 0.002).tolist():
         disp(di)
-        cqcglMoveRPOdi(inFile, outFile, di, 1)
+        cqcglMoveRPOEVdi(inFile, outFile, di, 1)
 
 if case == 80:
     """
@@ -251,6 +263,61 @@ if case == 80:
     fig.tight_layout(pad=0)
     plt.show(block=False)
 
+if case == 81:
+    """
+    For the Hopf bifurcation, we can actually estimate the parameters
+    by experimental data. Here,
+    we plot 1/T and the leading stable expoent of rpo and unstable expoent
+    of req
+    """
+    dic = 0.36
+
+    dis, xx = cqcglReadRPOAll('../../data/cgl/rpoT2X1EV30.h5', 1, True)
+    T = []
+    e1 = []
+    for i in range(len(dis)):
+        e = xx[i][6][0]
+        ep = removeMarginal(e, 3)
+        e1.append(ep[0])
+        T.append(xx[i][1])
+
+    ix = [i for i in range(len(dis)) if dis[i] <= dic+0.01 and dis[i] >= dic]
+
+    dis2, xx2 = cqcglReadReqAll('../../data/cgl/reqDi.h5', 1, True)
+    e1p = []
+    for i in range(len(dis2)):
+        e = xx2[i][4]
+        ep = removeMarginal(e, 2)
+        e1p.append(ep[0])
+        
+    ix2 = [i for i in range(len(dis2)) if dis2[i] <= dic+0.01 and dis2[i] >= dic]
+
+    # plot
+    scale = 1.3
+    fig = plt.figure(figsize=[6/scale, 4/scale])
+    ax = fig.add_subplot(111)
+    ax.scatter(np.array(dis)[ix] - dic, -np.array(e1)[ix]/2,
+               s=25, marker='o', facecolor='r', edgecolor='none')
+    ax.scatter(np.array(dis2)[ix2] - dic, np.array(e1p)[ix2],
+               s=25, marker='s', facecolor='b', edgecolor='none')
+    # ax.plot(dis, np.zeros(len(dis)), c='g', ls='--', lw=2)
+    ax.set_xlabel(r'$d_i - d_{ic}$', fontsize=20)
+    # ax.set_ylabel(r'$\mu_1$', fontsize=20)
+    ax.set_xlim([-0.001, 0.011])
+    ax.set_ylim([0, 0.1])
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+    
+    scale = 1.3
+    fig = plt.figure(figsize=[6/scale, 4/scale])
+    ax = fig.add_subplot(111)
+    ax.scatter(np.array(dis)[ix] - dic, 1 / np.array(T)[ix],
+               s=25, marker='o', facecolor='r', edgecolor='none')
+    ax.set_xlim([-0.001, 0.011])
+    ax.set_xlabel(r'$d_i - d_{ic}$', fontsize=20)
+    ax.set_ylabel(r'$1/T_p$', fontsize=20)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
 
 if case == 90:
     """

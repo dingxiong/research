@@ -6,7 +6,7 @@ from time import time
 from py_cqcgl1d_threads import pyCqcgl1d, pyCqcglRPO
 from personalFunctions import *
 
-case = 3
+case = 4
 
 if case == 1:
     """
@@ -107,3 +107,42 @@ if case == 3:
     #                     rpoGuess['th'].take(0), rpoGuess['phi'].take(0),
     #                     100, 1e-12, True, True)
 
+if case == 4:
+    """
+    use the new form of cqcgl with larger di to find
+    candidate of periodic orbit initial conditon
+    """
+    N = 512*2
+    d = 30
+    h = 0.0002
+
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, 0.04, 4)
+    A0 = 5*centerRand(2*N, 0.2)
+    a0 = cgl.Config2Fourier(A0)
+    nstp = 15000
+    aa = cgl.intg(a0, nstp, 1)
+    for i in range(2):
+        aa = cgl.intg(aa[-1], nstp, 1)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+
+    aaHat, ths, phis = cgl.orbit2sliceWrap(aa)
+    i1 = int(0.22/h)
+    i2 = int(1.2/h)
+    nstp = i2-i1
+    T = nstp * h
+    th = ths[i1] - ths[i2]
+    phi = phis[i1] - phis[i2]
+    err = norm(aaHat[i1]-aaHat[i2])
+    M = 20
+    nstp /= M
+    x = aa[i1:i2:nstp][:M]
+    print err, nstp, T, th, phi
+    # cqcglSaveRPO('rpo2.h5', '1', x, T, nstp, th, phi, err)
+
+    aa2 = cgl.intg(x[0], nstp*M, 1)
+    plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, nstp*M*h])
+    aa3 = cgl.intg(x[0]*(1+0.00001*rand(cgl.Ndim)), nstp*M, 1)
+    plotConfigSpaceFromFourier(cgl, aa3, [0, d, 0, nstp*M*h])
+    dif = aa3-aa2
+    plot1dfig(norm(dif, axis=1))
+    plot1dfig(norm(dif, axis=1) / norm(aa2, axis=1), yscale='log')

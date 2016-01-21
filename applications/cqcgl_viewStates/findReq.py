@@ -130,23 +130,23 @@ if case == 11:
     d = 30
     h = 0.0002
 
-    diOld = 0.37
-    diInc = 0.001
-    for i in range(9):
+    diOld = 0.94
+    diInc = 0.02
+    for i in range(1):
         di = diOld + diInc
         print di
 
         cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
 
         fileName = '../../data/cgl/reqDi.h5'
-        a0, wth0, wphi0, err0 = cqcglReadReqdi(fileName, diOld, 1)
+        a0, wth0, wphi0, err0 = cqcglReadReqdi(fileName, diOld, 2)
         a, wth, wphi, err = cgl.findReq(a0, wth0, wphi0, 20, 1e-12, True, True)
 
         plotOneConfigFromFourier(cgl, a, save=True, name=str(di)+'.png')
         print wth, wphi, err
         e, v = eigReq(cgl, a, wth, wphi)
         print e[:8]
-        cqcglSaveReqEVdi(fileName, di, 1, a, wth, wphi, err,
+        cqcglSaveReqEVdi(fileName, di, 2, a, wth, wphi, err,
                          e.real, e.imag, v[:, :10].real, v[:, :10].imag)
 
         diOld += diInc

@@ -27,7 +27,7 @@ int main(){
     
     cout.precision(15);
     
-    switch (80){
+    switch (30){
 	
     case 1:{
 	/* try to find periodic orbit with the old form of cqcgl
@@ -99,7 +99,7 @@ int main(){
 	 * using GMRES Hook method with multishooting method
 	 * space resolution is large
 	 */
-	const int N = 512*2;
+	const int N = 1024;
 	const double d = 30;
 	const double h = 0.0002;
 
@@ -110,7 +110,7 @@ int main(){
 	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
 	
 	int M = x.cols();
-	int S = 1;
+	int S = 5;
 	M /= S;
 	nstp *= S;
  
@@ -120,9 +120,9 @@ int main(){
 	}
 
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
-	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, -0.01, -0.04, 4);
-	auto result = cglrpo.findRPOM_hook(xp, T, th, phi, 1e-12, 1e-3, 100, 8, 1e-2, 500, 10);
-	CqcglWriteRPO("rpo3.h5", "2",
+	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, 0.01, 0.04, 4);
+	auto result = cglrpo.findRPOM_hook(xp, T, th, phi, 1e-12, 1e-3, 100, 8, 1e-2, 500, 30);
+	CqcglWriteRPO("rpo2.h5", "2",
 		      std::get<0>(result), /* x */
 		      std::get<1>(result), /* T */
 		      nstp,		   /* nstp */

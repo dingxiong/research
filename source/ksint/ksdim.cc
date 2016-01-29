@@ -57,16 +57,32 @@ anglePO(const string fileName, const string ppType,
     return std::make_pair(ang_po, boundStrict);
 }
 
+
 /**
  * Test the tangency of tangent bundle.
  *
  * @param[in] N         number of FVs at each point 
  * @param[in] NN        number of periodic orbits
  * @param[in] spType    "vector" or "space"
+ * @param[in] M         number of angles
+ * @param[in] saveFolder folder name to save angles
+ * @see anglePOs()
  */
 void
 anglePOs(const string fileName, const string ppType,
 	 const int N, const int NN,
+	 const string saveFolder,
+	 const string spType, const int M)
+{
+    std::vector<int> ppIds(NN);
+    for(int i = 0; i < NN; i++) ppIds[i] = i+1;
+    anglePOs(fileName, ppType, N, ppIds, saveFolder, spType, M);
+}
+
+
+void
+anglePOs(const string fileName, const string ppType,
+	 const int N, const std::vector<int> ppIds,
 	 const string saveFolder,
 	 const string spType, const int M)
 {
@@ -82,42 +98,60 @@ anglePOs(const string fileName, const string ppType,
     }
     ////////////////////////////////////////////////////////////
     
-    ////////////////////////////////////////////////////////////
-    // specify the save folder
-    ofstream file[M];
-    string angName("ang");
-    for(size_t i = 0; i < M; i++){
-	file[i].open(saveFolder + angName + to_string(i) + ".dat", ios::trunc);
-	file[i].precision(16);
+    //////////////////////////////////////////////////////////// 
+    // create subfolders for each ppId
+    for(size_t i = 0; i < ppIds.size(); i++){
+	std::string tmp = saveFolder + '/' + to_string(ppIds[i]);
+	int s = mkdir( tmp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	if(s != 0){
+	    fprintf(stderr, "\n creating ppId folder fails. \n");
+	    exit(-1);
+	}
     }
     ////////////////////////////////////////////////////////////
     
     /////////////////////////////////////////////////////////////////	
     // get the index of POs which converge.
-    MatrixXi status = MyH5::checkExistEV(fileName, ppType, NN); 
-    for(size_t i = 0; i < NN; i++)
-	{
-	    if( 1 == status(i,0) ){
-		int ppId = i + 1;	      
-		printf("========= i = %zd ========\n", i);
-		std::pair<MatrixXd, MatrixXi> tmp =
-		    anglePO(fileName, ppType, ppId, subspDim);
-		MatrixXd &ang = tmp.first;
-		MatrixXi &boundStrict = tmp.second;
-		cout << boundStrict << endl;
-		// check whether there are degeneracy
-		MatrixXi pro = boundStrict.row(0).array() *
-		    boundStrict.row(1).array() *
-		    boundStrict.row(2).array() *
-		    boundStrict.row(3).array();
-		for(size_t i = 0; i < M; i++){
-		    // only keep the orbits whose 4 bounds are not degenerate
-		    if(pro(0, i) == 1) file[i] << ang.col(i) << endl;
-		}
+    MatrixXi status = MyH5::checkExistEV(fileName, ppType, ppIds); 
+    for(size_t i = 0; i < ppIds.size(); i++){
+
+	if( 1 == status(i,0) ){
+
+	    int ppId = ppIds[i];	      
+	    printf("========= i = %zd, ppId = %d ========\n", i, ppId);
+
+	    // create files 
+	    ofstream file[M];
+	    string angName("ang");
+	    for(size_t j = 0; j < M; j++){
+		std::string tmp = saveFolder + '/' + to_string(ppId) + '/' + angName + to_string(j) + ".dat";
+		file[j].open(tmp, ios::trunc);
+		file[j].precision(16);
 	    }
+		
+	    // calculation
+	    
+	    std::pair<MatrixXd, MatrixXi> tmp =
+		anglePO(fileName, ppType, ppId, subspDim);
+	    MatrixXd &ang = tmp.first;
+	    MatrixXi &boundStrict = tmp.second;
+	    cout << boundStrict << endl;
+	    // check whether there are degeneracy
+	    MatrixXi pro = boundStrict.row(0).array() *
+		boundStrict.row(1).array() *
+		boundStrict.row(2).array() *
+		boundStrict.row(3).array();
+	    for(size_t i = 0; i < M; i++){
+		// only keep the orbits whose 4 bounds are not degenerate
+		if(pro(0, i) == 1) file[i] << ang.col(i) << endl;
+	    }
+		
+	    // close files
+	    for(size_t i = 0; i < M; i++) file[i].close();
 	}
-    for(size_t i = 0; i < M; i++) file[i].close();
+    }
 }
+
 
 /**
  * Calucate local expansion rate of FVs along a periodic orbit
@@ -203,19 +237,7 @@ void partialHyperbAll(const string fileName, const int NNppo, const int NNrpo,
     partialHyperbOneType(fileName, "rpo", NNrpo, saveFolder + "rpo/");
 }
 
-
-
-void orbitAndFvWholeSlice(const ArrayXd a, const string ppType, const MatrixXd ve){
-    int N = a.size();
-    assert(ve.rows() % N == 0);
-    const int NFV = ve.rows() / N;
-
-    const int Nks = N + 2;
-    KS ks(Nks, T/nstp, L);
-    ArrayXXd aa = ks.intg(a.col(0), nstp, space, nstp);
-    
-}
-
+/*
 void expandDifvAngle(const string fileName, const string ppType,
 		     const int ppId, const int gTpos,
 		     const MatrixXd difv, const VectorXi indexPO){
@@ -254,3 +276,4 @@ void expandDifvAngle(const string fileName, const string ppType,
     
     
 }
+*/

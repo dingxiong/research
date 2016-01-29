@@ -10,6 +10,10 @@
 #include <string>
 #include <fstream>
 #include "ksdim.hpp"
+#include <sys/types.h>
+#include <sys/stat.h> 		/* for create folder */
+#include <unistd.h>
+
 
 using namespace std;
 using namespace Eigen;
@@ -17,7 +21,7 @@ using namespace Eigen;
 int main(){
     cout.precision(16);
 
-    switch (1) {
+    switch (3) {
 
     case 1: {
 	MatrixXi subspDim(4,3); 
@@ -47,11 +51,42 @@ int main(){
     case 2: {			/* test the angle tangency */
 	string fileName("../../data/ks22h001t120x64EV.h5");
 	string ppType("rpo");
-	anglePOs(fileName, ppType, 30, 200, "./anglePOs64/rpo/vector/", "vector", 29);
+	anglePOs(fileName, ppType, 30, 200, "./anglePOs64/rpo/vector", "vector", 29);
 	break;
     }
 
-    case 3: {			/* test partialHyperb */
+    case 3: {			/* test the angle tangency
+				   but with diefferent style
+				*/
+	string fileName("../../data/ks22h001t120x64EV.h5");
+	std::vector<int> ppIds(10);
+	for(int i = 0; i < 10; i++) ppIds[i] = i+191;
+	
+	char buf[1000];
+	char* buffer = getcwd(buf, 1000);
+	string pwd = buf;
+	pwd = pwd + "/anglePOs64/"; 
+
+	// create folders
+	bool doCreate = false;
+	std::string fs[6]{"ppo", "ppo/space", "ppo/vector", "rpo", "rpo/space", "rpo/vector"};
+	int ss = 0;
+	if(doCreate){
+	    for(int i = 0; i < 6; i++){
+		int s = mkdir( (pwd + fs[i]).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
+		ss += s;
+	    }
+	}
+	
+	if ( ss == 0 ){
+	    anglePOs(fileName, "rpo", 30, ppIds, "./anglePOs64/rpo/space", "space", 29);
+	    anglePOs(fileName, "ppo", 30, ppIds, "./anglePOs64/ppo/space", "space", 29);
+	}
+
+	break;
+    }
+
+    case 30: {			/* test partialHyperb */
 	string fileName("../../data/ks22h001t120x64EV.h5");
 	string ppType("rpo");
 	MatrixXd expand  = partialHyperb(fileName, ppType, 3);
@@ -60,7 +95,7 @@ int main(){
 	break;
     }
 
-    case 4: {	       /* calculate the local expansion rate of FVs */
+    case 40: {	       /* calculate the local expansion rate of FVs */
 	string fileName("../../data/ks22h001t120x64EV.h5");
 	partialHyperbOneType(fileName, "rpo", 200, "./FVexpand/rpo/");
 	// partialHyperbAll(fileName, 200, 200, "./FVexpand/");

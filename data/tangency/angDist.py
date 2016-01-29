@@ -1,8 +1,4 @@
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-from numpy import *
-import scipy.io as sio
-from mpl_toolkits.mplot3d import Axes3D
+import os
 from personalFunctions import *
 
 ##################################################
@@ -43,7 +39,7 @@ def setAxis(ax):
                        fontsize=15)
     # ax.legend(loc='best', fontsize=12)
     ax.set_yscale('log')
-    ax.set_ylim([0.01, 100])
+    # ax.set_ylim([0.01, 100])
     ax.text(0.02, 20, r'$\rho(\theta)$', fontsize=20)
     # ax.set_ylabel(r'$\rho(\theta)$', fontsize=20, labelpad=-55)
 
@@ -62,6 +58,7 @@ def filterAng(a, ns, angSpan, angNum):
             y = a[i][j]*ns/(angSpan[i]*angNum[i])
             if y < 2e-2:
                 a[i][j] = 0
+
     
 ##################################################
 # load data
@@ -69,22 +66,32 @@ ixRange = range(0, 29)
 N = len(ixRange)
 
 folder = './anglePOs64/ppo/space/'
-fileName = [folder + 'ang' + str(i) + '.dat' for i in ixRange]
 folder2 = './anglePOs64/rpo/space/'
-fileName2 = [folder2 + 'ang' + str(i) + '.dat' for i in ixRange]
 ns = 1000
 
 # collect the data with rpo, ppo combined
 angs = []
 for i in range(N):
     print i
-    ang = arccos(loadtxt(fileName[i]))
-    ang2 = arccos(loadtxt(fileName2[i]))
-    angs.append(np.append(ang, ang2))
-    # angs.append(ang2)
+    as1 = np.empty(0)
+    as2 = np.empty(0)
+    for j in range(29, 34):
+        f1 = folder + str(j) + '/ang' + str(i) + '.dat'
+        if os.stat(f1).st_size > 0:
+            ang = arccos(loadtxt(f1))
+            as1 = np.append(as1, ang)
+            
+        f2 = folder2 + str(j) + '/ang' + str(i) + '.dat'
+        if os.stat(f2).st_size > 0:
+            ang2 = arccos(loadtxt(f2))
+            as2 = np.append(as2, ang2)
+
+    # angs.append(np.append(as1, as2))
+    angs.append(as2)
+
 ##################################################
 
-case = 1
+case = 2
 
 if case == 1:
     """
@@ -100,8 +107,8 @@ if case == 1:
         angSpan.append(max(angs[i])-min(angs[i]))
         at, bt = histogram(angs[i], ns)
         a.append(at)
+        b.append(bt)
         
-    b = bt
     filterAng(a, ns, angSpan, angNum)
     labs = ['k='+str(i+1) for i in ixRange]
     
@@ -112,22 +119,65 @@ if case == 1:
     fig = plt.figure(figsize=(4, 1.5))
     ax = fig.add_subplot(111)
     for i in range(7):
-        ax.plot(b[:-1], a[i]*ns/(angSpan[i]*angNum[i]), label=labs[i], lw=1.5)
+        ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), label=labs[i],
+                lw=1.5)
     setAxis(ax)
     plt.tight_layout(pad=0)
-    plt.show()
+    plt.show(block=False)
 
     fig = plt.figure(figsize=(4, 1.5))
     ax = fig.add_subplot(111)
     colors = cm.rainbow(linspace(0, 1, 11))
     for ix in range(11):
         i = 7 + 2*ix
-        ax.plot(b[:-1], a[i]*ns/(angSpan[i]*angNum[i]), c=colors[ix], lw=1.5)
+        ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), c=colors[ix], lw=1.5)
     setAxis(ax)
     plt.tight_layout(pad=0)
-    plt.show()
+    plt.show(block=False)
     
 if case == 2:
+    """
+    try to locate the resource of bad distribution at the bottom
+    """
+    a = []
+    b = []
+    angNum = []
+    angSpan = []
+    
+    for i in range(N):
+        print i
+        angNum.append(angs[i].shape[0])
+        angSpan.append(max(angs[i])-min(angs[i]))
+        at, bt = histogram(angs[i], ns)
+        a.append(at)
+        b.append(bt)
+        
+    labs = ['k='+str(i+1) for i in ixRange]
+    
+    np.savez_compressed('ab', a=a, b=b, ns=ns, angSpan=angSpan,
+                        angNum=angNum)
+
+    fig = plt.figure(figsize=(4, 1.5))
+    ax = fig.add_subplot(111)
+    for i in range(7):
+        ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), label=labs[i],
+                lw=1.5)
+    setAxis(ax)
+    plt.tight_layout(pad=0)
+    plt.show(block=False)
+
+    fig = plt.figure(figsize=(4, 1.5))
+    ax = fig.add_subplot(111)
+    colors = cm.rainbow(linspace(0, 1, 11))
+    for ix in range(11):
+        i = 7 + 2*ix
+        ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), c=colors[ix], lw=1.5)
+    setAxis(ax)
+    plt.tight_layout(pad=0)
+    plt.show(block=False)
+    
+
+if case == 20:
     a = []
     b = []
     angNum = []
@@ -170,7 +220,7 @@ if case == 2:
     plt.show()
 
 
-if case == 3:
+if case == 30:
     nstps = []
     for i in range(200):
         a, T, nstp, r, s = KSreadPO('../ks22h001t120x64EV.h5', 'rpo', i+1)

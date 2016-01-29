@@ -96,13 +96,13 @@ namespace MyH5 {
      *  @return N*2 matrix stands for exsitence of
      *          Floquet exponents and Floquet vector. '1' exist, '0' not exist.
      */
-    MatrixXi checkExistEV(const string fileName, const string ppType, const int NN){
+    MatrixXi checkExistEV(const string fileName, const string ppType, const std::vector<int> ppIds){
 	H5File file(fileName, H5F_ACC_RDONLY);  
   
-	MatrixXi status(NN, 2);
+	MatrixXi status(ppIds.size(), 2);
   
-	for(size_t i = 0; i < NN; i++){
-	    int ppId = i + 1;
+	for(size_t i = 0; i < ppIds.size(); i++){
+	    int ppId = ppIds[i];
 	    string DS_e = "/" + ppType + "/" + to_string(ppId) + "/" + "e";
 	    string DS_ve = "/" + ppType + "/" + to_string(ppId) + "/" + "ve";
 	    // check the existance of eigenvalues
@@ -124,6 +124,13 @@ namespace MyH5 {
 	}
   
 	return status;
+    }
+
+    MatrixXi checkExistEV(const string fileName, const string ppType, const int NN){
+
+	std::vector<int> ppIds(NN);
+	for(int i = 0; i < NN; i++) ppIds[i] = i+1;
+	return checkExistEV(fileName, ppType, ppIds);
     }
 
     

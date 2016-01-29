@@ -34,6 +34,8 @@ namespace MyH5 {
     /* KS related */
     MatrixXi
     checkExistEV(const string fileName, const string ppType, const int NN);
+    MatrixXi
+    checkExistEV(const string fileName, const string ppType, const std::vector<int> ppIds);
     std::tuple<MatrixXd, double, double>
     KSreadOrigin(const string fileName, const string &ppType, const int ppId);
     std::tuple<MatrixXd, double, double, double, double>

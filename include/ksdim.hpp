@@ -4,6 +4,8 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include <cstdio>
+#include <sys/types.h>
+#include <sys/stat.h> 		/* for create folder */
 
 std::pair<Eigen::MatrixXd, Eigen::MatrixXi> 
 anglePO(const std::string fileName, const std::string ppType,
@@ -14,6 +16,11 @@ anglePOs(const std::string fileName, const std::string ppType,
 	const int N, const int NN,
 	const std::string saveFolder,
 	const std::string spType, const int M = 29);
+void
+anglePOs(const std::string fileName, const std::string ppType,
+	 const int N, const std::vector<int> ppIds,
+	 const std::string saveFolder,
+	 const std::string spType, const int M);
 
 Eigen::MatrixXd partialHyperb(const std::string fileName,
 			      const std::string ppType,

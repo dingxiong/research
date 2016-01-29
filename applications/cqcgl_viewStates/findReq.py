@@ -51,7 +51,7 @@ def cqcglConvertReq(N2, inputFile, outputFile, indices,
         cqcglSaveReq(outputFile, str(i), a, wth, wphi, err)
 
 
-case = 11
+case = 9
 
 if case == 1:
     """
@@ -96,6 +96,28 @@ if case == 2:
     plotOneConfigFromFourier(cgl, a)
     print wth, wphi
     # cqcglSaveReq("req2.h5", '1', a, wth, wphi, err)
+
+if case == 9:
+    """
+    load the guess from file and then find req
+    """
+    N = 1024
+    d = 30
+    h = 0.0002
+
+    di = 0.05
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqTmp.h5',
+                                          di, 1)
+    a, wth, wphi, err = cgl.findReq(a0, wth0, wphi0, 100, 1e-12, True, True)
+
+    nstp = 10000
+    aa = cgl.intg(a, nstp, 1)
+    plotConfigSpace(cgl.Fourier2Config(aa), [0, d, 0, nstp*h])
+    plotOneConfigFromFourier(cgl, a)
+    print wth, wphi
+    # cqcglSaveReq("req2.h5", '1', a, wth, wphi, err)
+
 
 if case == 10:
     """

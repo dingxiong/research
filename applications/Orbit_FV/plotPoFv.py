@@ -32,7 +32,7 @@ ve2 = f[dataName2 + 've'].value
 ##################################################
 # different experimental cases
 
-case = 4
+case = 3
 
 if case == 1:
     """

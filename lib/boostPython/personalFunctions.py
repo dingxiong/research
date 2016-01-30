@@ -731,14 +731,15 @@ def KSreadFEFV(fileName, poType, idx):
     f.close()
     return fe, fv
 
+
 def KScopyTo(inFile, outFile, poType, r):
     inF = h5py.File(inFile, 'r')
     outF = h5py.File(outFile, 'a')
     if not ('/' + poType in outF):
         outF.create_group('/' + poType)
     for i in r:
-        print i;
-        ds =  '/' + poType + '/' + str(i)
+        print i
+        ds = '/' + poType + '/' + str(i)
         h5py.h5o.copy(inF.id, ds, outF.id, ds)
         
     inF.close()

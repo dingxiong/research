@@ -60,6 +60,15 @@ KScalFEFV(const string fileName,
 }
 
 
+/** @brief calculate Floquet exponents of KS system.
+ *
+ *  @param[in] ppType periodic type: ppo/rpo
+ *  @param[in] ppId  id of the orbit
+ *  @param[in] MaxN maximal number of PED iteration
+ *  @param[in] tol tolerance of PED
+ *  @param[in] nqr spacing
+ *  @return FE and FV
+ */
 MatrixXd
 KScalFE(const string fileName,
 	const string ppType,
@@ -152,6 +161,9 @@ KScalWriteFEFV(const string inputfileName,
 }
 
 
+/**
+ * @brief calculate FE and FV and save inital conditions and FE, FV to outputfile
+ */
 void 
 KScalWriteFEFVInit(const string inputfileName,
 		   const string outputfileName,

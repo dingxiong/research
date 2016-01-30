@@ -25,3 +25,7 @@ ks22h02t120x64.h5 : the refined the data with h = 0.02
 ks22h005t120x64.h5 : the refined the data with h = 0.005
 ks22h001t120x64.h5 : the refined the data with h = 0.001
 
+ks22h001t120x64E.h5
+ks22h001t120x64EV.h5 : only the FE/FVs of the first 200 rpo/ppo are calculated
+  
+

@@ -1,7 +1,7 @@
 from personalFunctions import *
 import numpy as np
 
-case = 1
+case = 2
 
 if case == 1:
     """
@@ -15,3 +15,6 @@ if case == 1:
         if nstp != 5 * np.double(Fv.shape[0]):
             bad.append(i)
             print i
+
+if case == 2:
+    

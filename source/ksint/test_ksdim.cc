@@ -58,9 +58,12 @@ int main(){
     case 3: {			/* test the angle tangency
 				   but with diefferent style
 				*/
-	string fileName("../../data/ks22h001t120x64EV.h5");
-	std::vector<int> ppIds(10);
-	for(int i = 0; i < 10; i++) ppIds[i] = i+191;
+	// string fileName("../../data/ks22h001t120x64EV.h5");
+	string fileName("../../data/ex.h5");
+	// std::vector<int> ppIds(10);
+	// for(int i = 0; i < 10; i++) ppIds[i] = i+191;
+	int pid[] = {33, 36, 59, 60, 79, 81, 109, 114};
+	std::vector<int> ppIds(pid, pid+8);
 	
 	char buf[1000];
 	char* buffer = getcwd(buf, 1000);
@@ -68,7 +71,7 @@ int main(){
 	pwd = pwd + "/anglePOs64/"; 
 
 	// create folders
-	bool doCreate = false;
+	bool doCreate = true;
 	std::string fs[6]{"ppo", "ppo/space", "ppo/vector", "rpo", "rpo/space", "rpo/vector"};
 	int ss = 0;
 	if(doCreate){
@@ -80,7 +83,7 @@ int main(){
 	
 	if ( ss == 0 ){
 	    anglePOs(fileName, "rpo", 30, ppIds, "./anglePOs64/rpo/space", "space", 29);
-	    anglePOs(fileName, "ppo", 30, ppIds, "./anglePOs64/ppo/space", "space", 29);
+	    // anglePOs(fileName, "ppo", 30, ppIds, "./anglePOs64/ppo/space", "space", 29);
 	}
 
 	break;

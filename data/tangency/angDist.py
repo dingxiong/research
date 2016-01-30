@@ -75,7 +75,7 @@ for i in range(N):
     print i
     as1 = np.empty(0)
     as2 = np.empty(0)
-    for j in range(29, 34):
+    for j in range(1, 201):
         f1 = folder + str(j) + '/ang' + str(i) + '.dat'
         if os.stat(f1).st_size > 0:
             ang = arccos(loadtxt(f1))
@@ -86,12 +86,13 @@ for i in range(N):
             ang2 = arccos(loadtxt(f2))
             as2 = np.append(as2, ang2)
 
-    # angs.append(np.append(as1, as2))
-    angs.append(as2)
+    angs.append(np.append(as1, as2))
+    # angs.append(as2)
+    # angs.append(as1)
 
 ##################################################
 
-case = 2
+case = 1
 
 if case == 1:
     """
@@ -111,7 +112,6 @@ if case == 1:
         
     filterAng(a, ns, angSpan, angNum)
     labs = ['k='+str(i+1) for i in ixRange]
-    
     
     np.savez_compressed('ab', a=a, b=b, ns=ns, angSpan=angSpan,
                         angNum=angNum)
@@ -145,33 +145,20 @@ if case == 2:
     angSpan = []
     
     for i in range(N):
-        print i
-        angNum.append(angs[i].shape[0])
-        angSpan.append(max(angs[i])-min(angs[i]))
-        at, bt = histogram(angs[i], ns)
-        a.append(at)
-        b.append(bt)
+        if angs[i].shape[0] > 0:
+            angNum.append(angs[i].shape[0])
+            angSpan.append(max(angs[i])-min(angs[i]))
+            at, bt = histogram(angs[i], ns)
+            a.append(at)
+            b.append(bt)
         
     labs = ['k='+str(i+1) for i in ixRange]
-    
-    np.savez_compressed('ab', a=a, b=b, ns=ns, angSpan=angSpan,
-                        angNum=angNum)
 
     fig = plt.figure(figsize=(4, 1.5))
     ax = fig.add_subplot(111)
-    for i in range(7):
+    for i in range(len(a)):
         ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), label=labs[i],
                 lw=1.5)
-    setAxis(ax)
-    plt.tight_layout(pad=0)
-    plt.show(block=False)
-
-    fig = plt.figure(figsize=(4, 1.5))
-    ax = fig.add_subplot(111)
-    colors = cm.rainbow(linspace(0, 1, 11))
-    for ix in range(11):
-        i = 7 + 2*ix
-        ax.plot(b[i][:-1], a[i]*ns/(angSpan[i]*angNum[i]), c=colors[ix], lw=1.5)
     setAxis(ax)
     plt.tight_layout(pad=0)
     plt.show(block=False)

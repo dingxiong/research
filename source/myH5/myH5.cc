@@ -83,6 +83,25 @@ namespace MyH5 {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////         ks related          ////////////////////////////////////////////////////////////////////////////
+    
+    /**
+     * check the existence of groups. If not, then crate it.
+     */
+    void KScheckGroups(const string fileName, const string ppType,
+		       const int ppId){
+	
+	H5File file(fileName, H5F_ACC_RDWR);
+	string g1 =  "/" + ppType;
+	string g2 =  "/" + ppType + "/" + to_string(ppId);
+	if(H5Lexists(file.getId(), g1.c_str(), H5P_DEFAULT) == false){
+	    file.createGroup(g1.c_str());
+	    file.createGroup(g2.c_str());	    
+	}
+	else{
+	    if(H5Lexists(file.getId(), g2.c_str(), H5P_DEFAULT) == false)
+		file.createGroup(g2.c_str());	 
+	}
+    }
 
     /** @brief check the existence of Floquet vectors.
      *
@@ -161,7 +180,7 @@ namespace MyH5 {
      *  @param[in] ppId  id of the orbit
      *  @return a, T, nstp, r, s 
      */
-    std::tuple<MatrixXd, double, double, double, double>
+    std::tuple<MatrixXd, double, int, double, double>
     KSreadRPO(const string fileName, const string &ppType, const int ppId){
 	
 	H5File file(fileName, H5F_ACC_RDONLY);
@@ -172,7 +191,7 @@ namespace MyH5 {
 	
 	return make_tuple(readMatrixXd(file, DS + "a"),
 			  readScalar<double>(file, DS + "T"),
-			  readScalar<double>(file, DS + "nstp"),
+			  readScalar<int>(file, DS + "nstp"),
 			  readScalar<double>(file, DS + "r"),
 			  s
 			  );
@@ -190,24 +209,31 @@ namespace MyH5 {
      */
     void 
     KSwriteRPO(const string fileName, const string ppType, const int ppId,
-	       const MatrixXd &a, const double T, const double nstp,
+	       const MatrixXd &a, const double T, const int nstp,
 	       const double r, const double s
 	       ){
 	H5File file(fileName, H5F_ACC_RDWR);
-	Group group(file.createGroup("/" + ppType + to_string(ppId)));
 	string DS = "/" + ppType + "/" + to_string(ppId) + "/";
-
+	
 	KScheckGroups(fileName, ppType, ppId);
 	
 	writeMatrixXd(file, DS + "a", a);
 	writeScalar<double>(file, DS + "T", T);
-	writeScalar<double>(file, DS + "nstp", nstp);
+	writeScalar<int>(file, DS + "nstp", nstp);
 	writeScalar<double>(file, DS + "r", r);
 	if(ppType.compare("rpo") == 0) 
 	    writeScalar<double>(file, DS + "s", s);
     }
-
-
+    
+    void 
+    KSmoveRPO(const std::string inFile, const std::string outFile, const std::string ppType, 
+	      const int ppId){
+	auto tmp = KSreadRPO(inFile, ppType, ppId);
+	KSwriteRPO(outFile, ppType, ppId, std::get<0>(tmp), std::get<1>(tmp), std::get<2>(tmp),
+		   std::get<3>(tmp), std::get<4>(tmp));
+    }
+    
+    
     /** @brief read Floquet exponents of KS system.
      *
      *  @param[in] ppType periodic type: ppo/rpo
@@ -220,20 +246,6 @@ namespace MyH5 {
 	string DS = "/" + ppType + "/" + to_string(ppId) + "/";
 
 	return readMatrixXd(file, DS + "e"); 
-    }
-
-    /** @brief read Floquet vectors of KS system.
-     *
-     *  @param[in] ppType periodic type: ppo/rpo
-     *  @param[in] ppId  id of the orbit
-     *  @return vectors
-     */
-    MatrixXd
-    KSreadFV(const string fileName, const string ppType, const int ppId){
-	H5File file(fileName, H5F_ACC_RDONLY);
-	string DS = "/" + ppType + "/" + to_string(ppId) + "/";
-
-	return readMatrixXd(file, DS + "ve");
     }
 
     /** @brief write the Floquet exponents
@@ -252,26 +264,58 @@ namespace MyH5 {
 	writeMatrixXd(file, DS + "e", eigvals);
     }
 
+    void 
+    KSmoveFE(const std::string inFile, const std::string outFile, const std::string ppType,
+	     const int ppId){
+	auto tmp = KSreadFE(inFile, ppType, ppId);
+	KSwriteFE(outFile, ppType, ppId, tmp);
+    }
 
-    /**
-     * check the existence of groups. If not, then crate it.
+
+    /** @brief read Floquet vectors of KS system.
+     *
+     *  @param[in] ppType periodic type: ppo/rpo
+     *  @param[in] ppId  id of the orbit
+     *  @return vectors
      */
-    void KScheckGroups(const string fileName, const string ppType,
-		       const int ppId){
-	
+    MatrixXd
+    KSreadFV(const string fileName, const string ppType, const int ppId){
+	H5File file(fileName, H5F_ACC_RDONLY);
+	string DS = "/" + ppType + "/" + to_string(ppId) + "/";
+
+	return readMatrixXd(file, DS + "ve");
+    }
+
+
+    /** @brief write FV into file  */
+    void
+    KSwriteFV(const string fileName, const string ppType, const int ppId, 
+	      const MatrixXd &eigvecs){
 	H5File file(fileName, H5F_ACC_RDWR);
-	string g1 =  "/" + ppType;
-	string g2 =  "/" + ppType + "/" + to_string(ppId);
-	if(H5Lexists(file.getId(), g1.c_str(), H5P_DEFAULT) == false){
-	    file.createGroup(g1.c_str());
-	    file.createGroup(g2.c_str());	    
-	}
-	else{
-	    if(H5Lexists(file.getId(), g2.c_str(), H5P_DEFAULT) == false)
-		file.createGroup(g2.c_str());	 
-	}
+	string DS = "/" + ppType + "/" + to_string(ppId) + "/";
+	
+	KScheckGroups(fileName, ppType, ppId);
+	
+	writeMatrixXd(file, DS + "ve", eigvecs);
     }
     
+    void 
+    KSmoveFV(const std::string inFile, const std::string outFile, const std::string ppType,
+	     const int ppId){
+	auto tmp = KSreadFV(inFile, ppType, ppId);
+	KSwriteFV(outFile, ppType, ppId, tmp);
+    }
+
+    std::pair<MatrixXd, MatrixXd>
+    KSreadFEFV(const string fileName, const string ppType, const int ppId){
+		H5File file(fileName, H5F_ACC_RDONLY);
+	string DS = "/" + ppType + "/" + to_string(ppId) + "/";
+
+	return std::make_pair(readMatrixXd(file, DS + "e"),
+			      readMatrixXd(file, DS + "ve")
+			      ); 
+    }
+
     /** @brief write the Floquet exponents and Floquet vectors  */
     void 
     KSwriteFEFV(const string fileName, const string ppType, const int ppId,
@@ -284,8 +328,15 @@ namespace MyH5 {
 	writeMatrixXd(file, DS + "e", eigvals);
 	writeMatrixXd(file, DS + "ve", eigvecs);
     }
-
     
+    void 
+    KSmoveFEFV(const std::string inFile, const std::string outFile, const std::string ppType,
+	       const int ppId){
+	auto tmp = KSreadFEFV(inFile, ppType, ppId);
+	KSwriteFEFV(outFile, ppType, ppId, tmp.first, tmp.second);
+    }
+
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////       cqcgl related         ////////////////////////////////////////////////////////////////////////////
 

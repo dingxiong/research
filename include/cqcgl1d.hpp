@@ -95,6 +95,9 @@ public:
     ArrayXXd
     intgv(const ArrayXd &a0, const ArrayXXd &v,
 	  const size_t nstp);
+    std::pair<ArrayXXd, ArrayXXd>
+    intgvs(const ArrayXd &a0, const ArrayXXd &v, const int nstp, 
+	   const int np, const int nqr);
     ArrayXXd 
     gintgv(const ArrayXd &a0, const ArrayXXd &v, 
 	   const double th, const double phi, const size_t nstp);

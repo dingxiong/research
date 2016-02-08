@@ -194,6 +194,17 @@ public:
 	return copy2bn( intgv(tmpa, tmpv, nstp));
     }
 
+    /* wrap intgvs */
+   bp::tuple PYintgvs(const bn::ndarray &a0, const bn::ndarray &v,
+		      int nstp, int np, int nqr){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	getDims(v, m, n);
+	Map<ArrayXXd> tmpv((double*)v.get_data(), n, m);
+	std::pair<ArrayXXd, ArrayXXd> tmp = intgvs(tmpa, tmpv, nstp, np, nqr);
+	return bp::make_tuple(copy2bn(tmp.first), copy2bn(tmp.second));
+    }
     
     /* wrap Fourier2Config */
     bn::ndarray PYFourier2Config(bn::ndarray aa){
@@ -847,7 +858,7 @@ public:
 };
 
 
-BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
+BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
     bn::initialize();
 
     // must provide the constructor
@@ -906,6 +917,7 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
 	.def("intg", &pyCqcgl1d::PYintg)
 	.def("intgj", &pyCqcgl1d::PYintgj)
 	.def("intgv", &pyCqcgl1d::PYintgv)
+	.def("intgvs", &pyCqcgl1d::PYintgvs)
 	.def("Fourier2Config", &pyCqcgl1d::PYFourier2Config)
 	.def("Config2Fourier", &pyCqcgl1d::PYConfig2Fourier)
 	.def("Fourier2ConfigMag", &pyCqcgl1d::PYFourier2ConfigMag)

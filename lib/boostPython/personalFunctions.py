@@ -915,3 +915,10 @@ def orthAxes(e1, e2, e3):
 
 def mag2vec(v1, v2):
     return np.sqrt(v1**2 + v2**2)
+
+
+def normR(x):
+    """
+    the norm of each row of a matrix
+    """
+    return norm(x, axis=1)

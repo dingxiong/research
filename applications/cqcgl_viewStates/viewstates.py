@@ -9,7 +9,7 @@ from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
 
-case = 5
+case = 2
 
 
 if case == 1:

@@ -386,8 +386,32 @@ Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
     for(size_t i = 1; i < nstp + 1; i++){
 	intgjOneStep();
     }
-    //return unpad(C2R(jFv.v1.rightCols(trueNjacv)));
+    
     return unpad(C2R(jFv.v1)); //both the orbit and the perturbation
+}
+
+std::pair<ArrayXXd, ArrayXXd>
+Cqcgl1d::intgvs(const ArrayXd &a0, const ArrayXXd &v, const int nstp, 
+		const int np, const int nqr){
+    int M = v.cols(); 
+    
+    assert(Ndim == a0.rows() && Ndim == v.rows() && trueNjacv == v.cols());
+    jFv.v1 << R2C(pad(a0)), R2C(pad(v));
+    
+    ArrayXXd uu(Ndim, nstp/np+1);
+    uu.col(0) = a0;  
+    ArrayXXd duu(Ndim, M * nstp/nqr); 
+    
+    for(int i = 1; i < nstp + 1; i++){
+	intgjOneStep();
+	
+	if ( 0 == i%np ) uu.col(i/np) = unpad(C2R(jFv.v1.col(0))); 
+	if ( 0 == i%nqr){
+	    duu.middleCols((i/nqr - 1)*M, M) = unpad(C2R(jFv.v1.middleCols(1, M)));
+	}    
+    }
+
+    return std::make_pair(uu, duu);
 }
 
 /**

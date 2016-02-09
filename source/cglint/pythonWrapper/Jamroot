@@ -38,7 +38,7 @@ lib myfft_threads : : <name>myfft_clean_threads <file>/usr/local/home/xiong/00gi
 lib cqcgl : : <name>cqcgl1d <file>/usr/local/home/xiong/00git/research/lib/libcqcgl1d.so ;
 
 
-choice = 2 ;
+choice = 3 ;
 
 if $(choice) = 1 {		# single thread case
   python-extension py_cqcgl1d : py_cqcgl1d.cc np sparse dense fftw3 iter ped ../../myfft/myfft.cc ../cqcgl1d.cc ../cqcglRPO.cc

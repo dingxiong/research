@@ -204,7 +204,9 @@ public:
     findReq(const ArrayXd &a0, const double wth0, const double wphi0,
 	    const int MaxN = 100, const double tol = 1e-14,
 	    const bool doesUseMyCG = true, const bool doesPrint = true);
-
+    std::vector<double>
+    optThPhi(const ArrayXd &a0);
+    
     std::tuple<ArrayXd, double, double>
     planeWave(int k, bool isPositve);
     void planeWave(ArrayXd &a0, double &a, double &w, 

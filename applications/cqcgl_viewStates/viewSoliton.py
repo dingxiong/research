@@ -191,11 +191,11 @@ if case == 20:
     a0R = cgl.reflect(a0)
     a0RH = cgl.orbit2slice(a0R)[0]
 
-    nstp = 18000
+    nstp = 1000
     Er = eigvalues[0].real
     Ei = eigvalues[0].imag
     Vr, Vi = orthAxes2(eigvectors[0], eigvectors[1])
-    n = 30
+    n = 10
     aaE = []
     aaEHat = []
     for i in range(n):

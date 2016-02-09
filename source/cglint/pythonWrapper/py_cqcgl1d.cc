@@ -394,6 +394,15 @@ public:
 			      std::get<2>(tmp), std::get<3>(tmp));
     }
     
+    /* optThPhi */
+    bp::list PYoptThPhi(bn::ndarray a0){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
+	
+	return toList(optThPhi(tmpa0));
+    }
+    
     /* transRotate */
     bn::ndarray PYtransRotate(bn::ndarray aa, double th){
 	int m, n;
@@ -858,7 +867,7 @@ public:
 };
 
 
-BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
+BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
     bn::initialize();
 
     // must provide the constructor
@@ -937,6 +946,7 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
 	.def("reduceIntg", &pyCqcgl1d::PYreduceIntg)
 	.def("reduceVe", &pyCqcgl1d::PYreduceVe)
 	.def("findReq", &pyCqcgl1d::PYfindReq)
+	.def("optThPhi", &pyCqcgl1d::PYoptThPhi)
 	.def("transRotate", &pyCqcgl1d::PYtransRotate) 
 	.def("transTangent", &pyCqcgl1d::PYtransTangent)
 	.def("phaseRotate", &pyCqcgl1d::PYphaseRotate)

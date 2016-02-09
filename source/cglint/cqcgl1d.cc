@@ -1523,6 +1523,33 @@ Cqcgl1d::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
     return std::make_tuple(a, wth, wphi, velReq.matrix().norm());
 }
 
+/** @brief find the optimal guess of wth and wphi for a candidate req
+ * 
+ *  When we find a the inital state of a candidate of req, we also need
+ *  to know the appropriate th and phi to start the Newton search.
+ *  According to the definition of velocityReq(), this is a residual
+ *  minimization problem.
+ *
+ *  @return    [wth, wphi, err] such that velocityReq(a0, wth, wphi) minimal
+ */
+std::vector<double>
+Cqcgl1d::optThPhi(const ArrayXd &a0){ 
+    VectorXd t1 = transTangent(a0);
+    VectorXd t2 = phaseTangent(a0);
+    double c = t2.dot(t1) / t1.dot(t1);
+    VectorXd t3 = t2 - c * t1;
+
+    VectorXd v = velocity(a0);
+    double a1 = t1.dot(v) / t1.dot(t1);
+    double a2 = t3.dot(v) / t3.dot(t3);
+    
+    double err = (v - a1 * t1 - a2 * t3).norm();
+    
+    std::vector<double> x = {-(a1-a2*c), -a2, err};
+    return x;
+}
+
+
 /**************************************************************/
 /*                plane wave related                          */
 /**************************************************************/

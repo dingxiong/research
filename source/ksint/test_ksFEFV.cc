@@ -21,7 +21,7 @@ using namespace MyH5;
 int main(){
     cout.precision(16);
 
-    switch (30) {
+    switch (50) {
 	
     case 1: {
 	/* calculate FE, FV for a single orbit */
@@ -128,6 +128,25 @@ int main(){
 	}
 	
 	break;
+    }
+
+    case 50: {
+	/* calculate left FE, FV for a single orbit */
+	const double L = 22;
+	const int nqr = 5; // spacing 	
+	const int MaxN = 2000;  // maximal iteration number for PED
+	const double tol = 1e-13; // torlearance for PED   
+	const int trunc = 30; // number of vectors	
+	const size_t ppId = 1;
+	const string inputfileName = "../../data/ks22h001t120x64EV.h5";
+	const string outputfileName = "left.h5";
+	const string ppType = "ppo";
+	KScalWriteLeftFEFV(inputfileName, outputfileName, ppType, ppId, L, MaxN, tol, nqr, trunc);
+	// auto tmp = KScalLeftFEFV(inputfileName, ppType, ppId, L, MaxN, tol, nqr, trunc);
+	// cout << tmp.first << endl;
+	
+	break;
+
     }
 	
 	

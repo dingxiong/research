@@ -99,7 +99,18 @@ public:
 	changeh(hnew);
     }
 
-    
+    /* K */
+    bn::ndarray PYK(){
+	return copy2bn(K);
+    }
+
+    /* L */
+    bp::tuple PYL(){
+	ArrayXd r = L.real();
+	ArrayXd i = L.imag();
+	return bp::make_tuple( copy2bn(r), copy2bn(i) );
+    }
+
     /* wrap the velocity */
     bn::ndarray PYvelocity(bn::ndarray a0){
 	int m, n;
@@ -914,6 +925,8 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
 	.def_readonly("c", &pyCqcgl1d::c)
 	.def_readonly("dr", &pyCqcgl1d::dr)
 	.def_readonly("di", &pyCqcgl1d::di)
+	.def("K", &pyCqcgl1d::PYK)
+	.def("L", &pyCqcgl1d::PYL)
 	.def(bp::init<int, double, double, bool, int, double, double, double, double, int>()) /* second constructor */
 	.def("changeh", &pyCqcgl1d::PYchangeh)
 	.def("velocity", &pyCqcgl1d::PYvelocity)

@@ -188,3 +188,65 @@ KScalWriteFEFVInit(const string inputfileName,
     double s = std::get<4>(tmp);
     MyH5::KSwriteRPO(outputfileName, ppType, ppId, a, T, nstp, r, s);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//  Left eigenvector related 
+
+std::pair<MatrixXd, MatrixXd>
+KScalLeftFEFV(const std::string fileName, const std::string ppType, const int ppId,
+	      const int L, const int MaxN, const double tol,
+	      const int nqr, const int trunc){
+    
+    auto tmp = MyH5::KSreadRPO(fileName, ppType, ppId);
+    MatrixXd &a = std::get<0>(tmp);
+    double T = std::get<1>(tmp);
+    int nstp = (int) std::get<2>(tmp);
+    double r = std::get<3>(tmp);
+    double s = std::get<4>(tmp);
+
+    const int N = a.rows();
+    const int Nks = N + 2;
+    
+    // solve the Jacobian of this po.
+    KS ks(Nks, T/nstp, L);
+    std::pair<ArrayXXd, ArrayXXd> tmp2 = ks.intgj(a.col(0), nstp, 1, nqr);
+    MatrixXd daa = tmp2.second;
+    
+    // get the order of J_1^T, J_2^T, ..., (R*J_M)^T 
+    int M = daa.cols();
+    daa.resize(N, N*M);
+    if(ppType.compare("ppo") == 0)
+	daa.rightCols(N) = ks.Reflection(daa.rightCols(N)); // R*J for ppo
+    else // R*J for rpo
+	daa.rightCols(N) = ks.Rotation(daa.rightCols(N), -s*2*M_PI/L);
+    for(int i = 0; i < M; i++) {
+	MatrixXd tmp = daa.middleCols(i*N, N).transpose();
+	daa.middleCols(i*N, N) = tmp;
+    }
+    
+    // calculate the Flqouet exponents and vectors.
+    PED ped;
+    pair<MatrixXd, MatrixXd> eigv = ped.EigVecs(daa, MaxN, tol, false, trunc);
+    MatrixXd &eigvals = eigv.first; 
+    eigvals.col(0) = eigvals.col(0).array()/T;
+    MatrixXd &eigvecs = eigv.second;
+
+    return make_pair(eigvals, eigvecs);
+}
+
+void 
+KScalWriteLeftFEFV(const string inputfileName,
+		   const string outputfileName,
+		   const string ppType,
+		   const int ppId,
+		   const int L,
+		   const int MaxN ,
+		   const double tol ,
+		   const int nqr ,
+		   const int trunc ){
+    std::pair<MatrixXd, MatrixXd> eigv = KScalLeftFEFV(inputfileName, ppType, ppId, L, MaxN, tol, nqr, trunc);
+    MatrixXd &eigvals = eigv.first;
+    MatrixXd &eigvecs = eigv.second; 
+    
+    MyH5::KSwriteFEFV(outputfileName, ppType, ppId, eigvals, eigvecs);
+}

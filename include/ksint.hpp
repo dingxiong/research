@@ -51,6 +51,7 @@ public:
     intgjMulti(const MatrixXd aa0, size_t nstp, size_t np = 1, size_t nqr = 1);
     VectorXd 
     velocity(const Ref<const ArrayXd> &a0);
+    MatrixXd stab(const Ref<const ArrayXd> &a0);
     ArrayXXd 
     C2R(const ArrayXXcd &v);
     ArrayXXcd 

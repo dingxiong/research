@@ -1,11 +1,10 @@
 #include "cqcgl1d.hpp"
 #include <cmath>
 #include <iostream>
-using std::cout;
-using std::endl;
 using namespace sparseRoutines;
 using namespace denseRoutines;
 using namespace Eigen;
+using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 //                        Class Cqcgl1d                             //

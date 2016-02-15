@@ -64,5 +64,24 @@ KScalWriteFEFVInit(const std::string inputfileName,
 		   const int nqr = 1,
 		   const int trunc = 0);
 
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::pair<Eigen::MatrixXd, Eigen::MatrixXd>
+KScalLeftFEFV(const std::string fileName, const std::string ppType, const int ppId,
+	      const int L, const int MaxN, const double tol,
+	      const int nqr, const int trunc);
+
+void 
+KScalWriteLeftFEFV(const std::string inputfileName,
+		   const std::string outputfileName,
+		   const std::string ppType,
+		   const int ppId,
+		   const int L,
+		   const int MaxN ,
+		   const double tol ,
+		   const int nqr ,
+		   const int trunc );
+
 #endif	/* KSFEFV_H */
 

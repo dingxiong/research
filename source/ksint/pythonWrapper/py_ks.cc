@@ -83,6 +83,15 @@ public:
 	return result;
     }
 
+    /* stab */
+    bn::ndarray PYstab(bn::ndarray a0){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), n*m);
+	
+	return copy2bn(stab(tmpa));
+    }
+
     /* wrap the integrator */
     bn::ndarray PYintg(bn::ndarray a0, size_t nstp, size_t np){
 	Map<ArrayXd> tmpa((double*)a0.get_data(), N-2);
@@ -424,6 +433,7 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def_readonly("d", &pyKS::d)
 	.def_readonly("h", &pyKS::h)
 	.def("velocity", &pyKS::PYvelocity)
+	.def("stab", &pyKS::PYstab)
 	.def("intg", &pyKS::PYintg)
 	.def("intgj", &pyKS::PYintgj)
 	.def("Reflection", &pyKS::PYreflection)

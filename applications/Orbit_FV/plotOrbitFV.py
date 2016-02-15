@@ -5,7 +5,7 @@ from personalFunctions import *
 def magvalue(x):
     return np.abs(x[0::2] + 1j * x[1::2])
 
-case = 20
+case = 30
 
 if case == 1:
     f = h5py.File('../../data/myN32/ks22h02t100EV.h5')
@@ -232,3 +232,31 @@ if case == 20:
     vs = fv[0].reshape(30, Ndim)
     plot1dfig(vs[29])
     
+
+if case == 30:
+    """
+    Have a look at some left eigenvector of periodic orbits of KS.
+    """
+    N = 64
+    Ndim = N - 2
+    ppId = 1
+    poType = 'rpo'
+    
+    f1 = '../../data/ks22h001t120x64EV.h5'
+    fe1, fv1 = KSreadFEFV(f1, poType, ppId)
+    fe, fv = KSreadFEFV('../../data/left.h5', poType, ppId)
+    vs1 = fv1[0].reshape(30, Ndim)
+    vs = fv[0].reshape(30, Ndim)
+    plot1dfig(vs1[9])
+    plot1dfig(vs[9])
+    
+    a0, T, nstp, r, s = KSreadPO(f1, poType, ppId)
+    h = T / nstp
+    ks = pyKS(N, h, 22)
+    aa = ks.intg(a0, nstp, 5)
+    KSplotColorMapOrbit(aa, [0, 22, 0, T])
+
+    v1 = fv1[:, 62*0:62*1]
+    v = fv[:, 62*0:62*1]
+    KSplotColorMapOrbit(v, [0, 22, 0, T])
+    KSplotColorMapOrbit(v1, [0, 22, 0, T])

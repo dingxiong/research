@@ -693,16 +693,33 @@ def getCurveCoor(points):
 ############################################################
 
 
+def KSreadE(fileName, idx):
+    f = h5py.File(fileName, 'r')
+    req = '/' + 'E' + '/' + str(idx) + '/'
+    a = f[req+'a'].value
+    f.close()
+    return a
+
+
+def KSreadReq(fileName, idx):
+    f = h5py.File(fileName, 'r')
+    req = '/' + 'tw' + '/' + str(idx) + '/'
+    a = f[req+'a'].value
+    c = f[req+'c'].value
+    f.close()
+    return a, c
+
+
 def KSreadPO(fileName, poType, idx):
     f = h5py.File(fileName, 'r')
     po = '/' + poType + '/' + str(idx) + '/'
     a = f[po+'a'].value
-    T = f[po+'T'].value[0]
-    nstp = np.int(f[po+'nstp'].value[0])
-    r = f[po+'r'].value[0]
+    T = f[po+'T'].value
+    nstp = np.int(f[po+'nstp'].value)
+    r = f[po+'r'].value
     s = 0
     if poType == 'rpo':
-        s = f[po+'s'].value[0]
+        s = f[po+'s'].value
     f.close()
     return a, T, nstp, r, s
 

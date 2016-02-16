@@ -94,16 +94,31 @@ namespace iterMethod {
 
     template<class Fx, class Jacv>
     std::tuple<VectorXd, std::vector<double>, int>
-    Gmres0Hook( Fx &fx, Jacv &jacv,
-		const ArrayXd &x0,
+    Gmres0Hook( Fx fx, Jacv jacv,
+		const VectorXd &x0,
 		const double tol,
+		const double minRD,
 		const int maxit,
 		const int maxInnIt,
 		const double GmresRtol,
 		const int GmresRestart,
 		const int GmresMaxit,
 		const bool testT,
-		const bool Tindex);
+		const int Tindex);
+
+    template<typename Mat>
+    std::tuple<VectorXd, std::vector<double>, int>
+    GmresHook( const Mat &A, const VectorXd &b,
+	       const VectorXd &x0,
+	       const double tol,
+	       const double minRD,
+	       const int maxit,
+	       const int maxInnIt,
+	       const double GmresRtol,
+	       const int GmresRestart,
+	       const int GmresMaxit,
+	       const bool testT,
+	       const int Tindex);
 
     
     /* -------------------------------------------------- */
@@ -113,7 +128,7 @@ namespace iterMethod {
     template<class Fx, class Jacv>
     std::tuple<VectorXd, std::vector<double>, int>
     InexactNewtonBacktrack(Fx &fx, Jacv &jacv,
-			   const ArrayXd &x0,
+			   const VectorXd &x0,
 			   const double tol = 1e-12,
 			   const int btMaxIt = 20,
 			   const int maxit = 100,
@@ -548,8 +563,8 @@ namespace iterMethod {
      */
     template<class Fx, class Jacv>
     std::tuple<VectorXd, std::vector<double>, int>
-    Gmres0Hook( Fx &fx, Jacv &jacv,
-		const ArrayXd &x0,
+    Gmres0Hook( Fx fx, Jacv jacv,
+		const VectorXd &x0,
 		const double tol,
 		const double minRD,
 		const int maxit,
@@ -560,7 +575,7 @@ namespace iterMethod {
 		const bool testT,
 		const int Tindex){
 
-	const int N = x0.size();
+	const int N = x0.size(); 
 	VectorXd x(x0);
 	std::vector<double> errVec;
 
@@ -576,22 +591,22 @@ namespace iterMethod {
 
 	    // use GmresRPO to solve F' dx = -F
 	    auto tmp = Gmres0SVD([&x, &jacv](const VectorXd &t){ return jacv(x, t); },
-				 -F, VectorXd::Zero(N), GmresRestart, GmresMaxit, GmresRtol);
+				 -F, VectorXd::Zero(N), GmresRestart, GmresMaxit, GmresRtol); 
 	    if(std::get<7>(tmp) != 0) fprintf(stderr, "GMRES SVD not converged !\n");
 	    VectorXd &s = std::get<0>(tmp); // update vector
 	    VectorXd &sold = std::get<1>(tmp); // old update vector just before last change
 	    VectorXd &p = std::get<2>(tmp);
 	    ArrayXd &D = std::get<3>(tmp);
 	    MatrixXd &V2 = std::get<4>(tmp);
-	    MatrixXd &V = std::get<5>(tmp);
+	    MatrixXd &V = std::get<5>(tmp); 
 	    
 	    ArrayXd D2 = D * D;
 	    ArrayXd pd = p.array() * D;
 	    // ArrayXd mu = ArrayXd::Ones(p.size()) * 0.1; 
 	    ArrayXd mu = ArrayXd::Ones(p.size()) * 0.1 * D2.minCoeff(); 
-	    for(size_t j = 0; j < maxInnIt; j++){
-		VectorXd newx = x + s;
-		double newT = newx(N - Tindex);
+	    for(size_t j = 0; j < maxInnIt; j++){ 
+		VectorXd newx = x + s; 
+		double newT = newx(N - Tindex); 
 #ifdef GMRES_PRINT	    
 		fprintf(stderr, " %zd, %g |", j, newT);
 #endif
@@ -618,6 +633,24 @@ namespace iterMethod {
 	    
     }
 
+    template<typename Mat>
+    std::tuple<VectorXd, std::vector<double>, int>
+    GmresHook( const Mat &A, const VectorXd &b,
+	       const VectorXd &x0,
+	       const double tol,
+	       const double minRD,
+	       const int maxit,
+	       const int maxInnIt,
+	       const double GmresRtol,
+	       const int GmresRestart,
+	       const int GmresMaxit,
+	       const bool testT,
+	       const int Tindex){
+	return Gmres0Hook([&A, &b](const VectorXd &x){return A * x - b;},
+			  [&A](const VectorXd &x, const VectorXd &t){return A * t;},
+			  x0, tol, minRD, maxit, maxInnIt, GmresRtol,
+			  GmresRestart, GmresMaxit, testT, Tindex);
+    }
     
     //////////////////////////////////////////////////////////////////////
     //                    Netwon methods related                        //
@@ -670,7 +703,7 @@ namespace iterMethod {
     template<class Fx, class Jacv>
     std::tuple<VectorXd, std::vector<double>, int>
     InexactNewtonBacktrack( Fx &fx, Jacv &jacv,
-			    const ArrayXd &x0,
+			    const VectorXd &x0,
 			    const double tol,
 			    const int btMaxIt,
 			    const int maxit,

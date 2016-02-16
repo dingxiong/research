@@ -241,7 +241,7 @@ void partialHyperbAll(const string fileName, const int NNppo, const int NNrpo,
 /** @brief calculate the local Floquet exponents by stability matrix 
  *
  */
-void 
+MatrixXd
 localFE(const std::string fileName, const std::string ppType, const int ppId){
     auto tmp = MyH5::KSreadRPO(fileName, ppType, ppId);
     MatrixXd &a = std::get<0>(tmp);
@@ -262,39 +262,49 @@ localFE(const std::string fileName, const std::string ppType, const int ppId){
     assert(nstp % M == 0);
     const int space = nstp / M;
     KS ks(Nks, T/nstp, L);
-    auto tmp2 = ks.intgj(a.col(0), nstp, nstp, space);
-    ArrayXXd &daa = tmp2.second;
+    ArrayXXd aa = ks.intg(a.col(0), nstp, space);
     
-    MatrixXd Jv(N, NFV*M); 
-    for(size_t i = 0; i < M; i++){
+    MatrixXd expand(NFV, M);
+    for(size_t i = 0; i < M; i++){ 
 	MatrixXd ve = eigVecs.col(i);
-	ve.resize(N, NFV);
-	MatrixXd J = daa.col(i); 
-	J.resize(N, N);
-	Jv.middleCols(i*NFV, NFV) = J * ve; 
+	ve.resize(N, NFV); 
+	MatrixXd A = ks.stab(aa.col(i)); 
+	for(int j = 0; j < NFV; j++){ 
+	    expand(j, i) = ve.col(j).transpose() * A * ve.col(j);
+	}
     }
 
-    MatrixXd expand(NFV, M);
-    for(size_t i = 0; i < NFV; i++){
-	if (eigVals(i, 2) == 0) { // real case 
-	    for(int j = 0; j < M; j++){
-		expand(i, j) = Jv.col(j*NFV+i).norm();
-	    }
-	}
-	else {			// complex case
-	    for(int j = 0; j < M; j++){
-		double e1 = Jv.col(j*NFV+i).squaredNorm();
-		double e2 = Jv.col(j*NFV+i+1).squaredNorm();
-		expand(i, j) = sqrt(e1+e2);
-		expand(i+1, j) = expand(i, j);
-	    }
+    for(int i = 0; i < NFV; i++){
+	if(eigVals(i, 2) == 1) { // complex case
+	    VectorXd tmp = expand.row(i) + expand.row(i+1);
+	    expand.row(i) = tmp;
+	    expand.row(i+1) = tmp;
 	    i++;
 	}
     }
-
+    
     return expand;
 }
 
+void localFEOneType(const string fileName, const string ppType,
+		    const int NN, const string saveFolder){
+    ofstream file;
+    for(size_t i = 0; i < NN; i++){
+	int ppId = i + 1;
+	file.open(saveFolder + "FVexpand" + to_string(ppId) + ".dat", ios::trunc);
+	file.precision(16);
+	printf("========= i = %zd ========\n", i);
+	MatrixXd expand = localFE( fileName,  ppType, ppId);
+	file << expand << endl;
+	file.close();
+    }
+}
+
+void localFEAll(const string fileName, const int NNppo, const int NNrpo,
+		const string saveFolder){
+    localFEOneType(fileName, "ppo", NNppo, saveFolder + "ppo/");
+    localFEOneType(fileName, "rpo", NNrpo, saveFolder + "rpo/");
+}
 
 /*
 void expandDifvAngle(const string fileName, const string ppType,

@@ -1,5 +1,5 @@
 /* to compile :
- * g++ test_iterMethod.cc  -O3 -march=corei7 -msse2 -msse4 -I $XDAPPS/eigen/include/eigen3 -std=c++11 -I ../../include -L ../../lib -literMethod
+ * g++ test_iterMethod.cc  -O3 -march=corei7 -msse2 -msse4 -I $XDAPPS/eigen/include/eigen3 -std=c++11 -I ../../include -L ../../lib -literMethod -DGMRES_PRINT
  */
 #include "iterMethod.hpp"
 #include <cmath>
@@ -290,7 +290,7 @@ int main()
 		// compute
 		std::tuple<VectorXd, vector<double>, int> 
 		    tmp = iterMethod::GmresHook<MatrixXd>
-		    (A, b, VectorXd::Zero(N), 20, 20, 1e-8, 0.8, 20);
+		    (A, b, VectorXd::Zero(N), 1e-12, 1e-3, 20, 20, 1e-8, 100, 20, false, 1); 
 
 		cout << std::get<0>(tmp) << endl << endl;
 		for (int i = 0; i < std::get<1>(tmp).size(); i++) {
@@ -299,6 +299,7 @@ int main()
 		cout << std::get<2>(tmp) << endl << endl;;
 		cout << std::get<1>(tmp).size() << endl << endl;
 		cout << (A * std::get<0>(tmp) - b).norm() << endl;
+
 		break;	
 	    }
 

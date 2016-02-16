@@ -21,7 +21,7 @@ using namespace Eigen;
 int main(){
     cout.precision(16);
 
-    switch (3) {
+    switch (50) {
 
     case 1: {
 	MatrixXi subspDim(4,3); 
@@ -105,6 +105,15 @@ int main(){
 	break;
     }
 
+    case 50: {			/* calculate the local Floquet exponents */
+	string fileName("../../data/ks22h001t120x64EV.h5");
+	localFEAll(fileName, 200, 200, "./localFE/");
+	break;
+    }
 
+    default: {
+	fprintf(stderr, "indicate a case\n");	
+    }
+	
     }
 }

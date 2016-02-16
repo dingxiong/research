@@ -31,5 +31,12 @@ void partialHyperbOneType(const std::string fileName,
 void partialHyperbAll(const std::string fileName,
 		      const int NNppo, const int NNrpo,
 		      const std::string saveFolder);
+Eigen::MatrixXd
+localFE(const std::string fileName, const std::string ppType, const int ppId);
+void localFEOneType(const std::string fileName, const std::string ppType,
+		    const int NN, const std::string saveFolder);
+void localFEAll(const std::string fileName, const int NNppo, const int NNrpo,
+		const std::string saveFolder);
+
 #endif	/* KSDIM_H */
 

@@ -114,34 +114,35 @@ if case == 4:
     """
     N = 512*2
     d = 30
-    h = 0.0002
+    h = 1e-5
+    s = 20
 
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, 0.04, 4)
     A0 = 5*centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
-    nstp = 15000
-    aa = cgl.intg(a0, nstp, 1)
+    nstp = 150000
+    aa = cgl.intg(a0, nstp, s)
     for i in range(2):
-        aa = cgl.intg(aa[-1], nstp, 1)
+        aa = cgl.intg(aa[-1], nstp, s)
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
 
     aaHat, ths, phis = cgl.orbit2sliceWrap(aa)
-    i1 = int(0.22/h)
-    i2 = int(1.2/h)
-    nstp = i2-i1
+    i1 = int(0.22/h/s)
+    i2 = int(1.2/h/s)
+    nstp = (i2-i1)*s
     T = nstp * h
     th = ths[i1] - ths[i2]
     phi = phis[i1] - phis[i2]
     err = norm(aaHat[i1]-aaHat[i2])
     M = 20
     nstp /= M
-    x = aa[i1:i2:nstp][:M]
+    x = aa[i1:i2:nstp/s][:M]
     print err, nstp, T, th, phi
     # cqcglSaveRPO('rpo2.h5', '1', x, T, nstp, th, phi, err)
 
-    aa2 = cgl.intg(x[0], nstp*M, 1)
+    aa2 = cgl.intg(x[0], nstp*M, 20)
     plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, nstp*M*h])
-    aa3 = cgl.intg(x[0]*(1+0.00001*rand(cgl.Ndim)), nstp*M, 1)
+    aa3 = cgl.intg(x[0]*(1+0.00001*rand(cgl.Ndim)), nstp*M, 20)
     plotConfigSpaceFromFourier(cgl, aa3, [0, d, 0, nstp*M*h])
     dif = aa3-aa2
     plot1dfig(norm(dif, axis=1))

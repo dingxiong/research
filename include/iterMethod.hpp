@@ -29,6 +29,7 @@
 #include <tuple>
 #include <iostream>
 #include <fstream>
+#include "denseRoutines.hpp"
 
 //////////////////////////////////////////////////
 //              Interface                       //
@@ -37,6 +38,8 @@ namespace iterMethod {
   
     using namespace std;
     using namespace Eigen;
+    using namespace denseRoutines;
+    
     typedef Eigen::SparseMatrix<double> SpMat;
 
 
@@ -144,9 +147,7 @@ namespace iterMethod {
 }
 
 
-//////////////////////////////////////////////////
-//              Implementation                  //
-//////////////////////////////////////////////////
+///////////////////////////////////////////////////              Implementation                  ////////////////////////
 
 namespace iterMethod {
 
@@ -507,11 +508,11 @@ namespace iterMethod {
 	    // if(err < rtol) return std::make_tuple(x, errVec, 0);
 	
 	    V.col(0) = r / rnorm;	// obtain V_1
-
+	    
 	    /* inner iteration : Arnoldi Iteration */
 	    for(size_t i = 0; i < M; i++){
 		// form the V_{i+1} and H(:, i)
-		V.col(i+1) = Ax( V.col(i) ); 
+		V.col(i+1) = Ax( V.col(i) );
 		for(size_t j = 0; j <= i; j++){
 		    H(j, i) = V.col(i+1).dot( V.col(j) );
 		    V.col(i+1) -= H(j, i) * V.col(j);
@@ -530,8 +531,18 @@ namespace iterMethod {
 		VectorXd p = rnorm * U.row(0);
 		double err = fabs(p(i+1)) / bnrm2;
 		errVec.push_back(err); 
+		
+		// confirm the residual by QR 
+		HouseholderQR<MatrixXd> qr(H.topLeftCorner(i+2, i+1));
+		MatrixXd Q = qr.householderQ() * MatrixXd::Identity(i+2, i+2);
+		double e2 = Q(0, i+1) * rnorm / bnrm2; 
+		
+		// cout << Q << endl;
+		// cout << H.topLeftCorner(i+2, i+1) << endl;
+		// if(i==M-1) cout << H.topLeftCorner(i+2, i+1) << endl;
+
 #ifdef GMRES_PRINT
-		fprintf(stderr, "** GMRES : inner loop: i= %zd , r= %g\n", i, err);
+		fprintf(stderr, "** GMRES : inner loop: i= %zd , r= %g, %g\n", i, err, e2);
 #endif
 		if (err < rtol){
 		    VectorXd xold = x; 

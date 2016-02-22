@@ -95,7 +95,19 @@ class CqcglRPO{
 		  const double GmresRtol = 1e-6,
 		  const int GmresRestart = 100,
 		  const int GmresMaxit = 100);
- 
+
+    VectorXd MFx2(const VectorXd &x);
+    VectorXd MDFx2(const VectorXd &x, const VectorXd &dx);
+    std::tuple<MatrixXd, double>
+    findRPOM_hook2(const MatrixXd &x0, 
+		   const double tol,
+		   const double minRD,
+		   const int maxit,
+		   const int maxInnIt,
+		   const double GmresRtol,
+		   const int GmresRestart,
+		   const int GmresMaxit);
+    
 #if 0				
     inline VectorXd cgSolver(ConjugateGradient<SpMat> &CG, Eigen::SparseLU<SpMat> &solver,
 			     SpMat &H, VectorXd &JF, bool doesUseMyCG = true,

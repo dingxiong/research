@@ -59,7 +59,10 @@ namespace denseRoutines {
 
     std::pair<MatrixXd, MatrixXd>
     QR(const Ref<const MatrixXd> &A);
-
+    MatrixXd
+    randM(int M, int N);
+    void 
+    savetxt(const std::string f, const Ref<const MatrixXd> &A);
     /////////////////////////// template function implementation /////////////////////////////////////////////////////////////////////////////////////////////
     
 }

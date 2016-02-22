@@ -361,7 +361,25 @@ namespace MyH5 {
 	writeScalar<double>(file, DS + "err", err);
     }
 
-
+    void CqcglWriteRPO2(const std::string fileName, const string groupName, 
+			const MatrixXd &x, const int nstp, double err){
+	H5File file(fileName, H5F_ACC_RDWR);
+	Group group(file.createGroup("/"+groupName));
+	string DS = "/" + groupName + "/";
+	
+	MatrixXd tmp = x.bottomRows(3).rowwise().sum();
+	double T = tmp(0);
+	double th = tmp(1);
+	double phi = tmp(2);
+	
+	writeMatrixXd(file, DS + "x", x);
+	writeScalar<double>(file, DS + "T", T);
+	writeScalar<int>(file, DS + "nstp", nstp);
+	writeScalar<double>(file, DS + "th", th);
+	writeScalar<double>(file, DS + "phi", phi);
+	writeScalar<double>(file, DS + "err", err);
+    }
+    
     /* @note dateset should exist */
     std::tuple<MatrixXd, double, int, double, double, double>
     CqcglReadRPO(const string fileName, const string groupName){
@@ -497,6 +515,15 @@ namespace MyH5 {
 	
 	string groupName = formDiGroupName(di) + "/" + std::to_string(index);
 	CqcglWriteRPO(fileName, groupName, x, T, nstp, th, phi, err);
+    }
+
+    void CqcglWriteRPO2(const string fileName, double di, int index,
+			const MatrixXd &x, const int nstp,
+			double err){
+	CqcglCheckDiExist(fileName, di);
+	
+	string groupName = formDiGroupName(di) + "/" + std::to_string(index);
+	CqcglWriteRPO2(fileName, groupName, x, nstp, err);
     }
     
 

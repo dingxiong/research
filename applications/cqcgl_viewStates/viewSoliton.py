@@ -162,7 +162,6 @@ if case == 13:
     plt.show(block=False)
   
 
-
 if case == 15:
     """
     view a single unstable manifold orbit using Jacobian not the

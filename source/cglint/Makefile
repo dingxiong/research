@@ -19,8 +19,6 @@ SHARED2 = $(addprefix lib, $(addsuffix .so, $(basename $(SOURCE2))))
 STATIC2 = $(addprefix lib, $(addsuffix .a, $(basename $(SOURCE2))))
 SHARED3 = $(addprefix lib, $(addsuffix _print.so, $(basename $(SOURCE2)))) 
 STATIC3 = $(addprefix lib, $(addsuffix _print.a, $(basename $(SOURCE2)))) 
-SHARED4 = $(addprefix lib, $(addsuffix _omp.so, $(basename $(SOURCE2)))) 
-STATIC4 = $(addprefix lib, $(addsuffix _omp.a, $(basename $(SOURCE2)))) 
 
 
 all : int rpo
@@ -38,8 +36,6 @@ $(SHARED2): $(SOURCE2)
 	$(CC) -shared -fpic $(CFLAGS2) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
 $(SHARED3): $(SOURCE2)
 	$(CC) -shared -fpic $(CFLAGS2) -DGMRES_PRINT -DINB_PRINT $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
-$(SHARED4): $(SOURCE2)
-	$(CC) -shared -fpic $(CFLAGS2) -DRPO_OMP=5 $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
 
 $(SOURCE2:.cc=.o) : $(SOURCE2)
 	$(CC) -c $(CFLAGS2) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
@@ -49,11 +45,6 @@ NAME1 = $(addsuffix _print.o, $(basename $(SOURCE2)))
 $(NAME1): $(SOURCE2)
 	$(CC) -c -o $@ -DGMRES_PRINT -DINB_PRINT $(CFLAGS2) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
 $(STATIC3): $(NAME1)
-	$(AR) crs $@ $^
-NAME2 = $(addsuffix _omp.o, $(basename $(SOURCE2)))
-$(NAME2): $(SOURCE2)
-	$(CC) -c -o $@ -DRPO_OMP=5 $(CFLAGS2) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
-$(STATIC4): $(NAME2)
 	$(AR) crs $@ $^
 
 

@@ -1,7 +1,9 @@
 #include "denseRoutines.hpp"
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <algorithm>
+#include <time.h>       /* time */
 
 using namespace std;
 using namespace Eigen;
@@ -394,4 +396,22 @@ denseRoutines::minDisIndex(const Ref<const VectorXd> &a,
 }
 
 
+MatrixXd 
+denseRoutines::randM(int M, int N){
+    srand(time(NULL));
+    MatrixXd A(M, N);
 
+    for (int i = 0; i < M; i++) 
+	for (int j = 0; j < N; j++) 
+	    A(i,j) = (double)rand() / RAND_MAX - 0.5; 
+
+    return A;
+}
+
+void 
+denseRoutines::savetxt(const std::string f, const Ref<const MatrixXd> &A){
+    ofstream file(f, ios::trunc);
+    file.precision(16);
+    file << A << endl;
+    file.close();
+}

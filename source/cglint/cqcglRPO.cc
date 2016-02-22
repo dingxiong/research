@@ -130,10 +130,6 @@ VectorXd CqcglRPO::MFx(const VectorXd &x){
     cgl1.changeh(t(0) / nstp / M); /* period T = h*nstp*M */
     VectorXd F(VectorXd::Zero(Ndim * M + 3));
 
-#ifdef RPO_OMP
-    omp_set_num_threads(RPO_OMP);
-#pragma omp parallel for shared (x, t, F)
-#endif
     for(size_t i = 0; i < M; i++){
 	VectorXd fx = cgl1.intg(x.segment(i*Ndim, Ndim), nstp, nstp).rightCols<1>();
 	if(i != M-1){		// the first M-1 vectors
@@ -158,10 +154,6 @@ VectorXd CqcglRPO::MDFx(const VectorXd &x, const VectorXd &dx){
     cgl2.changeh(t(0) / nstp / M);
     VectorXd DF(VectorXd::Zero(Ndim * M + 3));
     
-#ifdef RPO_OMP
-    omp_set_num_threads(RPO_OMP);
-#pragma omp parallel for shared (x, dx, t, dt, DF)
-#endif
     for(size_t i = 0; i < M; i++){
 	ArrayXd xt = x.segment(i*Ndim, Ndim);
 	ArrayXd dxt = dx.segment(i*Ndim, Ndim);
@@ -172,15 +164,10 @@ VectorXd CqcglRPO::MDFx(const VectorXd &x, const VectorXd &dx){
 	VectorXd t1 = cgl2.transTangent(xt);
 	VectorXd t2 = cgl2.phaseTangent(xt);
 
-#ifdef RPO_OMP
-#pragma omp critical
-#endif
-	{
-	    // update the last 3 elements
-	    DF(M * Ndim) += v1.dot(dxt.matrix());
-	    DF(M * Ndim + 1) += 0.01 * t1.dot(dxt.matrix());
-	    DF(M * Ndim + 2) += 0.01 * t2.dot(dxt.matrix());
-	}
+	// update the last 3 elements
+	DF(M * Ndim) += v1.dot(dxt.matrix());
+	DF(M * Ndim + 1) += t1.dot(dxt.matrix());
+	DF(M * Ndim + 2) += t2.dot(dxt.matrix());
 	
 	if(i != M-1){
 	    DF.segment(i*Ndim, Ndim) = tmp.col(1).matrix()
@@ -381,7 +368,107 @@ CqcglRPO::findRPOM_hook(const MatrixXd &x0, const double T,
 			   );
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// new version of F and DF, This version use a full multishooting method
 
+VectorXd CqcglRPO::MFx2(const VectorXd &x){
+    int N = Ndim + 3;
+    VectorXd F(VectorXd::Zero(N*M));
+    
+    for(int i = 0; i < M; i++){
+	VectorXd xi = x.segment(N*i, N);
+	int j = (i+1) % M;
+	VectorXd xn = x.segment(N*j, N);
+	
+	double t = xi(Ndim);
+	double th = xi(Ndim+1);
+	double phi = xi(Ndim+2);	
+	assert(t > 0);
+	
+	cgl1.changeh( t / nstp );
+	VectorXd fx = cgl1.intg(xi.head(Ndim), nstp, nstp).rightCols<1>();
+	
+	F.segment(i*N, Ndim) = cgl1.Rotate(fx, th, phi).matrix() - xn.head(Ndim);
+    }
+
+    return F;
+}
+
+VectorXd CqcglRPO::MDFx2(const VectorXd &x, const VectorXd &dx){
+    int N = Ndim + 3;
+    VectorXd DF(VectorXd::Zero(N*M));
+
+    for (int i = 0; i < M; i++) {
+	VectorXd xi = x.segment(i*N, N);
+	VectorXd dxi = dx.segment(i*N, N);
+	int j = (i+1) % M;
+	VectorXd dxn = dx.segment(j*N, N);
+	
+	double t = xi(Ndim);
+	double th = xi(Ndim+1);
+	double phi = xi(Ndim+2);
+	assert( t > 0 );
+	double dt = dxi(Ndim);
+	double dth = dxi(Ndim+1);
+	double dphi = dxi(Ndim+2);
+	
+	cgl2.changeh(t / nstp);
+	MatrixXd tmp = cgl2.intgv(xi.head(Ndim), dxi.head(Ndim), nstp);
+
+	VectorXd gfx = cgl2.Rotate(tmp.col(0), th, phi);
+	VectorXd gJx = cgl2.Rotate(tmp.col(1), th, phi);
+	
+	VectorXd v = cgl2.velocity(xi.head(Ndim));
+	VectorXd vgf = cgl2.velocity(gfx); 
+
+	VectorXd t1 = cgl2.transTangent(xi.head(Ndim));
+	VectorXd tgf1 = cgl2.transTangent(gfx);
+
+	VectorXd t2 = cgl2.phaseTangent(xi.head(Ndim));
+	VectorXd tgf2 = cgl2.phaseTangent(gfx);
+	
+	DF.segment(i*N, Ndim) = gJx + vgf*dt + tgf1*dth + tgf2*dphi - dxn.head(Ndim);
+	DF(i*N+Ndim) = v.dot(dxi.head(Ndim));
+	DF(i*N+Ndim+1) = t1.dot(dxi.head(Ndim));
+	DF(i*N+Ndim+2) = t2.dot(dxi.head(Ndim));
+	
+    }
+    
+    return DF;
+
+}
+
+std::tuple<MatrixXd, double>
+CqcglRPO::findRPOM_hook2(const MatrixXd &x0, 
+			 const double tol,
+			 const double minRD,
+			 const int maxit,
+			 const int maxInnIt,
+			 const double GmresRtol,
+			 const int GmresRestart,
+			 const int GmresMaxit){
+    int N = Ndim + 3;
+    assert(x0.cols() == M && x0.rows() == N);
+    auto fx = std::bind(&CqcglRPO::MFx2, this, ph::_1);
+    auto dfx = std::bind(&CqcglRPO::MDFx2, this, ph::_1, ph::_2);
+    
+    // initialize input 
+    MatrixXd x(x0);
+    x.resize(M * N, 1);
+    
+    auto result = Gmres0Hook(fx, dfx, x, tol, minRD, maxit, maxInnIt,
+			     GmresRtol, GmresRestart, GmresMaxit,
+			     true, 3);
+    if(std::get<2>(result) != 0){
+	fprintf(stderr, "RPO not converged ! \n");
+    }
+
+    MatrixXd tmp2(std::get<0>(result));
+    tmp2.resize(N, M);
+    return std::make_tuple(tmp2, /* x, th, phi */
+			   std::get<1>(result).back()	  /* err */
+			   );
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

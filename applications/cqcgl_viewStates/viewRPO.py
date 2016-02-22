@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 1
+case = 110
 
 if case == 1:
     """
@@ -412,3 +412,69 @@ if case == 100:
     fig.tight_layout(pad=0)
     plt.show(block=False)
     # plotConfigSurfaceFourier(cgl, aa1, [0, d, 0, T1])
+
+if case == 110:
+    """
+    view the not converged rpo
+    """
+    N = 1024
+    d = 30
+    di = 0.04
+    
+    x, T, nstp, th, phi, err = cqcglReadRPO('rpo2.h5', '2')
+    M = x.shape[0]
+    h = T / nstp / M
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+    
+    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                          di, 1)
+    es, ev = eigReq(cgl, a0, wth0, wphi0)
+    ev = Tcopy(realve(ev))
+    a0H = cgl.orbit2slice(a0)[0]
+    veH = cgl.ve2slice(ev, a0)
+
+    nsp = 20
+    aas = np.empty([0, cgl.Ndim])
+    aaHs = []
+    for i in range(M):
+        aa = cgl.intg(x[i], nstp, nsp)
+        aaH = cgl.orbit2slice(aa)[0]
+        aas = np.vstack((aas, aa))
+        aaHs.append(aaH)
+    
+    plotConfigSpaceFromFourier(cgl, aas, [0, d, 0, T])
+
+    e1, e2, e3 = orthAxes(veH[0], veH[1], veH[10])
+    bases = np.vstack((e1, e2, e3))
+    aaHPs = []
+    for i in range(M):
+        aaHP = np.dot(aaHs[i]-a0H, bases.T)
+        aaHPs.append(aaHP)
+
+    fig = plt.figure(figsize=[6, 4])
+    ax = fig.add_subplot(111, projection='3d')
+    for i in range(M):
+        ax.plot(aaHPs[i][:, 0], aaHPs[i][:, 1],
+                aaHPs[i][:, 2], c='g', lw=1)
+        if i == 0:
+            c = 'r'
+        elif i == M-1:
+            c = 'k'
+        else:
+            c = 'b'
+        # ax.scatter(aaHPs[i][0, 0], aaHPs[i][0, 1], aaHPs[i][0, 2],
+        #           s=50, marker='o', c=c,  edgecolors='none')
+    ax.set_xlabel(r'$e_1$', fontsize=25)
+    ax.set_ylabel(r'$e_2$', fontsize=25)
+    ax.set_zlabel(r'$e_3$', fontsize=25)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+    for i in range(M-1):
+        tmp = ax.scatter(aaHPs[i][-1, 0], aaHPs[i][-1, 1], aaHPs[i][-1, 2],
+                         s=50, marker='o', c='k',  edgecolors='none')
+        tmp2 = ax.scatter(aaHPs[i+1][0, 0], aaHPs[i+1][0, 1], aaHPs[i+1][0, 2],
+                          s=50, marker='o', c='r',  edgecolors='none')
+        t = raw_input("input: ")
+        tmp.remove()
+        tmp2.remove()

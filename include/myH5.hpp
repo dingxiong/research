@@ -124,7 +124,11 @@ namespace MyH5 {
     CqcglWriteReq(const string fileName, const string groupName,
 		  const MatrixXd &a, const double wth, 
 		  const double wphi, const double err);
-    
+    void CqcglWriteRPO2(const std::string fileName, const string groupName, 
+			const MatrixXd &x, const int nstp, double err);
+    void CqcglWriteRPO2(const string fileName, double di, int index,
+			const MatrixXd &x, const int nstp,
+			double err);
 }
 
 //////////////////////////////////////////////////

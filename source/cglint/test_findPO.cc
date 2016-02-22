@@ -27,7 +27,7 @@ int main(){
     
     cout.precision(15);
     
-    switch (30){
+    switch (25){
 	
     case 1:{
 	/* try to find periodic orbit with the old form of cqcgl
@@ -93,6 +93,53 @@ int main(){
 	break;
     }
 
+    case 25: {
+	/* try to find periodic orbit with the new form of cqcgl
+	 * using GMRES Hook v2 method with multishooting method
+	 * space resolution is large
+	 */
+	const int N = 1024;
+	const double d = 30;
+	const double h = 1e-5;
+
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo2.h5");
+	int nstp;
+	double T, th, phi, err;
+	MatrixXd x;
+	CqcglReadRPO(file, "2", x, T, nstp, th, phi, err);
+	
+	int M = x.cols();
+	int S = 1;
+	M /= S;
+	nstp *= S;
+	
+	int Ndim = x.rows();
+	MatrixXd xp(Ndim+3, M);
+	for(int i = 0; i < M; i++){
+	    xp.col(i).head(Ndim) = x.col(S*i);
+	    xp(Ndim, i) = T / M;
+	    if (i == M-1) {
+		xp(Ndim+1, i) = th/M;
+		xp(Ndim+2, i) = phi/M;
+	    }
+	    else{
+		xp(Ndim+1, i) = th/M;
+		xp(Ndim+2, i) = phi/M;
+	    }
+	}
+
+	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
+	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, 0.01, 0.04, 4);
+	auto result = cglrpo.findRPOM_hook2(xp, 1e-12, 1e-3, 10, 20, 0.5, 100, 1);
+
+	CqcglWriteRPO2("rpo2.h5", "1", 
+		       std::get<0>(result),
+		       nstp,
+		       std::get<1>(result)
+		       );
+	
+	break;
+    }
 
     case 30: {
 	/* try to find periodic orbit with the new form of cqcgl
@@ -107,10 +154,10 @@ int main(){
 	int nstp;
 	double T, th, phi, err;
 	MatrixXd x;
-	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
+	CqcglReadRPO(file, "2", x, T, nstp, th, phi, err);
 	
 	int M = x.cols();
-	int S = 10;
+	int S = 1;
 	M /= S;
 	nstp *= S;
  
@@ -121,8 +168,8 @@ int main(){
 
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
 	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, 0.01, 0.04, 4);
-	auto result = cglrpo.findRPOM_hook(xp, T, th, phi, 1e-12, 1e-3, 100, 20, 1e-6, 500, 30);
-	CqcglWriteRPO("rpo2.h5", "2",
+	auto result = cglrpo.findRPOM_hook(xp, T, th, phi, 1e-12, 1e-3, 10, 20, 1e-1, 140, 1);
+	CqcglWriteRPO("rpo2.h5", "1",
 		      std::get<0>(result), /* x */
 		      std::get<1>(result), /* T */
 		      nstp,		   /* nstp */

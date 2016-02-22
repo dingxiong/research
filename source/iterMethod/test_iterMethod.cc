@@ -1,5 +1,5 @@
 /* to compile :
- * g++ test_iterMethod.cc  -O3 -march=corei7 -msse2 -msse4 -I $XDAPPS/eigen/include/eigen3 -std=c++11 -I ../../include -L ../../lib -literMethod -DGMRES_PRINT
+ * g++ test_iterMethod.cc  -O3 -march=corei7 -msse2 -msse4 -I $XDAPPS/eigen/include/eigen3 -std=c++11 -I ../../include -L ../../lib -literMethod -ldenseRoutines -DGMRES_PRINT
  */
 #include "iterMethod.hpp"
 #include <cmath>
@@ -7,6 +7,7 @@
 #include <time.h>       /* time */
 using namespace std;
 using namespace Eigen;
+using namespace denseRoutines;
 
 typedef Eigen::Triplet<double> Tri;
 typedef Eigen::SparseMatrix<double> SpMat; 
@@ -272,15 +273,8 @@ int main()
 		srand (time(NULL));
 		const int N  = 10;
 
-		MatrixXd A(N, N);
-		VectorXd x(N);
-
-		for (int i = 0; i < N; i++) {
-		    for (int j = 0; j < N; j++) {
-			A(i,j) = (double)rand() / RAND_MAX - 0.5; 
-		    }
-		    x(i) =  (double)rand() / RAND_MAX - 0.5; 
-		}
+		MatrixXd A(randM(N, N));
+		VectorXd x(randM(N, 1));
 		VectorXd b = A * x;
 	
 		//cout << A << endl << endl;

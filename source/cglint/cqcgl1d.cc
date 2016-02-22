@@ -294,7 +294,7 @@ ArrayXXd Cqcgl1d::C2R(const ArrayXXcd &v){
 }
 
 ArrayXXcd Cqcgl1d::R2C(const ArrayXXd &v){
-    if(0 != v.rows()%2 ) { printf("R2C dimension wrong.\n"); exit(1); }
+    assert( 0 == v.rows() % 2);
     return Map<ArrayXXcd>((dcp*)&v(0,0), v.rows()/2, v.cols());
 }
 

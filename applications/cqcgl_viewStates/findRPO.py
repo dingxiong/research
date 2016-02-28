@@ -112,15 +112,15 @@ if case == 4:
     use the new form of cqcgl with larger di to find
     candidate of periodic orbit initial conditon
     """
-    N = 512*2
+    N = 512
     d = 30
-    h = 1e-5
-    s = 20
+    h = 1e-4
+    s = 2
 
     cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, 0.04, 4)
     A0 = 5*centerRand(2*N, 0.2)
     a0 = cgl.Config2Fourier(A0)
-    nstp = 150000
+    nstp = 15000
     aa = cgl.intg(a0, nstp, s)
     for i in range(2):
         aa = cgl.intg(aa[-1], nstp, s)

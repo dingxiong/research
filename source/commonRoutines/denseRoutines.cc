@@ -415,3 +415,4 @@ denseRoutines::savetxt(const std::string f, const Ref<const MatrixXd> &A){
     file << A << endl;
     file.close();
 }
+

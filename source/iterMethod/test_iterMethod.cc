@@ -1,5 +1,5 @@
 /* to compile :
- * g++ test_iterMethod.cc  -O3 -march=corei7 -msse2 -msse4 -I $XDAPPS/eigen/include/eigen3 -std=c++11 -I ../../include -L ../../lib -literMethod -ldenseRoutines -DGMRES_PRINT
+ * g++ test_iterMethod.cc  -O3 -march=corei7 -msse2 -msse4 -I $XDAPPS/eigen/include/eigen3 -std=c++11 -I ../../include -L ../../lib -literMethod -ldenseRoutines 
  */
 #include "iterMethod.hpp"
 #include <cmath>
@@ -8,6 +8,7 @@
 using namespace std;
 using namespace Eigen;
 using namespace denseRoutines;
+using namespace iterMethod;
 
 typedef Eigen::Triplet<double> Tri;
 typedef Eigen::SparseMatrix<double> SpMat; 
@@ -15,7 +16,7 @@ typedef Eigen::SparseMatrix<double> SpMat;
 int main()
 {
     cout.precision(16);
-    switch (9)
+    switch (10)
 	{
  
 	case 1: // test ConjGrad() with dense matrix
@@ -271,7 +272,7 @@ int main()
 	case 9: // test GmresHook() with dense matrix
 	    {
 		srand (time(NULL));
-		const int N  = 10;
+		const int N  = 50;
 
 		MatrixXd A(randM(N, N));
 		VectorXd x(randM(N, 1));
@@ -297,7 +298,31 @@ int main()
 		break;	
 	    }
 
+	case 10:		/* test LM() function */
+	    {
+		srand(time(NULL));
+		const int N = 1000;
+		
+		MatrixXd A(randM(N, N));
+		VectorXd x(randM(N, 1));
+		VectorXd b = A * x;
+
+		cout << x << endl << endl;
+		cout << b << endl << endl;
+
+		auto tmp = LM(A, b, VectorXd::Zero(N), 1e-13, 100, 20);
+		
+		cout << std::get<0>(tmp) << endl << endl;
+		auto res = std::get<1>(tmp);
+		for(int i = 0; i < res.size(); i++) cout << res[i] << endl;
+		cout << std::get<2>(tmp) << endl << endl;
+
+		break;
+	    }
+
+
 	}
+
     return 0;
 }
 

@@ -2,6 +2,39 @@
 
 namespace iterMethod {
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // global variables
+    
+    bool GMRES_OUT_PRINT = true;
+    int GMRES_OUT_PRINT_FREQUENCE = 1;
+
+    bool GMRES_IN_PRINT = true;
+    int GMRES_IN_PRINT_FREQUENCE = 1;
+
+    bool HOOK_PRINT = true;
+    int HOOK_PRINT_FREQUENCE = 1;
+
+    bool INB_OUT_PRINT = true;
+    int INB_OUT_PRINT_FREQUENCE = 1;
+
+    bool INB_IN_PRINT = true;
+    int INB_IN_PRINT_FREQUENCE = 1;
+
+    bool LM_OUT_PRINT = true;
+    int LM_OUT_PRINT_FREQUENCE = 1;
+
+    bool LM_IN_PRINT = true;
+    int LM_IN_PRINT_FREQUENCE = 1;
+
+    double LM_LAMBDA_INCREASE_FACTOR = 10;
+    double LM_LAMBDA_DECREASE_FACTOR = 10;
+    double LM_MAX_LAMBDA = 1e10;
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
     /**
      * @brief obtain the cos and sin from coordinate (x, y)
      */
@@ -93,5 +126,30 @@ namespace iterMethod {
 	// run out of loop => not converged
 	return std::make_tuple(mu, errVec, 1);
     }
+
+    //////////////////////////////////////////////////////////////////////
+    //            Levenberg-Marquardt related                           //
+    //////////////////////////////////////////////////////////////////////
     
+    /*
+    std::tuple<MatrixXd, MatrixXd, VectorXd>
+    JJF(const MatrixXd &J, const VectorXd &x){
+	MatrixXd JJ = J.transpose() * J;
+	MatrixXd d = JJ.diagonal().asDiagonal();
+	return std::make_tuple(JJ, d, J*x);
+    }
+
+    */
+    
+    std::tuple<VectorXd, std::vector<double>, int>
+    LM( const MatrixXd &A, const VectorXd &b,
+	const VectorXd &x0, const double tol,
+	const int maxit, const int innerMaxit){
+	
+	ColPivHouseholderQR<MatrixXd> solver;
+	auto fx = [&A, &b](const VectorXd &x) { return A*x - b; };
+	JJF<MatrixXd> jj(A, b); 
+	return LM0( fx, jj, solver, x0, tol, maxit, innerMaxit );
+    }
+
 }

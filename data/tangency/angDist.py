@@ -40,7 +40,7 @@ def setAxis(ax):
     # ax.legend(loc='best', fontsize=12)
     ax.set_yscale('log')
     # ax.set_ylim([0.01, 100])
-    ax.text(0.02, 20, r'$\rho(\theta)$', fontsize=20)
+    # ax.text(0.02, 20, r'$\rho(\theta)$', fontsize=20)
     # ax.set_ylabel(r'$\rho(\theta)$', fontsize=20, labelpad=-55)
 
 
@@ -60,7 +60,7 @@ def filterAng(a, ns, angSpan, angNum):
                 a[i][j] = 0
 
 
-situation = 2
+situation = 3
 
 if situation == 1:
     ##################################################
@@ -271,3 +271,57 @@ if situation == 2:
     plt.tight_layout(pad=0)
     plt.show(block=False)
     plot1dfig(as1[i1:i2], yscale='log')
+
+if situation == 3:
+    """
+    After we pick out the smallest angle orbit, let us
+    plot the distribution
+    """
+    ixRange = range(0, 29)
+    N = len(ixRange)
+
+    folder = './anglePOs64/ppo/space/147'
+    ns = 1000
+
+    # collect the data with rpo, ppo combined
+    as1 = []
+
+    for i in range(N):
+        f1 = folder + '/ang' + str(i) + '.dat'
+        if os.stat(f1).st_size > 0:
+            ang = arccos(loadtxt(f1))
+            as1.append(ang)
+        else:
+            as1.append(np.array([]))
+            
+    a = []
+    b = []
+    for i in range(N):
+        at, bt = histogram(as1[i], ns)
+        # print as1[i].shape, at.shape, bt.shape
+        a.append(at)
+        b.append(bt)
+    
+    labs = ['k='+str(i+1) for i in ixRange]
+    fig = plt.figure(figsize=(4, 1.5))
+    ax = fig.add_subplot(111)
+    for i in range(7):
+        ax.plot(b[i][:-1], a[i], label=labs[i],
+                lw=1.5)
+    setAxis(ax)
+    plt.tight_layout(pad=0)
+    plt.show(block=False)
+
+    fig = plt.figure(figsize=(4, 1.5))
+    ax = fig.add_subplot(111)
+    colors = cm.rainbow(linspace(0, 1, 11))
+    for ix in range(11):
+        i = 7 + 2*ix
+        ax.plot(b[i][:-1], a[i], c=colors[ix], lw=1.5)
+    setAxis(ax)
+    plt.tight_layout(pad=0)
+    plt.show(block=False)
+
+    
+        
+        

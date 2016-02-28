@@ -1,7 +1,7 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
 
-case = 110
+case = 120
 
 if case == 1:
     """
@@ -456,6 +456,76 @@ if case == 110:
     for i in range(M):
         ax.plot(aaHPs[i][:, 0], aaHPs[i][:, 1],
                 aaHPs[i][:, 2], c='g', lw=1)
+        if i == 0:
+            c = 'r'
+        elif i == M-1:
+            c = 'k'
+        else:
+            c = 'b'
+        # ax.scatter(aaHPs[i][0, 0], aaHPs[i][0, 1], aaHPs[i][0, 2],
+        #           s=50, marker='o', c=c,  edgecolors='none')
+    ax.set_xlabel(r'$e_1$', fontsize=25)
+    ax.set_ylabel(r'$e_2$', fontsize=25)
+    ax.set_zlabel(r'$e_3$', fontsize=25)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+    for i in range(M-1):
+        tmp = ax.scatter(aaHPs[i][-1, 0], aaHPs[i][-1, 1], aaHPs[i][-1, 2],
+                         s=50, marker='o', c='k',  edgecolors='none')
+        tmp2 = ax.scatter(aaHPs[i+1][0, 0], aaHPs[i+1][0, 1], aaHPs[i+1][0, 2],
+                          s=50, marker='o', c='r',  edgecolors='none')
+        t = raw_input("input: ")
+        tmp.remove()
+        tmp2.remove()
+
+
+if case == 120:
+    """
+    view the not converged rpo
+    the full multistep method
+    """
+    N = 512
+    d = 30
+    di = 0.04
+    
+    x, T, nstp, th, phi, err = cqcglReadRPO('rpo4.h5', '3')
+    M = x.shape[0]
+    Ts = x[:, -3]
+    ths = x[:, -2]
+    phis = x[:, -1]
+    x = x[:, :-3]
+
+    h = T / nstp / M
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+    
+    nsp = 2
+    aas = np.empty([0, cgl.Ndim])
+    aas2 = []
+    aaHs = []
+    for i in range(M):
+        newh = Ts[i] / nstp
+        cgl.changeh(newh)
+        aa = cgl.intg(x[i], nstp, nsp)
+        aaH = cgl.orbit2slice(aa)[0]
+        aas = np.vstack((aas, aa))
+        aas2.append(aa)
+        aaHs.append(aaH)
+
+    ers = np.zeros(M)
+    ers2 = np.zeros(M)
+    for i in range(M):
+        j = (i+1) % M
+        ers[i] = norm(aaHs[i][-1] - aaHs[j][0])
+        ers2[i] = norm(cgl.Rotate(aas2[i][-1], ths[i], phis[i]) - aas2[j][0])
+
+    plotConfigSpaceFromFourier(cgl, aas, [0, d, 0, T])
+
+    fig = plt.figure(figsize=[6, 4])
+    ax = fig.add_subplot(111, projection='3d')
+    for i in range(M):
+        ax.plot(aaHs[i][:, 0], aaHs[i][:, 1],
+                aaHs[i][:, 2], c='g', lw=1)
         if i == 0:
             c = 'r'
         elif i == M-1:

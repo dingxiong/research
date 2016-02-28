@@ -9,6 +9,8 @@
 #include <omp.h>
 #include "cqcgl1d.hpp"
 #include "iterMethod.hpp"
+#include "sparseRoutines.hpp"
+#include "denseRoutines.hpp"
 
 class CqcglRPO{
     public:

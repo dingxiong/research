@@ -32,6 +32,9 @@ namespace sparseRoutines {
     std::vector<Eigen::Triplet<double> >
     triDiag(const size_t n, const double x,
 	    const size_t M = 0, const size_t N = 0 );
+
+    std::vector<Eigen::Triplet<double> >
+    triDiag(const Eigen::VectorXd &D, const size_t M, const size_t N);
     
 }
 

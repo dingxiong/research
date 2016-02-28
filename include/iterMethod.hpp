@@ -42,6 +42,32 @@ namespace iterMethod {
     
     typedef Eigen::SparseMatrix<double> SpMat;
 
+    /* -------------------------------------------------- */
+    extern bool GMRES_OUT_PRINT;
+    extern int GMRES_OUT_PRINT_FREQUENCE;
+
+    extern bool GMRES_IN_PRINT;
+    extern int GMRES_IN_PRINT_FREQUENCE;
+
+    extern bool HOOK_PRINT;
+    extern int HOOK_PRINT_FREQUENCE;
+
+    extern bool INB_OUT_PRINT;
+    extern int INB_OUT_PRINT_FREQUENCE;
+
+    extern bool INB_IN_PRINT;
+    extern int INB_IN_PRINT_FREQUENCE;
+
+    extern bool LM_OUT_PRINT;
+    extern int LM_OUT_PRINT_FREQUENCE;
+
+    extern bool LM_IN_PRINT;
+    extern int LM_IN_PRINT_FREQUENCE;
+
+    extern double LM_LAMBDA_INCREASE_FACTOR; 
+    extern double LM_LAMBDA_DECREASE_FACTOR;
+    extern double LM_MAX_LAMBDA;
+    /* -------------------------------------------------- */
 
     template <typename Mat>
     std::pair<Eigen::VectorXd, std::vector<double> >
@@ -143,7 +169,19 @@ namespace iterMethod {
 			   const int GmresMaxit = 100);
     
 
+    /* --------------------------  LM  ------------------------ */
+
+    template<class Fx, template<class> class CalJJ, class LinearSolver, class Mat>
+    std::tuple<VectorXd, std::vector<double>, int>
+    LM0( Fx & fx, CalJJ<Mat> &JJF, LinearSolver &solver, 
+	 const VectorXd &x0, const double tol,
+	 const int maxit, const int innerMaxit);
     
+    std::tuple<VectorXd, std::vector<double>, int>
+    LM( const MatrixXd &A, const VectorXd &b,
+	const VectorXd &x0, const double tol,
+	const int maxit, const int innerMaxit);
+
 }
 
 
@@ -352,9 +390,10 @@ namespace iterMethod {
 	    VectorXd r = b - Ax(x); 
 	    double rnorm = r.norm();
 	    double err = rnorm / bnrm2;
-#ifdef GMRES_PRINT
-	    fprintf(stderr, "GMRES : out loop: i= %zd , r= %g\n", iter, err);
-#endif
+	    
+	    if(GMRES_OUT_PRINT && iter % GMRES_OUT_PRINT_FREQUENCE == 0)
+		fprintf(stderr, "GMRES : out loop: i= %zd/%d , r= %g\n", iter, maxit, err);
+
 	    if(err < rtol) return std::make_tuple(x, errVec, 0);
 	
 	    V.col(0) = r / rnorm;	// obtain V_1
@@ -408,9 +447,10 @@ namespace iterMethod {
 		 */
 		double err = fabs(g(i+1)) / bnrm2 ; 
 		errVec.push_back(err);
-#ifdef GMRES_PRINT
-	    fprintf(stderr, "GMRES : inner loop: i= %zd , r= %g\n", i, err);
-#endif
+
+		if(GMRES_IN_PRINT && i % GMRES_IN_PRINT_FREQUENCE == 0)
+		    fprintf(stderr, "GMRES : inner loop: i= %zd/%d , r= %g\n", i, M, err);
+
 		if (err < rtol){
 		    VectorXd y = H.topLeftCorner(i+1, i+1).lu().solve(g.head(i+1));
 		    x += V.leftCols(i+1) * y; 
@@ -502,9 +542,10 @@ namespace iterMethod {
 	    VectorXd r = b - Ax(x);
 	    double rnorm = r.norm();
 	    double err = rnorm / bnrm2;
-#ifdef GMRES_PRINT
-	    fprintf(stderr, "**** GMRES : out loop: i= %zd , r= %g\n", iter, err);
-#endif
+
+	    if(GMRES_OUT_PRINT && iter % GMRES_OUT_PRINT_FREQUENCE == 0)
+		fprintf(stderr, "**** GMRES : out loop: i= %zd/%d, r= %g\n", iter, maxit, err);
+
 	    // if(err < rtol) return std::make_tuple(x, errVec, 0);
 	
 	    V.col(0) = r / rnorm;	// obtain V_1
@@ -537,13 +578,15 @@ namespace iterMethod {
 		MatrixXd Q = qr.householderQ() * MatrixXd::Identity(i+2, i+2);
 		double e2 = Q(0, i+1) * rnorm / bnrm2; 
 		
+		// if (i == M-1) savetxt("v.dat", V);
 		// cout << Q << endl;
 		// cout << H.topLeftCorner(i+2, i+1) << endl;
 		// if(i==M-1) cout << H.topLeftCorner(i+2, i+1) << endl;
 
-#ifdef GMRES_PRINT
-		fprintf(stderr, "** GMRES : inner loop: i= %zd , r= %g, %g\n", i, err, e2);
-#endif
+
+		if(GMRES_IN_PRINT && i%GMRES_IN_PRINT_FREQUENCE == 0)
+		    fprintf(stderr, "** GMRES : inner loop: i= %zd/%d, r= %g, %g\n", i, M, err, e2);
+
 		if (err < rtol){
 		    VectorXd xold = x; 
  		    ArrayXd z = p.head(i+1).array() / D;
@@ -594,9 +637,10 @@ namespace iterMethod {
 	for(size_t i = 0; i < maxit; i++){
 	    VectorXd F = fx(x);
 	    double Fnorm = F.norm();
-#ifdef GMRES_PRINT	    
-	    fprintf(stderr, "\n+++++++++++ GHOOK: i = %zd/%d, r = %g ++++++++++ \n", i, maxit, Fnorm);
-#endif
+	    
+	    if(HOOK_PRINT && i % HOOK_PRINT_FREQUENCE == 0)
+		fprintf(stderr, "\n+++++++++++ GHOOK: i = %zd/%d, r = %g ++++++++++ \n", i, maxit, Fnorm);
+
 	    errVec.push_back(Fnorm);
 	    if(Fnorm < tol) return std::make_tuple(x, errVec, 0);
 
@@ -618,9 +662,10 @@ namespace iterMethod {
 	    for(size_t j = 0; j < maxInnIt; j++){ 
 		VectorXd newx = x + s; 
 		double newT = newx(N - Tindex); 
-#ifdef GMRES_PRINT	    
-		fprintf(stderr, " %zd, %g |", j, newT);
-#endif
+
+		if(HOOK_PRINT && i % HOOK_PRINT_FREQUENCE == 0)	    
+		    fprintf(stderr, " %zd, %g |", j, newT);
+
 		if(!testT || newT > 0){
 		    VectorXd newF = fx(newx);
 		    if(newF.norm() < (1 - minRD)*Fnorm){
@@ -734,9 +779,10 @@ namespace iterMethod {
 	    // test convergence first
 	    VectorXd F = fx(x); 
 	    double Fnorm = F.norm(); 
-#ifdef INB_PRINT
-	    fprintf(stderr, "\n+++++++++++ INB: i = %zd, r = %g ++++++++++ \n", i, Fnorm);
-#endif
+
+	    if(INB_OUT_PRINT && i % INB_OUT_PRINT_FREQUENCE == 0)
+		fprintf(stderr, "\n+++++++++++ INB: i = %zd, r = %g ++++++++++ \n", i, Fnorm);
+
 	    errVec.push_back(Fnorm);
 	    if( Fnorm < tol) return std::make_tuple(x, errVec, 0);
 
@@ -761,9 +807,10 @@ namespace iterMethod {
 	    for(size_t j = 0; j < btMaxIt; j++){
 		VectorXd F1 = fx(x + s);
 		double F1norm = F1.norm();
-#ifdef INB_PRINT
-	    fprintf(stderr, "INB(inner): j = %zd, r = %g \n", j, F1norm);
-#endif
+
+		if(INB_IN_PRINT && j % INB_IN_PRINT_FREQUENCE == 0)
+		    fprintf(stderr, "INB(inner): j = %zd, r = %g \n", j, F1norm);
+
 		if(F1norm < (1 - t * (1 - eta)) * Fnorm ) break;
 		double gp0 = theta * initgp0;
 		theta = chooseTheta(Fnorm, F1norm, gp0, theta_min, theta_max);
@@ -780,6 +827,115 @@ namespace iterMethod {
 	return std::make_tuple(x, errVec, 1); 
     }
     
+    
+    //////////////////////////////////////////////////////////////////////
+    //            Levenberg-Marquardt related                           //
+    //////////////////////////////////////////////////////////////////////
+
+    /**
+     * @brief Levenberg-Marquardt algorithm to minimize ||f(x)||
+     *
+     * @param[in]  Fx          VectorXd (*)(VectorXd x) to evaluate f(x)
+     * @param[in] JJF          std::tuple<Mat, Mat, VectorXd> (*)(VectorXd x) function to
+     *                         evaulate J^T*J, diag(diag(J^T*J)), J^T*f(x)
+     * @param[in] solver       a linear solver to solve Ax = b
+     * @param[in] x0           initial guess
+     * @param[in] tol          tolerance
+     * @param[in] mxit         maximal number of iterations
+     * @param[in] innerMaxit   maximal number of inner iteration number
+     */
+    template<class Fx, template<class> class CalJJ, class LinearSolver, class Mat>
+    std::tuple<VectorXd, std::vector<double>, int>
+    LM0( Fx & fx, CalJJ<Mat> &JJF, LinearSolver &solver, 
+	 const VectorXd &x0, const double tol,
+	 const int maxit, const int innerMaxit){
+
+	double lam = 1;
+	VectorXd x(x0);
+	std::vector<double> res;
+
+	for(int i = 0; i < maxit; i++){
+	    if (lam > LM_MAX_LAMBDA) return std::make_tuple(x, res, 0);
+	    
+	    /////////////////////////////////////////////////
+	    // judge stop or not 
+	    VectorXd F = fx(x);
+	    double err = F.norm();
+	    res.push_back(err);
+	    if(err < tol){
+		fprintf(stderr, "stops at error = %g\n", err);
+		return std::make_tuple(x, res, 0);
+	    }	    
+	    if (LM_OUT_PRINT && i % LM_OUT_PRINT_FREQUENCE == 0)
+		fprintf(stderr,  "+++ LM : out loop: i = %d/%d, err=%g +++ \n", i, maxit, err);
+	 
+	    ////////////////////////////////////////////////
+	    // construct JJ and JF
+	    std::tuple<Mat, Mat, VectorXd> tmp = JJF(x);
+	    Mat &jj = std::get<0>(tmp); 
+	    Mat &d = std::get<1>(tmp);
+	    VectorXd &jf = std::get<2>(tmp);
+	    
+	    for(int j = 0; j < innerMaxit; j++){
+		
+		Mat H = jj + lam * d; 
+		int N = H.rows();
+
+		// solve H x = -jf
+		auto cg = ConjGradSSOR(H, -jf, solver, VectorXd::Zero(N), N, 1e-6);
+		VectorXd &dx = cg.first;
+		std::vector<double> &r = cg.second;
+		if (LM_IN_PRINT)
+		    printf("CG error %g, iteration number %zd\n", r.back(), r.size());
+		
+		// update the state or keep unchanged
+		VectorXd xnew = x + dx;
+		VectorXd Fnew = fx(xnew);
+		double errnew = Fnew.norm();
+		
+		if (LM_IN_PRINT && i % LM_IN_PRINT_FREQUENCE == 0)
+		    fprintf(stderr,  "LM : inner loop: j = %d/%d, err=%g\n", j, innerMaxit, errnew);
+		
+		if (errnew < err){
+		    x = xnew;
+		    lam /= LM_LAMBDA_DECREASE_FACTOR;
+		    break;
+		} 
+		else {
+		    lam *= LM_LAMBDA_INCREASE_FACTOR;
+		    if (lam > LM_MAX_LAMBDA) {
+			fprintf(stderr, "lambda = %g too large \n", lam);
+			break;
+		    }
+		}
+		
+	    }
+	    
+	    
+	}
+	
+	// run out of loop, which means it does not converge
+	return std::make_tuple(x, res, 0);
+    }
+
+    /**
+     * @brief JJF template function for LM() to solve Ax=b
+     */
+    template<class Mat>
+    struct JJF {
+	const Mat &J;
+	const VectorXd &b;
+	
+	JJF(const Mat &tJ, const VectorXd &tb) : J(tJ), b(tb) {}
+	
+	std::tuple<MatrixXd, MatrixXd, VectorXd>
+        operator()(const VectorXd &x) {
+	    MatrixXd JJ = J.transpose() * J;
+	    MatrixXd d = JJ.diagonal().asDiagonal();
+	    return std::make_tuple(JJ, d, J.transpose()*(J*x-b));
+	}
+    };
+
 }
 
 #endif	/* ITERMETHOD_H */

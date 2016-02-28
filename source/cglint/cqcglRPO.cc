@@ -2,12 +2,11 @@
 #include <functional>   // std::bind
 namespace ph = std::placeholders;
 
-using std::cout;
-using std::endl;
+using namespace denseRoutines;
 using namespace sparseRoutines;
 using namespace iterMethod;
 using namespace Eigen;
-
+using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 //                      constructor                                 //
@@ -439,6 +438,7 @@ VectorXd CqcglRPO::MDFx2(const VectorXd &x, const VectorXd &dx){
 }
 
 std::tuple<MatrixXd, double>
+
 CqcglRPO::findRPOM_hook2(const MatrixXd &x0, 
 			 const double tol,
 			 const double minRD,
@@ -468,6 +468,101 @@ CqcglRPO::findRPOM_hook2(const MatrixXd &x0,
     return std::make_tuple(tmp2, /* x, th, phi */
 			   std::get<1>(result).back()	  /* err */
 			   );
+}
+
+std::tuple<SpMat, SpMat, VectorXd> 
+calJJF(const VectorXd &x, const VectorXd &dx){
+    int N = Ndim + 3;
+    SpMat JJ(N*M, N*M);
+    SpMat D(N*M, N*M);
+    VectorXd df(VectorXd::Zero(N*M));
+    
+    MatrixXd F(MatrixXd::Zero(N, N));
+    MatrixXd FF(N, N);
+    MatrixXd FK(MatrixXd::Zero(N, N));
+    MatrixXd KF(MatrixXd::Zero(N, N));
+
+    std::Vector<Tri> nzjj, nzd;
+    nzjj.reserve(3*M*N*N);
+    nzd.reserve(M*N);
+    
+    /////////////////////////////////////////
+    // construct the JJ, Diag(JJ), JF
+    for(int i = 0; i < M; i++){
+	VectorXd xi = x.segment(i*N, N);
+	int j = (i+1) % M;
+	VectorXd xn = x.segment(j*N, N);
+	
+	double t = xi(Ndim);
+	double th = xi(Ndim + 1);
+	double phi = xi(Ndim + 2);
+	assert( t > 0);
+
+	cgl3.change( t/nstp );
+	auto tmp = cgl3.intgj(xi.head(Ndim), nstp, nstp, nstp);
+	VectorXd &fx = tmp.first;
+	MatrixXd &J = tmp.second;
+
+	VectorXd gfx = cgl3.Rotate(fx, th, phi);
+	
+	df.segment(i*N, Ndim) = gfx - xn.head(Ndim);
+	
+	F.topLeftCorner(Ndim, Ndim) = cgl3.Rotate(J, th, phi);
+
+	F.col(Ndim).head(Ndim) = cgl3.velocity(gfx);
+	F.col(Ndim+1).head(Ndim) = cgl3.transTangent(gfx);
+	F.col(Ndim+2).head(Ndim) = cgl3.phaseTangent(gfx);
+
+	F.row(Ndim).head(Ndim) = cgl3.velocity(xi.head(Ndim));
+	F.row(Ndim+1).head(Ndim) = cgl3.transTangent(xi.head(Ndim));
+	F.row(Ndim+2).head(Ndim) = cgl3.phaseTangent(xi.head(Ndim));
+	
+	FF = F.transpose() * F;
+	for(int i = 0; i < Ndim; i++) FF(i, i) += 1;
+	
+	FK.leftCols(Ndim) = -F.transpose().leftCols(Ndim);
+	KF.topRows(Ndim) = -F.topRows(Ndim);
+	
+	
+	std::vector<Tri> triFF = triMat(FF, i*N, i*N);
+	std::vector<Tri> triFK = triMat(FK, i*N, j*N);
+	std::vector<Tri> triKF = triMat(KF, j*N, i*N);
+	std::vector<Tri> triD = triDiag(FF.diagonal(), i*N, i*N);
+	    
+	nzjj.insert(nzjj.end(), triFF.begin(), triFF.end());
+	nzjj.insert(nzjj.end(), triFK.begin(), triFK.end());
+	nzjj.insert(nzjj.end(), triKF.begin(), triKF.end());
+
+	nzd.insert(nzd.end(), tirD.begin(), triD.end());
+    }
+
+    JJ.setFromTriplets(nzjj.begin(), nzjj.end());
+    D.setFromTriplets(nzd.begin(), nzd.end());
+
+    return std::make_tuple(JJ, D, df);
+    
+}
+
+tmplate<class Mat>
+struct cqcglJJF {
+    
+    cqcglJJF() {}
+    
+    std::tuple<SpMat, SpMat, VectorXd>
+    operator()(const VectorXd &x) {
+	
+	for(int i = 0; i < M; i++)
+	cgl.intgj()
+    }
+};
+
+std::tuple<MatrixXd, double>
+Cqcgl1dRPO::findRPOM_LM(const MatrixXd &x0, 
+			const double tol,
+			const int maxit,
+			const int maxInnIt){
+    
+    
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

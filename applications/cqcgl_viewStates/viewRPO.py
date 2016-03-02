@@ -605,9 +605,11 @@ if case == 140:
     
     def velJ(xj, t):
         x = xj[:cgl.Ndim]
+        J = xj[cgl.Ndim:].reshape(cgl.Ndim, cgl.Ndim)
         v = cgl.velocity(x)
-        A = cgl.stab(x)
-        return np.concatenate((v, A.ravel()))
+        A = cgl.stab(x).T
+        AJ = A.dot(J)
+        return np.concatenate((v, AJ.ravel()))
         
     def calJ(x, n):
         j = np.eye(cgl.Ndim)

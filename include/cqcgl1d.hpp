@@ -144,6 +144,10 @@ public:
 			const double phi);
     VectorXd velSlice(const Ref<const VectorXd> &aH);
     VectorXd velPhase(const Ref<const VectorXd> &aH);
+    MatrixXd rk4(const VectorXd &a0, const double dt, const int nstp, const int nq);
+    MatrixXd velJ(const MatrixXd &xj);
+    std::pair<MatrixXd, MatrixXd>
+    rk4j(const VectorXd &a0, const double dt, const int nstp, const int nq, const int nqr);
     
     ArrayXcd
     Lyap(const Ref<const ArrayXXd> &aa);

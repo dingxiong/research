@@ -730,6 +730,60 @@ VectorXd Cqcgl1d::velPhase(const Ref<const VectorXd> &aH){
     return v - c * tp;
 }
 
+MatrixXd Cqcgl1d::rk4(const VectorXd &a0, const double dt, const int nstp, const int nq){
+    VectorXd x(a0);
+    MatrixXd xx(Ndim, nstp/nq+1);
+    xx.col(0) = x;
+
+    for(int i = 0; i < nstp; i++){
+	VectorXd k1 = velocity(x);
+	VectorXd k2 = velocity(x + dt/2 * k1);
+	VectorXd k3 = velocity(x + dt/2 * k2);
+	VectorXd k4 = velocity(x + dt * k3);
+	x += dt/6 * (k1 + 2*k2 + 2*k3 + k4);
+
+	if((i+1)%nq == 0) xx.col((i+1)/nq) = x;
+    }
+
+    return xx;
+}
+
+MatrixXd Cqcgl1d::velJ(const MatrixXd &xj){
+    MatrixXd vj(Ndim, Ndim+1);
+    vj.col(0) = velocity(xj.col(0));
+    vj.middleCols(1, Ndim) = stab(xj.col(0)) * xj.middleCols(1, Ndim);
+    
+    return vj;
+}
+
+std::pair<MatrixXd, MatrixXd>
+Cqcgl1d::rk4j(const VectorXd &a0, const double dt, const int nstp, const int nq, const int nqr){
+    MatrixXd x(Ndim, Ndim + 1);
+    x << a0, MatrixXd::Identity(Ndim, Ndim);
+    
+    MatrixXd xx(Ndim, nstp/nq+1);
+    xx.col(0) = a0;
+    MatrixXd JJ(Ndim, Ndim*(nstp/nqr));
+    
+    for(int i = 0; i < nstp; i++){
+	MatrixXd k1 = velJ(x);
+	MatrixXd k2 = velJ(x + dt/2 *k1);
+	MatrixXd k3 = velJ(x + dt/2 *k2);
+	MatrixXd k4 = velJ(x + dt *k3);
+
+	x += dt/6 * (k1 + 2*k2 + 2*k3 + k4);
+
+	if((i+1)%nq == 0) xx.col((i+1)/nq) = x.col(0);
+	if((i+1)%nqr == 0){
+	    int k = (i+1)/nqr - 1;
+	    JJ.middleCols(k*Ndim, Ndim) = x.middleCols(1, Ndim);
+	    x.middleCols(1, Ndim) = MatrixXd::Identity(Ndim, Ndim);
+	}
+    }
+
+    return std::make_pair(xx, JJ);
+}
+
 /* -------------------------------------------------- */
 /* --------         Lyapunov functional   ----------- */
 /* -------------------------------------------------- */

@@ -29,7 +29,7 @@ int main(){
     
     cout.precision(15);
     
-    switch (28){
+    switch (26){
 	
     case 1:{
 	/* try to find periodic orbit with the old form of cqcgl
@@ -137,6 +137,38 @@ int main(){
 	auto result = cglrpo.findRPOM_hook2(xp, 1e-12, 1e-3, 10, 20, 2e-1, 100, 1);
 
 	CqcglWriteRPO2("rpo2.h5", "1", 
+		       std::get<0>(result),
+		       nstp,
+		       std::get<1>(result)
+		       );
+	
+	break;
+    }
+
+    case 26: {
+	/* try to find periodic orbit with the new form of cqcgl
+	 * using Lervenberg-Marquardt method with multishooting method
+	 * space resolution is large
+	 */
+	CG_PRINT_FREQUENCE = 1;
+	
+	const int N = 512;
+	const double d = 30;
+	const double h = 1e-4;
+
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo4.h5");
+	int nstp;
+	double T, th, phi, err;
+	MatrixXd x;
+	CqcglReadRPO(file, "3", x, T, nstp, th, phi, err);
+	
+	int M = x.cols();
+	
+	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
+	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, 0.01, 0.04, 4);
+	auto result = cglrpo.findRPOM_LM(x, 1e-12, 100, 20);
+
+	CqcglWriteRPO2("rpo4.h5", "5", 
 		       std::get<0>(result),
 		       nstp,
 		       std::get<1>(result)

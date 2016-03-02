@@ -3,6 +3,7 @@
  */
 #include "iterMethod.hpp"
 #include <cmath>
+#include <complex>
 #include <iostream>
 #include <time.h>       /* time */
 using namespace std;
@@ -301,9 +302,10 @@ int main()
 	case 10:		/* test LM() function */
 	    {
 		srand(time(NULL));
-		const int N = 1000;
+		const int N = 100;
 		
 		MatrixXd A(randM(N, N));
+		A.col(10) *= 1e7;
 		VectorXd x(randM(N, 1));
 		VectorXd b = A * x;
 
@@ -316,6 +318,7 @@ int main()
 		auto res = std::get<1>(tmp);
 		for(int i = 0; i < res.size(); i++) cout << res[i] << endl;
 		cout << std::get<2>(tmp) << endl << endl;
+		
 
 		break;
 	    }

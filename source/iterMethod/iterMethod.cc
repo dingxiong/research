@@ -5,6 +5,9 @@ namespace iterMethod {
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // global variables
     
+    bool CG_PRINT = true;
+    int CG_PRINT_FREQUENCE = 100;
+
     bool GMRES_OUT_PRINT = true;
     int GMRES_OUT_PRINT_FREQUENCE = 1;
 

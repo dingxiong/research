@@ -1,7 +1,8 @@
 from py_cqcgl1d_threads import pyCqcgl1d
 from personalFunctions import *
+from scipy.integrate import odeint
 
-case = 120
+case = 130
 
 if case == 1:
     """
@@ -548,3 +549,95 @@ if case == 120:
         t = raw_input("input: ")
         tmp.remove()
         tmp2.remove()
+
+
+if case == 130:
+    """
+    use odeint to integrate in the slice directly
+    """
+    N = 512
+    d = 30
+    di = 0.04
+    
+    x, T, nstp, th, phi, err = cqcglReadRPO('rpo4.h5', '3')
+    M = x.shape[0]
+    Ts = x[:, -3]
+    ths = x[:, -2]
+    phis = x[:, -1]
+    x = x[:, :-3]
+
+    h = T / nstp / M
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+  
+    nsp = 2
+    aas = np.empty([0, cgl.Ndim])
+    aas2 = []
+    aaHs = []
+    for i in range(M):
+        newh = Ts[i] / nstp
+        cgl.changeh(newh)
+        aa = cgl.intg(x[i], nstp, nsp)
+        aaH = cgl.orbit2slice(aa)[0]
+        aas = np.vstack((aas, aa))
+        aas2.append(aa)
+        aaHs.append(aaH)
+
+    def vel(x, t):
+        return cgl.velocity(x)
+    
+    pH = np.empty([0, cgl.Ndim])
+    pHs = []
+    for k in range(M):
+        x0H = aaHs[k][0]
+        xH, infodict = odeint(vel, x0H, np.linspace(0, Ts[k], nstp),
+                              full_output=True)
+        print np.min(infodict['hu']), np.max(infodict['hu'])
+        pH = np.vstack((pH, xH))
+        pHs.append(xH)
+
+if case == 140:
+    cgl.changeh(cgl.h/10)
+    J = cgl.intgj(x[0], 10, 10, 10)[1].T
+    J2 = np.eye(cgl.Ndim) + cgl.stab(x[0]).T * cgl.h * 10
+    print np.max(J), np.max(J2), np.min(J), np.min(J2)
+    print J[:3, :3]
+    print J2[:3, :3]
+    
+    def velJ(xj, t):
+        x = xj[:cgl.Ndim]
+        v = cgl.velocity(x)
+        A = cgl.stab(x)
+        return np.concatenate((v, A.ravel()))
+        
+    def calJ(x, n):
+        j = np.eye(cgl.Ndim)
+        xj = np.concatenate((x, j.ravel()))
+        y = odeint(velJ, xj, np.linspace(0, cgl.h*n, n+1))
+        
+        return y[:, :cgl.Ndim].copy(), y[-1, cgl.Ndim:].copy().reshape((cgl.Ndim, cgl.Ndim))
+
+    def calJ2(x, n):
+        y = odeint(velJ, x, np.linspace(0, cgl.h*n, n+1))
+        return y[-1]
+
+    def calJ3(x, n):
+        j = np.eye(cgl.Ndim)
+        xj = np.concatenate((x, j.ravel()))
+        y = odeint(velJ, xj, np.linspace(0, cgl.h*n, n+1))
+  
+        return y[-1]
+        
+    aa, J = cgl.intgj(x[0], 10, 10, 10)
+    aa2, J2 = calJ(x[0], 10)
+
+    cgl.changeh(cgl.h / 10)
+    aa3, J3 = cgl.intgj(x[0], 100, 100, 100)
+    aa4, J4 = calJ(x[0], 100)
+
+    print norm(aa3[-1] - aa[-1]), norm(aa4[-1] - aa2[-1])
+    print np.max(np.max(np.abs(J3-J))), np.max(np.max(np.abs(J4-J2)))
+    
+    y = calJ3(x[0], 10)
+    for i in range(2):
+        print i
+        y = calJ2(y, 100)

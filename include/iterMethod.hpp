@@ -43,6 +43,9 @@ namespace iterMethod {
     typedef Eigen::SparseMatrix<double> SpMat;
 
     /* -------------------------------------------------- */
+    extern bool CG_PRINT;
+    extern int CG_PRINT_FREQUENCE;
+    
     extern bool GMRES_OUT_PRINT;
     extern int GMRES_OUT_PRINT_FREQUENCE;
 
@@ -220,8 +223,13 @@ namespace iterMethod {
 	vector<double> res;
 	res.reserve(jmax);
 	double errInit = b.norm();
-
+	res.push_back(errInit);
+	
 	for (size_t i = 0; i < jmax; i++) {
+
+	    if(CG_PRINT && i % CG_PRINT_FREQUENCE == 0)
+		fprintf(stderr, "CG : i= %zd/%d , r= %g\n", i, jmax, res.back());
+
 	    double r1snorm = r1.squaredNorm(); 
 	    double mu = r1snorm / r0.squaredNorm(); 
 	    p = mu * p + r1;
@@ -283,8 +291,13 @@ namespace iterMethod {
 	vector<double> res;
 	res.reserve(jmax);
 	double errInit = b.norm();
-
+	res.push_back(errInit);
+	
 	for (size_t i = 0; i < jmax; i++) {
+
+	    if(CG_PRINT && i % CG_PRINT_FREQUENCE == 0)
+		fprintf(stderr, "CG : i= %zd/%d , r= %g\n", i, jmax, res.back());
+
 	    VectorXd z1 = solver.solve(r1);
 	    double r1z1 = r1.dot(z1);
 	    double mu = r1z1 / r0.dot(z0); 
@@ -859,7 +872,7 @@ namespace iterMethod {
 	    
 	    /////////////////////////////////////////////////
 	    // judge stop or not 
-	    VectorXd F = fx(x);
+	    VectorXd F = fx(x); 
 	    double err = F.norm();
 	    res.push_back(err);
 	    if(err < tol){
@@ -882,7 +895,8 @@ namespace iterMethod {
 		int N = H.rows();
 
 		// solve H x = -jf
-		auto cg = ConjGradSSOR(H, -jf, solver, VectorXd::Zero(N), N, 1e-6);
+		// auto cg = ConjGradSSOR(H, -jf, solver, VectorXd::Zero(N), N, 1e-6);
+		auto cg = ConjGrad(H, -jf, VectorXd::Zero(N), N, 1e-6);
 		VectorXd &dx = cg.first;
 		std::vector<double> &r = cg.second;
 		if (LM_IN_PRINT)

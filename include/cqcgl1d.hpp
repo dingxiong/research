@@ -142,6 +142,9 @@ public:
     ArrayXd velocity(const ArrayXd &a0);
     ArrayXd velocityReq(const ArrayXd &a0, const double th,
 			const double phi);
+    VectorXd velSlice(const Ref<const VectorXd> &aH);
+    VectorXd velPhase(const Ref<const VectorXd> &aH);
+    
     ArrayXcd
     Lyap(const Ref<const ArrayXXd> &aa);
     ArrayXd
@@ -231,7 +234,7 @@ public:
     
 protected:
     /****    global variable definition.   *****/
-    enum { M = 64 }; // number used to approximate the complex integral.
+    enum { M = 128 }; // number used to approximate the complex integral.
     
     FFT Fv, Fa, Fb, Fc; // create four fft&ifft structs for forward/backward fft transform.
     FFT jFv, jFa, jFb, jFc;

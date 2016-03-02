@@ -18,7 +18,7 @@ class CqcglRPO{
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> Tri;
 
-    Cqcgl1d cgl1, cgl2;
+    Cqcgl1d cgl1, cgl2, cgl3;
     int nstp;			/* integration steps for each piece */
     int M;			/* pieces of multishoot */
     const int N;		/* dimension of FFT */
@@ -109,7 +109,15 @@ class CqcglRPO{
 		   const double GmresRtol,
 		   const int GmresRestart,
 		   const int GmresMaxit);
-    
+
+    std::tuple<SpMat, SpMat, VectorXd> 
+    calJJF(const VectorXd &x);
+    std::tuple<MatrixXd, double>
+    findRPOM_LM(const MatrixXd &x0, 
+		const double tol,
+		const int maxit,
+		const int innerMaxit);
+
 #if 0				
     inline VectorXd cgSolver(ConjugateGradient<SpMat> &CG, Eigen::SparseLU<SpMat> &solver,
 			     SpMat &H, VectorXd &JF, bool doesUseMyCG = true,
@@ -125,6 +133,20 @@ class CqcglRPO{
     
 };
 
+template<class Mat>
+struct cqcglJJF {
+    typedef Eigen::SparseMatrix<double> SpMat;
+    
+    CqcglRPO &rpo;
+    
+    
+    cqcglJJF(CqcglRPO &rpo_) : rpo(rpo_){}
+    
+    std::tuple<SpMat, SpMat, VectorXd>
+    operator()(const VectorXd &x) {
+	return rpo.calJJF(x);
+    }	
+};
 
 
 

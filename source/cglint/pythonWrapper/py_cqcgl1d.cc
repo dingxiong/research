@@ -120,6 +120,24 @@ public:
 	return copy2bn(tmpv);
     }
 
+    /* wrap the velSlice */
+    bn::ndarray PYvelSlice(bn::ndarray aH){
+	int m, n;
+	getDims(aH, m, n);
+	Map<VectorXd> tmpa((double*)aH.get_data(), m*n);
+	VectorXd tmpv = velSlice(tmpa);
+	return copy2bn(tmpv);
+    }
+
+    /* wrap the velPhase */
+    bn::ndarray PYvelPhase(bn::ndarray aH){
+	int m, n;
+	getDims(aH, m, n);
+	Map<VectorXd> tmpa((double*)aH.get_data(), m*n);
+	VectorXd tmpv = velPhase(tmpa);
+	return copy2bn(tmpv);
+    }
+    
     /* wrap the Lyap */
     bp::tuple PYLyap(bn::ndarray aa){
 	int m, n;
@@ -930,6 +948,8 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_omp) {
 	.def(bp::init<int, double, double, bool, int, double, double, double, double, int>()) /* second constructor */
 	.def("changeh", &pyCqcgl1d::PYchangeh)
 	.def("velocity", &pyCqcgl1d::PYvelocity)
+	.def("velSlice", &pyCqcgl1d::PYvelSlice)
+	.def("velPhase", &pyCqcgl1d::PYvelPhase)
 	.def("velocityReq", &pyCqcgl1d::PYvelocityReq)
 	.def("Lyap", &pyCqcgl1d::PYLyap)
 	.def("LyapVel", &pyCqcgl1d::PYLyapVel)

@@ -169,6 +169,38 @@ void Cqcgl1d::calculateCoefficients(){
     f2 = h * ( (4.0 + 2.0*LR + LRe*(-4.0 + 2.0*LR)) / LR3 ).rowwise().mean();
     f3 = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean();
 
+    /*
+    ArrayXd qr = Q.real();
+    ArrayXd qi = Q.imag();
+
+    ArrayXd f1r = f1.real();
+    ArrayXd f1i = f1.imag();
+    ArrayXd f2r = f2.real();
+    ArrayXd f2i = f2.imag();
+    ArrayXd f3r = f3.real();
+    ArrayXd f3i = f3.imag();
+
+    ArrayXd er = E.real();
+    ArrayXd ei = E.imag();
+
+    ArrayXd e2r = E2.real();
+    ArrayXd e2i = E2.imag();
+
+    savetxt("Qr.dat", qr);
+    savetxt("Qi.dat", qi);
+    savetxt("f1r.dat", f1r);
+    savetxt("f1i.dat", f1i);
+    savetxt("f2r.dat", f2r);
+    savetxt("f2i.dat", f2i);
+    savetxt("f3r.dat", f3r);
+    savetxt("f3i.dat", f3i);
+
+    savetxt("er.dat", er);
+    savetxt("ei.dat", ei);
+
+    savetxt("e2r.dat", e2r);
+    savetxt("e2i.dat", e2i);
+    */
 }
 
 /**
@@ -258,6 +290,7 @@ ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
 
 void Cqcgl1d::dealias(FFT &Fv){
     Fv.v1.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, Fv.v1.cols());
+    Fv.v3.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, Fv.v3.cols());
 }
 
 /* 3 different stage os ETDRK4:
@@ -268,6 +301,8 @@ void Cqcgl1d::NL(FFT &f){
     ArrayXcd A2 = f.v2 * f.v2.conjugate();
     f.v2 =  dcp(Br, Bi) * f.v2 * A2 + dcp(Gr, Gi) * f.v2 * A2.square();
     f.fft();
+
+    dealias(f);
 }
 
 void Cqcgl1d::jNL(FFT &f){
@@ -284,6 +319,8 @@ void Cqcgl1d::jNL(FFT &f){
     	f.v2.rightCols(M).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
 
     f.fft();
+
+    dealias(f);
 }
 
 
@@ -334,10 +371,17 @@ ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
     ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
   
     for(size_t i = 1; i < nstp+1; i++) {    
-	NL(Fv);  Fa.v1 = E2*Fv.v1 + Q*Fv.v3;
-	NL(Fa);  Fb.v1 = E2*Fv.v1 + Q*Fa.v3;
-	NL(Fb);  Fc.v1 = E2*Fa.v1 + Q*(2.0*Fb.v3-Fv.v3);
+	NL(Fv);  
+	Fa.v1 = E2*Fv.v1 + Q*Fv.v3;
+
+	NL(Fa);  
+	Fb.v1 = E2*Fv.v1 + Q*Fa.v3;
+
+	NL(Fb);  
+	Fc.v1 = E2*Fa.v1 + Q*(2.0*Fb.v3-Fv.v3);
+	
 	NL(Fc); 
+	
 	Fv.v1 = E*Fv.v1 + Fv.v3*f1 + (Fa.v3+Fb.v3)*f2 + Fc.v3*f3;
 
 	dealias(Fv);
@@ -548,13 +592,18 @@ Cqcgl1d::intgQ(const ArrayXd &a0, const bool onlyLastQ,
  */
 void 
 Cqcgl1d::intgjOneStep(){
-    jNL(jFv); jFa.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q; 
-    jNL(jFa); jFb.v1 = jFv.v1.colwise() * E2 + jFa.v3.colwise() * Q;
-    jNL(jFb); jFc.v1 = jFa.v1.colwise() * E2 + (2.0*jFb.v3 - jFv.v3).colwise() * Q;
+    jNL(jFv); 
+    jFa.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q; 
+    
+    jNL(jFa); 
+    jFb.v1 = jFv.v1.colwise() * E2 + jFa.v3.colwise() * Q;
+
+    jNL(jFb); 
+    jFc.v1 = jFa.v1.colwise() * E2 + (2.0*jFb.v3 - jFv.v3).colwise() * Q;
+
     jNL(jFc); 
     
-    jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 +
-	(jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
+    jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 + (jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
 	
     dealias(jFv);
 }
@@ -647,6 +696,38 @@ ArrayXd Cqcgl1d::velocity(const ArrayXd &a0){
 ArrayXd Cqcgl1d::velocityReq(const ArrayXd &a0, const double wth,
 			     const double wphi){
     return velocity(a0) + wth*transTangent(a0) + wphi*phaseTangent(a0);    
+}
+
+/**
+ * velocity in the slice
+ *
+ * @param[in]  aH  state in the slice
+ */
+VectorXd Cqcgl1d::velSlice(const Ref<const VectorXd> &aH){
+    VectorXd v = velocity(aH);
+    
+    Vector2d c;
+    c << v(Ndim-1), v(3);
+    
+    Matrix2d Linv;
+    Linv << 0.5/aH(Ndim-2), 0.5/aH(2),
+	-0.5/aH(Ndim-2), 0.5/aH(2); 
+
+    VectorXd tp = phaseTangent(aH);
+    VectorXd tt = transTangent(aH);
+    MatrixXd vs(Ndim, 2);
+    vs << tp, tt;
+
+    return v - vs * (Linv * c);
+}
+
+VectorXd Cqcgl1d::velPhase(const Ref<const VectorXd> &aH){
+    VectorXd v = velocity(aH);
+ 
+    VectorXd tp = phaseTangent(aH);   
+    double c = v(Ndim-1) / aH(Ndim-2);
+
+    return v - c * tp;
 }
 
 /* -------------------------------------------------- */

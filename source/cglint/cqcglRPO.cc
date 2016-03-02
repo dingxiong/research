@@ -21,7 +21,8 @@ CqcglRPO::CqcglRPO(int nstp, int M,
       nstp(nstp),
       M(M),
       cgl1(N, d, h, false, 1, Mu, Br, Bi, Dr, Di, Gr, Gi, threadNum),
-      cgl2(N, d, h, true, 1, Mu, Br, Bi, Dr, Di, Gr, Gi, threadNum)
+      cgl2(N, d, h, true, 1, Mu, Br, Bi, Dr, Di, Gr, Gi, threadNum),
+      cgl3(N, d, h, true, 0, Mu, Br, Bi, Dr, Di, Gr, Gi, threadNum)
 {
     Ndim = cgl1.Ndim;
 }
@@ -43,6 +44,11 @@ CqcglRPO::CqcglRPO(int nstp, int M,
     cgl2.c = c;
     cgl2.dr = dr;
     cgl2.di = di;
+
+    cgl3.b = b;
+    cgl3.c = c;
+    cgl3.dr = dr;
+    cgl3.di = di;
 }
 
 
@@ -471,7 +477,7 @@ CqcglRPO::findRPOM_hook2(const MatrixXd &x0,
 }
 
 std::tuple<SpMat, SpMat, VectorXd> 
-calJJF(const VectorXd &x, const VectorXd &dx){
+CqcglRPO::calJJF(const VectorXd &x){
     int N = Ndim + 3;
     SpMat JJ(N*M, N*M);
     SpMat D(N*M, N*M);
@@ -482,13 +488,15 @@ calJJF(const VectorXd &x, const VectorXd &dx){
     MatrixXd FK(MatrixXd::Zero(N, N));
     MatrixXd KF(MatrixXd::Zero(N, N));
 
-    std::Vector<Tri> nzjj, nzd;
+    std::vector<Tri> nzjj, nzd;
     nzjj.reserve(3*M*N*N);
     nzd.reserve(M*N);
     
     /////////////////////////////////////////
     // construct the JJ, Diag(JJ), JF
     for(int i = 0; i < M; i++){
+	fprintf(stderr, "%d ", i);
+	
 	VectorXd xi = x.segment(i*N, N);
 	int j = (i+1) % M;
 	VectorXd xn = x.segment(j*N, N);
@@ -498,10 +506,10 @@ calJJF(const VectorXd &x, const VectorXd &dx){
 	double phi = xi(Ndim + 2);
 	assert( t > 0);
 
-	cgl3.change( t/nstp );
+	cgl3.changeh( t/nstp ); 
 	auto tmp = cgl3.intgj(xi.head(Ndim), nstp, nstp, nstp);
-	VectorXd &fx = tmp.first;
-	MatrixXd &J = tmp.second;
+	ArrayXd fx = tmp.first.col(1);
+	ArrayXXd &J = tmp.second;
 
 	VectorXd gfx = cgl3.Rotate(fx, th, phi);
 	
@@ -511,18 +519,17 @@ calJJF(const VectorXd &x, const VectorXd &dx){
 
 	F.col(Ndim).head(Ndim) = cgl3.velocity(gfx);
 	F.col(Ndim+1).head(Ndim) = cgl3.transTangent(gfx);
-	F.col(Ndim+2).head(Ndim) = cgl3.phaseTangent(gfx);
-
-	F.row(Ndim).head(Ndim) = cgl3.velocity(xi.head(Ndim));
-	F.row(Ndim+1).head(Ndim) = cgl3.transTangent(xi.head(Ndim));
-	F.row(Ndim+2).head(Ndim) = cgl3.phaseTangent(xi.head(Ndim));
+	F.col(Ndim+2).head(Ndim) = cgl3.phaseTangent(gfx); 
 	
-	FF = F.transpose() * F;
+	F.row(Ndim).head(Ndim) = cgl3.velocity(xi.head(Ndim));
+	F.row(Ndim+1).head(Ndim) = cgl3.transTangent(xi.head(Ndim)).transpose();
+	F.row(Ndim+2).head(Ndim) = cgl3.phaseTangent(xi.head(Ndim)).transpose();
+	
+	FF = F.transpose() * F; if(i==0) savetxt("f.dat", F);
 	for(int i = 0; i < Ndim; i++) FF(i, i) += 1;
 	
 	FK.leftCols(Ndim) = -F.transpose().leftCols(Ndim);
 	KF.topRows(Ndim) = -F.topRows(Ndim);
-	
 	
 	std::vector<Tri> triFF = triMat(FF, i*N, i*N);
 	std::vector<Tri> triFK = triMat(FK, i*N, j*N);
@@ -533,7 +540,7 @@ calJJF(const VectorXd &x, const VectorXd &dx){
 	nzjj.insert(nzjj.end(), triFK.begin(), triFK.end());
 	nzjj.insert(nzjj.end(), triKF.begin(), triKF.end());
 
-	nzd.insert(nzd.end(), tirD.begin(), triD.end());
+	nzd.insert(nzd.end(), triD.begin(), triD.end());
     }
 
     JJ.setFromTriplets(nzjj.begin(), nzjj.end());
@@ -543,26 +550,28 @@ calJJF(const VectorXd &x, const VectorXd &dx){
     
 }
 
-tmplate<class Mat>
-struct cqcglJJF {
-    
-    cqcglJJF() {}
-    
-    std::tuple<SpMat, SpMat, VectorXd>
-    operator()(const VectorXd &x) {
-	
-	for(int i = 0; i < M; i++)
-	cgl.intgj()
-    }
-};
-
 std::tuple<MatrixXd, double>
-Cqcgl1dRPO::findRPOM_LM(const MatrixXd &x0, 
-			const double tol,
-			const int maxit,
-			const int maxInnIt){
+CqcglRPO::findRPOM_LM(const MatrixXd &x0, 
+		      const double tol,
+		      const int maxit,
+		      const int innerMaxit){
+    int N = Ndim + 3;
+    assert(x0.cols() == M && x0.rows() == N);
+    auto fx = std::bind(&CqcglRPO::MFx2, this, ph::_1);
     
+    MatrixXd x(x0);
+    x.resize(M * N, 1); 
     
+    // SparseLU<SpMat> solver;
+    SimplicialLDLT<SpMat> solver; 
+    cqcglJJF<SpMat> jj(*this);
+    auto result = LM0(fx, jj, solver, x, tol, maxit, innerMaxit);    
+    
+    if(std::get<2>(result) != 0) fprintf(stderr, "RPO not converged ! \n");
+    
+    MatrixXd tmp2(std::get<0>(result));
+    tmp2.resize(N, M);
+    return std::make_pair( tmp2, std::get<1>(result).back() );
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

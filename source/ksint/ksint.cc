@@ -146,13 +146,17 @@ KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
     ArrayXXd aa(N-2, nstp/np+1); aa.col(0) = a0;
     ArrayXXd daa((N-2)*(N-2), nstp/nqr);
     for(size_t i = 1; i < nstp + 1; i++){ // diagonal trick 
-	jNL(jFv); jFa.vc1 = E2.matrix().asDiagonal()*jFv.vc1.matrix() +
-		      Q.matrix().asDiagonal()*jFv.vc3.matrix();
-	jNL(jFa); jFb.vc1 = E2.matrix().asDiagonal()*jFv.vc1.matrix() + 
-		      Q.matrix().asDiagonal()*jFa.vc3.matrix();
-	jNL(jFb); jFc.vc1 = E2.matrix().asDiagonal()*jFa.vc1.matrix() + 
-		      Q.matrix().asDiagonal()*(2.0*jFb.vc3 - jFv.vc3).matrix();
+	jNL(jFv); 
+	jFa.vc1 = E2.matrix().asDiagonal()*jFv.vc1.matrix() + Q.matrix().asDiagonal()*jFv.vc3.matrix();
+
+	jNL(jFa); 
+	jFb.vc1 = E2.matrix().asDiagonal()*jFv.vc1.matrix() + Q.matrix().asDiagonal()*jFa.vc3.matrix();
+
+	jNL(jFb); 
+	jFc.vc1 = E2.matrix().asDiagonal()*jFa.vc1.matrix() + Q.matrix().asDiagonal()*(2.0*jFb.vc3 - jFv.vc3).matrix();
+
 	jNL(jFc);
+
 	jFv.vc1 = E.matrix().asDiagonal()*jFv.vc1.matrix() 
 	    + f1.matrix().asDiagonal()*jFv.vc3.matrix() 
 	    + (2.0*f2).matrix().asDiagonal()*(jFa.vc3+jFb.vc3).matrix()

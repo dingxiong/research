@@ -59,12 +59,6 @@ public:
     ArrayXd K, Kindex, KindexUnpad;    
     ArrayXcd L, E, E2, Q, f1, f2, f3;
 
-    // parameters only work for the second constructor
-    double b = 0;		
-    double c = 0;
-    double dr = 0;
-    double di = 0;
-
     ////////////////////////////////////////////////////////////
     //         constructor, destructor, copy assignment.      //
     ////////////////////////////////////////////////////////////
@@ -73,11 +67,6 @@ public:
 	    double Mu = -0.1, double Br = 1.0, double Bi = 0.8,
 	    double Dr = 0.125, double Di = 0.5, double Gr = -0.1,
 	    double Gi = -0.6, int threadNum = 4);
-    Cqcgl1d(int N, double d, double h,
-	    bool enableJacv, int Njacv,
-	    double b, double c,
-	    double dr, double di,
-	    int threadNum);
     ~Cqcgl1d();
     Cqcgl1d & operator=(const Cqcgl1d &x);
 
@@ -213,14 +202,6 @@ public:
 	    const bool doesUseMyCG = true, const bool doesPrint = true);
     std::vector<double>
     optThPhi(const ArrayXd &a0);
-    
-    std::tuple<ArrayXd, double, double>
-    planeWave(int k, bool isPositve);
-    void planeWave(ArrayXd &a0, double &a, double &w, 
-		   int k, bool isPositve);
-    VectorXcd planeWaveStabE(int k, bool isPositve);
-    std::pair<VectorXcd, MatrixXcd>
-    planeWaveStabEV(int k, bool isPositve);
     
     std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
     powIt(const ArrayXd &a0, const double th, const double phi,

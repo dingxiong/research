@@ -28,6 +28,10 @@ class CqcglRPO{
     double alpha1 = 0.01;	/* strength scale for v constraint */
     double alpha2 = 0.01;	/* strength scale for t1 constraint */
     double alpha3 = 0.01;	/* strength scale for t2 constraint */
+
+    double Eps = 1e-4;
+    MatrixXd V;
+    
     
     /*---------------   constructors    ------------------------- */
     CqcglRPO(int nstp, int M,

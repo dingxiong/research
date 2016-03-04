@@ -895,8 +895,7 @@ namespace iterMethod {
 		int N = H.rows();
 
 		// solve H x = -jf
-		// auto cg = ConjGradSSOR(H, -jf, solver, VectorXd::Zero(N), N, 1e-6);
-		auto cg = ConjGrad(H, -jf, VectorXd::Zero(N), N, 1e-6);
+		auto cg = ConjGradSSOR(H, -jf, solver, VectorXd::Zero(N), N, 1e-6);
 		VectorXd &dx = cg.first;
 		std::vector<double> &r = cg.second;
 		if (LM_IN_PRINT)

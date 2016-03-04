@@ -29,7 +29,7 @@ int main(){
     
     cout.precision(15);
     
-    switch (26){
+    switch (28){
 	
     case 1:{
 	/* try to find periodic orbit with the old form of cqcgl
@@ -154,13 +154,13 @@ int main(){
 	
 	const int N = 512;
 	const double d = 30;
-	const double h = 1e-4;
+	const double h = 1e-5;
 
-	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo4.h5");
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo5.h5");
 	int nstp;
 	double T, th, phi, err;
 	MatrixXd x;
-	CqcglReadRPO(file, "3", x, T, nstp, th, phi, err);
+	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
 	
 	int M = x.cols();
 	
@@ -168,7 +168,7 @@ int main(){
 	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, 0.01, 0.04, 4);
 	auto result = cglrpo.findRPOM_LM(x, 1e-12, 100, 20);
 
-	CqcglWriteRPO2("rpo4.h5", "5", 
+	CqcglWriteRPO2("rpo5.h5", "2", 
 		       std::get<0>(result),
 		       nstp,
 		       std::get<1>(result)
@@ -182,25 +182,25 @@ int main(){
 	 * using GMRES Hook v2 method with multishooting method
 	 * space resolution is large
 	 */
-	GMRES_IN_PRINT_FREQUENCE = 500;
+	GMRES_IN_PRINT_FREQUENCE = 10;
 
 	const int N = 512;
 	const double d = 30;
-	const double h = 1e-4;
+	const double h = 1e-5;
 
-	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo4.h5");
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo5.h5");
 	int nstp;
 	double T, th, phi, err;
 	MatrixXd x;
-	CqcglReadRPO(file, "3", x, T, nstp, th, phi, err);
+	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
 	
 	int M = x.cols();
 	
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
 	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, 0.01, 0.04, 4);
-	auto result = cglrpo.findRPOM_hook2(x, 1e-12, 1e-3, 10, 20, 8e-1, 4000, 1);
+	auto result = cglrpo.findRPOM_hook2(x, 1e-12, 1e-3, 10, 20, 8e-1, 300, 1);
 
-	CqcglWriteRPO2("rpo4.h5", "4", 
+	CqcglWriteRPO2("rpo5.h5", "2", 
 		       std::get<0>(result),
 		       nstp,
 		       std::get<1>(result)

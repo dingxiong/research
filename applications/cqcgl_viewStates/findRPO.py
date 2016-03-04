@@ -138,7 +138,12 @@ if case == 4:
     nstp /= M
     x = aa[i1:i2:nstp/s][:M]
     print err, nstp, T, th, phi
-    # cqcglSaveRPO('rpo2.h5', '1', x, T, nstp, th, phi, err)
+    xs = np.zeros((x.shape[0], x.shape[1]+3))
+    xs[:, :-3] = x
+    xs[:, -3] = T / x.shape[0]
+    xs[-1, -2] = th
+    xs[-1, -1] = phi
+    # cqcglSaveRPO('rpo2.h5', '1', xs, T, nstp, th, phi, err)
 
     aa2 = cgl.intg(x[0], nstp*M, 20)
     plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, nstp*M*h])

@@ -525,7 +525,7 @@ CqcglRPO::calJJF(const VectorXd &x){
 	F.row(Ndim+1).head(Ndim) = cgl3.transTangent(xi.head(Ndim)).transpose();
 	F.row(Ndim+2).head(Ndim) = cgl3.phaseTangent(xi.head(Ndim)).transpose();
 	
-	FF = F.transpose() * F; if(i==0) savetxt("f.dat", F);
+	FF = F.transpose() * F; 
 	for(int i = 0; i < Ndim; i++) FF(i, i) += 1;
 	
 	FK.leftCols(Ndim) = -F.transpose().leftCols(Ndim);

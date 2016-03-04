@@ -254,22 +254,4 @@ protected:
 
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//                        Class Cgl1d                             //
-
-
-class Cgl1d : public Cqcgl1d {
-    
-public:
-    Cgl1d(int N, double d, double h,
-		 bool enableJacv, int Njacv,
-		 double b, double c,
-		 int threadNum);
-protected:
-    void NL(FFT &f);
-    void jNL(FFT &f);
-};
-
-
-
 #endif  /* CQCGL1D_H */

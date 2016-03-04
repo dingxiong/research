@@ -168,39 +168,6 @@ void Cqcgl1d::calculateCoefficients(){
     f1 = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean();
     f2 = h * ( (4.0 + 2.0*LR + LRe*(-4.0 + 2.0*LR)) / LR3 ).rowwise().mean();
     f3 = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean();
-
-    /*
-    ArrayXd qr = Q.real();
-    ArrayXd qi = Q.imag();
-
-    ArrayXd f1r = f1.real();
-    ArrayXd f1i = f1.imag();
-    ArrayXd f2r = f2.real();
-    ArrayXd f2i = f2.imag();
-    ArrayXd f3r = f3.real();
-    ArrayXd f3i = f3.imag();
-
-    ArrayXd er = E.real();
-    ArrayXd ei = E.imag();
-
-    ArrayXd e2r = E2.real();
-    ArrayXd e2i = E2.imag();
-
-    savetxt("Qr.dat", qr);
-    savetxt("Qi.dat", qi);
-    savetxt("f1r.dat", f1r);
-    savetxt("f1i.dat", f1i);
-    savetxt("f2r.dat", f2r);
-    savetxt("f2i.dat", f2i);
-    savetxt("f3r.dat", f3r);
-    savetxt("f3i.dat", f3i);
-
-    savetxt("er.dat", er);
-    savetxt("ei.dat", ei);
-
-    savetxt("e2r.dat", e2r);
-    savetxt("e2i.dat", e2i);
-    */
 }
 
 /**
@@ -289,7 +256,7 @@ ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
 
 
 void Cqcgl1d::dealias(FFT &Fv){
-    Fv.v1.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, Fv.v1.cols());
+    // Fv.v1.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, Fv.v1.cols());
     Fv.v3.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, Fv.v3.cols());
 }
 
@@ -384,7 +351,6 @@ ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
 	
 	Fv.v1 = E*Fv.v1 + Fv.v3*f1 + (Fa.v3+Fb.v3)*f2 + Fc.v3*f3;
 
-	dealias(Fv);
 	if( i%np == 0 ) uu.col(i/np) = unpad(C2R(Fv.v1));
     }
 
@@ -604,8 +570,7 @@ Cqcgl1d::intgjOneStep(){
     jNL(jFc); 
     
     jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 + (jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
-	
-    dealias(jFv);
+
 }
 
 /* -------------------------------------------------- */
@@ -1785,51 +1750,4 @@ Cqcgl1d::directEigE(const ArrayXd &a0, const double th, const double phi,
 		    const int nstp){
     MatrixXd J = intgj(a0, nstp, nstp, nstp).second;
     return eEig(Rotate(J, th, phi));
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//                        Class Cgl1d                             //
-
-
-/**
- * The constructor of complex Ginzburg-Landau equation
- * A_t = A + (1 + b*i) A_{xx} - (1 + c*i) |A|^2 A
- *
- * @see Cqcgl1d()
- */
-Cgl1d::Cgl1d(int N, double d, double h,
-	     bool enableJacv, int Njacv,
-	     double b, double c,
-	     int threadNum)
-    : Cqcgl1d::Cqcgl1d(N, d, h, enableJacv, Njacv, 1, -1, -c, 1, b, 0, 0, threadNum)
-{ }
-
-
-/** 
- * Nonlinear term without the quintic term
- */
-void Cgl1d::NL(FFT &f){
-    f.ifft();
-    ArrayXcd A2 = f.v2 * f.v2.conjugate(); /* |A|^2 */
-    f.v2 =  dcp(Br, Bi) * f.v2 * A2;
-    f.fft();
-}
-
-/** 
- * Nonlinear term without the quintic term
- */
-void Cgl1d::jNL(FFT &f){
-    f.ifft(); 
-    ArrayXcd A = f.v2.col(0);
-    ArrayXcd aA2 = A * A.conjugate(); /* |A|^2 */
-    ArrayXcd A2 = A.square();	      /* A^2 */
-    dcp B(Br, Bi);
-    dcp G(Gr, Gi);
-    f.v2.col(0) = dcp(Br, Bi) * A * aA2;
-
-    const int M = f.v2.cols() - 1;
-    f.v2.rightCols(M) = f.v2.rightCols(M).conjugate().colwise() *  (B * A2) +
-    	f.v2.rightCols(M).colwise() * (2.0*B*aA2);
-    
-    f.fft();
 }

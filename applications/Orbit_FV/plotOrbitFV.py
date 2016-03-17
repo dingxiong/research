@@ -240,7 +240,7 @@ if case == 30:
     N = 64
     Ndim = N - 2
     ppId = 1
-    poType = 'rpo'
+    poType = 'ppo'
     
     f1 = '../../data/ks22h001t120x64EV.h5'
     fe1, fv1 = KSreadFEFV(f1, poType, ppId)
@@ -256,7 +256,8 @@ if case == 30:
     aa = ks.intg(a0, nstp, 5)
     KSplotColorMapOrbit(aa, [0, 22, 0, T])
 
-    v1 = fv1[:, 62*0:62*1]
-    v = fv[:, 62*0:62*1]
+    ix = 3
+    v1 = fv1[:, 62*ix:62*(ix+1)]
+    v = fv[:, 62*ix:62*(ix+1)]
     KSplotColorMapOrbit(v, [0, 22, 0, T])
     KSplotColorMapOrbit(v1, [0, 22, 0, T])

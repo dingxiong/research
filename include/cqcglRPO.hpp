@@ -7,7 +7,7 @@
 #include <Eigen/Sparse>
 #include <vector>
 #include <omp.h>
-#include "cqcgl1d.hpp"
+#include "cqcgl.hpp"
 #include "iterMethod.hpp"
 #include "sparseRoutines.hpp"
 #include "denseRoutines.hpp"
@@ -18,7 +18,7 @@ class CqcglRPO{
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> Tri;
 
-    Cqcgl1d cgl1, cgl2, cgl3;
+    Cqcgl cgl1, cgl2, cgl3;
     int nstp;			/* integration steps for each piece */
     int M;			/* pieces of multishoot */
     const int N;		/* dimension of FFT */
@@ -122,18 +122,6 @@ class CqcglRPO{
 		const int maxit,
 		const int innerMaxit);
 
-#if 0				
-    inline VectorXd cgSolver(ConjugateGradient<SpMat> &CG, Eigen::SparseLU<SpMat> &solver,
-			     SpMat &H, VectorXd &JF, bool doesUseMyCG = true,
-			     bool doesPrint =  true);
-    std::tuple<ArrayXXd, double, double, double, double>
-    findPO(const ArrayXXd &aa0, const double h0, const int nstp,
-	   const double th0, const double phi0,
-	   const int MaxN = 200,
-	   const double tol = 1e-13,
-	   const bool doesUseMyCG = true,
-	   const bool doesPrint = false);
-#endif
     
 };
 

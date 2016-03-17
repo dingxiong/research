@@ -6,7 +6,7 @@ from time import time
 from py_cqcgl1d_threads import pyCqcgl1d, pyCqcglRPO
 from personalFunctions import *
 
-case = 4
+case = 5
 
 if case == 1:
     """
@@ -152,3 +152,39 @@ if case == 4:
     dif = aa3-aa2
     plot1dfig(norm(dif, axis=1))
     plot1dfig(norm(dif, axis=1) / norm(aa2, axis=1), yscale='log')
+
+if case == 5:
+    """
+    find good candidate to homoclinic orbits
+    """
+    N = 1024
+    d = 30
+    h = 1e-5
+    s = 20
+
+    di = 0.05
+    
+    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+    A0 = 5*centerRand(2*N, 0.2)
+    a0 = cgl.Config2Fourier(A0)
+    nstp = 150000
+    aa = cgl.intg(a0, nstp, s)
+    for i in range(1):
+        aa = cgl.intg(aa[-1], nstp, s)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+
+    aaHat, ths, phis = cgl.orbit2sliceWrap(aa)
+    
+    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5', di, 1)
+    a0H = cgl.orbit2sliceWrap(a0)[0]
+    dif = aaHat - a0H
+    no = norm(dif, axis=1)
+    plot1dfig(no)
+    print np.min(no)
+    """
+    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
+    ve = Tcopy(realve(eigvectors))
+
+    veTilde = cgl.reduceVe(ve, a0)
+    e1, e2, e3 = orthAxes(veTilde[0], veTilde[1], veTilde[6])
+    """

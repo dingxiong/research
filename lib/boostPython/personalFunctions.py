@@ -24,8 +24,10 @@ def plot1dfig(x, c='r', lw=1, ls='-', marker=None, labs=['x', 'y'],
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
     ax.plot(x, c=c, lw=lw, ls=ls, marker=marker)
-    ax.set_xlabel(labs[0], fontsize=axisLabelSize)
-    ax.set_ylabel(labs[1], fontsize=axisLabelSize)
+    if labs[0] is not None:
+        ax.set_xlabel(labs[0], fontsize=axisLabelSize)
+    if labs[1] is not None:
+        ax.set_ylabel(labs[1], fontsize=axisLabelSize)
     if yscale is not None:
         ax.set_yscale(yscale)
     fig.tight_layout(pad=0)

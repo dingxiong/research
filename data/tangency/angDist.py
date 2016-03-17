@@ -1,4 +1,5 @@
 import os
+from py_ks import *
 from personalFunctions import *
 
 ##################################################
@@ -60,7 +61,7 @@ def filterAng(a, ns, angSpan, angNum):
                 a[i][j] = 0
 
 
-situation = 3
+situation = 4
 
 if situation == 1:
     ##################################################
@@ -270,7 +271,6 @@ if situation == 2:
     ax.set_ylabel(r'$\theta$')
     plt.tight_layout(pad=0)
     plt.show(block=False)
-    plot1dfig(as1[i1:i2], yscale='log')
 
 if situation == 3:
     """
@@ -323,5 +323,99 @@ if situation == 3:
     plt.show(block=False)
 
     
-        
-        
+if situation == 4:
+    """
+    There seems periodic peaks on top of the angle
+    for ppo 147, we want to find out the reason
+    """
+    poType = 'ppo'
+    poId = 147
+    a0, T, nstp, r, s = KSreadPO('../ks22h001t120x64EV.h5', poType, poId)
+    h = T / nstp
+    ks = pyKS(64, h, 22)
+    aa = ks.intg(a0, nstp, 5)
+    # aa = ks.reduceReflection(ks.orbitToSlice(aa)[0])
+
+    peaks = [180, 1485, 3701, 6243, 8980, 11262, 13869, 16541]
+    colors = plt.cm.winter(np.linspace(0, 1, len(peaks)))
+    i1 = 0
+    i2 = 2
+    i3 = 3
+    fig = plt.figure(figsize=[8, 6])
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(aa[:, i1], aa[:, i2], aa[:, i3], c='r', lw=2)
+    for i, c in zip(peaks, colors):
+        ax.scatter(aa[i, i1], aa[i, i2], aa[i, i3], marker='o', c=c,
+                   edgecolor='none', s=50)
+    ax.set_xlabel(r'$b_1$', fontsize=30)
+    ax.set_ylabel(r'$b_2$', fontsize=30)
+    ax.set_zlabel(r'$c_2$', fontsize=30)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+
+def getDet(poType, poId, k=30):
+    fv = KSreadFV('../ks22h001t120x64EV.h5', poType, poId)
+    n, m = fv.shape
+
+    ds = np.zeros(n)
+    for i in range(n):
+        x = np.reshape(fv[i], (30, m/30))
+        x = x[:k, :k]
+        ds[i] = LA.det(x)
+
+    return ds
+
+
+def getDetK(poType, poId):
+    dss = []
+    for k in range(1, 8) + range(8, 31, 2):
+        # print k
+        ds = getDet(poType, poId, k)
+        dss.append(ds)
+
+    return np.array(dss)
+
+
+if situation == 5:
+    """
+    try to see whether the determiant of Floquet vector matrix change sign
+    for a specific orbit
+    """
+    poType = 'ppo'
+    for i in range(146, 147):
+        poId = i+1
+        ds = getDet(poType, poId, 4)
+        print poId, np.sign(np.max(ds)) * np.sign(np.min(ds))
+
+    plot1dfig(abs(ds), yscale='log')
+
+if situation == 6:
+    """
+    try to plot the determinant of the leading k block.
+    """
+    poType = 'ppo'
+    poId = 147
+    dss = getDetK(poType, poId)
+    m, n = dss.shape
+    ers = np.zeros(m-1)
+    for i in range(m-1):
+        ers[i] = norm(dss[i]-dss[-1])
+
+    plot1dfig(ers, yscale='log')
+    plot1dfig(abs(dss[3]), yscale='log', labs=[None, '|det|'],
+              axisLabelSize=15, size=[6, 4])
+
+    fig = plt.figure(figsize=[6, 4])
+    ax = fig.add_subplot(111)
+    ax.plot(abs(dss[2]), lw=1, label=r'$k=3$')
+    ax.plot(abs(dss[5]), lw=2, ls='--', label=r'$k=6$')
+    ax.plot(abs(dss[6]), lw=2, ls='-.', label=r'$k=7$')
+    # ax.plot(abs(dss[7]), lw=1, label=r'$k=8$')
+    # ax.plot(abs(dss[12]), lw=2, ls='--', label=r'$k=18$')
+    # ax.plot(abs(dss[18]), lw=2, ls='-.', label=r'$k=30$')
+    ax.set_ylabel('|det|', fontsize=15)
+    ax.set_yscale('log')
+    fig.tight_layout(pad=0)
+    plt.legend(loc='best')
+    plt.show(block=False)

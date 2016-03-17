@@ -13,42 +13,18 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////
 
 CqcglRPO::CqcglRPO(int nstp, int M,
-		   int N, double d, double h, 
-		   double Mu, double Br, double Bi,
-		   double Dr, double Di, double Gr,
-		   double Gi,  int threadNum)
-    : N(N),
-      nstp(nstp),
-      M(M),
-      cgl1(N, d, h, false, 1, Mu, Br, Bi, Dr, Di, Gr, Gi, threadNum),
-      cgl2(N, d, h, true, 1, Mu, Br, Bi, Dr, Di, Gr, Gi, threadNum),
-      cgl3(N, d, h, true, 0, Mu, Br, Bi, Dr, Di, Gr, Gi, threadNum)
-{
-    Ndim = cgl1.Ndim;
-}
-
-CqcglRPO::CqcglRPO(int nstp, int M,
 		   int N, double d, double h,
 		   double b, double c,
 		   double dr, double di,
 		   int threadNum)
-    : CqcglRPO(nstp, M, N, d, h, -1, 1, c, 1, b, -dr, -di, threadNum)
-{ 
-    // delegating constructor forbids other initialization in the list
-    cgl1.b = b;
-    cgl1.c = c;
-    cgl1.dr = dr;
-    cgl1.di = di;
-
-    cgl2.b = b;
-    cgl2.c = c;
-    cgl2.dr = dr;
-    cgl2.di = di;
-
-    cgl3.b = b;
-    cgl3.c = c;
-    cgl3.dr = dr;
-    cgl3.di = di;
+    : N(N),
+      nstp(nstp),
+      M(M),
+      cgl1(N, d, h, false, 0, b, c, dr, di, threadNum),
+      cgl1(N, d, h, true, 1, b, c, dr, di, threadNum),
+      cgl1(N, d, h, true, 0, b, c, dr, di, threadNum),
+{
+    Ndim = cgl1.Ndim;
 }
 
 
@@ -574,124 +550,4 @@ CqcglRPO::findRPOM_LM(const MatrixXd &x0,
     return std::make_pair( tmp2, std::get<1>(result).back() );
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if 0				
-//////////////////////////////////////////////////////////////////////
-//                       Levenberg-Marquardt                        //
-//                       (abanded approach)                         //
-//////////////////////////////////////////////////////////////////////
-
-
-/*********************************************************************** 
- *                      member functions                               *
- ***********************************************************************/
-
-/**
- * @brief solve the Ax = b problem
- */
-inline VectorXd CqcglRPO::cgSolver(ConjugateGradient<SpMat> &CG, SparseLU<SpMat> &solver,
-				   SpMat &H, VectorXd &JF, bool doesUseMyCG /* = true */,
-				   bool doesPrint /* = false */){
-    VectorXd dF;
-    if(doesUseMyCG){
-	std::pair<VectorXd, std::vector<double>> cg = iterMethod::ConjGradSSOR<SpMat>
-	    (H, -JF, solver, VectorXd::Zero(H.rows()), H.rows(), 1e-6);
-	dF = cg.first;
-	if(doesPrint){
-	    printf("CG error %g, iteration number %zd\n", cg.second.back(), cg.second.size());
-	}
-    } else {
-	CG.compute(H);
-	dF = CG.solve(-JF);
-	if(doesPrint){
-	    printf("CG error %f, iteration number %d\n", CG.error(), CG.iterations());
-	}
-    }
-    return dF;
-}
-
-
-/**
- * @brief find rpo in cqcgl 1d system
- */
-std::tuple<ArrayXXd, double, double, double, double>
-CqcglRPO::findPO(const ArrayXXd &aa0, const double h0, const int nstp,
-		 const double th0, const double phi0,
-		 const int MaxN, const double tol,
-		 const bool doesUseMyCG /* = true */,
-		 const bool doesPrint /* = false */){
-
-    assert(Ndim == aa0.rows()); 
-    const int M = aa0.cols();
-    ArrayXXd x(aa0);
-    
-    double h = h0;
-    double th = th0;
-    double phi = phi0;
-    double lam = 1; 
-
-    ConjugateGradient<SpMat> CG;
-    SparseLU<SpMat> solver; // used in the pre-CG method
-    
-    for(size_t i = 0; i < MaxN; i++){
-	if (lam > 1e10) break;
-	if(doesPrint){
-	    printf("********  i = %zd/%d   ******** \n", i, MaxN);
-	}
-	Cqcgl1d cgl(N, d, h, Mu, Br, Bi, Dr, Di, Gr, Gi);
-	VectorXd F = cgl.multiF(x, nstp, th, phi);
-	double err = F.norm(); 
-	if(err < tol){
-	    if(doesPrint) printf("stop at norm(F)=%g\n", err);
-	    break;
-	}
-   
-	std::pair<SpMat, VectorXd> p = cgl.multishoot(x, nstp, th, phi, doesPrint); 
-	SpMat JJ = p.first.transpose() * p.first;
-	VectorXd JF = p.first.transpose() * p.second;
-	SpMat Dia = JJ;
-	Dia.prune(KeepDiag());
-	
-	for(size_t j = 0; j < 20; j++){
-	    SpMat H = JJ + lam * Dia;
-	    VectorXd dF = cgSolver(CG, solver, H, JF, doesUseMyCG, doesPrint);
-	    ArrayXXd xnew = x + Map<ArrayXXd>(&dF(0), Ndim, M);
-	    double hnew = h + dF(Ndim*M)/nstp; // be careful here.
-	    double thnew = th + dF(Ndim*M+1);
-	    double phinew = phi + dF(Ndim*M+2);
-	    // printf("\nhnew = %g, thnew = %g, phinew = %f\n", hnew, thnew, phinew);
-      
-	    if( hnew <= 0 ){
-		fprintf(stderr, "new time step is negative\n");
-		break;
-	    }
-	    Cqcgl1d tcgl(N, d, hnew, Mu, Br, Bi, Dr, Di, Gr, Gi);
-	    VectorXd newF = tcgl.multiF(xnew, nstp, thnew, phinew);
-	    fprintf(stdout, "new err = %g\n", newF.norm());
-	    if (newF.norm() < err){
-		x = xnew;
-		h = hnew;
-		th = thnew;
-		phi = phinew;
-		lam = lam/10;
-		break;
-	    }
-	    else{
-		lam *= 10;
-		// if(doesPrint) printf(" lam = %g\n", lam);
-		if( lam > 1e10) {
-		    fprintf(stderr, "lam = %g too large \n", lam);
-		    break;
-		}
-	    }
-	    
-	}
-    }
-
-    Cqcgl1d finalCgl(N, d, h, Mu, Br, Bi, Dr, Di, Gr, Gi);
-    VectorXd F = finalCgl.multiF(x, nstp, th, phi);
-    return std::make_tuple(x, h, th, phi, F.norm());
-}
-
-#endif

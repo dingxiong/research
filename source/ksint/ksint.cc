@@ -11,9 +11,17 @@ using std::cout; using std::endl;
 KS::KS(int N, double h, double d) : N(N), h(h), d(d) {
     /* calcute various coefficients used for the integrator */
     ksInit();
+
     /* initialize the FFTW holders */
-    initFFT(Fv, 1); initFFT(Fa, 1); initFFT(Fb, 1); initFFT(Fc, 1);
-    initFFT(jFv, N-1); initFFT(jFa, N-1); initFFT(jFb, N-1); initFFT(jFc, N-1);
+    initFFT(Fv, 1); 
+    initFFT(Fa, 1); 
+    initFFT(Fb, 1); 
+    initFFT(Fc, 1);
+ 
+    initFFT(jFv, N-1); 
+    initFFT(jFa, N-1); 
+    initFFT(jFb, N-1);
+    initFFT(jFc, N-1);
 }
 
 KS::KS(const KS &x) : N(x.N), d(x.d), h(x.h){};
@@ -23,11 +31,18 @@ KS & KS::operator=(const KS &x){
 }
 
 KS::~KS(){
-    freeFFT(Fv); freeFFT(Fa); freeFFT(Fb); freeFFT(Fc);
-    freeFFT(jFv); freeFFT(jFa); freeFFT(jFb); freeFFT(jFc);
+    freeFFT(Fv); 
+    freeFFT(Fa); 
+    freeFFT(Fb); 
+    freeFFT(Fc);
+    
+    freeFFT(jFv); 
+    freeFFT(jFa); 
+    freeFFT(jFb); 
+    freeFFT(jFc);
+
     // comment out when trying to compile interface for Matlab/Python 
-    fftw_cleanup(); 
-  
+    // fftw_cleanup(); 
 }
 
 /*------------------- member methods ------------------ */
@@ -69,10 +84,17 @@ ArrayXXd KS::intg(const ArrayXd &a0, size_t nstp, size_t np){
     aa.col(0) = a0;
 
     for(size_t i = 1; i < nstp +1; i++){
-	NL(Fv); Fa.vc1 = E2*Fv.vc1 + Q*Fv.vc3; 
-	NL(Fa); Fb.vc1 = E2*Fv.vc1 + Q*Fa.vc3;
-	NL(Fb); Fc.vc1 = E2*Fa.vc1 + Q*(2.0*Fb.vc3 - Fv.vc3);
+	NL(Fv); 
+	Fa.vc1 = E2*Fv.vc1 + Q*Fv.vc3; 
+
+	NL(Fa); 
+	Fb.vc1 = E2*Fv.vc1 + Q*Fa.vc3;
+
+	NL(Fb); 
+	Fc.vc1 = E2*Fa.vc1 + Q*(2.0*Fb.vc3 - Fv.vc3);
+
 	NL(Fc);
+
 	Fv.vc1 = E*Fv.vc1 + Fv.vc3*f1 + 2.0*(Fa.vc3+Fb.vc3)*f2 + Fc.vc3*f3;
     
 	if( 0 == i%np ) aa.col(i/np) = C2R(Fv.vc1);
@@ -280,6 +302,12 @@ KS::velocity(const Ref<const ArrayXd> &a0){
     return C2R(Fv.vc1);
 }
 
+/* return v(x) + theta *t(x) */
+VectorXd
+KS::velg(const Ref<const VectorXd> &a0, const double theta){
+    return velocity(a0) + theta * gTangent(a0);
+}
+
 /** @brief calculate the stability matrix 
  *    A = (qk^2 - qk^4) * v  - i*qk* F( F^{-1}(a0) * F^{-1}(v))
  */
@@ -293,6 +321,12 @@ MatrixXd KS::stab(const Ref<const ArrayXd> &a0){
     
     return C2R(jFv.vc1.rightCols(N-2));
 }
+
+MatrixXd KS::stabReq(const Ref<const VectorXd> &a0, const double theta){
+    return stab(a0) + theta * gGenerator();
+}
+
+
 
 
 /*************************************************** 
@@ -413,6 +447,16 @@ MatrixXd KS::gTangent(const MatrixXd &x){
     }
 
     return tx;
+}
+
+MatrixXd KS::gGenerator(){
+    MatrixXd T(N-2, N-2);
+    for (int i = 0; i < N/2-1; i++ ){
+	T(2*i, 2*i+1) = -(i+1);
+	T(2*i+1, 2*i) = i+1;
+    }
+
+    return T;
 }
 
 /** @brief rotate the KS trajectory to the 1st mode slice.

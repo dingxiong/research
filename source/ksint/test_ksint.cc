@@ -1,15 +1,18 @@
 /* to compile:
- * g++ test_ksint.cc -std=c++0x -lksint -lfftw3 -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3
+ * h5c++ test_ksint.cc -std=c++0x -lksint -lmyH5 -lfftw3 -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3
  */
 
 #include "ksintM1.hpp"
+#include "myH5.hpp"
 #include <Eigen/Dense>
 #include <iostream>
 using namespace std;
 using namespace Eigen;
+using namespace MyH5;
+
 int main(){
     /// -----------------------------------------------------
-    switch (1){
+    switch (6){
     
     case 1:
 	{
@@ -66,6 +69,19 @@ int main(){
 
 	    break;
 	}
+	
+    case 6: {			// test the req 
+	std::string file = "../../data/ksReqx32.h5";
+	auto tmp = KSreadReq(file, 1);
+	VectorXd a0 = tmp.first;
+	double c = tmp.second;
+	cout << c << endl << endl;
+	
+	KS ks(32, 0.01, 22);
+	cout << ks.velg(a0, c*2*M_PI/22) << endl;
+	break;
+    }
+
     default :
 	{
 	    cout << "please indicate the correct index." << endl;

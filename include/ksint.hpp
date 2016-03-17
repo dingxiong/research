@@ -51,7 +51,10 @@ public:
     intgjMulti(const MatrixXd aa0, size_t nstp, size_t np = 1, size_t nqr = 1);
     VectorXd 
     velocity(const Ref<const ArrayXd> &a0);
+    VectorXd
+    velg(const Ref<const VectorXd> &a0, const double c);
     MatrixXd stab(const Ref<const ArrayXd> &a0);
+    MatrixXd stabReq(const Ref<const VectorXd> &a0, const double theta);
     ArrayXXd 
     C2R(const ArrayXXcd &v);
     ArrayXXcd 
@@ -68,6 +71,8 @@ public:
     Rotation(const Ref<const ArrayXXd> &aa, const double th);
     MatrixXd 
     gTangent(const MatrixXd &x);
+    MatrixXd 
+    gGenerator();
     std::pair<MatrixXd, VectorXd> 
     orbitToSlice(const Ref<const MatrixXd> &aa);
     MatrixXd 

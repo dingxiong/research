@@ -308,7 +308,7 @@ namespace MyH5 {
 
     std::pair<MatrixXd, MatrixXd>
     KSreadFEFV(const string fileName, const string ppType, const int ppId){
-		H5File file(fileName, H5F_ACC_RDONLY);
+	H5File file(fileName, H5F_ACC_RDONLY);
 	string DS = "/" + ppType + "/" + to_string(ppId) + "/";
 
 	return std::make_pair(readMatrixXd(file, DS + "e"),
@@ -336,7 +336,22 @@ namespace MyH5 {
 	KSwriteFEFV(outFile, ppType, ppId, tmp.first, tmp.second);
     }
 
-
+    VectorXd
+    KSreadEq(const std::string fileName, const int Id){
+	H5File file(fileName, H5F_ACC_RDONLY);
+	string DS = "/E/" + to_string(Id) + "/";
+	return readMatrixXd(file, DS + "a");
+    }
+    
+    std::pair<VectorXd, double>
+    KSreadReq(const std::string fileName, const int Id){
+	H5File file(fileName, H5F_ACC_RDONLY);
+	string DS = "/tw/" + to_string(Id) + "/";
+	return std::make_pair( readMatrixXd(file, DS + "a"),
+			       readScalar<double>(file, DS + "c")
+			       );
+    }
+    
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////       cqcgl related         ////////////////////////////////////////////////////////////////////////////
 

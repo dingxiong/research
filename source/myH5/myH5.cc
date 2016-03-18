@@ -329,12 +329,14 @@ namespace MyH5 {
 	writeMatrixXd(file, DS + "ve", eigvecs);
     }
     
+
     void 
     KSmoveFEFV(const std::string inFile, const std::string outFile, const std::string ppType,
 	       const int ppId){
 	auto tmp = KSreadFEFV(inFile, ppType, ppId);
 	KSwriteFEFV(outFile, ppType, ppId, tmp.first, tmp.second);
     }
+
 
     VectorXd
     KSreadEq(const std::string fileName, const int Id){
@@ -350,6 +352,62 @@ namespace MyH5 {
 	return std::make_pair( readMatrixXd(file, DS + "a"),
 			       readScalar<double>(file, DS + "c")
 			       );
+    }
+    
+    void KScheckReqGroups(const string fileName, const int Id){
+	H5File file(fileName, H5F_ACC_RDWR);
+	string g1 = "/tw";
+	string g2 = "/tw/" + to_string(Id);
+	if ( H5Lexists(file.getId(), g1.c_str(), H5P_DEFAULT) == false ){
+	    file.createGroup(g1.c_str());
+	    file.createGroup(g2.c_str());
+	}
+	else{
+	    if ( H5Lexists(file.getId(), g2.c_str(), H5P_DEFAULT) == false ){
+		file.createGroup(g2.c_str());
+	    }
+	}
+    }
+
+    void KScheckEqGroups(const string fileName, const int Id){
+	H5File file(fileName, H5F_ACC_RDWR);
+	string g1 = "/E";
+	string g2 = "/E/" + to_string(Id);
+	if ( H5Lexists(file.getId(), g1.c_str(), H5P_DEFAULT) == false ){
+	    file.createGroup(g1.c_str());
+	    file.createGroup(g2.c_str());
+	}
+	else{
+	    if ( H5Lexists(file.getId(), g2.c_str(), H5P_DEFAULT) == false ){
+		file.createGroup(g2.c_str());
+	    }
+	}
+    }
+
+    void 
+    KSwriteEq(const string fileName, const int Id, 
+	      const VectorXd &a, const double err){
+	H5File file(fileName, H5F_ACC_RDWR);
+	string DS = "/E/" + to_string(Id) + "/";
+
+	KScheckEqGroups(fileName, Id);
+	
+	writeMatrixXd(file, DS + "a", a);
+	writeScalar<double>(file, DS + "err", err);
+    }
+
+    void 
+    KSwriteReq(const string fileName, const int Id,
+	       const VectorXd &a, const double omega,
+	       const double err){
+	H5File file(fileName, H5F_ACC_RDWR);
+	string DS = "/tw/" + to_string(Id) + "/";
+
+	KScheckReqGroups(fileName, Id);
+	
+	writeMatrixXd(file, DS + "a", a);
+	writeScalar<double>(file, DS + "w", omega);
+	writeScalar<double>(file, DS + "err", err);
     }
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

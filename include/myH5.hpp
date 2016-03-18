@@ -88,8 +88,16 @@ namespace MyH5 {
     KSreadEq(const std::string fileName, const int Id);
     std::pair<VectorXd, double>
     KSreadReq(const std::string fileName, const int Id);
+    void KScheckReqGroups(const string fileName, const int Id);
+    void KScheckEqGroups(const string fileName, const int Id);
+    void 
+    KSwriteEq(const string fileName, const int Id, 
+	      const VectorXd &a, const double err);
+    void 
+    KSwriteReq(const string fileName, const int Id,
+	       const VectorXd &a, const double omega,
+	       const double err);
     
-
     //////////////////////////////////////////////////////////////////////
     /* cqcgl related */
     void CqcglWriteRPO(const string fileName, const string groupName,

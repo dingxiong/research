@@ -10,6 +10,7 @@
 #include <tuple>
 #include <utility>
 #include <Eigen/Dense>
+//#include "iterMethod.hpp"
 
 using Eigen::ArrayXXcd; 
 using Eigen::ArrayXXd;
@@ -48,13 +49,33 @@ public:
     std::pair<ArrayXXd, ArrayXXd>
     intgj(const ArrayXd &a0, size_t nstp, size_t np = 1, size_t nqr = 1);
     std::pair<ArrayXXd, ArrayXXd>
+
+    
     intgjMulti(const MatrixXd aa0, size_t nstp, size_t np = 1, size_t nqr = 1);
+    std::tuple<MatrixXd, MatrixXd, VectorXd>
+    calReqJJF(const Ref<const VectorXd> &x);
+    std::tuple<VectorXd, double, double>
+    findReq(const Ref<const VectorXd> &x, const double tol, 
+	    const int maxit, const int innerMaxit);
+    std::tuple<MatrixXd, MatrixXd, VectorXd>
+    calEqJJF(const Ref<const VectorXd> &x);
+    std::pair<VectorXd, double>
+    findEq(const Ref<const VectorXd> &x, const double tol,
+	   const int maxit, const int innerMaxit);
+
+
     VectorXd 
     velocity(const Ref<const ArrayXd> &a0);
     VectorXd
     velg(const Ref<const VectorXd> &a0, const double c);
     MatrixXd stab(const Ref<const ArrayXd> &a0);
     MatrixXd stabReq(const Ref<const VectorXd> &a0, const double theta);
+    std::pair<VectorXcd, Eigen::MatrixXcd>
+    stabEig(const Ref<const VectorXd> &a0);
+    std::pair<VectorXcd, Eigen::MatrixXcd>
+    stabReqEig(const Ref<const VectorXd> &a0, const double theta);
+
+
     ArrayXXd 
     C2R(const ArrayXXcd &v);
     ArrayXXcd 
@@ -124,6 +145,34 @@ protected:
     void freeFFT(KSfft &f);
     void fft(KSfft &f);
     void ifft(KSfft &f);
+};
+
+/*============================================================
+ *                       Class : Calculate KS Req LM 
+ *============================================================*/
+template<class Mat>
+struct KSReqJJF {
+    KS &ks;
+    KSReqJJF(KS &ks_) : ks(ks_){}
+    
+    std::tuple<MatrixXd, MatrixXd, VectorXd>
+    operator()(const VectorXd &x) {
+	return ks.calReqJJF(x);
+    }	
+};
+
+/*============================================================
+ *                       Class : Calculate KS Eq LM 
+ *============================================================*/
+template<class Mat>
+struct KSEqJJF {
+    KS &ks;
+    KSEqJJF(KS &ks_) : ks(ks_){}
+    
+    std::tuple<MatrixXd, MatrixXd, VectorXd>
+    operator()(const VectorXd &x) {
+	return ks.calEqJJF(x);
+    }	
 };
 
 #endif	/* KSINT_H */

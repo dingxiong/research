@@ -6,7 +6,7 @@ OPTIM = -O3 -msse2 -msse4 -march=corei7
 INCLUDE = ../../include
 EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 
-CFLAGS = -lm -lfftw3 -std=c++0x 
+CFLAGS = -lm -lfftw3 -std=c++11 
 
 
 SOURCE = ksint.cc ksintM1.cc 

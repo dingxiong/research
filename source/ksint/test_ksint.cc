@@ -1,5 +1,5 @@
 /* to compile:
- * h5c++ test_ksint.cc -std=c++0x -lksint -lmyH5 -lfftw3 -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3
+ * h5c++ test_ksint.cc -std=c++0x -lksint -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3
  */
 
 #include "ksintM1.hpp"
@@ -12,7 +12,7 @@ using namespace MyH5;
 
 int main(){
     /// -----------------------------------------------------
-    switch (6){
+    switch (10){
     
     case 1:
 	{
@@ -70,15 +70,119 @@ int main(){
 	    break;
 	}
 	
-    case 6: {			// test the req 
+    case 6: {			// test Eq
+
 	std::string file = "../../data/ksReqx32.h5";
-	auto tmp = KSreadReq(file, 1);
+	auto a0 = KSreadEq(file, 1);
+	KS ks(32, 0.01, 22);
+	auto ev = ks.stabEig(a0);
+	cout << ev.first << endl;
+
+	break;
+    }
+
+    case 7: {			// test the req 
+	std::string file = "../../data/ksReqx32.h5";
+	auto tmp = KSreadReq(file, 2);
 	VectorXd a0 = tmp.first;
 	double c = tmp.second;
 	cout << c << endl << endl;
 	
 	KS ks(32, 0.01, 22);
+	auto ev = ks.stabReqEig(a0, c*2*M_PI/22);
 	cout << ks.velg(a0, c*2*M_PI/22) << endl;
+	cout << endl << ev.first << endl;
+	break;
+    }
+	
+    case 8: {			// test findReq
+	
+	std::string file = "../../data/ksReqx32.h5";
+	auto tmp = KSreadReq(file, 2);
+	const int N = 64;
+
+	VectorXd x0(VectorXd::Zero(N-1));
+	x0.head(30) = tmp.first; 
+	x0(N-2) = tmp.second * 2*M_PI/22; 
+
+	KS ks(N, 0.01, 22);
+	auto result = ks.findReq(x0, 1e-13, 100, 20);
+	
+	VectorXd &a0 = std::get<0>(result);
+	double omega = std::get<1>(result);
+	double err = std::get<2>(result);
+
+	cout << std::get<0>(result) << endl << endl;
+	cout << std::get<1>(result) << endl << endl;
+	cout << std::get<2>(result) << endl << endl;
+
+	VectorXd v = ks.velg(a0, omega);
+	cout << v.norm() << endl;
+	
+	break;
+    }
+
+    case 9 :{			// test findEq
+	
+	std::string file = "../../data/ksReqx32.h5";
+	auto a0 = KSreadEq(file, 3);
+	const int N = 64;
+	
+	VectorXd x0(VectorXd::Zero(N-2));
+	x0.head(30) = a0;
+	
+	KS ks(N, 0.01, 22);
+	auto result = ks.findEq(x0, 1e-13, 100, 20);
+
+	VectorXd &a = std::get<0>(result);
+	double err = std::get<1>(result);
+	
+	cout << a << endl << endl;
+	cout << err << endl << endl;
+
+	VectorXd v = ks.velocity(a);
+	cout << v.norm() << endl;
+	
+	break;
+    }
+
+    case 10 :{		  /* find eq and req for N = 64 from N = 32 */
+	std::string file = "../../data/ksReqx32.h5";
+	std::string outFile = "tmp.h5";
+	const int N = 64;
+	KS ks(N, 0.01, 22);
+
+	for (int i = 0; i < 2; i++){
+	    int Id = i+1;
+	    auto tmp = KSreadReq(file, Id);
+	    VectorXd x0(VectorXd::Zero(N-1));
+	    x0.head(30) = tmp.first; 
+	    x0(N-2) = tmp.second * 2*M_PI/22; 
+
+	    auto result = ks.findReq(x0, 1e-13, 100, 20);
+	
+	    VectorXd &a0 = std::get<0>(result);
+	    double omega = std::get<1>(result);
+	    double err = std::get<2>(result);
+	    
+	    KSwriteReq(outFile, Id, a0, omega, err);
+	}
+
+	for (int i = 0; i < 3; i++){
+	    int Id = i + 1;
+	    auto a0 = KSreadEq(file, Id);
+	    VectorXd x0(VectorXd::Zero(N-2));
+	    x0.head(30) = a0;
+	
+	    auto result = ks.findEq(x0, 1e-13, 100, 20);
+
+	    VectorXd &a = std::get<0>(result);
+	    double err = std::get<1>(result);
+	    
+	    KSwriteEq(outFile, Id, a, err);
+	}
+	
+
 	break;
     }
 

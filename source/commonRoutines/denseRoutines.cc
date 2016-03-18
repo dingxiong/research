@@ -176,6 +176,7 @@ void denseRoutines::normc(MatrixXd &A){
 
 /**
  * @brief get the sorted indices of a complex vector in descending order
+ *        by their real part
  */
 std::vector<int>
 denseRoutines::csort(const VectorXcd &e){

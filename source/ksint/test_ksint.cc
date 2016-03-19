@@ -12,7 +12,7 @@ using namespace MyH5;
 
 int main(){
     /// -----------------------------------------------------
-    switch (10){
+    switch (13){
     
     case 1:
 	{
@@ -69,11 +69,11 @@ int main(){
 
 	    break;
 	}
-	
+# if 0	
     case 6: {			// test Eq
 
 	std::string file = "../../data/ksReqx32.h5";
-	auto a0 = KSreadEq(file, 1);
+	auto a0 = KSreadEq(file, 1).first;
 	KS ks(32, 0.01, 22);
 	auto ev = ks.stabEig(a0);
 	cout << ev.first << endl;
@@ -185,7 +185,66 @@ int main(){
 
 	break;
     }
+#endif
+	
+    case 11 : {		/* calculate the stability exponents of eq */
+	std::string file = "../../data/ks22Reqx64.h5";
+	auto eq = KSreadEq(file, 1);
+	VectorXd a0 = eq.first;
+	double err = eq.second;
 
+	const int N = 64;
+	KS ks(N, 0.01, 22);
+	auto ev = ks.stabEig(a0);
+	cout << ev.first << endl;
+
+	break;
+    }
+	
+    case 12 : {		/* calculate the stability exponents of req */
+	std::string file = "../../data/ks22Reqx64.h5";
+	auto req = KSreadReq(file, 1);
+	VectorXd &a0 = std::get<0>(req);
+	double w = std::get<1>(req);
+	double err = std::get<2>(req);
+
+	const int N = 64;
+	KS ks(N, 0.01, 22);
+	auto ev = ks.stabReqEig(a0, w);
+
+	cout << ev. first << endl;
+	
+	break;
+    }
+
+    case 13: {			/* write stability exponents */
+	std::string file = "../../data/ks22Reqx64.h5";
+	std::string outFile = "ks22Reqx64.h5";
+	const int N = 64;
+	KS ks(N, 0.01, 22);
+	
+	for(int i = 0; i < 3 ; i++){
+	    int Id = i + 1;
+	    auto eq = KSreadEq(file, Id);
+	    VectorXd &a0 = eq.first;
+	    auto ev = ks.stabEig(a0);
+	    
+	    KSwriteEqE(outFile, Id, ev.first);
+	}
+
+	for(int i = 0; i < 2; i++){
+	    int Id = i + 1;
+	    auto req = KSreadReq(file, Id);
+	    VectorXd &a0 = std::get<0>(req);
+	    double w = std::get<1>(req);
+	    auto ev = ks.stabReqEig(a0, w);
+	    
+	    KSwriteReqE(outFile, Id, ev.first);
+	}
+
+	break;
+    }
+	
     default :
 	{
 	    cout << "please indicate the correct index." << endl;

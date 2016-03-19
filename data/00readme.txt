@@ -32,4 +32,5 @@ ks22Reqx64.h5 : Equilibria and relative equilibria for L = 22, N = 64
 	      a : state variable 62 x 1
 	      w : phase velocity = 2*pi/L * c
 	      err : absolute error of the solution
-
+	      e : real and imaginary part of the stability exponents
+	      

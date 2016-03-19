@@ -338,21 +338,25 @@ namespace MyH5 {
     }
 
 
-    VectorXd
+    std::pair<VectorXd, double>
     KSreadEq(const std::string fileName, const int Id){
 	H5File file(fileName, H5F_ACC_RDONLY);
 	string DS = "/E/" + to_string(Id) + "/";
-	return readMatrixXd(file, DS + "a");
+	return std::make_pair(readMatrixXd(file, DS + "a"),
+			      readScalar<double>(file, DS + "err")
+			      );
     }
     
-    std::pair<VectorXd, double>
+    std::tuple<VectorXd, double, double>
     KSreadReq(const std::string fileName, const int Id){
 	H5File file(fileName, H5F_ACC_RDONLY);
 	string DS = "/tw/" + to_string(Id) + "/";
-	return std::make_pair( readMatrixXd(file, DS + "a"),
-			       readScalar<double>(file, DS + "c")
+	return std::make_tuple(readMatrixXd(file, DS + "a"),
+			       readScalar<double>(file, DS + "w"),
+			       readScalar<double>(file, DS + "err")
 			       );
     }
+    
     
     void KScheckReqGroups(const string fileName, const int Id){
 	H5File file(fileName, H5F_ACC_RDWR);
@@ -408,6 +412,36 @@ namespace MyH5 {
 	writeMatrixXd(file, DS + "a", a);
 	writeScalar<double>(file, DS + "w", omega);
 	writeScalar<double>(file, DS + "err", err);
+    }
+    
+    void 
+    KSwriteEqE(const string fileName, const int Id, 
+	       const VectorXcd e){
+	
+	H5File file(fileName, H5F_ACC_RDWR);
+	string DS = "/E/" + to_string(Id) + "/";
+
+	KScheckEqGroups(fileName, Id);
+	
+	MatrixXd er(e.size(), 2);
+	er << e.real(), e.imag();
+	
+	writeMatrixXd(file, DS + "e", er);
+    }
+
+    void 
+    KSwriteReqE(const string fileName, const int Id, 
+	       const VectorXcd e){
+	
+	H5File file(fileName, H5F_ACC_RDWR);
+	string DS = "/tw/" + to_string(Id) + "/";
+
+	KScheckReqGroups(fileName, Id);
+	
+	MatrixXd er(e.size(), 2);
+	er << e.real(), e.imag();
+	
+	writeMatrixXd(file, DS + "e", er);
     }
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

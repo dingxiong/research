@@ -82,7 +82,15 @@ public:
 	       sizeof(double)*(N-2));
 	return result;
     }
-
+    
+    bn::ndarray PYvelg(bn::ndarray a0, double theta){
+	int m, n;
+	getDims(a0, m, n);
+	Map<VectorXd> tmpa((double*)a0.get_data(), n*m);
+	
+	return copy2bn(velg(tmpa, theta));
+    }
+    
     /* stab */
     bn::ndarray PYstab(bn::ndarray a0){
 	int m, n;
@@ -90,6 +98,14 @@ public:
 	Map<ArrayXd> tmpa((double*)a0.get_data(), n*m);
 	
 	return copy2bn(stab(tmpa));
+    }
+
+    bn::ndarray PYstabReq(bn::ndarray a0, double theta){
+	int m, n;
+	getDims(a0, m, n);
+	Map<VectorXd> tmpa((double*)a0.get_data(), n*m);
+	
+	return copy2bn(stabReq(tmpa, theta));
     }
 
     /* wrap the integrator */
@@ -128,13 +144,7 @@ public:
     bn::ndarray PYreflection(bn::ndarray aa){
 
 	int m, n;
-	if(aa.get_nd() == 1){
-	    m = 1;
-	    n = aa.shape(0);
-	} else {
-	    m = aa.shape(0);
-	    n = aa.shape(1);
-	}
+	getDims(aa, m, n);
 	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	ArrayXXd tmpraa = Reflection(tmpaa);
@@ -433,7 +443,9 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def_readonly("d", &pyKS::d)
 	.def_readonly("h", &pyKS::h)
 	.def("velocity", &pyKS::PYvelocity)
+	.def("velg", &pyKS::PYvelg)
 	.def("stab", &pyKS::PYstab)
+	.def("stabReq", &pyKS::PYstabReq)
 	.def("intg", &pyKS::PYintg)
 	.def("intgj", &pyKS::PYintgj)
 	.def("Reflection", &pyKS::PYreflection)

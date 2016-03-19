@@ -61,7 +61,7 @@ def filterAng(a, ns, angSpan, angNum):
                 a[i][j] = 0
 
 
-situation = 4
+situation = 7
 
 if situation == 1:
     ##################################################
@@ -419,3 +419,21 @@ if situation == 6:
     fig.tight_layout(pad=0)
     plt.legend(loc='best')
     plt.show(block=False)
+
+if situation == 7:
+    """
+    """
+    N = 64
+    h = 0.01
+    L = 22
+
+    ks = pyKS(N, h, L)
+
+    a0, w, err = KSreadReq('../ks22Reqx64.h5', 1)
+    es, vs = KSstabReqEig(ks, a0, w)
+
+    a0, err = KSreadEq('../ks22Reqx64.h5', 1)
+    es, vs = KSstabEig(ks, a0)
+
+    
+

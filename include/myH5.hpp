@@ -84,9 +84,9 @@ namespace MyH5 {
     void KScheckGroups(const string fileName, const string ppType,
 		       const int ppId);
 
-    VectorXd
-    KSreadEq(const std::string fileName, const int Id);
     std::pair<VectorXd, double>
+    KSreadEq(const std::string fileName, const int Id);
+    std::tuple<VectorXd, double, double>
     KSreadReq(const std::string fileName, const int Id);
     void KScheckReqGroups(const string fileName, const int Id);
     void KScheckEqGroups(const string fileName, const int Id);
@@ -96,7 +96,13 @@ namespace MyH5 {
     void 
     KSwriteReq(const string fileName, const int Id,
 	       const VectorXd &a, const double omega,
-	       const double err);
+	       const double err);        
+    void 
+    KSwriteEqE(const string fileName, const int Id, 
+	       const VectorXcd e);
+    void 
+    KSwriteReqE(const string fileName, const int Id, 
+		const VectorXcd e);
     
     //////////////////////////////////////////////////////////////////////
     /* cqcgl related */

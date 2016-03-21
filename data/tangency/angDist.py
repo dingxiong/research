@@ -424,7 +424,7 @@ if situation == 7:
     """
     """
     N = 64
-    h = 0.01
+    h = 0.001
     L = 22
 
     ks = pyKS(N, h, L)
@@ -435,5 +435,38 @@ if situation == 7:
     a0, err = KSreadEq('../ks22Reqx64.h5', 1)
     es, vs = KSstabEig(ks, a0)
 
+    a0H = ks.orbitToSlice(a0)[0]
+
     
+
+if situation == 8:
+    """
+    There seems periodic peaks on top of the angle
+    for ppo 147, we want to find out the reason. Here
+    I use covariant axis to visulzie ppo
+    """
+    poType = 'ppo'
+    poId = 147
+    a0, T, nstp, r, s = KSreadPO('../ks22h001t120x64EV.h5', poType, poId)
+    h = T / nstp
+    ks = pyKS(64, h, 22)
+    aa = ks.intg(a0, nstp, 5)
+    # aa = ks.reduceReflection(ks.orbitToSlice(aa)[0])
+
+    peaks = [180, 1485, 3701, 6243, 8980, 11262, 13869, 16541]
+    colors = plt.cm.winter(np.linspace(0, 1, len(peaks)))
+    i1 = 0
+    i2 = 2
+    i3 = 3
+    fig = plt.figure(figsize=[8, 6])
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(aa[:, i1], aa[:, i2], aa[:, i3], c='r', lw=2)
+    for i, c in zip(peaks, colors):
+        ax.scatter(aa[i, i1], aa[i, i2], aa[i, i3], marker='o', c=c,
+                   edgecolor='none', s=50)
+    ax.set_xlabel(r'$b_1$', fontsize=30)
+    ax.set_ylabel(r'$b_2$', fontsize=30)
+    ax.set_zlabel(r'$c_2$', fontsize=30)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
 

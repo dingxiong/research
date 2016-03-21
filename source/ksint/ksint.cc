@@ -347,6 +347,9 @@ KS::stabReqEig(const Ref<const VectorXd> &a0, const double theta){
     return denseRoutines::evEig(A);
 }
 
+MatrixXd 
+KS::
+
 /*************************************************** 
  *           energe ralated                        *
  ***************************************************/

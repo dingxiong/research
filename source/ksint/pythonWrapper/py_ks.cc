@@ -52,6 +52,19 @@ inline bn::ndarray copy2bn(const Ref<const ArrayXXd> &x){
     return px;
 }
 
+/**
+ * @brief std::vector to bp::list
+ */
+template <class T>
+bp::list toList(std::vector<T> vector) {
+    typename std::vector<T>::iterator iter;
+    bp::list list;
+    for (iter = vector.begin(); iter != vector.end(); ++iter) {
+	list.append(*iter);
+    }
+    return list;
+}
+
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -383,9 +396,47 @@ public:
 	      
 	return rve;
     }
+    
+    bn::ndarray PYcalMag(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
+	
+	return copy2bn(calMag(tmpaa));
+    }
 
+    bp::tuple PYtoPole(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
 
+	auto tmp = toPole(tmpaa);
+	return bp::make_tuple(copy2bn(tmp.first), 
+			      copy2bn(tmp.second)
+			      );
+    }
 
+    bp::tuple PYcalAB(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
+	VectorXcd AB = calAB(tmpaa);
+
+	return bp::make_tuple(copy2bn(AB.real()),
+			      copy2bn(AB.imag())
+			      );
+    }
+
+    bp::tuple PYredSO2(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
+
+	auto tmp = redSO2(tmpaa);
+	return bp::make_tuple(copy2bn(tmp.first), 
+			      copy2bn(tmp.second)
+			      );
+    }
 
 };
 
@@ -458,6 +509,10 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def("reduceReflection", &pyKS::PYreduceReflection)
 	.def("reflectVe", &pyKS::PYreflectVe)
 	.def("reflectVeAll", &pyKS::PYreflectVeAll)
+	.def("calMag", &pyKS::PYcalMag)
+	.def("toPole", &pyKS::PYtoPole)
+	.def("calAB", &pyKS::PYcalAB)
+	.def("redSO2", &pyKS::PYredSO2)
 	;
 
     bp::class_<pyKSM1, bp::bases<KSM1> >("pyKSM1", bp::init<int, double, double>())

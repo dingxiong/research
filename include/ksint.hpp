@@ -117,6 +117,15 @@ public:
     MatrixXd reflectVe(const MatrixXd &ve, const Ref<const ArrayXd> &xHat);
     MatrixXd reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
 			  const int trunc = 0);
+
+    VectorXcd calAB(const Ref<const MatrixXd> &aa, std::vector<int> &ix);
+    std::pair<MatrixXd, VectorXd>
+    redSO2(const Ref<const MatrixXd> &aa, std::vector<int> &ix);
+    
+    MatrixXd calMag(const Ref<const MatrixXd> &aa);
+    std::pair<MatrixXd, MatrixXd>
+    toPole(const Ref<const MatrixXd> &aa);
+
 protected:
     enum { M = 16 }; // number used to approximate the complex integral.
   

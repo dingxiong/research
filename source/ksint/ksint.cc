@@ -347,9 +347,6 @@ KS::stabReqEig(const Ref<const VectorXd> &a0, const double theta){
     return denseRoutines::evEig(A);
 }
 
-MatrixXd 
-KS::
-
 /*************************************************** 
  *           energe ralated                        *
  ***************************************************/
@@ -858,4 +855,95 @@ MatrixXd KS::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
     }
 
     return veTilde;
+}
+
+VectorXcd KS::calAB(const Ref<const MatrixXd> &aa, std::vector<int> &ix){
+    int n = aa.cols();
+    
+    // std::vector<int> ix = {1, 2, 3, 4};
+
+    std::vector<int> Rix, Iix;
+    for(int i = 0; i < ix.size(); i++) {
+	Rix.push_back( 2*ix[i] - 2 );
+	Iix.push_back( 2*ix[i] - 1 );
+    }
+
+    MatrixXcd a(ix.size(), n);
+    for(int i = 0; i < a.rows(); i++){
+	a.row(i).real() = aa.row( Rix[i] );
+	a.row(i).imag() = aa.row( Iix[i] );
+    }
+
+    if(ix.size() == 4) 
+	return a.row(1).array() * a.row(0).conjugate().array() + 
+	    a.row(3).array() * a.row(2).conjugate().array();
+    else if(ix.size() == 3) 
+	return a.row(0).array() + 
+	    a.row(2).array() * a.row(1).conjugate().array();    
+    else {
+	fprintf(stderr, "KS::calAB error\n");
+	exit(0);
+    }
+
+}
+
+std::pair<MatrixXd, VectorXd>
+KS::redSO2(const Ref<const MatrixXd> &aa, std::vector<int> &ix){
+    int m = aa.rows();
+    int n = aa.cols();
+
+    VectorXcd AB = calAB(aa, ix);
+    
+    MatrixXd raa(m, n);
+    VectorXd ang(n);
+
+    for(int i = 0; i < n; i++){
+	double th = atan2(-AB(i).imag(), AB(i).real());
+	ang(i) = -th;
+	raa.col(i) = Rotation(aa.col(i), th);
+    }
+
+    return std::make_pair(raa, ang);
+}
+
+/*************************************************** 
+ *                  Others                         *
+ ***************************************************/
+
+/* calculate mode modulus */
+MatrixXd KS::calMag(const Ref<const MatrixXd> &aa){
+    int m = aa.rows();
+    int n = aa.cols();
+    assert(m % 2 == 0);
+    
+    MatrixXd r(m/2, n);
+    for(int i = 0; i < m/2; i++){
+	r.row(i) = (aa.row(2*i).array().square() + 
+		    aa.row(2*i+1).array().square()
+		    ).sqrt();
+    }
+
+    return r;
+}
+
+std::pair<MatrixXd, MatrixXd>
+KS::toPole(const Ref<const MatrixXd> &aa){
+    int m = aa.rows();
+    int n = aa.cols();
+    assert(m % 2 == 0);
+    
+    MatrixXd r(m/2, n);
+    MatrixXd th(m/2, n);
+    for(int i = 0; i < m/2; i++){
+	r.row(i) = (aa.row(2*i).array().square() + 
+		    aa.row(2*i+1).array().square()
+		    ).sqrt();
+	for(int j = 0; j < n; j++){
+	    th(i, j) = atan2(aa(2*i+1, j), aa(2*i, j)); 
+	}
+
+    }
+
+    return std::make_pair(r, th);
+
 }

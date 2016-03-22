@@ -13,6 +13,7 @@
 //#include "iterMethod.hpp"
 
 using Eigen::ArrayXXcd; 
+using Eigen::MatrixXcd; 
 using Eigen::ArrayXXd;
 using Eigen::ArrayXcd;
 using Eigen::ArrayXd;
@@ -118,13 +119,19 @@ public:
     MatrixXd reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
 			  const int trunc = 0);
 
-    VectorXcd calAB(const Ref<const MatrixXd> &aa, std::vector<int> &ix);
-    std::pair<MatrixXd, VectorXd>
-    redSO2(const Ref<const MatrixXd> &aa, std::vector<int> &ix);
-    
     MatrixXd calMag(const Ref<const MatrixXd> &aa);
     std::pair<MatrixXd, MatrixXd>
     toPole(const Ref<const MatrixXd> &aa);
+    MatrixXcd
+    a2f(const Ref<const MatrixXd> &aa);
+    MatrixXd
+    f2a(const Ref<const MatrixXcd> &f);
+
+    std::pair<MatrixXd, VectorXd>
+    redSO2(const Ref<const MatrixXd> &aa);
+    MatrixXd redRef(const Ref<const MatrixXd> &aa);
+    std::pair<MatrixXd, VectorXd>
+    redO2(const Ref<const MatrixXd> &aa);
 
 protected:
     enum { M = 16 }; // number used to approximate the complex integral.

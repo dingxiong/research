@@ -857,53 +857,59 @@ MatrixXd KS::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
     return veTilde;
 }
 
-VectorXcd KS::calAB(const Ref<const MatrixXd> &aa, std::vector<int> &ix){
-    int n = aa.cols();
+std::pair<MatrixXd, VectorXd>
+KS::redSO2(const Ref<const MatrixXd> &aa){
+    int p = 2;			// index of Fourier mode
+
+    int n = aa.rows();
+    int m = aa.cols();
+    assert( 0 == n%2);
+    MatrixXd raa(n, m);
+    VectorXd ang(m);
+
+    for(size_t i = 0; i < m; i++){
+	double th = (atan2(aa(2*p-1, i), aa(2*p-2, i)) - M_PI/2 )/ p;
+	ang(i) = th;
+	raa.col(i) = Rotation(aa.col(i), -th);
+    }
+    return std::make_pair(raa, ang);
+}
+
+MatrixXd KS::redRef(const Ref<const MatrixXd> &aa){
+
+    int n = aa.rows();
+    int m = aa.cols();
+    assert( 0 == n%2);
     
-    // std::vector<int> ix = {1, 2, 3, 4};
-
-    std::vector<int> Rix, Iix;
-    for(int i = 0; i < ix.size(); i++) {
-	Rix.push_back( 2*ix[i] - 2 );
-	Iix.push_back( 2*ix[i] - 1 );
+    int p = 2;
+    
+    // step 1
+    MatrixXcd F = a2f(aa);
+    MatrixXcd bb(n/2, m);
+    bb.row(0) = F.row(0).array().pow(p);
+    for(int i = 1; i < n/2; i++){
+	int k = (n/2 * p - i - 1) % p;
+	bb.row(i) = F.row(i).array() * F.row(0).array().pow(k);
     }
+    MatrixXd cc = f2a(bb);
 
-    MatrixXcd a(ix.size(), n);
-    for(int i = 0; i < a.rows(); i++){
-	a.row(i).real() = aa.row( Rix[i] );
-	a.row(i).imag() = aa.row( Iix[i] );
+    // step 2
+    MatrixXd raa(cc);
+    raa.row(1) = cc.row(1).array().square();
+    for(int i = 1; i < n/2; i++){
+	if(i % 2 == 0 )
+	    raa.row(2*i + 1) = cc.row(2*i + 1).array() * cc.row(1).array();
+	else 
+	    raa.row(2*i) = cc.row(2*i).array() * cc.row(1).array();
     }
-
-    if(ix.size() == 4) 
-	return a.row(1).array() * a.row(0).conjugate().array() + 
-	    a.row(3).array() * a.row(2).conjugate().array();
-    else if(ix.size() == 3) 
-	return a.row(0).array() + 
-	    a.row(2).array() * a.row(1).conjugate().array();    
-    else {
-	fprintf(stderr, "KS::calAB error\n");
-	exit(0);
-    }
-
+    
+    return raa;
 }
 
 std::pair<MatrixXd, VectorXd>
-KS::redSO2(const Ref<const MatrixXd> &aa, std::vector<int> &ix){
-    int m = aa.rows();
-    int n = aa.cols();
-
-    VectorXcd AB = calAB(aa, ix);
-    
-    MatrixXd raa(m, n);
-    VectorXd ang(n);
-
-    for(int i = 0; i < n; i++){
-	double th = atan2(-AB(i).imag(), AB(i).real());
-	ang(i) = -th;
-	raa.col(i) = Rotation(aa.col(i), th);
-    }
-
-    return std::make_pair(raa, ang);
+KS::redO2(const Ref<const MatrixXd> &aa){
+    auto tmp = redSO2(aa);
+    return std::make_pair(redRef(tmp.first), tmp.second);
 }
 
 /*************************************************** 
@@ -946,4 +952,34 @@ KS::toPole(const Ref<const MatrixXd> &aa){
 
     return std::make_pair(r, th);
 
+}
+
+
+MatrixXcd
+KS::a2f(const Ref<const MatrixXd> &aa){
+    int m = aa.rows();
+    int n = aa.cols();
+    assert(m % 2 == 0);
+    
+    MatrixXcd F(m/2, n);
+    for(int i = 0; i < m/2; i++){
+	F.row(i).real() = aa.row(2*i);
+	F.row(i).imag() = aa.row(2*i+1);
+    }
+    
+    return F;
+}
+
+MatrixXd
+KS::f2a(const Ref<const MatrixXcd> &f){
+    int m = f.rows();
+    int n = f.cols();
+    
+    MatrixXd a(m*2, n);
+    for(int i = 0; i < m; i++){
+	a.row(2*i) = f.row(i).real();
+	a.row(2*i+1) = f.row(i).imag();
+    }
+    
+    return a;
 }

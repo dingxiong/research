@@ -39,7 +39,7 @@ def plot2dfig(x, y, c='r', lw=1, ls='-', labs=['x', 'y'],
     """
     plot 2d figures in genereal
     """
-    fig = plt.figure(figsize=size)
+    fig = plt.figure(figsizbe=size)
     ax = fig.add_subplot(111)
     ax.plot(x, y, c=c, lw=lw, ls=ls)
     ax.set_xlabel(labs[0], fontsize=axisLabelSize)
@@ -720,14 +720,14 @@ def KSstabEig(ks, a0):
     stab = ks.stab(a0).T
     eigvalue, eigvector = eig(stab)
     eigvalue, eigvector = sortByReal(eigvalue, eigvector)
-    return eigvalue, eigvector
+    return eigvalue, eigvector.T
 
 
 def KSstabReqEig(ks, a0, w):
     stab = ks.stabReq(a0, w).T
     eigvalue, eigvector = eig(stab)
     eigvalue, eigvector = sortByReal(eigvalue, eigvector)
-    return eigvalue, eigvector
+    return eigvalue, eigvector.T
 
     
 def KSreadPO(fileName, poType, idx):

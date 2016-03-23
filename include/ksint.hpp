@@ -129,9 +129,16 @@ public:
 
     std::pair<MatrixXd, VectorXd>
     redSO2(const Ref<const MatrixXd> &aa);
+    MatrixXd redR1(const Ref<const MatrixXd> &aa);
+    MatrixXd redR2(const Ref<const MatrixXd> &cc);
     MatrixXd redRef(const Ref<const MatrixXd> &aa);
     std::pair<MatrixXd, VectorXd>
     redO2(const Ref<const MatrixXd> &aa);
+    MatrixXd Gmat1(const Ref<const VectorXd> &x);
+    MatrixXd Gmat2(const Ref<const VectorXd> &x);
+    std::pair<VectorXd, MatrixXd>
+    redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
+    MatrixXd redV2(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
 
 protected:
     enum { M = 16 }; // number used to approximate the complex integral.

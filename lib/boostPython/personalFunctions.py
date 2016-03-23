@@ -16,6 +16,21 @@ from mpl_toolkits.mplot3d import proj3d
 ##################################################
 
 
+def pl3d(size=[8, 6]):
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111, projection='3d')
+    return fig, ax
+
+
+def ax3d(fig, ax,  labs=['x', 'y', 'z'], axisLabelSize=25):
+    ax.set_xlabel(labs[0], fontsize=axisLabelSize)
+    ax.set_ylabel(labs[1], fontsize=axisLabelSize)
+    ax.set_zlabel(labs[2], fontsize=axisLabelSize)
+    fig.tight_layout(pad=0)
+    plt.legend()
+    plt.show(block=False)
+
+
 def plot1dfig(x, c='r', lw=1, ls='-', marker=None, labs=['x', 'y'],
               size=[8, 6], axisLabelSize=25, yscale=None):
     """
@@ -720,14 +735,14 @@ def KSstabEig(ks, a0):
     stab = ks.stab(a0).T
     eigvalue, eigvector = eig(stab)
     eigvalue, eigvector = sortByReal(eigvalue, eigvector)
-    return eigvalue, eigvector.T
+    return eigvalue, eigvector
 
 
 def KSstabReqEig(ks, a0, w):
     stab = ks.stabReq(a0, w).T
     eigvalue, eigvector = eig(stab)
     eigvalue, eigvector = sortByReal(eigvalue, eigvector)
-    return eigvalue, eigvector.T
+    return eigvalue, eigvector
 
     
 def KSreadPO(fileName, poType, idx):

@@ -1,7 +1,7 @@
 from personalFunctions import *
 from py_ks import *
 
-case = 30
+case = 40
 
 if case == 10:
     """
@@ -23,64 +23,6 @@ if case == 10:
     print e
 
 
-def rSO(ks, aa):
-    m, n = aa.shape
-    raa = np.zeros((m, n))
-    ths = np.zeros(m)
-
-    phi = np.zeros((m, 4))
-    r2 = np.zeros((m, 4))
-    for i in range(m):
-        phi[i, 0] = np.angle(aa[i, 0] + 1j*aa[i, 1])
-        phi[i, 1] = np.angle(aa[i, 2] + 1j*aa[i, 3])
-        phi[i, 2] = np.angle(aa[i, 4] + 1j*aa[i, 5])
-        phi[i, 3] = np.angle(aa[i, 6] + 1j*aa[i, 7])
-        
-        r2[i, 0] = aa[i, 0]**2 + aa[i, 1]**2
-        r2[i, 1] = aa[i, 2]**2 + aa[i, 3]**2
-        r2[i, 2] = aa[i, 4]**2 + aa[i, 5]**2
-        r2[i, 3] = aa[i, 6]**2 + aa[i, 7]**2
-
-    for i in range(4):
-        phi[:, i] = np.unwrap(phi[:, i])
-
-    for i in range(m):
-        theta = - r2[i].dot(phi[i]) / r2[i].dot(np.arange(1, 5))
-        ths[i] = theta
-        raa[i] = ks.Rotation(aa[i], theta)
-
-    return raa, ths
-
-
-def rSO2(ks, aa):
-    m, n = aa.shape
-    raa = np.zeros((m, n))
-    ths = np.zeros(m)
-
-    k = 4
-    bb = np.zeros((m, k)) + 1j * np.zeros((m, k))
-    bb[:, 0] = aa[:, 0] + 1j*aa[:, 1]
-    for i in range(k-1):
-        bb[:, i+1] = (aa[:, 2*i+2] + 1j*aa[:, 2*i+3]) *  (aa[:, 2*i] - 1j*aa[:, 2*i+1])
-    A = np.sum(bb.real, axis=1)
-    B = np.sum(bb.imag, axis=1)
-
-    for i in range(m):
-        theta = arctan2(-B[i], A[i])
-        ths[i] = theta
-        raa[i] = ks.Rotation(aa[i], theta)
-
-    return raa, ths
-
-
-def rSO3(ks, aa):
-    m, n = aa.shape
-    raa = np.zeros((m, n))
-    ths = np.zeros(m)
-
-    return raa, ths
-
-
 if case == 20:
     """
     Have a look at the flow in the state space
@@ -100,66 +42,11 @@ if case == 20:
     raa, ths = rSO3(ks, aa)
     plot3dfig(raa[:, 0], raa[:, 3], raa[:, 2])
 
-if case == 30:
-    N = 64
-    d = 22
-    h = 0.001
-    ks = pyKS(N, h, d)
 
-    req = np.zeros((2, N-2))
-    ws = np.zeros(2)
-    reqr = np.zeros((2, N-2))
-    for i in range(2):
-        a0, w, err = KSreadReq('../../data/ks22Reqx64.h5', i+1)
-        req[i] = a0
-        ws[i] = w
-        tmp = ks.redO2(a0)
-        reqr[i] = tmp[0]
-        print tmp[1]
-        
-    eq = np.zeros((3, N-2))
-    eqr = np.zeros((3, N-2))
-    for i in range(3):
-        a0, err = KSreadEq('../../data/ks22Reqx64.h5', i+1)
-        eq[i] = a0
-        tmp = ks.redO2(a0)
-        eqr[i] = tmp[0]
-        print tmp[1]
-
-    k = 1
-    es, ev = KSstabEig(ks, eq[k])
-    print es[:8]
-    aas = []
-    nn = 1
-    for i in range(nn):
-        a0 = eq[k] + 1e-4 * (i+1) * ev[0].real
-        a0 = rand(N-2) * 0.1
-        aa = ks.intg(a0, 250000, 100)
-        raa, ths = ks.redO2(aa)
-        aas.append(raa)
-
-    ns = -100
-   
-    fig = plt.figure(figsize=[8, 6])
-    ax = fig.add_subplot(111, projection='3d')
-    i1 = 0
-    i2 = 1
-    i3 = 3
-    c1 = ['r', 'b']
-    for i in range(2):
-        ax.scatter(reqr[i, i1], reqr[i, i2], reqr[i, i3], c=c1[i], label='TW'+str(i+1))
-    c2 = ['c', 'g', 'k']
-    for i in range(3):
-        ax.scatter(eqr[i, i1], eqr[i, i2], eqr[i, i3], c=c2[i], label='E'+str(i+1))
-    for i in range(nn):
-        ax.plot(aas[i][:ns, i1], aas[i][:ns, i2], aas[i][:ns, i3])
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    fig.tight_layout(pad=0)
-    plt.legend()
-    plt.show(block=False)
-
-if case == 40:
+if case == 25:
+    """
+    test the 2nd slice
+    """
     N = 64
     d = 22
     h = 0.001
@@ -174,30 +61,161 @@ if case == 40:
     y2, r2 = ks.redO2(ks.Rotation(y, t0))
     print (t2-t0-t1) / (np.pi/3), norm(x2-x1), norm(y2-y1), norm(y2-x2)
 
-if case == 50:
+
+def loadRE(fileName, N):
+    req = np.zeros((2, N-2))
+    ws = np.zeros(2)
+    reqr = np.zeros((2, N-2))
+    for i in range(2):
+        a0, w, err = KSreadReq(fileName, i+1)
+        req[i] = a0
+        ws[i] = w
+        tmp = ks.redO2(a0)
+        reqr[i] = tmp[0]
+        print tmp[1]
+        
+    eq = np.zeros((3, N-2))
+    eqr = np.zeros((3, N-2))
+    for i in range(3):
+        a0, err = KSreadEq(fileName, i+1)
+        eq[i] = a0
+        tmp = ks.redO2(a0)
+        eqr[i] = tmp[0]
+        print tmp[1]
+
+    return req, ws, reqr, eq, eqr
+
+
+def loadPO(fileName, types, poIds):
+    aas = []
+    for poType in types:
+        for poId in poIds:
+            a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
+            h = T / nstp
+            ks = pyKS(N, h, 22)
+            aa = ks.intg(a0, nstp, 5)
+            aa = ks.redO2(aa)[0]
+            aas.append(aa)
+    
+    return aas
+
+
+def plotRE(ax, reqr, eqr, ii):
+    c1 = ['r', 'b']
+    for i in range(2):
+        ax.scatter(reqr[i, ii[0]], reqr[i, ii[1]], reqr[i, ii[2]],
+                   c=c1[i], s=70, edgecolors='none', label='TW'+str(i+1))
+    c2 = ['c', 'k', 'y']
+    for i in range(3):
+        ax.scatter(eqr[i, ii[0]], eqr[i, ii[1]], eqr[i, ii[2]], c=c2[i], s=70,
+                   edgecolors='none', label='E'+str(i+1))
+    
+
+def getBases(ks, etype, a, ii, w=0):
+
+    if etype == 'eq':
+        es, evt = KSstabEig(ks, a)
+        ev = Tcopy(realve(evt))
+        pev = ks.redV2(ev, a)
+        v1, v2, v3 = orthAxes(pev[ii[0]], pev[ii[1]], pev[ii[2]])
+        bases = np.vstack((v1, v2, v3))
+
+    if etype == 'req':
+        es, evt = KSstabReqEig(ks, a, w)
+        ev = Tcopy(realve(evt))
+        pev = ks.redV2(ev, a)
+        v1, v2, v3 = orthAxes(pev[ii[0]], pev[ii[1]], pev[ii[2]])
+        bases = np.vstack((v1, v2, v3))
+
+    return pev, bases
+
+if case == 30:
+    N = 64
+    d = 22
+    h = 0.001
+    ks = pyKS(N, h, d)
+
+    req, ws, reqr, eq, eqr = loadRE('../../data/ks22Reqx64.h5', N)
+
+    k = 1
+    es, evt = KSstabEig(ks, eq[k])
+    ev = Tcopy(realve(evt))
+    aas = []
+    nn = 30
+    for i in range(nn):
+        a0 = eq[k] + 1e-5 * (i+1) * ev[0]
+        # a0 = rand(N-2) * 0.1
+        aa = ks.intg(a0, 150000, 100)
+        raa, ths = ks.redO2(aa)
+        aas.append(raa)
+
+    ns = -1
+    ii = [7, 8, 11]
+ 
+    doProj = True
+    if doProj:
+        pev, bases = getBases(ks, 'eq', eq[1], [6, 7, 10])
+        paas = []
+        for i in range(len(aas)):
+            paas.append(aas[i].dot(bases.T))
+
+        reqr = reqr.dot(bases.T)
+        eqr = eqr.dot(bases.T)
+
+        ii = [0, 1, 2]
+   
+    fig, ax = pl3d()
+    plotRE(ax, reqr, eqr, ii)
+    if doProj:
+        for i in range(nn):
+            ax.plot(paas[i][:ns, ii[0]], paas[i][:ns, ii[1]],
+                    paas[i][:ns, ii[2]], alpha=0.5)
+    else:
+        for i in range(nn):
+            ax.plot(aas[i][:ns, ii[0]], aas[i][:ns, ii[1]], aas[i][:ns, ii[2]],
+                    alpha=0.5)
+    ax3d(fig, ax, labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
+
+
+if case == 40:
     N = 64
     L = 22
-    poType = 'rpo'
-    aas = []
-    for i in range(0, 1):
-        poId = i + 1
-        a0, T, nstp, r, s = KSreadPO('../../data/ks22h001t120x64EV.h5', poType, poId)
-        h = T / nstp
-        ks = pyKS(N, h, L)
-        aa = ks.intg(a0, nstp, 5)
-        aa = ks.redO2(aa)[0]
-        aas.append(aa)
+    h = 0.001
+    ks = pyKS(N, h, L)
 
-    i1 = 0
-    i2 = 1
-    i3 = 3
-    fig = plt.figure(figsize=[8, 6])
-    ax = fig.add_subplot(111, projection='3d')
-    for i in range(len(aas)):
-        ax.plot(aas[i][:, i1], aas[i][:, i2], aas[i][:, i3], lw=1)
-    ax.set_xlabel(r'$b_1$', fontsize=30)
-    ax.set_ylabel(r'$b_2$', fontsize=30)
-    ax.set_zlabel(r'$c_2$', fontsize=30)
-    fig.tight_layout(pad=0)
-    plt.show(block=False)
+    req, ws, reqr, eq, eqr = loadRE('../../data/ks22Reqx64.h5', N)
+    types = ['rpo', 'ppo']
+    poIds = range(1, 51)
+    aas = loadPO('../../data/ks22h001t120x64EV.h5', types, poIds)
 
+    ii = [0, 3, 4]
+    # ii = [7, 8, 11]
+
+    doProj = True
+    if doProj:
+        pev, bases = getBases(ks, 'eq', eq[1], [6, 7, 10])
+        # pev, bases = getBases(ks, 'eq', eq[0], [2, 3, 5])
+        # pev, bases = getBases(ks, 'req', req[0], [0, 1, 3], ws[0])
+
+        paas = []
+        for i in range(len(aas)):
+            paas.append(aas[i].dot(bases.T))
+
+        reqr = reqr.dot(bases.T)
+        eqr = eqr.dot(bases.T)
+
+        ii = [0, 1, 2]
+
+    fig, ax = pl3d()
+    plotRE(ax, reqr, eqr, ii)
+    if doProj:
+        for i in range(len(aas)):
+            ax.plot(paas[i][:, ii[0]], paas[i][:, ii[1]], paas[i][:, ii[2]],
+                    alpha=0.2)
+        ax.plot(paas[0][:, ii[0]], paas[0][:, ii[1]], paas[0][:, ii[2]], c='k',
+                label=r'$rpo_{16.31}$')
+    else:
+        for i in range(len(aas)):
+            ax.plot(aas[i][:, ii[0]], aas[i][:, ii[1]], aas[i][:, ii[2]],
+                    alpha=0.2)
+    ax3d(fig, ax, labs=[r'$v_1$', r'$v_2$', r'$v_3$'])

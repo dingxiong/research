@@ -857,6 +857,9 @@ MatrixXd KS::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
     return veTilde;
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 std::pair<MatrixXd, VectorXd>
 KS::redSO2(const Ref<const MatrixXd> &aa){
     int p = 2;			// index of Fourier mode
@@ -875,8 +878,7 @@ KS::redSO2(const Ref<const MatrixXd> &aa){
     return std::make_pair(raa, ang);
 }
 
-MatrixXd KS::redRef(const Ref<const MatrixXd> &aa){
-
+MatrixXd KS::redR1(const Ref<const MatrixXd> &aa){
     int n = aa.rows();
     int m = aa.cols();
     assert( 0 == n%2);
@@ -892,6 +894,14 @@ MatrixXd KS::redRef(const Ref<const MatrixXd> &aa){
 	bb.row(i) = F.row(i).array() * F.row(0).array().pow(k);
     }
     MatrixXd cc = f2a(bb);
+    
+    return cc;
+}
+
+MatrixXd KS::redR2(const Ref<const MatrixXd> &cc){
+    int n = cc.rows();
+    int m = cc.cols();
+    assert( 0 == n%2);
 
     // step 2
     MatrixXd raa(cc);
@@ -906,10 +916,90 @@ MatrixXd KS::redRef(const Ref<const MatrixXd> &aa){
     return raa;
 }
 
+MatrixXd KS::redRef(const Ref<const MatrixXd> &aa){
+    return redR2(redR1(aa));
+}
+
 std::pair<MatrixXd, VectorXd>
 KS::redO2(const Ref<const MatrixXd> &aa){
     auto tmp = redSO2(aa);
     return std::make_pair(redRef(tmp.first), tmp.second);
+}
+
+
+MatrixXd KS::Gmat1(const Ref<const VectorXd> &x){
+    int n = x.size();
+    assert( n == N-2);
+    
+    // step 1
+    MatrixXd G(MatrixXd::Identity(n, n));
+    G(0, 0) = 2*x(0);
+    G(1, 1) = 2*x(0);
+    G(0, 1) = -2*x(1);
+    G(1, 0) = 2*x(1);
+    for (int i = 2; i < n/2; i += 2){
+	G(2*i, 2*i) = x(0);
+	G(2*i+1, 2*i+1) = x(0);
+	G(2*i, 2*i+1) = -x(1);
+	G(2*i+1, 2*i) = x(1);
+
+	G(2*i, 0) = x(2*i);
+	G(2*i, 1) = -x(2*i+1);
+	G(2*i+1, 0) = x(2*i+1);
+	G(2*i+1, 1) = x(2*i);
+    }
+
+    return G;
+}
+ 
+MatrixXd KS::Gmat2(const Ref<const VectorXd> &x){
+    int n = x.size();
+    assert( n == N-2 );
+
+    // step 2 
+    MatrixXd G(MatrixXd::Identity(n, n));
+    G(1, 1) = 2*x(1);
+    for (int i = 1; i < n/2; i++){
+	if( i % 2 == 1){
+	    G(2*i, 2*i) = x(1);
+	    G(2*i, 1) = x(2*i);
+	}
+	else {
+	    G(2*i+1, 2*i+1) = x(1);
+	    G(2*i+1, 1) = x(2*i+1); 
+	}
+    }
+
+    return G;
+} 
+
+std::pair<VectorXd, MatrixXd>
+KS::redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a){
+    auto tmp = redSO2(a);
+    MatrixXd &aH = tmp.first;
+    double th = tmp.second(0);
+    VectorXd tx = gTangent(aH);
+
+    int p = 2;
+
+    MatrixXd vep = Rotation(v, -th);
+    MatrixXd dot = vep.row(2*p-2) / (-p * aH(2*p-1));  
+    vep = vep - tx * dot;
+
+    return std::make_pair(aH, vep);
+}
+
+MatrixXd KS::redV2(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a){
+    auto tmp = redV(v, a);    
+    VectorXd &aH = tmp.first;
+    MatrixXd &vp = tmp.second;
+    
+    VectorXd aH1 = redR1(aH);
+    
+    MatrixXd G1 = Gmat1(aH);
+    MatrixXd G2 = Gmat2(aH1);
+    
+    return G2*G1*vp;
 }
 
 /*************************************************** 

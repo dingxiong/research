@@ -439,6 +439,29 @@ public:
 			      );
     }
 
+    bp::tuple PYredV(bn::ndarray v, bn::ndarray a){
+	int m, n;
+	getDims(v, m, n);
+	Map<MatrixXd> tmpv((double*)v.get_data(), n, m);
+	getDims(a, m, n);
+	Map<VectorXd> tmpa((double*)a.get_data(), n * m);
+
+	auto tmp = redV(tmpv, tmpa);
+	return bp::make_tuple(copy2bn(tmp.first), 
+			      copy2bn(tmp.second)
+			      );
+    }
+
+    bn::ndarray PYredV2(bn::ndarray v, bn::ndarray a){
+	int m, n;
+	getDims(v, m, n);
+	Map<MatrixXd> tmpv((double*)v.get_data(), n, m);
+	getDims(a, m, n);
+	Map<VectorXd> tmpa((double*)a.get_data(), n * m);
+
+	return copy2bn(redV2(tmpv, tmpa));
+    }
+
 };
 
 class pyKSM1 : public KSM1 {
@@ -515,6 +538,8 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def("redSO2", &pyKS::PYredSO2)
 	.def("redRef", &pyKS::PYredRef)
 	.def("redO2", &pyKS::PYredO2)
+	.def("redV", &pyKS::PYredV)
+	.def("redV2", &pyKS::PYredV2)
 	;
 
     bp::class_<pyKSM1, bp::bases<KSM1> >("pyKSM1", bp::init<int, double, double>())

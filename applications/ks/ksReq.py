@@ -87,38 +87,6 @@ def loadRE(fileName, N):
     return req, ws, reqr, eq, eqr
 
 
-def loadPO(fileName, poIds):
-    aas = []
-    types = ['rpo', 'ppo']
-    for i in range(2):
-        poType = types[i]
-        for poId in poIds[i]:
-            a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
-            h = T / nstp
-            ks = pyKS(N, h, 22)
-            aa = ks.intg(a0, nstp, 5)
-            aa = ks.redO2(aa)[0]
-            aas.append(aa)
-    
-    return aas
-
-
-def loadPO2(fileName, poIds, bases, x0):
-    aas = []
-    types = ['rpo', 'ppo']
-    for i in range(2):
-        poType = types[i]
-        for poId in poIds[i]:
-            a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
-            h = T / nstp
-            ks = pyKS(N, h, 22)
-            aa = ks.intg(a0, nstp, 5)
-            aa = ks.redO2(aa)[0]
-            aas.append(aa.dot(bases.T) - x0)
-    
-    return aas
-
-
 def plotRE(ax, reqr, eqr, ii):
     c1 = ['r', 'b']
     for i in range(2):
@@ -139,6 +107,40 @@ def plotRE2d(ax, reqr, eqr, ii):
     for i in range(3):
         ax.scatter(eqr[i, ii[0]], eqr[i, ii[1]], c=c2[i], s=70,
                    edgecolors='none', label='E'+str(i+1))
+
+
+def loadPO(fileName, poIds):
+    aas = []
+    types = ['rpo', 'ppo']
+    for i in range(2):
+        poType = types[i]
+        for poId in poIds[i]:
+            a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
+            h = T / nstp
+            ks = pyKS(N, h, 22)
+            aa = ks.intg(a0, nstp, 5)
+            aa = ks.redO2(aa)[0]
+            aas.append(aa)
+    
+    return aas
+
+
+def loadPO2(fileName, poIds, bases, x0):
+    aas = []
+    pas = []
+    types = ['rpo', 'ppo']
+    for i in range(2):
+        poType = types[i]
+        for poId in poIds[i]:
+            a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
+            h = T / nstp
+            ks = pyKS(N, h, 22)
+            aa = ks.intg(a0, nstp, 5)
+            aa = ks.redO2(aa)[0]
+            aas.append(aa)
+            pas.append(aa.dot(bases.T) - x0)
+    
+    return aas, pas
 
 
 def getBases(ks, etype, a, ii, w=0):
@@ -269,20 +271,21 @@ def ergoPoinc2(ks, bases, x0, theta1, theta2):
     return paas, poinc, poincf, poincRaw
 
     
-def poPoinc(fileName, poIdsm, bases, x0, theta, si):
-    aas = loadPO2(fileName, poIds, bases, x0)
+def poPoinc(fileName, poIdsm, bases, x0, theta1, theta2):
+    aas, pas = loadPO2(fileName, poIds, bases, x0)
     poinc = np.zeros((0, 3))
+    poincf = np.zeros((0, 3))
+    poincRaw = np.zeros((0, N-2))
     nums = []
-    for i in range(len(aas)):
-        pc = getPoinc(aas[i], theta)
-        if si == 'p':
-            pc = pc[pc[:, 1] >= 0]
-        else:
-            pc = pc[pc[:, 1] <= 0]
+    for i in range(len(pas)):
+        pc, pcf, coe, ixs = getPoinc2(pas[i], theta1, theta2)
         nums.append(pc.shape[0])
+        raw = (coe * aas[i][ixs].T + (1-coe) * aas[i][ixs+1].T).T
+        poincRaw = np.vstack((poincRaw, raw))
         poinc = np.vstack((poinc, pc))
-        
-    return aas, poinc, np.array(nums)
+        poincf = np.vstack((poincf, pcf))
+
+    return pas, poinc, poincf, poincRaw, np.array(nums)
 
 if case == 30:
     """
@@ -614,14 +617,50 @@ if case == 90:
    
     fig, ax = pl2d(labs=[r'$v_1$', r'$v_2$'])
     plotRE2d(ax, reqr, eqr, ii)
-    ax.plot(paas[:, ii[0]], paas[:, ii[1]], alpha=0.5)
+    ax.plot(paas[:, ii[0]], paas[:, ii[1]], c='b', alpha=0.5)
     ax.scatter(poincf[:, 0], poincf[:, 1], c='r', edgecolors='none')
     ax2d(fig, ax)
 
     fig, ax = pl2d(size=[8, 3], labs=[None, 'z'], axisLabelSize=20,
                    ratio='equal')
-    ax.scatter(poinc[:, 1], poincf[:, 2], c='r', edgecolors='none')
+    ax.scatter(poinc[:, 1], poinc[:, 2], c='r', edgecolors='none')
     ax2d(fig, ax)
     
     
-    
+if case == 100:
+    """
+    New version to get Poincare points from pos
+    """
+    N = 64
+    d = 22
+    h = 0.001
+    ks = pyKS(N, h, d)
+
+    req, ws, reqr, eq, eqr = loadRE('../../data/ks22Reqx64.h5', N)
+    pev, bases = getBases(ks, 'eq', eq[1], [6, 7, 10])
+ 
+    reqr = reqr.dot(bases.T)
+    eqr = eqr.dot(bases.T)
+    reqr -= eqr[1]
+    x0 = eqr[1].copy()
+    eqr -= eqr[1]
+
+    i = 100
+    poIds = [range(1, i+1), range(1, i+1)]
+    aas, poinc, poincf, poincRaw, nums = poPoinc('../../data/ks22h001t120x64EV.h5', poIds,
+                                                 bases, x0,  2*np.pi/6, 2.0/3*np.pi/6)
+    ii = [0, 1, 2]
+   
+    fig, ax = pl2d(labs=[r'$v_1$', r'$v_2$'])
+    plotRE2d(ax, reqr, eqr, ii)
+    for i in range(len(aas)):
+        ax.plot(aas[i][:, ii[0]], aas[i][:, ii[1]], c='gray', alpha=0.2)
+    ax.scatter(poincf[:, 0], poincf[:, 1], c='r', edgecolors='none')
+    ax2d(fig, ax)
+
+    fig, ax = pl2d(size=[8, 3], labs=[None, 'z'], axisLabelSize=20,
+                   ratio='equal')
+    ax.scatter(poinc[:, 1], poinc[:, 2], c='r', edgecolors='none')
+    ax2d(fig, ax)
+
+    plot1dfig(nums)

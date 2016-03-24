@@ -10,25 +10,105 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
+import matplotlib.animation as animation
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 ##################################################
 #               Plot related                     #
 ##################################################
 
 
-def pl3d(size=[8, 6]):
+def pl3d(size=[8, 6], labs=['x', 'y', 'z'], axisLabelSize=25,
+         xlim=None, ylim=None, zlim=None, isBlack=False):
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111, projection='3d')
+
+    if labs[0] is not None:
+        ax.set_xlabel(labs[0], fontsize=axisLabelSize)
+    if labs[1] is not None:
+        ax.set_ylabel(labs[1], fontsize=axisLabelSize)
+    if labs[2] is not None:
+        ax.set_zlabel(labs[2], fontsize=axisLabelSize)
+
+    if xlim is not None:
+        ax.set_xlim(xlim)
+    if ylim is not None:
+        ax.set_ylim(ylim)
+    if zlim is not None:
+        ax.set_zlim(zlim)
+
+    if isBlack:
+        fig.patch.set_facecolor('black')
+        ax.patch.set_facecolor('black')
+
     return fig, ax
 
 
-def ax3d(fig, ax,  labs=['x', 'y', 'z'], axisLabelSize=25):
-    ax.set_xlabel(labs[0], fontsize=axisLabelSize)
-    ax.set_ylabel(labs[1], fontsize=axisLabelSize)
-    ax.set_zlabel(labs[2], fontsize=axisLabelSize)
+def ax3d(fig, ax, doBlock=False):
     fig.tight_layout(pad=0)
-    plt.legend()
-    plt.show(block=False)
+    ax.legend()
+    plt.show(block=doBlock)
+
+
+def pl2d(size=[8, 6], labs=['x', 'y'], axisLabelSize=25,
+         xlim=None, ylim=None, isBlack=False, ratio='auto'):
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111)
+    
+    if labs[0] is not None:
+        ax.set_xlabel(labs[0], fontsize=axisLabelSize)
+    if labs[1] is not None:
+        ax.set_ylabel(labs[1], fontsize=axisLabelSize)
+
+    if xlim is not None:
+        ax.set_xlim(xlim)
+    if ylim is not None:
+        ax.set_ylim(ylim)
+
+    if isBlack:
+        fig.patch.set_facecolor('black')
+        ax.patch.set_facecolor('black')
+
+    ax.set_aspect(ratio)
+    
+    return fig, ax
+
+
+def ax2d(fig, ax, doBlock=False):
+    fig.tight_layout(pad=0)
+    ax.legend()
+    plt.show(block=doBlock)
+
+
+def addRect(ax, verts, fc='b', alpha=0.5, lw=1):
+    ax.add_collection3d(
+        Poly3DCollection(verts, facecolors=fc, zorder=10,
+                         linewidths=lw, alpha=alpha)
+    )
+    
+
+def makeMovie(data):
+    fig, ax = pl3d()
+    frame, = ax.plot([], [], [], c='red', ls='-', lw=1, alpha=0.5)
+    pts, = ax.plot([], [], [], 'co', lw=3)
+
+    def anim(i):
+        j = min(i, data.shape[0])
+        frame.set_data(data[:j, 0], data[:j, 1])
+        frame.set_3d_properties(data[:j, 2])
+        pts.set_data(data[j, 0], data[j, 1])
+        pts.set_3d_properties(data[j, 2])
+        
+        ax.view_init(30, 0.5 * i)
+        return frame, pts
+
+    ani = animation.FuncAnimation(fig, anim, frames=data.shape[0],
+                                  interval=0, blit=False, repeat=False)
+    # ax3d(fig, ax)
+    ax.legend()
+    fig.tight_layout(pad=0)
+    # ani.save('ani.mp4', dpi=200, fps=30, extra_args=['-vcodec', 'libx264'])
+    plt.show()
 
 
 def plot1dfig(x, c='r', lw=1, ls='-', marker=None, labs=['x', 'y'],
@@ -54,7 +134,7 @@ def plot2dfig(x, y, c='r', lw=1, ls='-', labs=['x', 'y'],
     """
     plot 2d figures in genereal
     """
-    fig = plt.figure(figsizbe=size)
+    fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
     ax.plot(x, y, c=c, lw=lw, ls=ls)
     ax.set_xlabel(labs[0], fontsize=axisLabelSize)
@@ -64,13 +144,14 @@ def plot2dfig(x, y, c='r', lw=1, ls='-', labs=['x', 'y'],
 
 
 def scatter2dfig(x, y, s=20, marker='o', fc='r', ec='none', labs=['x', 'y'],
-                 size=[8, 6], axisLabelSize=25):
+                 size=[8, 6], axisLabelSize=25, ratio='auto'):
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
     ax.scatter(x, y, s=s, marker=marker,
                facecolor=fc, edgecolors=ec)
     ax.set_xlabel(labs[0], fontsize=axisLabelSize)
     ax.set_ylabel(labs[1], fontsize=axisLabelSize)
+    ax.set_aspect(ratio)
     fig.tight_layout(pad=0)
     plt.show(block=False)
 
@@ -974,3 +1055,21 @@ def normR(x):
     the norm of each row of a matrix
     """
     return norm(x, axis=1)
+
+
+def int2p(x, y, k=0):
+    """
+    interpolate two points
+    """
+    c1 = y[k] / (y[k] - x[k])
+    c2 = -x[k] / (y[k] - x[k])
+    return c1 * x + c2 * y, c1
+
+
+def rotz(x, y, th):
+    """
+    rotate by z axis
+    """
+    c = np.cos(th)
+    s = np.sin(th)
+    return c * x - s * y, s * x + c * y

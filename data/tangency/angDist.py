@@ -437,8 +437,6 @@ if situation == 7:
 
     a0H = ks.orbitToSlice(a0)[0]
 
-    
-
 if situation == 8:
     """
     There seems periodic peaks on top of the angle

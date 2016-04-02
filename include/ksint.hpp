@@ -30,6 +30,7 @@ class KS{
 public:
     typedef std::complex<double> dcp;
 
+    //////////////////////////////////////////////////////////////////////
     /* member variables */
     const int N;
     const double d;
@@ -37,7 +38,8 @@ public:
     ArrayXd K, L, E, E2, Q, f1, f2, f3;
     ArrayXcd G;
     ArrayXXcd jG;
-  
+    
+    //////////////////////////////////////////////////////////////////////
     /* constructor, destructor, copy assignment */
     KS(int N = 32, double h = 0.25, double d = 22);
     explicit KS(const KS &x);
@@ -140,7 +142,10 @@ public:
     redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
     MatrixXd redV2(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
 
-protected:
+    void
+    intg2(const ArrayXd &a0, const double tend, const double h, const int skip_rate);
+    
+    //protected:
     enum { M = 16 }; // number used to approximate the complex integral.
   
     struct KSfft{ // nested class for fft/ifft.      
@@ -196,6 +201,24 @@ struct KSEqJJF {
     operator()(const VectorXd &x) {
 	return ks.calEqJJF(x);
     }	
+};
+
+/*============================================================
+ *                       Class : Nonliear part of KS 
+ *============================================================*/
+template<class Ary>
+struct KSNL {
+    KS &ks;
+    KSNL(KS &ks_) : ks(ks_) {}
+    
+    ArrayXd operator()(double t, const ArrayXd &x){
+	ks.Fv.vc1 = x;
+	ks.ifft(ks.Fv);
+	ks.Fv.vr2 = ks.Fv.vr2 * ks.Fv.vr2;
+	ks.fft(ks.Fv);
+       
+	return ks.Fv.vc3 * ks.G; 
+    }
 };
 
 #endif	/* KSINT_H */

@@ -1,6 +1,7 @@
 #include "ksint.hpp"
 #include "denseRoutines.hpp"
 #include "iterMethod.hpp"
+#include "ETDRK4.hpp"
 #include <cmath>
 #include <iostream>
 
@@ -1072,4 +1073,18 @@ KS::f2a(const Ref<const MatrixXcd> &f){
     }
     
     return a;
+}
+
+
+// std::pair<VectorXd, MatrixXd>
+void
+KS::intg2(const ArrayXd &a0, const double tend, const double h, const int skip_rate){
+    
+    assert( N-2 == a0.size());
+    ArrayXcd u0 = R2C(a0);
+    
+    KSNL<ArrayXcd> nl(*this);
+    ETDRK4<ArrayXd, ArrayXcd, MatrixXcd, KSNL> etdrk4(L, nl, true);  
+    
+    auto tmp = etdrk4.intg(0, u0, tend, h, skip_rate);
 }

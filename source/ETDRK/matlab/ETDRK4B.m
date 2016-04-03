@@ -4,7 +4,7 @@ function [tt, uu, duu, hs, NReject, NevaCoe] = ETDRK4B(L, NL, t0, u0, tend, h, s
 
 [E, E2, a21, a31, a32, a41, a43, b1, b2, b4] = ETDRK4Bcoe(L, h, isReal);
 
-Nt = ceil(tend-t0)/h;
+Nt = ceil((tend-t0)/h);
 N = length(u0);
 M = floor(Nt / skip_rate) + 1;
 uu = zeros(N, M);
@@ -27,7 +27,7 @@ while t < tend
     
     if t + h > tend
         h = tend - t;
-        [E, E2, Q, b1, b2, b4] = ETDRK4coe(L, h, isReal);
+        [E, E2, a21, a31, a32, a41, a43, b1, b2, b4] = ETDRK4Bcoe(L, h, isReal);
         NevaCoe = NevaCoe + 1;
     end
     

@@ -10,6 +10,7 @@
 #include <tuple>
 #include <utility>
 #include <Eigen/Dense>
+#include "ETDRK4.hpp"
 //#include "iterMethod.hpp"
 
 using Eigen::ArrayXXcd; 
@@ -142,8 +143,8 @@ public:
     redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
     MatrixXd redV2(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
 
-    void
-    intg2(const ArrayXd &a0, const double tend, const double h, const int skip_rate);
+    std::pair<VectorXd, ArrayXXd>
+    etd(const ArrayXd &a0, const double tend, const double h, const int skip_rate, int method);
     
     //protected:
     enum { M = 16 }; // number used to approximate the complex integral.
@@ -173,6 +174,8 @@ public:
     void freeFFT(KSfft &f);
     void fft(KSfft &f);
     void ifft(KSfft &f);
+    
+
 };
 
 /*============================================================
@@ -203,6 +206,7 @@ struct KSEqJJF {
     }	
 };
 
+
 /*============================================================
  *                       Class : Nonliear part of KS 
  *============================================================*/
@@ -210,8 +214,7 @@ template<class Ary>
 struct KSNL {
     KS &ks;
     KSNL(KS &ks_) : ks(ks_) {}
-    
-    ArrayXd operator()(double t, const ArrayXd &x){
+    ArrayXcd operator()(double t, const ArrayXcd &x){
 	ks.Fv.vc1 = x;
 	ks.ifft(ks.Fv);
 	ks.Fv.vr2 = ks.Fv.vr2 * ks.Fv.vr2;

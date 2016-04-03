@@ -3,14 +3,14 @@ global g;
 N = 128;
 x = 32*pi*(1:N)'/N;
 u = cos(x/16).*(1+sin(x/16));
-v = fft(u);
+v = fft(u); v(2) = 1i*abs(v(2));
 
 k = [0:N/2-1 0 -N/2+1:-1]'/16; % wave numbers
 L = k.^2 - k.^4; % Fourier multipliers
 g = -0.5i*k;
 
 t0 = 0;
-tend = 150;
+tend = 1550;
 u0 = v;
 h = 1/1; % time step
 isReal = true;
@@ -23,7 +23,7 @@ mue = 1.25;
 muc = 0.85;
 doAdapt = true;
 
-[tt, uu, duu, hs, NReject, NevaCoe] = ETDRK4B(L, @NL, t0, u0, tend, h, skip_rate, isReal, ...
+[tt, uu, duu, hs, NReject, NevaCoe] = ETDRK4B(L, @NL4, t0, u0, tend, h, skip_rate, isReal, ...
                                              doAdapt, rtol, nu, mumax, mumin, mue, muc);
 Y = real(ifft(uu, N, 1));
 

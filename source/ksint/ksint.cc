@@ -1,7 +1,6 @@
 #include "ksint.hpp"
 #include "denseRoutines.hpp"
 #include "iterMethod.hpp"
-#include "ETDRK4.hpp"
 #include <cmath>
 #include <iostream>
 
@@ -29,6 +28,7 @@ KS::KS(int N, double h, double d) : N(N), h(h), d(d) {
     initFFT(jFa, N-1); 
     initFFT(jFb, N-1);
     initFFT(jFc, N-1);
+    
 }
 
 KS::KS(const KS &x) : N(x.N), d(x.d), h(x.h){};
@@ -1076,15 +1076,20 @@ KS::f2a(const Ref<const MatrixXcd> &f){
 }
 
 
-// std::pair<VectorXd, MatrixXd>
-void
-KS::intg2(const ArrayXd &a0, const double tend, const double h, const int skip_rate){
+////////////////////////////////////////////////////////////////////////////////
+// edtrk4 integration
+
+std::pair<VectorXd, ArrayXXd>
+KS::etd(const ArrayXd &a0, const double tend, const double h, const int skip_rate, int method){
     
     assert( N-2 == a0.size());
     ArrayXcd u0 = R2C(a0);
     
     KSNL<ArrayXcd> nl(*this);
-    ETDRK4<ArrayXd, ArrayXcd, MatrixXcd, KSNL> etdrk4(L, nl, true);  
+    ETDRK4<ArrayXcd, ArrayXXcd, KSNL> etdrk4(L, nl);
+    etdrk4.Method = method;
     
     auto tmp = etdrk4.intg(0, u0, tend, h, skip_rate);
+
+    return std::make_pair(tmp.first, C2R(tmp.second));
 }

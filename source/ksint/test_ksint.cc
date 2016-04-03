@@ -3,16 +3,18 @@
  */
 
 #include "ksintM1.hpp"
+#include "denseRoutines.hpp"
 #include "myH5.hpp"
 #include <Eigen/Dense>
 #include <iostream>
 using namespace std;
 using namespace Eigen;
 using namespace MyH5;
+using namespace denseRoutines;
 
 int main(){
     /// -----------------------------------------------------
-    switch (13){
+    switch (14){
     
     case 1:
 	{
@@ -245,6 +247,24 @@ int main(){
 	break;
     }
 	
+    case 14: {		       /* test the time adaptive integrator */
+	std::string file = "../../data/ks22h001t120x64.h5";
+	std::string poType = "rpo";
+
+	MatrixXd a0;
+	double T, r, s;
+	int nstp;
+	std::tie(a0, T, nstp, r, s) = KSreadRPO(file, poType, 1);
+	
+	KS ks(64, 0.01, 22);
+        auto tmp = ks.etd(a0, T, 0.01, 1, 2);
+	
+	savetxt("a.dat", tmp.second);
+
+	break;
+    }
+
+
     default :
 	{
 	    cout << "please indicate the correct index." << endl;

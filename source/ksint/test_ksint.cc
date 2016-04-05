@@ -1,7 +1,7 @@
 /* to compile:
- * h5c++ test_ksint.cc -std=c++0x -lksint -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3
+ * h5c++ test_ksint.cc -std=c++0x -lksint -lKSETD -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3 -O3
  */
-
+#include "KSETD.hpp"
 #include "ksintM1.hpp"
 #include "denseRoutines.hpp"
 #include "myH5.hpp"
@@ -15,18 +15,19 @@ using namespace denseRoutines;
 int main(){
     /// -----------------------------------------------------
     switch (14){
-    
+# if 0	
     case 1:
 	{
 	    ArrayXd a0 = ArrayXd::Ones(30) * 0.1;
 	    KS ks(32, 0.1, 22);
 	    ArrayXXd aa;
-	    for (int i = 0; i < 1000; i++) {
+	    for (int i = 0; i < 1; i++) {
 		aa = ks.intg(a0, 2000, 1);
 	    }
-	    cout << aa.rightCols(1) << endl << endl;
+	    //cout << aa.rightCols(1) << endl << endl;
 	    break;
 	}
+
     case 2 :
 	{
 	    ArrayXd a0 = ArrayXd::Ones(30) * 0.1;
@@ -71,7 +72,7 @@ int main(){
 
 	    break;
 	}
-# if 0	
+
     case 6: {			// test Eq
 
 	std::string file = "../../data/ksReqx32.h5";
@@ -187,7 +188,7 @@ int main(){
 
 	break;
     }
-#endif
+
 	
     case 11 : {		/* calculate the stability exponents of eq */
 	std::string file = "../../data/ks22Reqx64.h5";
@@ -246,8 +247,9 @@ int main(){
 
 	break;
     }
-	
-    case 14: {		       /* test the time adaptive integrator */
+#endif
+    case 14: {			/* test the new etdrk4 integrator */
+
 	std::string file = "../../data/ks22h001t120x64.h5";
 	std::string poType = "rpo";
 
@@ -256,14 +258,15 @@ int main(){
 	int nstp;
 	std::tie(a0, T, nstp, r, s) = KSreadRPO(file, poType, 1);
 	
-	KS ks(64, 0.01, 22);
-        auto tmp = ks.etd(a0, T, 0.01, 1, 2);
+	KSETD ks(64, 22);
+	ks.etdrk4->rtol = 1e-10;
+	auto tmp = ks.etd(a0, T, 0.01, 1, 2, true);
+	VectorXd x = ks.etdrk4->duu;
+	cout << x.tail(x.size()-1).cwiseAbs().minCoeff() << endl;
+	//savetxt("a.dat", x);
 	
-	savetxt("a.dat", tmp.second);
-
 	break;
     }
-
 
     default :
 	{

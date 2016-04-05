@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iostream>
 #include <Eigen/Dense>
+#include "denseRoutines.hpp"
 
 using std::cout;
 using std::endl;
@@ -12,6 +13,7 @@ using Eigen::ArrayXXcd;
 using Eigen::VectorXd;
 using Eigen::ArrayXd;
 
+using namespace denseRoutines;
 //////////////////////////////////////////////////////////////////////////////////
 //                        Real ETDRK4 class
 //////////////////////////////////////////////////////////////////////////////////
@@ -135,12 +137,13 @@ intg(const double t0, const Ary &u0, const double tend, const double h0,
 	}
 
 	oneStep(u, unext, du, t, h);
+	NCallF += 5;		
 	double s = nu * std::pow(rtol/du, 1.0/4);
 	double mu = adaptTs(doChange, doAccept, s);
 	
 	if (doAccept){
 	    t += h;
-	    u = unext;
+	    u = unext; 
 	    if ( (i+1) % skip_rate == 0 ) {
 		if (num >= tt.size() ) addSpace(tt, uu);
 		saveState(tt, uu, t, u, du, h, num++);
@@ -157,9 +160,46 @@ intg(const double t0, const Ary &u0, const double tend, const double h0,
 	}
     }
     
-
+    // duu = duu.head(num) has aliasing problem 
+    hs.conservativeResize(num);
+    duu.conservativeResize(num);
     return std::make_pair(tt.head(num), uu.leftCols(num));
 }
+
+template<class Ary, class Mat, template<class> class NL>
+std::pair<VectorXd, Mat>
+ETDRK4<Ary, Mat, NL>::
+intgC(const double t0, const Ary &u0, const double tend, const double h, 
+      const int skip_rate){
+    
+    calCoe(h);
+
+    const int N = u0.size();    
+    const int Nt = (int)round((tend-t0)/h);
+    const int M = Nt /skip_rate + 1;
+
+    Mat uu(N, M);
+    VectorXd tt(M);
+    uu.col(0) = u0;
+    tt(0) = t0;
+    initState(M);
+
+    Ary unext;
+    double du;
+    double t = t0;
+    Ary u = u0;
+    int num = 1;
+    for(int i = 0; i < Nt; i++){
+	oneStep(u, unext, du, t, h);
+	NCallF += 5;
+	t += h;
+	u = unext;
+	if ( (i+1)%skip_rate == 0 )saveState(tt, uu, t, u, du, h, num++);
+    }
+
+    return std::make_pair(tt, uu);
+}
+
 
 
 template<class Ary, class Mat, template<class> class NL>
@@ -207,40 +247,6 @@ adaptTs(bool &doChange, bool &doAccept, const double s){
 
 
 template<class Ary, class Mat, template<class> class NL>
-std::pair<VectorXd, Mat>
-ETDRK4<Ary, Mat, NL>::
-intgC(const double t0, const Ary &u0, const double tend, const double h, 
-      const int skip_rate){
-
-    calCoe(h);
-
-    const int N = u0.size();    
-    const int Nt = (int)round((tend-t0)/h);
-    const int M = Nt /skip_rate + 1;
-
-    Mat uu(N, M);
-    VectorXd tt(M);
-    uu.col(0) = u0;
-    tt(0) = t0;
-    initState(M);
-
-    Ary unext;
-    double du;
-    double t = t0;
-    Ary u = u0;
-    int num = 1;
-    for(int i = 0; i < Nt; i++){
-	oneStep(unext, du, t, h);
-	t += h;
-	u = unext;
-	if ( (i+1)%skip_rate == 0 )saveState(t, u, du, num++);
-    }
-
-    return std::make_pair(tt, uu);
-}
-
-
-template<class Ary, class Mat, template<class> class NL>
 void 
 ETDRK4<Ary, Mat, NL>::
 initState(const int M){
@@ -248,8 +254,10 @@ initState(const int M){
     NReject = 0;
     NCallF = 0;
     
-    hs = VectorXd(M);
-    duu = VectorXd(M);
+    hs.resize(M);
+    duu.resize(M);
+    //hs = VectorXd(M);
+    //duu = VectorXd(M);
 }
 
 
@@ -286,6 +294,7 @@ oneStep(Ary &u, Ary &unext, double &du, double t, double h){
 	Ary N5 = nl(t+h, U5);
 
 	du = (b4*(N5-N4)).matrix().norm() / U5.matrix().norm();
+
     }
     else {
 	Ary N1 = nl(t, u);
@@ -304,6 +313,7 @@ oneStep(Ary &u, Ary &unext, double &du, double t, double h){
 	Ary N5 = nl(t+h, U5);
 
 	du = (b4*(N5-N4)).matrix().norm() / U5.matrix().norm();
+
     }
 }
 

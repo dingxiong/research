@@ -9,8 +9,10 @@
 #include <complex>
 #include <tuple>
 #include <utility>
+#include <cmath>
+#include <memory>
 #include <Eigen/Dense>
-#include "ETDRK4.hpp"
+#include "myfft.hpp"
 //#include "iterMethod.hpp"
 
 using Eigen::ArrayXXcd; 
@@ -40,6 +42,7 @@ public:
     ArrayXcd G;
     ArrayXXcd jG;
     
+
     //////////////////////////////////////////////////////////////////////
     /* constructor, destructor, copy assignment */
     KS(int N = 32, double h = 0.25, double d = 22);
@@ -142,11 +145,9 @@ public:
     std::pair<VectorXd, MatrixXd>
     redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
     MatrixXd redV2(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
-
-    std::pair<VectorXd, ArrayXXd>
-    etd(const ArrayXd &a0, const double tend, const double h, const int skip_rate, int method);
     
-    //protected:
+    protected:
+
     enum { M = 16 }; // number used to approximate the complex integral.
   
     struct KSfft{ // nested class for fft/ifft.      
@@ -206,22 +207,5 @@ struct KSEqJJF {
     }	
 };
 
-
-/*============================================================
- *                       Class : Nonliear part of KS 
- *============================================================*/
-template<class Ary>
-struct KSNL {
-    KS &ks;
-    KSNL(KS &ks_) : ks(ks_) {}
-    ArrayXcd operator()(double t, const ArrayXcd &x){
-	ks.Fv.vc1 = x;
-	ks.ifft(ks.Fv);
-	ks.Fv.vr2 = ks.Fv.vr2 * ks.Fv.vr2;
-	ks.fft(ks.Fv);
-       
-	return ks.Fv.vc3 * ks.G; 
-    }
-};
 
 #endif	/* KSINT_H */

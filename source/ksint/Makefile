@@ -13,6 +13,10 @@ SOURCE = ksint.cc ksintM1.cc
 SHARED = libksint.so
 STATIC = libksint.a
 
+ETD_SOURCE = KSETD.cc
+ETD_SHARED = libKSETD.so
+ETD_STATIC = libKSETD.a
+
 REFINE_SOURCE = ksrefine.cc
 REFINE_SHARED = libksrefine.so
 REFINE_STATIC = libksrefine.a
@@ -25,6 +29,7 @@ FEFV_STATIC = libksFEFV.a
 
 all : $(SHARED) $(STATIC) $(REFINE_SHARED) $(REFINE_STATIC) $(DIM_STATIC) $(FEFV_STATIC)
 int : $(SHARED) $(STATIC)
+etd : $(ETD_SHARED) $(ETD_STATIC)
 dim : $(DIM_STATIC)
 fefv : $(FEFV_STATIC)
 
@@ -33,6 +38,13 @@ $(SHARED): $(SOURCE)
 $(SOURCE:.cc=.o) : $(SOURCE)
 	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
 $(STATIC): $(SOURCE:.cc=.o)
+	$(AR) crs $@ $^
+
+$(ETD_SHARED): $(ETD_SOURCE)
+	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
+$(ETD_SOURCE:.cc=.o) : $(ETD_SOURCE)
+	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
+$(ETD_STATIC): $(ETD_SOURCE:.cc=.o)
 	$(AR) crs $@ $^
 
 $(REFINE_SHARED)$ : $(REFINE_SOURCE)

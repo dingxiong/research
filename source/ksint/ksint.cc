@@ -14,7 +14,7 @@ using namespace iterMethod;
  *============================================================*/
 
 /*-------------------- constructor, destructor -------------------- */
-KS::KS(int N, double h, double d) : N(N), h(h), d(d) {
+KS::KS(int N, double h, double d) : N(N), h(h), d(d){
     /* calcute various coefficients used for the integrator */
     ksInit();
 
@@ -29,6 +29,7 @@ KS::KS(int N, double h, double d) : N(N), h(h), d(d) {
     initFFT(jFb, N-1);
     initFFT(jFc, N-1);
     
+    // nl = std::make_shared<KSNL<ArrayXcd>>(N, G);
 }
 
 KS::KS(const KS &x) : N(x.N), d(x.d), h(x.h){};
@@ -49,7 +50,7 @@ KS::~KS(){
     freeFFT(jFc);
 
     // comment out when trying to compile interface for Matlab/Python 
-    // fftw_cleanup(); 
+    fftw_cleanup(); 
 }
 
 /*------------------- member methods ------------------ */
@@ -1075,21 +1076,3 @@ KS::f2a(const Ref<const MatrixXcd> &f){
     return a;
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-// edtrk4 integration
-
-std::pair<VectorXd, ArrayXXd>
-KS::etd(const ArrayXd &a0, const double tend, const double h, const int skip_rate, int method){
-    
-    assert( N-2 == a0.size());
-    ArrayXcd u0 = R2C(a0);
-    
-    KSNL<ArrayXcd> nl(*this);
-    ETDRK4<ArrayXcd, ArrayXXcd, KSNL> etdrk4(L, nl);
-    etdrk4.Method = method;
-    
-    auto tmp = etdrk4.intg(0, u0, tend, h, skip_rate);
-
-    return std::make_pair(tmp.first, C2R(tmp.second));
-}

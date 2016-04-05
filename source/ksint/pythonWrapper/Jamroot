@@ -17,12 +17,13 @@ variant release_assert : <optimization>speed <inlining>full <debug-symbols>off <
 lib np : : <name>boost_numpy <file>/usr/local/home/xiong/apps/BoostNumpy/lib/libboost_numpy.so ;
 lib fftw3 : : <name>fftw3 <file>/usr/lib/x86_64-linux-gnu/libfftw3.so ;
 lib dense : : <name>denseRoutines <file>/usr/local/home/xiong/00git/research/lib/libdenseRoutines.so ;
+lib myfft : : <name>myfft_clean <file>/usr/local/home/xiong/00git/research/lib/libmyfft_clean.so ;
 lib iter : : <name>iterMethod <file>/usr/local/home/xiong/00git/research/lib/libiterMethod.so ;
 
-python-extension py_ks : py_ks.cc np fftw3 ../ksint.cc ../ksintM1.cc dense iter
-		 : <variant>release_assert <optimization>speed 
-		 : <link>shared <cxxflags>-std=c++11 <cxxflags>-lffw3 <cxxflags>-lm
-		 ;
+python-extension py_ks : py_ks.cc  np fftw3 ../ksint.cc ../ksintM1.cc ../KSETD.cc ../../myfft/myfft.cc dense iter
+: <variant>release_assert <optimization>speed 
+: <link>shared <cxxflags>"-std=c++11 -DCLEAN"
+;
 
 
 install py_extension : py_ks : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;

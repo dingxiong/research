@@ -5,6 +5,7 @@ using namespace sparseRoutines;
 using namespace denseRoutines;
 using namespace Eigen;
 using namespace std;
+using namespace MyFFT;
 
 //////////////////////////////////////////////////////////////////////
 //                        Class Cqcgl1d                             //

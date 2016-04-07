@@ -38,10 +38,10 @@ lib myfft_threads : : <name>myfft_clean_threads <file>/usr/local/home/xiong/00gi
 lib cqcgl : : <name>cqcgl1d <file>/usr/local/home/xiong/00git/research/lib/libcqcgl1d.so ;
 
 
-choice = 3 ;
+choice = 2 ;
 
 if $(choice) = 1 {		# single thread case
-  python-extension py_cqcgl1d : py_cqcgl1d.cc np sparse dense fftw3 iter ped ../../myfft/myfft.cc ../cqcgl1d.cc ../cqcglRPO.cc
+  python-extension py_cqcgl1d : py_cqcgl1d.cc np sparse dense fftw3 iter ped ../../myfft/myfft.cc ../cqcgl1d.cc ../cqcgl.cc ../CqcglETD.cc
   : <variant>release_assert <optimization>speed
   : <link>shared <cxxflags>"-std=c++11 -DGMRES_PRINT -DINB_PRINT -DCLEAN" 
   ;
@@ -51,19 +51,10 @@ if $(choice) = 1 {		# single thread case
 }
 
 else if $(choice) = 2 {		# multi fftw threads case
-  python-extension py_cqcgl1d_threads : py_cqcgl1d.cc np sparse dense fftw3 fftw3_threads iter ped ../../myfft/myfft.cc ../cqcglRPO.cc ../cqcgl1d.cc 
+  python-extension py_cqcgl1d_threads : py_cqcgl1d.cc np sparse dense fftw3 fftw3_threads iter ped ../../myfft/myfft.cc ../cqcgl.cc ../cqcgl1d.cc ../CqcglETD.cc
   : <variant>release_assert <optimization>speed 
   : <link>shared <cxxflags>"-std=c++11 -DGMRES_PRINT -DINB_PRINT -lpthread -DCLEAN -DTFFT" 
   ;
   
   install py_extension : py_cqcgl1d_threads : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
-}
-
-else if $(choice) = 3 {		# multi openmp threads case 
-  python-extension py_cqcgl1d_omp : py_cqcgl1d.cc np sparse dense fftw3 iter ped ../../myfft/myfft.cc ../cqcglRPO.cc ../cqcgl1d.cc  
-  : <variant>release_assert <optimization>speed 
-  : <link>shared <cxxflags>"-std=c++11 -fopenmp -DGMRES_PRINT -DINB_PRINT -DCLEAN -DRPO_OMP=5" 
-  ;
-  
-  install py_extension : py_cqcgl1d_omp : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
 }

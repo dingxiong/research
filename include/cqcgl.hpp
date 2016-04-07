@@ -4,6 +4,8 @@
 #include "cqcgl1d.hpp"
 
 class Cqcgl : public Cqcgl1d {
+
+public:
     
     //////////////////////////////////////////////////////////////////////
     double b;

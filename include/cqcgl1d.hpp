@@ -30,7 +30,7 @@ using Eigen::ArrayXXd; using Eigen::ArrayXd;
 using Eigen::ConjugateGradient;
 using Eigen::PartialPivLU;
 using Eigen::Map; using Eigen::Ref;
-
+using MyFFT::FFT;
 
 //////////////////////////////////////////////////////////////////////
 //                       class Cqcgl1d                              //

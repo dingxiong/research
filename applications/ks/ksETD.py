@@ -12,10 +12,12 @@ if case == 1:
     poId = 1
     a0, T, nstp, r, s = KSreadPO('../../data/ks22h001t120x64.h5', poType, poId)
 
-    ksetd.setRtol(1e-10)
-    tt, aa = ksetd.etd(a0, T, 0.01, 1, 2, True)
+    ksetd.setRtol(1e-8)
+    tt, aa = ksetd.etd(a0, T, 0.01, 1, 2, False)
     hs = ksetd.hs()[1:]
     duu = ksetd.duu()[1:]
     plot1dfig(duu, yscale='log')
     plot1dfig(hs)
     print ksetd.etdParam()
+    
+    KSplotColorMapOrbit(aa, [0, L, 0, T])

@@ -1,4 +1,5 @@
 function Nu = NL3(~, u)
+% slice function
     
     Nu = NL2(0, u);
     

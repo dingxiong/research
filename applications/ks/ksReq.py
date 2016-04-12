@@ -1,67 +1,6 @@
 from personalFunctions import *
 from py_ks import *
 
-case = 90
-
-if case == 10:
-    """
-    test ks.stab() function
-    """
-    N = 32
-    d = 22
-    h = 0.1
-    ks = pyKS(N, h, d)
-    
-    a0 = KSreadEq('/usr/local/home/xiong/00git/research/data/ksReqx32.h5', 3)
-    print norm(ks.velocity(a0))
-
-    A = ks.stab(a0)
-    e, v = eig(A.T)
-    idx = argsort(e.real)[::-1]
-    e = e[idx]
-    v = v[:, idx]
-    print e
-
-
-if case == 20:
-    """
-    Have a look at the flow in the state space
-    """
-    N = 64
-    d = 22
-    h = 0.001
-    ks = pyKS(N, h, d)
-    
-    a0, w, err = KSreadReq('../../data/ks22Reqx64.h5', 1)
-    es, vs = KSstabReqEig(ks, a0, w)
-    # aa = ks.intg(a0 + 1e-1*vs[0].real, 200000, 100)
-    aa = ks.intg(rand(N-2)*0.1, 200000, 100)
-    aaH = ks.orbitToSlice(aa)[0]
-    # plot3dfig(aa[:, 0], aa[:, 3], aa[:, 2])
-    plot3dfig(aaH[:, 0], aaH[:, 3], aaH[:, 2])
-    raa, ths = rSO3(ks, aa)
-    plot3dfig(raa[:, 0], raa[:, 3], raa[:, 2])
-
-
-if case == 25:
-    """
-    test the 2nd slice
-    """
-    N = 64
-    d = 22
-    h = 0.001
-    ks = pyKS(N, h, d)
-
-    x = rand(N-2)-0.5
-    y = ks.Reflection(x)
-    th0 = np.pi*2.47
-    th1 = np.pi*4.22
-    x1, t1 = ks.redO2(x)
-    x2, t2 = ks.redO2(ks.Rotation(x, th0))
-    y1, r1 = ks.redO2(y)
-    y2, r2 = ks.redO2(ks.Rotation(y, th1))
-    print norm(x2-x1), norm(y2-y1), norm(y2-x2)
-
 
 def loadRE(fileName, N):
     req = np.zeros((2, N-2))
@@ -126,6 +65,10 @@ def loadPO(fileName, poIds):
 
 
 def loadPO2(fileName, poIds, bases, x0):
+    """
+    aas : symmetry reduced state space
+    pas : projected state space
+    """
     aas = []
     pas = []
     types = ['rpo', 'ppo']
@@ -135,7 +78,7 @@ def loadPO2(fileName, poIds, bases, x0):
             a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
             h = T / nstp
             ks = pyKS(N, h, 22)
-            aa = ks.intg(a0, nstp, 5)
+            aa = ks.intg(a0, nstp, 5); print "geda"
             aa = ks.redO2(aa)[0]
             aas.append(aa)
             pas.append(aa.dot(bases.T) - x0)
@@ -271,7 +214,13 @@ def ergoPoinc2(ks, bases, x0, theta1, theta2):
     return paas, poinc, poincf, poincRaw
 
     
-def poPoinc(fileName, poIdsm, bases, x0, theta1, theta2):
+def poPoinc(fileName, poIds, bases, x0, theta1, theta2):
+    """
+    pas : projected orbits
+    poinc : poincare intersection points on the plane
+    poincf : intersection points in the 3d space
+    """
+    N = 64
     aas, pas = loadPO2(fileName, poIds, bases, x0)
     poinc = np.zeros((0, 3))
     poincf = np.zeros((0, 3))
@@ -286,6 +235,69 @@ def poPoinc(fileName, poIdsm, bases, x0, theta1, theta2):
         poincf = np.vstack((poincf, pcf))
 
     return pas, poinc, poincf, poincRaw, np.array(nums)
+
+
+############################################################
+case = 110
+
+if case == 10:
+    """
+    test ks.stab() function
+    """
+    N = 32
+    d = 22
+    h = 0.1
+    ks = pyKS(N, h, d)
+    
+    a0 = KSreadEq('/usr/local/home/xiong/00git/research/data/ksReqx32.h5', 3)
+    print norm(ks.velocity(a0))
+
+    A = ks.stab(a0)
+    e, v = eig(A.T)
+    idx = argsort(e.real)[::-1]
+    e = e[idx]
+    v = v[:, idx]
+    print e
+
+
+if case == 20:
+    """
+    Have a look at the flow in the state space
+    """
+    N = 64
+    d = 22
+    h = 0.001
+    ks = pyKS(N, h, d)
+    
+    a0, w, err = KSreadReq('../../data/ks22Reqx64.h5', 1)
+    es, vs = KSstabReqEig(ks, a0, w)
+    # aa = ks.intg(a0 + 1e-1*vs[0].real, 200000, 100)
+    aa = ks.intg(rand(N-2)*0.1, 200000, 100)
+    aaH = ks.orbitToSlice(aa)[0]
+    # plot3dfig(aa[:, 0], aa[:, 3], aa[:, 2])
+    plot3dfig(aaH[:, 0], aaH[:, 3], aaH[:, 2])
+    raa, ths = rSO3(ks, aa)
+    plot3dfig(raa[:, 0], raa[:, 3], raa[:, 2])
+
+
+if case == 25:
+    """
+    test the 2nd slice
+    """
+    N = 64
+    d = 22
+    h = 0.001
+    ks = pyKS(N, h, d)
+
+    x = rand(N-2)-0.5
+    y = ks.Reflection(x)
+    th0 = np.pi*2.47
+    th1 = np.pi*4.22
+    x1, t1 = ks.redO2(x)
+    x2, t2 = ks.redO2(ks.Rotation(x, th0))
+    y1, r1 = ks.redO2(y)
+    y2, r2 = ks.redO2(ks.Rotation(y, th1))
+    print norm(x2-x1), norm(y2-y1), norm(y2-x2)
 
 if case == 30:
     """
@@ -647,8 +659,9 @@ if case == 100:
 
     i = 100
     poIds = [range(1, i+1), range(1, i+1)]
-    aas, poinc, poincf, poincRaw, nums = poPoinc('../../data/ks22h001t120x64EV.h5', poIds,
-                                                 bases, x0,  2*np.pi/6, 2.0/3*np.pi/6)
+    aas, poinc, poincf, poincRaw, nums = poPoinc(
+        '../../data/ks22h001t120x64EV.h5',
+        poIds, bases, x0,  2*np.pi/6, 2.0/3*np.pi/6)
     ii = [0, 1, 2]
    
     fig, ax = pl2d(labs=[r'$v_1$', r'$v_2$'])
@@ -658,6 +671,46 @@ if case == 100:
     ax.scatter(poincf[:, 0], poincf[:, 1], c='r', edgecolors='none')
     ax2d(fig, ax)
 
+    fig, ax = pl2d(size=[8, 3], labs=[None, 'z'], axisLabelSize=20,
+                   ratio='equal')
+    ax.scatter(poinc[:, 1], poinc[:, 2], c='r', edgecolors='none')
+    ax2d(fig, ax)
+
+    plot1dfig(nums)
+
+
+if case == 110:
+    """
+    Get the return map from the Poincare section points
+    """
+    N = 64
+    d = 22
+    h = 0.001
+    ks = pyKS(N, h, d)
+
+    req, ws, reqr, eq, eqr = loadRE('../../data/ks22Reqx64.h5', N)
+    pev, bases = getBases(ks, 'eq', eq[1], [6, 7, 10])
+ 
+    reqr = reqr.dot(bases.T)
+    eqr = eqr.dot(bases.T)
+    reqr -= eqr[1]
+    x0 = eqr[1].copy()
+    eqr -= eqr[1]
+
+    i = 100
+    poIds = [range(1, i+1), range(1, i+1)]
+    aas, poinc, poincf, poincRaw, nums = poPoinc(
+        '../../data/ks22h001t120x64EV.h5', poIds,
+        bases, x0,  2*np.pi/6, 2.0/3*np.pi/6)
+    ii = [0, 1, 2]
+    print "geda"
+    fig, ax = pl2d(labs=[r'$v_1$', r'$v_2$'])
+    plotRE2d(ax, reqr, eqr, ii)
+    for i in range(len(aas)):
+        ax.plot(aas[i][:, ii[0]], aas[i][:, ii[1]], c='gray', alpha=0.2)
+    ax.scatter(poincf[:, 0], poincf[:, 1], c='r', edgecolors='none')
+    ax2d(fig, ax)
+    
     fig, ax = pl2d(size=[8, 3], labs=[None, 'z'], axisLabelSize=20,
                    ratio='equal')
     ax.scatter(poinc[:, 1], poinc[:, 2], c='r', edgecolors='none')

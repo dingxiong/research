@@ -15,21 +15,7 @@ using namespace iterMethod;
 
 /*-------------------- constructor, destructor -------------------- */
 KS::KS(int N, double h, double d) : N(N), h(h), d(d){
-    /* calcute various coefficients used for the integrator */
     ksInit();
-
-    /* initialize the FFTW holders */
-    initFFT(Fv, 1); 
-    initFFT(Fa, 1); 
-    initFFT(Fb, 1); 
-    initFFT(Fc, 1);
- 
-    initFFT(jFv, N-1); 
-    initFFT(jFa, N-1); 
-    initFFT(jFb, N-1);
-    initFFT(jFc, N-1);
-    
-    // nl = std::make_shared<KSNL<ArrayXcd>>(N, G);
 }
 
 KS::KS(const KS &x) : N(x.N), d(x.d), h(x.h){};
@@ -38,46 +24,111 @@ KS & KS::operator=(const KS &x){
     return *this;
 }
 
-KS::~KS(){
-    freeFFT(Fv); 
-    freeFFT(Fa); 
-    freeFFT(Fb); 
-    freeFFT(Fc);
-    
-    freeFFT(jFv); 
-    freeFFT(jFa); 
-    freeFFT(jFb); 
-    freeFFT(jFc);
-
-    // comment out when trying to compile interface for Matlab/Python 
-    fftw_cleanup(); 
-}
+KS::~KS(){}
 
 /*------------------- member methods ------------------ */
-void KS::ksInit(){
-    K = ArrayXd::LinSpaced(N/2+1, 0, N/2) * 2 * M_PI / d; //2*PI/d*[0, 1, 2,...,N/2]
-    K(N/2) = 0;
-    L = K*K - K*K*K*K;
-    E = (h*L).exp();
-    E2 = (h/2*L).exp();
-  
-    ArrayXd tmp = ArrayXd::LinSpaced(M, 1, M); // 1,2,3,...,M 
-    ArrayXXcd r = ((tmp-0.5)/M * dcp(0,M_PI)).exp().transpose();
-    ArrayXXcd Lc = ArrayXXcd::Zero(N/2+1, 1); 
-    Lc.real() = L;
-    ArrayXXcd LR = h*Lc.replicate(1, M) + r.replicate(N/2+1, 1);
+
+/**
+ * @brief calculate the coefficients of ETDRK4 or Krogstad
+ */
+void KS::calCoe(double h){
+
+    ArrayXd hL = h*L;
+    ArrayXXcd LR = ZR(hL);
+    
+    E = hL.exp();
+    E2 = (hL/2).exp();
+
     ArrayXXcd LR2 = LR.square();
     ArrayXXcd LR3 = LR.cube();
     ArrayXXcd LRe = LR.exp();
-  
-    Q = h * ( ((LR/2.0).exp() - 1)/LR ).rowwise().mean().real(); 
-    f1 = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean().real();
-    f2 = h * ( (2.0 + LR + LRe*(-2.0 + LR)) / LR3 ).rowwise().mean().real();
-    f3 = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean().real();
-    G = 0.5 * dcp(0,1) * K * N; 
-  
-    jG = ArrayXXcd::Zero(G.rows(), N-1); jG << G, 2.0*G.replicate(1, N-2); 
+    ArrayXXcd LReh = (LR/2).exp();
+    
+    a21 = h * ( (LReh - 1)/LR ).rowwise().mean().real(); 
+    b1 = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean().real();
+    b2 = h * 2 * ( (2.0 + LR + LRe*(-2.0 + LR)) / LR3 ).rowwise().mean().real();
+    b4 = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean().real();
+
+    if (Method == 2) {
+	a31 = h * ( (LReh*(LR - 4) + LR + 4) / LR2 ).rowwise().mean().real();
+	a32 = h * 2 * ( (2*LReh - LR - 2) / LR2 ).rowwise().mean().real();
+	a41 = h * ( (LRe*(LR-2) + LR + 2) / LR2 ).rowwise().mean().real();
+	a43 = h * 2 * ( (LRe - LR - 1)  / LR2 ).rowwise().mean().real();
+    }
+ 
 }
+
+
+/**
+ * @brief calcuate the matrix to do averge of phi(z). 
+ */
+
+ArrayXXcd KS::ZR(ArrayXd &z){
+    
+    int M1 = z.size();
+    ArrayXd K = ArrayXd::LinSpaced(M, 1, M); // 1,2,3,...,M 
+
+    ArrayXXcd r = R * ((K-0.5)/M * dcp(0, M_PI)).exp().transpose();
+
+    return z.template cast<std::complex<double>>().replicate(1, M) + r.replicate(M1, 1);
+}
+
+
+/* calculate the linear part and coefficient of nonlinear part */
+void KS::ksInit(){
+    K = ArrayXd::LinSpaced(N/2+1, 0, N/2) * 2 * M_PI / d; //2*PI/d*[0, 1, 2,...,N/2]
+    K(N/2) = 0;
+    L = K*K - K*K*K*K; 
+    G = 0.5 * dcp(0,1) * K * N;   
+    jG = ArrayXXcd::Zero(G.rows(), N-1); 
+    jG << G, 2.0*G.replicate(1, N-2); 
+}
+
+
+void 
+KS::oneStep(&du, double t, double h){
+    
+    if (1 == Method) {
+	NL(F[0]);
+	
+	F[1].vc1 = E2*F[0].vc1 + a21*F[0].vc3;
+	NL(F[1]);
+
+	F[2].vc1 = E2*F[0].vc1 + a21*F[1].vc3;
+	NL(F[2]);
+	
+
+	Ary U4 = E2*U2 + a21*(2*N3 - N1);
+	Ary N4 = nl(t+h, U4);
+    
+	unext = E*u + b1*N1 + b2*(N2+N3) + b4*N4;
+	Ary &U5 = unext;
+	Ary N5 = nl(t+h, U5);
+
+	du = (b4*(N5-N4)).matrix().norm() / U5.matrix().norm();
+
+    }
+    else {
+	Ary N1 = nl(t, u);
+    
+	Ary U2 = E2*u + a21*N1;
+	Ary N2 = nl(t+h/2, U2);
+
+	Ary U3 = E2*u + a31*N1 + a32*N2;
+	Ary N3 = nl(t+h/2, U3);
+
+	Ary U4 = E*u + a41*N1 + a43*N3; 
+	Ary N4 = nl(t+h, U4);
+    
+	unext = E*u + b1*N1 + b2*(N2+N3) + b4*N4;
+	Ary &U5 = unext;
+	Ary N5 = nl(t+h, U5);
+
+	du = (b4*(N5-N4)).matrix().norm() / U5.matrix().norm();
+
+    }
+}
+
 
 /** @brief intg() integrate KS system without calculating Jacobian
  *

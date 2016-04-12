@@ -38,9 +38,19 @@ public:
     const int N;
     const double d;
     const double h;  
-    ArrayXd K, L, E, E2, Q, f1, f2, f3;
+    ArrayXd K, L, E, E2, a21, a31, a32, a41, a43, b1, b2, b4;
     ArrayXcd G;
     ArrayXXcd jG;
+
+    int M = 32;			/* number of sample points */
+    int R = 1;			/* radius for evaluating phi(z) */
+
+    MyFFT::RFFT F[5], JF[5];
+    int Method = 1;
+    
+    /* for time step adaptive ETDRK4 and Krogstad  */
+    
+
     
 
     //////////////////////////////////////////////////////////////////////

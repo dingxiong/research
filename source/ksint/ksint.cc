@@ -6,6 +6,7 @@
 
 using namespace std;
 using namespace Eigen;
+using namespace MyFFT;
 using namespace denseRoutines;
 using namespace iterMethod;
 
@@ -31,7 +32,7 @@ KS::~KS(){}
 /**
  * @brief calculate the coefficients of ETDRK4 or Krogstad
  */
-void KS::calCoe(double h){
+void KS::calCoe(const double h){
 
     ArrayXd hL = h*L;
     ArrayXXcd LR = ZR(hL);
@@ -86,7 +87,7 @@ void KS::ksInit(){
 
 
 void 
-KS::oneStep(&du, double t, double h){
+KS::oneStep(&du){
     
     if (1 == Method) {
 	NL(F[0]);
@@ -97,38 +98,60 @@ KS::oneStep(&du, double t, double h){
 	F[2].vc1 = E2*F[0].vc1 + a21*F[1].vc3;
 	NL(F[2]);
 	
+	F[3].vc1 = E2*F[1].vc1 + a21*(2*F[3].vc3 - F[0].vc3);
+	NL(F[3]);
 
-	Ary U4 = E2*U2 + a21*(2*N3 - N1);
-	Ary N4 = nl(t+h, U4);
-    
-	unext = E*u + b1*N1 + b2*(N2+N3) + b4*N4;
-	Ary &U5 = unext;
-	Ary N5 = nl(t+h, U5);
+	F[4].vc1 = E*F[0].vc1 + b1*F[0].vc3 + b2*(F[1].vc3+F[2].vc3) + b4*F[3].vc3;
+	NL(F[4]);
 
-	du = (b4*(N5-N4)).matrix().norm() / U5.matrix().norm();
+	du = (b4*(F[4].vc3-F[3].vc3)).matrix().norm() / F[4].vc1.matrix().norm();
 
     }
     else {
-	Ary N1 = nl(t, u);
-    
-	Ary U2 = E2*u + a21*N1;
-	Ary N2 = nl(t+h/2, U2);
+	NL(F[0]);
 
-	Ary U3 = E2*u + a31*N1 + a32*N2;
-	Ary N3 = nl(t+h/2, U3);
+	F[1].vc1 = E2*F[0].vc1 + a21*F[0].vc3;
+	NL(F[1]);
+	
+	F[2].vc1 = E2*F[0].vc1 + a31*F[0].vc3 + a32*F[1].vc3;
+	NL(F[2]);
 
-	Ary U4 = E*u + a41*N1 + a43*N3; 
-	Ary N4 = nl(t+h, U4);
-    
-	unext = E*u + b1*N1 + b2*(N2+N3) + b4*N4;
-	Ary &U5 = unext;
-	Ary N5 = nl(t+h, U5);
+	F[3].vc1 = E*F[0].vc1 + a41*F[0].vc3 + a43*F[2].vc3;
+	NL(F[3]);
+	
+	F[4].vc1 = E*F[0].vc1 + b1*F[0].vc3 + b2*(F[1].vc3+F[2].vc3) + b4*F[3].vc3;
+	NL(F[4]);
 
-	du = (b4*(N5-N4)).matrix().norm() / U5.matrix().norm();
-
+	du = (b4*(F[4].vc3-F[3].vc3)).matrix().norm() / F[4].vc1.matrix().norm();
     }
 }
 
+ArrayXXd 
+KS::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
+    
+    assert(a0.size() == N-2);
+    const int M = Nt /skip_rate + 1;
+    F[0].vc1 = R2C(a0);
+    ArrayXXd aa(N-2, M);
+    aa.col(0) = a0;
+
+    calCoe(h);
+    duu.resize(M);
+
+    double du;
+    int num = 0;
+    for(int i = 0; i < Nt; i++){
+	oneStep(du);
+	F[0].vc1 = F[4].vc1;	// update state
+	NCallF += 5;
+	if ( (i+1)%skip_rate == 0 ) {
+	    aa.col(num+1) = C2R(F[4].vc1);
+	    duu(num++) = du;  
+	}
+    }
+
+    return aa;
+}
 
 /** @brief intg() integrate KS system without calculating Jacobian
  *
@@ -255,14 +278,14 @@ KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
 }
 
 
-void KS::NL(KSfft &f){
+void KS::NL(RFFT &f){
     ifft(f);
     f.vr2 = f.vr2 * f.vr2;
     fft(f);
     f.vc3 *= G;
 }
 
-void KS::jNL(KSfft &f){
+void KS::jNL(RFFT &f){
     ifft(f); 
     ArrayXd tmp = f.vr2.col(0);
     // f.vr2.colwise() *= tmp;
@@ -271,50 +294,6 @@ void KS::jNL(KSfft &f){
     f.vc3 *= jG;
 }
 
-void KS::initFFT(KSfft &f, int M) {
-    f.r2 = (double*) fftw_malloc(sizeof(double) * N * M);
-    f.c1 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (N/2+1) * M);
-    f.c3 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (N/2+1) * M);
-  
-    //build the maps.
-    new (&(f.vr2)) Map<ArrayXXd>( &(f.r2[0]), N, M);
-    new (&(f.vc1)) Map<ArrayXXcd>( (dcp*)&(f.c1[0][0]), N/2+1, M );
-    new (&(f.vc3)) Map<ArrayXXcd>( (dcp*)&(f.c3[0][0]), N/2+1, M );
-  
-    if (1 == M){
-	f.p = fftw_plan_dft_r2c_1d(N, f.r2, f.c3, FFTW_MEASURE);
-	f.rp = fftw_plan_dft_c2r_1d(N, f.c1, f.r2, FFTW_MEASURE|FFTW_PRESERVE_INPUT);
-    } else{
-	int n[]={N};
-	f.p = fftw_plan_many_dft_r2c(1, n, N-1, f.r2, n, 1, N, 
-				     f.c3, n, 1, N/2+1, FFTW_MEASURE);
-	f.rp = fftw_plan_many_dft_c2r(1, n, N-1, f.c1, n, 1, N/2+1,
-				      f.r2, n, 1, N, FFTW_MEASURE|FFTW_PRESERVE_INPUT);
-    }
-      
-}
-
-void KS::freeFFT(KSfft &f){
-    /* free the memory */
-    fftw_destroy_plan(f.p);
-    fftw_destroy_plan(f.rp);
-    fftw_free(f.c1);
-    fftw_free(f.r2);
-    fftw_free(f.c3);
-    /* release the maps */
-    new (&(f.vc1)) Map<ArrayXXcd>(NULL, 0, 0);
-    new (&(f.vr2)) Map<ArrayXXd>(NULL, 0, 0);
-    new (&(f.vc3)) Map<ArrayXXcd>(NULL, 0, 0);
-}
-
-void KS::fft(KSfft &f){
-    fftw_execute(f.p); 
-}
-
-void KS::ifft(KSfft &f){
-    fftw_execute(f.rp); 
-    f.vr2 /= N;
-}
 
 /* @brief complex matrix to the corresponding real matrix.
  * [N/2+1, M] --> [N-2, M]

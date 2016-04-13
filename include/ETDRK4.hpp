@@ -319,6 +319,36 @@ oneStep(Ary &u, Ary &unext, double &du, double t, double h){
     }
 }
 
+/**
+ * nonlinear class NL provides container for intermediate steps
+ *
+ * U1, U2, U3, U4, U5
+ * N1, N2, N3, N4, N5
+ */
+template<class Ary, class Mat, template<class> class NL>
+void 
+ETDRK4<Ary, Mat, NL>::
+oneStep(double &du, double t, double h){
+    
+    if (1 == Method) {
+	nl.N1 = nl(t, 1);
+    
+	nl.U2 = E2*nl.U1 + a21*nl.N1;
+	nl.N2 = nl(t+h/2, 2);
+
+	nl.U3 = E2*nl.U1 + a21*nl.N2;
+	nl.N3 = nl(t+h/2, 3);
+
+	nl.U4 = E2*nl.U2 + a21*(2*nl.N3 - nl.N1);
+	nl.N4 = nl(t+h, 4);
+    
+	nl.U5 = E*nl.U1 + b1*nl.N1 + b2*(nl.N2+nl.N3) + b4*nl.N4;
+	nl.N5 = nl(t+h, 5);
+
+	du = (b4*(nl.N5-nl.N4)).matrix().norm() / nl.U5.matrix().norm();
+    }
+
+}
 
 /**
  * @brief Calculate the coefficients of ETDRK4.

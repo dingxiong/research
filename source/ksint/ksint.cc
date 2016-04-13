@@ -201,6 +201,40 @@ KS::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
     return aa;
 }
 
+ArrayXXd 
+KS::constETD(const ArrayXXcd a0, const double h, const int Nt, 
+	     const int skip_rate, const bool onlyOrbit){
+
+    int nc = 1;			// number of columns of a single state
+    RFFT *f = F;
+    if (!onlyOrbit)  {
+	f = JF;
+	nc = N-1;
+    }
+    
+    const int M = Nt / skip_rate + 1;
+    f[0].vc1 = a0;
+    ArrayXXcd aa(N/2+1, M*nc);
+    aa.leftCols(nc) = a0;
+    duu.resize(M-1);
+
+    calCoe(h);
+
+    double du;
+    int num = 0;
+    for(int i = 0; i < Nt; i++){
+	oneStep(du, onlyOrbit);
+	f[0].vc1 = f[4].vc1;	// update state
+	NCallF += 5;
+	if ( (i+1)%skip_rate == 0 ) {
+	    aa.middleCols(num*nc, nc) = F[4].vc1;
+	    duu(num++) = du;  
+	}
+    }
+
+    return aa;
+}
+
 /**
  * @brief time step adaptive integrator
  */

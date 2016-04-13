@@ -37,20 +37,35 @@ public:
     /* member variables */
     const int N;
     const double d;
-    const double h;  
+
     ArrayXd K, L, E, E2, a21, a31, a32, a41, a43, b1, b2, b4;
     ArrayXcd G;
     ArrayXXcd jG;
 
+    MyFFT::RFFT F[5], JF[5];
+
+    /* for time step adaptive ETDRK4 and Krogstad  */
+    ////////////////////////////////////////////////////////////
+    // time adaptive method related parameters
+    double rtol = 1e-8;
+    double nu = 0.9;		/* safe factor */
+    double mumax = 2.5;		/* maximal time step increase factor */
+    double mumin = 0.4;		/* minimal time step decrease factor */
+    double mue = 1.25;		/* upper lazy threshold */
+    double muc = 0.85;		/* lower lazy threshold */
+
+    int NCalCoe = 0;		/* times to evaluate coefficient */
+    int NReject = 0;		/* times that new state is rejected */
+    int NCallF = 0;	       /* times to call velocity function f */
+    VectorXd hs;	       /* time step sequnce */
+    VectorXd duu;	       /* local relative error estimation */
+
+    int cellSize = 500;	/* size of cell when resize output container */
     int M = 32;			/* number of sample points */
     int R = 1;			/* radius for evaluating phi(z) */
 
-    MyFFT::RFFT F[5], JF[5];
     int Method = 1;
-    
-    /* for time step adaptive ETDRK4 and Krogstad  */
-    
-
+    ////////////////////////////////////////////////////////////
     
 
     //////////////////////////////////////////////////////////////////////
@@ -62,13 +77,13 @@ public:
   
     /* member functions */
     ArrayXXd 
-    intg(const ArrayXd &a0, size_t nstp, size_t np = 1);
+    intg(const ArrayXd &a0, size_t nstp, size_t);
     std::pair<ArrayXXd, ArrayXXd>
-    intgj(const ArrayXd &a0, size_t nstp, size_t np = 1, size_t nqr = 1);
+    intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr);
     std::pair<ArrayXXd, ArrayXXd>
 
     
-    intgjMulti(const MatrixXd aa0, size_t nstp, size_t np = 1, size_t nqr = 1);
+    intgjMulti(const MatrixXd aa0, size_t nstp, size_t np, size_t nqr);
     std::tuple<MatrixXd, MatrixXd, VectorXd>
     calReqJJF(const Ref<const VectorXd> &x);
     std::tuple<VectorXd, double, double>

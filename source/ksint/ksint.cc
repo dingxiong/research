@@ -15,7 +15,11 @@ using namespace iterMethod;
  *============================================================*/
 
 /*-------------------- constructor, destructor -------------------- */
-KS::KS(int N, double h, double d) : N(N), h(h), d(d){
+KS::KS(int N, double d) : 
+    N(N), d(d), 
+    F{ RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1)},
+    JF{ RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1)},
+{
     ksInit();
 }
 
@@ -85,47 +89,91 @@ void KS::ksInit(){
     jG << G, 2.0*G.replicate(1, N-2); 
 }
 
-
+/**
+ * @brief one step integrating the orbit
+ *
+ * Local truncation error estimation is using Frobenius norm. If we are only integrating
+ * an orbit, it is reduced to L2 norm.
+ */
 void 
-KS::oneStep(&du){
-    
+KS::oneStep(&du, const bool onlyOrbit){
+    RFFT *f = F;
+    if (!onlyOrbit)  f = JF;
+
     if (1 == Method) {
-	NL(F[0]);
+	NL(0, onlyOrbit);
 	
-	F[1].vc1 = E2*F[0].vc1 + a21*F[0].vc3;
-	NL(F[1]);
+	f[1].vc1 = f[0].vc1.colwise() * E2 + f[0].vc3.colwise() * a21;
+	NL(1, onlyOrbit);
 
-	F[2].vc1 = E2*F[0].vc1 + a21*F[1].vc3;
-	NL(F[2]);
+	f[2].vc1 = f[0].vc1.colwise() * E2 + f[1].vc3.colwise() * a21;
+	NL(2, onlyOrbit);
 	
-	F[3].vc1 = E2*F[1].vc1 + a21*(2*F[3].vc3 - F[0].vc3);
-	NL(F[3]);
+	f[3].vc1 = f[1].vc1.colwise() * E2 + (2*f[3].vc3 - f[0].vc3).colwise() * a21;
+	NL(3, onlyOrbit);
 
-	F[4].vc1 = E*F[0].vc1 + b1*F[0].vc3 + b2*(F[1].vc3+F[2].vc3) + b4*F[3].vc3;
-	NL(F[4]);
+	f[4].vc1 = f[0].vc1.colwise() * E + f[0].vc3.colwise() * b1 + 
+	    (f[1].vc3+f[2].vc3).colwise() * b2 + f[3].vc3.colwise() * b4;
+	NL(4, onlyOrbit);
 
-	du = (b4*(F[4].vc3-F[3].vc3)).matrix().norm() / F[4].vc1.matrix().norm();
-
+	du = ((f[4].vc3-f[3].vc3).colwise() * b4).matrix().norm() / f[4].vc1.matrix().norm();
+	
     }
     else {
-	NL(F[0]);
+	NL(0, onlyOrbit);
 
-	F[1].vc1 = E2*F[0].vc1 + a21*F[0].vc3;
-	NL(F[1]);
+	f[1].vc1 = f[0].vc1.colwise()*E2 + f[0].vc3.colwise()*a21;
+	NL(1, onlyOrbit);
+
+	f[2].vc1 = f[0].vc1.colwise()*E2 + f[0].vc3.colwise()*a31 + f[1].vc3.colwise()*a32;
+	NL(2, onlyOrbit);
+
+	f[3].vc1 = f[0].vc1.colwise()*E + f[0].vc3.colwise()*a41 + f[2].vc3.colwise()*a43;
+	NL(3, onlyOrbit);
 	
-	F[2].vc1 = E2*F[0].vc1 + a31*F[0].vc3 + a32*F[1].vc3;
-	NL(F[2]);
+	f[4].vc1 = f[0].vc1.colwise()*E + f[0].vc3.colwise()*b1 +
+	    (f[1].vc3+f[2].vc3).colwise()*b2 + f[3].vc3.colwise()*b4;
+	NL(4, onlyOrbit);
 
-	F[3].vc1 = E*F[0].vc1 + a41*F[0].vc3 + a43*F[2].vc3;
-	NL(F[3]);
-	
-	F[4].vc1 = E*F[0].vc1 + b1*F[0].vc3 + b2*(F[1].vc3+F[2].vc3) + b4*F[3].vc3;
-	NL(F[4]);
-
-	du = (b4*(F[4].vc3-F[3].vc3)).matrix().norm() / F[4].vc1.matrix().norm();
+	du = ((f[4].vc3-f[3].vc3).colwise() * b4).matrix().norm() / f[4].vc1.matrix().norm();
     }
 }
 
+
+/**
+ * @brief calculat the damping factor of time step
+ *
+ * @param[out] doChange    true if time step needs change
+ * @param[out] doAccept    true if accept current time step
+ * @param[in]  s           estimate damping factor
+ * @return     mu          final dampling factor 
+ */
+double
+KS::adaptTs(bool &doChange, bool &doAccept, const double s){
+    double mu = 1;
+    doChange = true;
+    doAccept = true;
+
+    if ( s > mumax) mu = mumax;
+    else if (s > mue) mu = s;
+    else if (s >= 1) {
+	mu = 1;
+	doChange = false;
+    }
+    else {
+	doAccept = false;
+	if (s > muc) mu = muc;
+	else if (s > mumin) mu = s;
+	else mu = mumin;
+    }
+
+    return mu;
+}
+
+
+/**
+ * @brief Constant time step integrator
+ */
 ArrayXXd 
 KS::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
     
@@ -136,7 +184,7 @@ KS::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
     aa.col(0) = a0;
 
     calCoe(h);
-    duu.resize(M);
+    duu.resize(M-1);
 
     double du;
     int num = 0;
@@ -153,6 +201,84 @@ KS::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
     return aa;
 }
 
+/**
+ * @brief time step adaptive integrator
+ */
+std::pair<VectorXd, ArrayXXd>
+KS::intg(const ArrayXd &a0, const double h0, const double tend, const int skip_rate){
+
+    double h = h0;
+    calCoe(h);
+
+    const int Nt = (int)round(tend/h);
+    const int M = Nt /skip_rate + 1;
+
+    ArrayXXd aa(N, M);
+    VectorXd tt(M);
+    aa.col(0) = a0;
+    tt(0) = 0;
+    NCalCoe = 0;
+    NReject = 0;
+    NCallF = 0;    
+    hs.resize(M-1);
+    duu.resize(M-1);
+
+    double t = 0;
+    double du = 0;
+    int num = 1;
+    bool doChange, doAccept;
+
+    int i = 0;
+    while(t < tend){
+	i++;
+
+	if ( t + h > tend){
+	    h = tend - t;
+	    calCoe(h);
+	    NCalCoe++;
+	}
+
+	oneStep(du);
+	NCallF += 5;		
+	double s = nu * std::pow(rtol/du, 1.0/4);
+	double mu = adaptTs(doChange, doAccept, s);
+	
+	if (doAccept){
+	    t += h;
+	    F[0].vc1 = F[4].vc1;
+	    if ( (i+1) % skip_rate == 0 ) {
+		if (num >= tt.size() ) {
+		    int m = tt.size();
+		    tt.conservativeResize(m+cellSize);
+		    aa.conservativeResize(Eigen::NoChange, m+cellSize); // rows not change, just extend cols
+		    hs.conservativeResize(m-1+cellSize);
+		    duu.conservativeResize(m-1+cellSize);
+		}
+		hs(num-1) = h;
+		duu(num-1) = du;
+		aa.col(num) = C2R(F[4].vc1);
+		tt(num) = t;
+		num++;
+	    }
+	}
+	else {
+	    NReject++;
+	}
+	
+	if (doChange) {
+	    h *= mu;
+	    calCoe(h);
+	    NCalCoe++;
+	}
+    }
+    
+    // duu = duu.head(num) has aliasing problem 
+    hs.conservativeResize(num-1);
+    duu.conservativeResize(num-1);
+    return std::make_pair(tt.head(num), uu.leftCols(num));
+}
+
+#if 0
 /** @brief intg() integrate KS system without calculating Jacobian
  *
  *  @param[in] a0 Initial condition of the orbit
@@ -184,6 +310,7 @@ ArrayXXd KS::intg(const ArrayXd &a0, size_t nstp, size_t np){
   
     return aa;
 }
+
 
 /** @brief intg() integrate KS system without calculating Jacobian
  *
@@ -277,22 +404,26 @@ KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
     return std::make_pair(aa, daa);
 }
 
+#endif
 
-void KS::NL(RFFT &f){
-    ifft(f);
-    f.vr2 = f.vr2 * f.vr2;
-    fft(f);
-    f.vc3 *= G;
+void KS::NL(const int k, const bool onlyOrbit){
+    if(onlyOrbit){
+	F[k].ifft();
+	F[k].vr2 = F[k].vr2 * F[k].vr2;
+	F[k].fft();
+	F[k].vc3 *= G;
+    }
+    else {
+	JF[k].ifft(); 
+	ArrayXd tmp = JF[k].vr2.col(0);	// in case of aliasing
+	JF[k].vr2 = JF[k].vr2.colwise() * tmp;
+	JF[k].fft();
+	JF[k].vc3 *= jG;
+    }
 }
 
-void KS::jNL(RFFT &f){
-    ifft(f); 
-    ArrayXd tmp = f.vr2.col(0);
-    // f.vr2.colwise() *= tmp;
-    f.vr2 = tmp.matrix().asDiagonal()*f.vr2.matrix();
-    fft(f);
-    f.vc3 *= jG;
-}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 /* @brief complex matrix to the corresponding real matrix.

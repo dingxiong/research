@@ -1,5 +1,6 @@
 function [mu, doChangh, doAccept] = adapth(s, mumax, mumin, mue, muc)
-
+% try to adapt the time step
+    
 mu = 1;
 doChangh = true;
 doAccept = true;

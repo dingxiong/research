@@ -1,8 +1,7 @@
 /* to compile:
- * h5c++ test_ksint.cc -std=c++0x -lksint -lKSETD -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3 -O3
+ * h5c++ test_ksint.cc -std=c++0x -lksint -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3 -O3 && ./a.out
  */
-#include "KSETD.hpp"
-#include "ksintM1.hpp"
+#include "ksint.hpp"
 #include "denseRoutines.hpp"
 #include "myH5.hpp"
 #include <Eigen/Dense>
@@ -15,27 +14,31 @@ using namespace denseRoutines;
 int main(){
     /// -----------------------------------------------------
     switch (14){
-# if 0	
+	
     case 1:
 	{
-	    ArrayXd a0 = ArrayXd::Ones(30) * 0.1;
-	    KS ks(32, 0.1, 22);
+	    ArrayXd a0 = ArrayXd::Random(30) * 0.1;
+	    KS ks(32, 22);
 	    ArrayXXd aa;
 	    for (int i = 0; i < 1; i++) {
-		aa = ks.intg(a0, 2000, 1);
+		aa = ks.intg(a0, 0.01, 20, 1);
 	    }
-	    //cout << aa.rightCols(1) << endl << endl;
+	    cout << aa.rightCols(1) << endl << endl;
 	    break;
 	}
 
+
     case 2 :
 	{
-	    ArrayXd a0 = ArrayXd::Ones(30) * 0.1;
-	    KS ks(32, 0.01, 22);
-	    pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a0, 2000, 2000,2000);
-	    cout << tmp.second.col(0).tail(30) << endl;
+	    ArrayXd a0 = ArrayXd::Random(62) * 0.1;
+	    KS ks(64, 22);
+	    pair<ArrayXXd, ArrayXXd> tmp = ks.intgj(a0, 0.01, 2000, 10);
+	    // cout << tmp.second.col(0).tail(30) << endl;
+	    
 	    break;
 	}
+
+# if 0
     case 3: // test velocity
 	{
       
@@ -247,31 +250,31 @@ int main(){
 
 	break;
     }
-#endif
-    case 14: {			/* test the new etdrk4 integrator */
 
+#endif
+    case 14: {
+	
 	std::string file = "../../data/ks22h001t120x64.h5";
 	std::string poType = "rpo";
-
+	
 	MatrixXd a0;
 	double T, r, s;
 	int nstp;
 	std::tie(a0, T, nstp, r, s) = KSreadRPO(file, poType, 1);
 	
-	KSETD ks(64, 22);
-	ks.etdrk4->rtol = 1e-10;
-	auto tmp = ks.etd(a0, T, 0.01, 1, 2, true);
-	VectorXd x = ks.etdrk4->duu;
-	cout << x.tail(x.size()-1).cwiseAbs().minCoeff() << endl;
-	//savetxt("a.dat", x);
-	
+        KS ks(64, 22);
+	auto tmp = ks.aintgj(a0, 0.01, T, 1);
+	savetxt("a.dat", ks.hs);
+
 	break;
     }
-
+	
+	
     default :
 	{
 	    cout << "please indicate the correct index." << endl;
 	}
     }
+
     return 0;
 }

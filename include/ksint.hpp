@@ -1,6 +1,10 @@
-/** To compile this class, you need to have g++ >= 4.6, eigen >= 3.1
+/**
+ * To compile this class, you need to have g++ >= 4.6, eigen >= 3.1
  * g++ ksint.cc -march=corei7 -O3 -msse4.2 -I/usr/include/eigen3
  * -lm -lfftw3 -std=c++0x
+ *
+ * Some notes about this class
+ * 
  *  */
 #ifndef KSINT_H
 #define KSINT_H
@@ -58,7 +62,7 @@ public:
     int NReject = 0;		/* times that new state is rejected */
     int NCallF = 0;	       /* times to call velocity function f */
     VectorXd hs;	       /* time step sequnce */
-    VectorXd duu;	       /* local relative error estimation */
+    VectorXd lte;	       /* local relative error estimation */
 
     int cellSize = 500;	/* size of cell when resize output container */
     int M = 32;			/* number of sample points */
@@ -70,19 +74,39 @@ public:
 
     //////////////////////////////////////////////////////////////////////
     /* constructor, destructor, copy assignment */
-    KS(int N = 32, double h = 0.25, double d = 22);
-    explicit KS(const KS &x);
+    KS(int N, double d);
+    KS(const KS &x);
     KS & operator=(const KS &x);
     ~KS();
   
     /* member functions */
+    /* ------------------------------------------------------------ */
+    /* related to integration */
+    void calCoe(const double h);
+    ArrayXXcd ZR(ArrayXd &z);
+    void ksInit();
+    void oneStep(double &du, const bool onlyOrbit);
+    double adaptTs(bool &doChange, bool &doAccept, const double s);
     ArrayXXd 
-    intg(const ArrayXd &a0, size_t nstp, size_t);
+    intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);    
     std::pair<ArrayXXd, ArrayXXd>
-    intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr);
-    std::pair<ArrayXXd, ArrayXXd>
+    intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
+    std::pair<VectorXd, ArrayXXd>
+    aintg(const ArrayXd &a0, const double h, const double tend, 
+	  const int skip_rate);
+    std::tuple<VectorXd, ArrayXXd, ArrayXXd>
+    aintgj(const ArrayXd &a0, const double h, const double tend, 
+	   const int skip_rate);
+    ArrayXXd 
+    constETD(const ArrayXXd a0, const double h, const int Nt, 
+	     const int skip_rate, const bool onlyOrbit);
+    std::pair<VectorXd, ArrayXXd>
+    adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
+	     const int skip_rate, const bool onlyOrbit);
+    void NL(const int k, const bool onlyOrbit);
 
-    
+    /* ------------------------------------------------------------ */
+    std::pair<ArrayXXd, ArrayXXd>    
     intgjMulti(const MatrixXd aa0, size_t nstp, size_t np, size_t nqr);
     std::tuple<MatrixXd, MatrixXd, VectorXd>
     calReqJJF(const Ref<const VectorXd> &x);
@@ -135,11 +159,13 @@ public:
 		 const int trunc = 0);
     std::pair<ArrayXXd, ArrayXXd>
     orbitAndFvWhole(const ArrayXd &a0, const ArrayXXd &ve,
+		    const double h,
 		    const size_t nstp, const std::string ppType
 		    );
     MatrixXd veTrunc(const MatrixXd ve, const int pos, const int trunc = 0);
     std::pair<ArrayXXd, ArrayXXd>
     orbitAndFvWholeSlice(const ArrayXd &a0, const ArrayXXd &ve,
+			 const double h,
 			 const size_t nstp, const std::string ppType,
 			 const int pos
 			 );
@@ -170,37 +196,6 @@ public:
     std::pair<VectorXd, MatrixXd>
     redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
     MatrixXd redV2(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
-    
-    protected:
-
-    enum { M = 16 }; // number used to approximate the complex integral.
-  
-    struct KSfft{ // nested class for fft/ifft.      
-	/* member variables */
-	/* 3 different stage of ETDRK4:
-	 * v --> ifft(v) --> Nv : c1 --> r2 --> c2
-	 * */
-	fftw_plan p, rp;
-	double *r2;
-	fftw_complex *c1, *c3;
-	Map<ArrayXXd> vr2;
-	Map<ArrayXXcd> vc1, vc3;
-  
-	/* constructor, destructor */
-	KSfft() : vc1(NULL, 0, 0), vc3(NULL, 0, 0), vr2(NULL, 0, 0){}
-    }; 
-
-    KSfft Fv, Fa, Fb, Fc; 
-    KSfft jFv, jFa, jFb, jFc;
-  
-    void ksInit();
-    virtual void NL(KSfft &f);
-    virtual void jNL(KSfft &f);
-    void initFFT(KSfft &f, int M);
-    void freeFFT(KSfft &f);
-    void fft(KSfft &f);
-    void ifft(KSfft &f);
-    
 
 };
 

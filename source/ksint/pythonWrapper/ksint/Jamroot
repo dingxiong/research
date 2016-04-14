@@ -4,7 +4,7 @@ project
   : requirements <library>/boost/python//boost_python 
       		 <implicit-dependency>/boost//headers 
 		 <include>/usr/local/home/xiong/apps/BoostNumpy/include/
-		 <include>../../../include
+		 <include>/usr/local/home/xiong/00git/research/include/
 		 <include>/usr/local/home/xiong/apps/eigen/include/eigen3
   : usage-requirements <implicit-dependency>/boost//headers 	 
   ;
@@ -20,7 +20,7 @@ lib dense : : <name>denseRoutines <file>/usr/local/home/xiong/00git/research/lib
 lib myfft : : <name>myfft_clean <file>/usr/local/home/xiong/00git/research/lib/libmyfft_clean.so ;
 lib iter : : <name>iterMethod <file>/usr/local/home/xiong/00git/research/lib/libiterMethod.so ;
 
-python-extension py_ks : py_ks.cc  np fftw3 ../ksint.cc ../ksintM1.cc ../KSETD.cc ../../myfft/myfft.cc dense iter
+python-extension py_ks : py_ks.cc  np fftw3 ../../ksint.cc ../../../myfft/myfft.cc dense iter
 : <variant>release_assert <optimization>speed 
 : <link>shared <cxxflags>"-std=c++11 -DCLEAN"
 ;

@@ -4,6 +4,9 @@
 #include <cmath>
 #include <iostream>
 
+#define PROD(x, y) ((x).matrix().asDiagonal() * (y).matrix())
+//#define PROD(x, y) (y.colwise() * x)
+
 using namespace std;
 using namespace Eigen;
 using namespace MyFFT;
@@ -18,12 +21,18 @@ using namespace iterMethod;
 KS::KS(int N, double d) : 
     N(N), d(d), 
     F{ RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1)},
-    JF{ RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1)},
+    JF{ RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1)}
 {
     ksInit();
 }
 
-KS::KS(const KS &x) : N(x.N), d(x.d), h(x.h){};
+KS::KS(const KS &x) : 
+    N(x.N), d(x.d),
+    F{ RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1)},
+    JF{ RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1)}
+{
+    ksInit();
+}
 
 KS & KS::operator=(const KS &x){
     return *this;
@@ -96,46 +105,43 @@ void KS::ksInit(){
  * an orbit, it is reduced to L2 norm.
  */
 void 
-KS::oneStep(&du, const bool onlyOrbit){
+KS::oneStep(double &du, const bool onlyOrbit){
     RFFT *f = F;
     if (!onlyOrbit)  f = JF;
 
     if (1 == Method) {
 	NL(0, onlyOrbit);
 	
-	f[1].vc1 = f[0].vc1.colwise() * E2 + f[0].vc3.colwise() * a21;
+	f[1].vc1 = PROD(E2, f[0].vc1) + PROD(a21, f[0].vc3); 
 	NL(1, onlyOrbit);
 
-	f[2].vc1 = f[0].vc1.colwise() * E2 + f[1].vc3.colwise() * a21;
+	f[2].vc1 = PROD(E2, f[0].vc1) + PROD(a21, f[1].vc3);
 	NL(2, onlyOrbit);
 	
-	f[3].vc1 = f[1].vc1.colwise() * E2 + (2*f[3].vc3 - f[0].vc3).colwise() * a21;
+	f[3].vc1 = PROD(E2, f[1].vc1) + PROD(a21, 2*f[2].vc3 - f[0].vc3);
 	NL(3, onlyOrbit);
 
-	f[4].vc1 = f[0].vc1.colwise() * E + f[0].vc3.colwise() * b1 + 
-	    (f[1].vc3+f[2].vc3).colwise() * b2 + f[3].vc3.colwise() * b4;
+	f[4].vc1 = PROD(E, f[0].vc1) + PROD(b1, f[0].vc3) + PROD(b2, f[1].vc3+f[2].vc3) + PROD(b4, f[3].vc3);
 	NL(4, onlyOrbit);
 
-	du = ((f[4].vc3-f[3].vc3).colwise() * b4).matrix().norm() / f[4].vc1.matrix().norm();
-	
+	du = PROD(b4, f[4].vc3-f[3].vc3).norm() / f[4].vc1.matrix().norm(); 
     }
     else {
 	NL(0, onlyOrbit);
 
-	f[1].vc1 = f[0].vc1.colwise()*E2 + f[0].vc3.colwise()*a21;
+	f[1].vc1 = PROD(E2, f[0].vc1) + PROD(a21, f[0].vc3); 
 	NL(1, onlyOrbit);
 
-	f[2].vc1 = f[0].vc1.colwise()*E2 + f[0].vc3.colwise()*a31 + f[1].vc3.colwise()*a32;
+	f[2].vc1 = PROD(E2, f[0].vc1) + PROD(a31, f[0].vc3) + PROD(a32, f[1].vc3);
 	NL(2, onlyOrbit);
 
-	f[3].vc1 = f[0].vc1.colwise()*E + f[0].vc3.colwise()*a41 + f[2].vc3.colwise()*a43;
+	f[3].vc1 = PROD(E, f[0].vc1) + PROD(a41, f[0].vc3) + PROD(a43, f[2].vc3);
 	NL(3, onlyOrbit);
 	
-	f[4].vc1 = f[0].vc1.colwise()*E + f[0].vc3.colwise()*b1 +
-	    (f[1].vc3+f[2].vc3).colwise()*b2 + f[3].vc3.colwise()*b4;
+	f[4].vc1 = PROD(E, f[0].vc1) + PROD(b1, f[0].vc3) + PROD(b2, f[1].vc3+f[2].vc3) + PROD(b4, f[3].vc3);
 	NL(4, onlyOrbit);
 
-	du = ((f[4].vc3-f[3].vc3).colwise() * b4).matrix().norm() / f[4].vc1.matrix().norm();
+	du = PROD(b4, f[4].vc3-f[3].vc3).norm() / f[4].vc1.matrix().norm();
     }
 }
 
@@ -171,38 +177,69 @@ KS::adaptTs(bool &doChange, bool &doAccept, const double s){
 }
 
 
-/**
- * @brief Constant time step integrator
- */
+
 ArrayXXd 
 KS::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
     
     assert(a0.size() == N-2);
-    const int M = Nt /skip_rate + 1;
-    F[0].vc1 = R2C(a0);
-    ArrayXXd aa(N-2, M);
-    aa.col(0) = a0;
-
-    calCoe(h);
-    duu.resize(M-1);
-
-    double du;
-    int num = 0;
-    for(int i = 0; i < Nt; i++){
-	oneStep(du);
-	F[0].vc1 = F[4].vc1;	// update state
-	NCallF += 5;
-	if ( (i+1)%skip_rate == 0 ) {
-	    aa.col(num+1) = C2R(F[4].vc1);
-	    duu(num++) = du;  
-	}
-    }
-
-    return aa;
+    return constETD(a0, h, Nt, skip_rate, true);
 }
 
+std::pair<ArrayXXd, ArrayXXd>
+KS::intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
+    
+    assert(a0.size() == N-2);
+    ArrayXXd v0(N-2, N-1); 
+    v0 << a0, MatrixXd::Identity(N-2, N-2);
+    ArrayXXd aa = constETD(v0, h, Nt, skip_rate, false);
+    
+    int m = aa.cols() / (N-1);
+    ArrayXXd x(N-2, m);
+    ArrayXXd xx(N-2, m*(N-2));
+    for(int i = 0; i < m; i++){
+	x.col(i) = aa.col(i*(N-1));
+	xx.middleCols((N-2)*i, N-2) = aa.middleCols((N-1)*i+1, N-2);
+    }
+
+    return std::make_pair(x, xx);
+}
+
+
+std::pair<VectorXd, ArrayXXd>
+KS::aintg(const ArrayXd &a0, const double h, const double tend, 
+	  const int skip_rate){
+    
+    assert(a0.size() == N-2);
+    return adaptETD(a0, h, tend, skip_rate, true);
+}
+
+std::tuple<VectorXd, ArrayXXd, ArrayXXd>
+KS::aintgj(const ArrayXd &a0, const double h, const double tend, 
+	   const int skip_rate){
+    
+    assert(a0.size() == N-2);
+    ArrayXXd v0(N-2, N-1); 
+    v0 << a0, MatrixXd::Identity(N-2, N-2);
+    auto tmp = adaptETD(v0, h, tend, skip_rate, false);
+    ArrayXXd &aa = tmp.second;
+
+    int m = aa.cols() / (N-1);
+    ArrayXXd x(N-2, m);
+    ArrayXXd xx(N-2, m*(N-2));
+    for(int i = 0; i < m; i++){
+	x.col(i) = aa.col(i*(N-1));
+	xx.middleCols((N-2)*i, N-2) = aa.middleCols((N-1)*i+1, N-2);
+    }
+
+    return std::make_tuple(tmp.first, x, xx);
+}
+
+
+/**
+ * @brief Constant time step integrator
+ */
 ArrayXXd 
-KS::constETD(const ArrayXXcd a0, const double h, const int Nt, 
+KS::constETD(const ArrayXXd a0, const double h, const int Nt, 
 	     const int skip_rate, const bool onlyOrbit){
 
     int nc = 1;			// number of columns of a single state
@@ -213,10 +250,11 @@ KS::constETD(const ArrayXXcd a0, const double h, const int Nt,
     }
     
     const int M = Nt / skip_rate + 1;
-    f[0].vc1 = a0;
-    ArrayXXcd aa(N/2+1, M*nc);
+    f[0].vc1 = R2C(a0);
+    ArrayXXd aa(N-2, M*nc);
     aa.leftCols(nc) = a0;
-    duu.resize(M-1);
+    lte.resize(M-1);
+    NCallF = 0;
 
     calCoe(h);
 
@@ -227,8 +265,8 @@ KS::constETD(const ArrayXXcd a0, const double h, const int Nt,
 	f[0].vc1 = f[4].vc1;	// update state
 	NCallF += 5;
 	if ( (i+1)%skip_rate == 0 ) {
-	    aa.middleCols(num*nc, nc) = F[4].vc1;
-	    duu(num++) = du;  
+	    aa.middleCols((num+1)*nc, nc) = C2R(f[4].vc1);
+	    lte(num++) = du;  
 	}
     }
 
@@ -239,23 +277,32 @@ KS::constETD(const ArrayXXcd a0, const double h, const int Nt,
  * @brief time step adaptive integrator
  */
 std::pair<VectorXd, ArrayXXd>
-KS::intg(const ArrayXd &a0, const double h0, const double tend, const int skip_rate){
-
-    double h = h0;
+KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
+	     const int skip_rate, const bool onlyOrbit){
+    
+    int nc = 1;			// number of columns of a single state
+    RFFT *f = F;
+    if (!onlyOrbit)  {
+	f = JF;
+	nc = N-1;
+    }
+    
+    double h = h0; 
     calCoe(h);
 
     const int Nt = (int)round(tend/h);
     const int M = Nt /skip_rate + 1;
+    f[0].vc1 = R2C(a0);
 
-    ArrayXXd aa(N, M);
+    ArrayXXd aa(N-2, M*nc);
     VectorXd tt(M);
-    aa.col(0) = a0;
+    aa.leftCols(nc) = a0;
     tt(0) = 0;
     NCalCoe = 0;
     NReject = 0;
     NCallF = 0;    
     hs.resize(M-1);
-    duu.resize(M-1);
+    lte.resize(M-1);
 
     double t = 0;
     double du = 0;
@@ -263,7 +310,7 @@ KS::intg(const ArrayXd &a0, const double h0, const double tend, const int skip_r
     bool doChange, doAccept;
 
     int i = 0;
-    while(t < tend){
+    while(t < tend){ 
 	i++;
 
 	if ( t + h > tend){
@@ -272,25 +319,25 @@ KS::intg(const ArrayXd &a0, const double h0, const double tend, const int skip_r
 	    NCalCoe++;
 	}
 
-	oneStep(du);
+	oneStep(du, onlyOrbit);
 	NCallF += 5;		
 	double s = nu * std::pow(rtol/du, 1.0/4);
 	double mu = adaptTs(doChange, doAccept, s);
 	
 	if (doAccept){
 	    t += h;
-	    F[0].vc1 = F[4].vc1;
+	    f[0].vc1 = f[4].vc1;
 	    if ( (i+1) % skip_rate == 0 ) {
 		if (num >= tt.size() ) {
 		    int m = tt.size();
 		    tt.conservativeResize(m+cellSize);
-		    aa.conservativeResize(Eigen::NoChange, m+cellSize); // rows not change, just extend cols
+		    aa.conservativeResize(Eigen::NoChange, (m+cellSize)*nc); // rows not change, just extend cols
 		    hs.conservativeResize(m-1+cellSize);
-		    duu.conservativeResize(m-1+cellSize);
+		    lte.conservativeResize(m-1+cellSize);
 		}
 		hs(num-1) = h;
-		duu(num-1) = du;
-		aa.col(num) = C2R(F[4].vc1);
+		lte(num-1) = du;
+		aa.middleCols(num*nc, nc) = C2R(f[4].vc1);
 		tt(num) = t;
 		num++;
 	    }
@@ -306,10 +353,10 @@ KS::intg(const ArrayXd &a0, const double h0, const double tend, const int skip_r
 	}
     }
     
-    // duu = duu.head(num) has aliasing problem 
+    // lte = lte.head(num) has aliasing problem 
     hs.conservativeResize(num-1);
-    duu.conservativeResize(num-1);
-    return std::make_pair(tt.head(num), uu.leftCols(num));
+    lte.conservativeResize(num-1);
+    return std::make_pair(tt.head(num), aa.leftCols(num*nc));
 }
 
 #if 0
@@ -498,11 +545,11 @@ ArrayXXcd KS::R2C(const ArrayXXd &v){
 VectorXd 
 KS::velocity(const Ref<const ArrayXd> &a0){
     assert(a0.rows() == N-2);
-    Fv.vc1 = R2C(a0);
-    NL(Fv); 
-    Fv.vc1 = L * Fv.vc1 + Fv.vc3;
+    F[0].vc1 = R2C(a0);
+    NL(0, true); 
+    F[0].vc1 = L * F[0].vc1 + F[0].vc3;
   
-    return C2R(Fv.vc1);
+    return C2R(F[0].vc1);
 }
 
 /* return v(x) + theta *t(x) */
@@ -518,11 +565,11 @@ MatrixXd KS::stab(const Ref<const ArrayXd> &a0){
     assert( N-2 == a0.rows() );
     ArrayXXd v0(N-2, N-1); 
     v0 << a0, MatrixXd::Identity(N-2, N-2);
-    jFv.vc1 = R2C(v0);
-    jNL(jFv);
-    jFv.vc1 = (L.matrix().asDiagonal() * jFv.vc1.matrix()).array() + jFv.vc3;
+    JF[0].vc1 = R2C(v0);
+    NL(0, false);
+    JF[0].vc1 = PROD(L, JF[0].vc1).array() + JF[0].vc3;
     
-    return C2R(jFv.vc1.rightCols(N-2));
+    return C2R(JF[0].vc1.rightCols(N-2));
 }
 
 /* the stability matrix of a relative equilibrium */
@@ -857,6 +904,7 @@ MatrixXd KS::veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa,
  */
 std::pair<ArrayXXd, ArrayXXd>
 KS::orbitAndFvWhole(const ArrayXd &a0, const ArrayXXd &ve,
+		    const double h,
 		    const size_t nstp, const std::string ppType
 		    ){
     assert(N-2 == a0.rows());
@@ -864,7 +912,7 @@ KS::orbitAndFvWhole(const ArrayXd &a0, const ArrayXXd &ve,
     assert(nstp % M == 0);
     const int space = nstp / M;
     
-    ArrayXXd aa = intg(a0, nstp, space);
+    ArrayXXd aa = intg(a0, h, nstp, space);
     if(ppType.compare("ppo") == 0) 
 	return std::make_pair(
 			      half2whole(aa.leftCols(aa.cols()-1)),
@@ -912,12 +960,13 @@ MatrixXd KS::veTrunc(const MatrixXd ve, const int pos, const int trunc /* = 0 */
  */
 std::pair<ArrayXXd, ArrayXXd>
 KS::orbitAndFvWholeSlice(const ArrayXd &a0, const ArrayXXd &ve,
+			 const double h,
 			 const size_t nstp, const std::string ppType,
 			 const int pos
 			 ){
     assert(ve.rows() % (N-2) == 0);
     const int NFV = ve.rows() / (N-2);
-    auto tmp = orbitAndFvWhole(a0, ve, nstp, ppType);
+    auto tmp = orbitAndFvWhole(a0, ve, h, nstp, ppType);
     auto tmp2 = orbitToSlice(tmp.first);
     MatrixXd veSlice = veToSliceAll(tmp.second, tmp.first, NFV);
     MatrixXd ve_trunc = veTrunc(veSlice, pos, NFV);

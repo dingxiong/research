@@ -9,7 +9,7 @@ EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 CFLAGS = -lm -lfftw3 -std=c++11 
 
 
-SOURCE = ksint.cc ksintM1.cc 
+SOURCE = ksint.cc # ksintM1.cc 
 SHARED = libksint.so
 STATIC = libksint.a
 

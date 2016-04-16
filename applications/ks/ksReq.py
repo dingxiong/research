@@ -1,5 +1,7 @@
 from personalFunctions import *
 from py_ks import *
+from sklearn.svm import SVR
+from sklearn.grid_search import GridSearchCV
 
 
 def loadRE(fileName, N):
@@ -77,8 +79,8 @@ def loadPO2(fileName, poIds, bases, x0):
         for poId in poIds[i]:
             a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
             h = T / nstp
-            ks = pyKS(N, h, 22)
-            aa = ks.intg(a0, nstp, 5); print "geda"
+            ks = pyKS(N, 22)
+            aa = ks.intg(a0, h, nstp, 5)
             aa = ks.redO2(aa)[0]
             aas.append(aa)
             pas.append(aa.dot(bases.T) - x0)
@@ -237,7 +239,41 @@ def poPoinc(fileName, poIds, bases, x0, theta1, theta2):
     return pas, poinc, poincf, poincRaw, np.array(nums)
 
 
-############################################################
+def getCurveIndex(x, y):
+    """
+    for each row of x, try to find the corresponding
+    row of y such that these two rows have the minimal
+    distance.
+    """
+    m, n = xf.shape
+    minDs = np.zeros(m)
+    minIds = np.zeros(m, dtype=np.int)
+    for i in range(m):
+        dif = x[i]-y
+        dis = norm(dif, axis=1)
+        minDs[i] = np.min(dis)
+        minIds[i] = np.argmin(dis)
+    
+    return minIds, minDs
+
+
+def getCurveCoordinate(sortId, poinc):
+    """
+    get the curve coordinate
+    """
+    m = sortId.shape[0]
+    dis = np.zeros(m)
+    coor = np.zeros(m)
+    for i in range(1, m):
+        dis[i] = dis[i-1] + norm(poinc[sortId[i]]-poinc[sortId[i-1]])
+
+    for i in range(m):
+        coor[sortId[i]] = dis[i]
+
+    return dis, coor
+
+##############################################################################################################
+
 case = 110
 
 if case == 10:
@@ -686,7 +722,7 @@ if case == 110:
     N = 64
     d = 22
     h = 0.001
-    ks = pyKS(N, h, d)
+    ks = pyKS(N, d)
 
     req, ws, reqr, eq, eqr = loadRE('../../data/ks22Reqx64.h5', N)
     pev, bases = getBases(ks, 'eq', eq[1], [6, 7, 10])
@@ -703,7 +739,7 @@ if case == 110:
         '../../data/ks22h001t120x64EV.h5', poIds,
         bases, x0,  2*np.pi/6, 2.0/3*np.pi/6)
     ii = [0, 1, 2]
-    print "geda"
+    
     fig, ax = pl2d(labs=[r'$v_1$', r'$v_2$'])
     plotRE2d(ax, reqr, eqr, ii)
     for i in range(len(aas)):
@@ -717,3 +753,37 @@ if case == 110:
     ax2d(fig, ax)
 
     plot1dfig(nums)
+    
+    xf = poinc[:, 1:]
+    sel = xf[:, 0] > 0
+    # xf = xf[sel]
+    # poincRaw = poincRaw[sel]
+    scale = 10
+    nps = 5000
+    svr = GridSearchCV(SVR(kernel='rbf', gamma=0.1), cv=5,
+                       param_grid={"C": [1e0, 1e1, 1e2, 1e3],
+                                   "gamma": np.logspace(-2, 2, 5),
+                                   "degree": [3]})
+    
+    svr.fit(xf[:, 0:1], xf[:, 1]*scale)
+    xp = linspace(0.43, -0.3, nps)  # start form right side
+    xpp = xp.reshape(nps, 1)
+    yp = svr.predict(xpp)/scale
+    fig, ax = pl2d(size=[8, 3], labs=[None, 'z'], axisLabelSize=20,
+                   ratio='equal')
+    ax.scatter(poinc[:, 1], poinc[:, 2], c='r', s=10, edgecolors='none')
+    ax.plot(xp, yp, c='g', ls='-', lw=2)
+    ax2d(fig, ax)
+
+    curve = np.zeros((nps, 2))
+    curve[:, 0] = xp
+    curve[:, 1] = yp
+    minIds, minDs = getCurveIndex(xf, curve)
+    sortId = np.argsort(minIds)
+   
+    dis, coor = getCurveCoordinate(sortId, poincRaw)
+    fig, ax = pl2d(size=[6, 4], labs=[r'$S_n$', r'$S_{n+1}$'],
+                   axisLabelSize=15)
+    ax.scatter(coor[:-1], coor[1:], c='r', s=10, edgecolors='none')
+    ax2d(fig, ax)
+

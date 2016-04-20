@@ -242,6 +242,38 @@ void Cqcgl1d::dealias(FFT &Fv){
     Fv.v3.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, Fv.v3.cols());
 }
 
+
+void Cqcgl1d::NL(const int k, const bool onlyOrbit){
+    dcp B(Br, Bi);
+    dcp G(Gr, Gi);
+
+    if(onlyOrbit){
+	F[k].ifft();
+	ArrayXcd A2 = F[k].v2.real().square() + F[k].v2.imag().square();
+	F[k].v2 = B * F[k].v2 * A2 + G * F[k].v2 * A2.square();
+	F[k].fft();
+
+	dealias(k, onlyOrbit);
+    }
+    else {
+	JF[k].ifft(); 
+	ArrayXcd A = JF[k].v2.col(0);
+	ArrayXcd aA2 = A.real().square() + A.imag().square();
+	ArrayXcd A2 = A.square();
+	
+	JF[k].v2.col(0) = B * A * aA2 + G * A * aA2.square();
+	
+	const int M = JF[k].cols() - 1;
+	JF[k].v2.rightCols(M) = JF[k].v2.rightCols(M).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
+	    JF[k].v2.rightCols(M).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
+	
+	JF[k].fft();
+
+	dealias(k, onlyOrbit);
+    }
+}
+
+#if 0
 /* 3 different stage os ETDRK4:
  *  v --> ifft(v) --> fft(g(ifft(v)))
  * */
@@ -271,6 +303,7 @@ void Cqcgl1d::jNL(FFT &f){
 
     dealias(f);
 }
+#endif
 
 
 /** @brief transform conjugate matrix to its real form */

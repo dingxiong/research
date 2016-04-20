@@ -30,7 +30,6 @@ using Eigen::ArrayXXd; using Eigen::ArrayXd;
 using Eigen::ConjugateGradient;
 using Eigen::PartialPivLU;
 using Eigen::Map; using Eigen::Ref;
-using MyFFT::FFT;
 
 //////////////////////////////////////////////////////////////////////
 //                       class Cqcgl1d                              //
@@ -59,14 +58,40 @@ public:
     ArrayXd K, Kindex, KindexUnpad;    
     ArrayXcd L, E, E2, Q, f1, f2, f3;
 
+    MyFFT::FFT F[5], JF[5];
+
+    /* for time step adaptive ETDRK4 and Krogstad  */
+    ////////////////////////////////////////////////////////////
+    // time adaptive method related parameters
+    double rtol = 1e-8;
+    double nu = 0.9;		/* safe factor */
+    double mumax = 2.5;		/* maximal time step increase factor */
+    double mumin = 0.4;		/* minimal time step decrease factor */
+    double mue = 1.25;		/* upper lazy threshold */
+    double muc = 0.85;		/* lower lazy threshold */
+
+    int NCalCoe = 0;		/* times to evaluate coefficient */
+    int NReject = 0;		/* times that new state is rejected */
+    int NCallF = 0;	       /* times to call velocity function f */
+    VectorXd hs;	       /* time step sequnce */
+    VectorXd lte;	       /* local relative error estimation */
+
+    int cellSize = 500;	/* size of cell when resize output container */
+    int M = 64;			/* number of sample points */
+    int R = 1;			/* radius for evaluating phi(z) */
+
+    int Method = 1;
+    ////////////////////////////////////////////////////////////
+
+
     ////////////////////////////////////////////////////////////
     //         constructor, destructor, copy assignment.      //
     ////////////////////////////////////////////////////////////
-    Cqcgl1d(int N = 1024, double d = 30, double h = 0.01,
-	    bool enableJacv = false, int Njacv = 1,
-	    double Mu = -0.1, double Br = 1.0, double Bi = 0.8,
-	    double Dr = 0.125, double Di = 0.5, double Gr = -0.1,
-	    double Gi = -0.6, int threadNum = 4);
+    Cqcgl1d(int N, double d, double h,
+	    bool enableJacv, int Njacv,
+	    double Mu, double Br, double Bi,
+	    double Dr, double Di, double Gr,
+	    double Gi, int threadNum);
     ~Cqcgl1d();
     Cqcgl1d & operator=(const Cqcgl1d &x);
 
@@ -216,13 +241,6 @@ public:
 	    const int PrintFreqency);
    VectorXcd directEigE(const ArrayXd &a0, const double th, const double phi, 
 			const int nstp);
-    
-protected:
-    /****    global variable definition.   *****/
-    enum { M = 128 }; // number used to approximate the complex integral.
-    
-    FFT Fv, Fa, Fb, Fc; // create four fft&ifft structs for forward/backward fft transform.
-    FFT jFv, jFa, jFb, jFc;
   
     void CGLInit();
     void calculateCoefficients();

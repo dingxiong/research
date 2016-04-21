@@ -3,93 +3,25 @@
 #include <Eigen/Dense>
 #include <cstdio>
 
-#include "cqcgl.hpp"
-#include "CqcglETD.hpp"
+#include "CQCGL.hpp"
+#include "myBoostPython.hpp"
 
 using namespace std;
 using namespace Eigen;
 namespace bp = boost::python;
 namespace bn = boost::numpy;
 
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-
-/* get the dimension of an array */
-inline void getDims(bn::ndarray x, int &m, int &n){
-    if(x.get_nd() == 1){
-	m = 1;
-	n = x.shape(0);
-    } else {
-	m = x.shape(0);
-	n = x.shape(1);
-    }
-}
-
-/*
- * @brief used to copy content in Eigen array to boost.numpy array.
- *
- *  Only work for double array/matrix
- */
-inline bn::ndarray copy2bn(const Ref<const ArrayXXd> &x){
-    int m = x.cols();
-    int n = x.rows();
-
-    Py_intptr_t dims[2];
-    int ndim;
-    if(m == 1){
-	ndim = 1;
-	dims[0] = n;
-    }
-    else {
-	ndim = 2;
-	dims[0] = m;
-	dims[1] = n;
-    }
-    bn::ndarray px = bn::empty(ndim, dims, bn::dtype::get_builtin<double>());
-    memcpy((void*)px.get_data(), (void*)x.data(), sizeof(double) * m * n);
-	    
-    return px;
-}
-
-/**
- * @brief std::vector to bp::list
- */
-template <class T>
-bp::list toList(std::vector<T> vector) {
-    typename std::vector<T>::iterator iter;
-    bp::list list;
-    for (iter = vector.begin(); iter != vector.end(); ++iter) {
-	list.append(*iter);
-    }
-    return list;
-}
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class pyCqcgl1d : public Cqcgl {
-    /*
-     * Python interface for Cqcgl1d.cc
-     * Note:
-     *     1) Input and out put are arrays of C form, meaning each
-     *        row is a vector
-     */
+class pyCQCGL : public CQCGL {
   
 public:
 
-    pyCqcgl1d(int N, double d, double h,
-	      bool enableJacv, int Njacv,
-	      double b, double c,
-	      double dr, double di,
-	      int threadNum) :
-	Cqcgl(N, d, h, enableJacv, Njacv,
-	      b, c, dr, di, threadNum) {}
-    
-    /* wrap changeh */
-    void PYchangeh(const double hnew){
-	changeh(hnew);
-    }
+    pyCQCGL(int N, double d,
+	    double b, double c, double dr, double di,
+	    int dimTan, int threadNum) :
+	CQCGL(N, d, b, c, dr, di, dimTan, threadNum) {}
 
     /* K */
     bn::ndarray PYK(){
@@ -97,10 +29,8 @@ public:
     }
 
     /* L */
-    bp::tuple PYL(){
-	ArrayXd r = L.real();
-	ArrayXd i = L.imag();
-	return bp::make_tuple( copy2bn(r), copy2bn(i) );
+    bn::ndarray PYL(){
+	return copy2bn<ArrayXXcd, std::complex<double>>(L);
     }
 
     /* wrap the velocity */
@@ -534,47 +464,6 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-class pyCqcglETD : public CqcglETD {
-public :
-    pyCqcglETD(int N, double d, double W, double B, double C, double DR, double DI) : 
-	CqcglETD(N, d, W, B, C, DR, DI) {}
-
-    bp::tuple PYetd(bn::ndarray a0, double tend, double h, int skip_rate, 
-		    int method, bool adapt){
-	int m, n;
-	getDims(a0, m, n);
-	Map<VectorXd> tmpa0((double*)a0.get_data(), n * m);
-
-	auto tmp = etd(tmpa0, tend, h, skip_rate, method, adapt);
-	return bp::make_tuple(copy2bn(tmp.first), 
-			      copy2bn(tmp.second)
-			      );
-    }
-
-    bn::ndarray PYhs() {
-	return copy2bn(etdrk4->hs);
-    }
-    
-    bn::ndarray PYduu() {
-	return copy2bn(etdrk4->duu);
-    }
-
-    bp::tuple PYetdParam(){
-	return bp::make_tuple(etdrk4->NCalCoe,
-			      etdrk4->NReject,
-			      etdrk4->NCallF,
-			      etdrk4->rtol
-			      );
-    }
-    
-    void PYsetRtol(double x){
-	etdrk4->rtol = x;
-    }
-
-};
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -582,100 +471,78 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
     bn::initialize();
 
     // must provide the constructor
-    bp::class_<Cqcgl>("Cqcgl", bp::init<
-		      int, double, double,
-		      bool, int,
+    bp::class_<CQCGL>("CQCGL", bp::init<
+		      int, double, 
 		      double, double, double, double, 
-		      int>())
+		      int, int>())
 	;
-
-    bp::class_<CqcglETD>("CqcglETD", bp::init<
-			 int, double, double, double, double, double , double
-			 >())
-	;
-
     
-    bp::class_<pyCqcgl1d, bp::bases<Cqcgl> >("pyCqcgl1d", bp::init<
-					     int, double, double,
-					     bool, int,
-					     double, double, double, double,
-					     int >())
-	.def_readonly("N", &pyCqcgl1d::N)
-	.def_readonly("d", &pyCqcgl1d::d)
-	.def_readonly("h", &pyCqcgl1d::h)
-	.def_readonly("trueNjacv", &pyCqcgl1d::trueNjacv)
-	.def_readonly("Mu", &pyCqcgl1d::Mu)
-	.def_readonly("Br", &pyCqcgl1d::Br)
-	.def_readonly("Bi", &pyCqcgl1d::Bi)
-	.def_readonly("Dr", &pyCqcgl1d::Dr)
-	.def_readonly("Di", &pyCqcgl1d::Di)
-	.def_readonly("Gr", &pyCqcgl1d::Gr)
-	.def_readonly("Gi", &pyCqcgl1d::Gi)
-	.def_readonly("Ndim", &pyCqcgl1d::Ndim)
-	.def_readonly("b", &pyCqcgl1d::b)
-	.def_readonly("c", &pyCqcgl1d::c)
-	.def_readonly("dr", &pyCqcgl1d::dr)
-	.def_readonly("di", &pyCqcgl1d::di)
-	.def("K", &pyCqcgl1d::PYK)
-	.def("L", &pyCqcgl1d::PYL)
-	.def("changeh", &pyCqcgl1d::PYchangeh)
-	.def("velocity", &pyCqcgl1d::PYvelocity)
-	.def("velSlice", &pyCqcgl1d::PYvelSlice)
-	.def("velPhase", &pyCqcgl1d::PYvelPhase)
-	.def("rk4", &pyCqcgl1d::PYrk4)
-	.def("rk4j", &pyCqcgl1d::PYrk4j)
-	.def("velocityReq", &pyCqcgl1d::PYvelocityReq)
-	.def("Lyap", &pyCqcgl1d::PYLyap)
-	.def("LyapVel", &pyCqcgl1d::PYLyapVel)
-	.def("pad", &pyCqcgl1d::PYpad)
-	.def("generalPadding", &pyCqcgl1d::PYgeneralPadding)
-	.def("unpad", &pyCqcgl1d::PYunpad)
-	.def("intg", &pyCqcgl1d::PYintg)
-	.def("intgj", &pyCqcgl1d::PYintgj)
-	.def("intgv", &pyCqcgl1d::PYintgv)
-	.def("intgvs", &pyCqcgl1d::PYintgvs)
-	.def("Fourier2Config", &pyCqcgl1d::PYFourier2Config)
-	.def("Config2Fourier", &pyCqcgl1d::PYConfig2Fourier)
-	.def("Fourier2ConfigMag", &pyCqcgl1d::PYFourier2ConfigMag)
-	.def("calPhase", &pyCqcgl1d::PYcalPhase)
-	.def("Fourier2Phase", &pyCqcgl1d::PYFourier2Phase)
-	.def("orbit2sliceWrap", &pyCqcgl1d::PYorbit2sliceWrap)
-	.def("orbit2slice", &pyCqcgl1d::PYorbit2slice)
-	.def("stab", &pyCqcgl1d::PYstab)
-	.def("stabReq", &pyCqcgl1d::PYstabReq)
-	.def("reflect", &pyCqcgl1d::PYreflect)
-	.def("reduceReflection", &pyCqcgl1d::PYreduceReflection)
-	.def("refGradMat", &pyCqcgl1d::PYrefGradMat)
-	.def("reflectVe", &pyCqcgl1d::PYreflectVe)
-	.def("reflectVeAll", &pyCqcgl1d::PYreflectVeAll)
-	.def("ve2slice", &pyCqcgl1d::PYve2slice)
-	.def("reduceAllSymmetries", &pyCqcgl1d::PYreduceAllSymmetries)
-	.def("reduceIntg", &pyCqcgl1d::PYreduceIntg)
-	.def("reduceVe", &pyCqcgl1d::PYreduceVe)
-	.def("findReq", &pyCqcgl1d::PYfindReq)
-	.def("optThPhi", &pyCqcgl1d::PYoptThPhi)
-	.def("transRotate", &pyCqcgl1d::PYtransRotate) 
-	.def("transTangent", &pyCqcgl1d::PYtransTangent)
-	.def("phaseRotate", &pyCqcgl1d::PYphaseRotate)
-	.def("phaseTangent", &pyCqcgl1d::PYphaseTangent)
-	.def("Rotate", &pyCqcgl1d::PYRotate)
-	.def("rotateOrbit", &pyCqcgl1d::PYrotateOrbit)
-	.def("planeWave", &pyCqcgl1d::PYplaneWave)
-	.def("powIt", &pyCqcgl1d::PYpowIt)
-	.def("powEigE", &pyCqcgl1d::PYpowEigE)
+    
+    bp::class_<pyCQCGL, bp::bases<CQCGL> >("pyCQCGL", bp::init<
+					   int, double, 
+					   double, double, double, double,
+					   int, int >())
+	.def_readonly("N", &pyCQCGL::N)
+	.def_readonly("d", &pyCQCGL::d)
+	.def_readonly("Mu", &pyCQCGL::Mu)
+	.def_readonly("Br", &pyCQCGL::Br)
+	.def_readonly("Bi", &pyCQCGL::Bi)
+	.def_readonly("Dr", &pyCQCGL::Dr)
+	.def_readonly("Di", &pyCQCGL::Di)
+	.def_readonly("Gr", &pyCQCGL::Gr)
+	.def_readonly("Gi", &pyCQCGL::Gi)
+	.def_readonly("Ndim", &pyCQCGL::Ndim)
+	.def_readonly("Ne", &pyCQCGL::Ne)
+	.def_readonly("b", &pyCQCGL::b)
+	.def_readonly("c", &pyCQCGL::c)
+	.def_readonly("dr", &pyCQCGL::dr)
+	.def_readonly("di", &pyCQCGL::di)
+	.def("K", &pyCQCGL::PYK)
+	.def("L", &pyCQCGL::PYL)
+	.def("velocity", &pyCQCGL::PYvelocity)
+	.def("velSlice", &pyCQCGL::PYvelSlice)
+	.def("velPhase", &pyCQCGL::PYvelPhase)
+	.def("rk4", &pyCQCGL::PYrk4)
+	.def("rk4j", &pyCQCGL::PYrk4j)
+	.def("velocityReq", &pyCQCGL::PYvelocityReq)
+	.def("Lyap", &pyCQCGL::PYLyap)
+	.def("LyapVel", &pyCQCGL::PYLyapVel)
+	.def("pad", &pyCQCGL::PYpad)
+	.def("generalPadding", &pyCQCGL::PYgeneralPadding)
+	.def("unpad", &pyCQCGL::PYunpad)
+	.def("intg", &pyCQCGL::PYintg)
+	.def("intgj", &pyCQCGL::PYintgj)
+	.def("intgv", &pyCQCGL::PYintgv)
+	.def("intgvs", &pyCQCGL::PYintgvs)
+	.def("Fourier2Config", &pyCQCGL::PYFourier2Config)
+	.def("Config2Fourier", &pyCQCGL::PYConfig2Fourier)
+	.def("Fourier2ConfigMag", &pyCQCGL::PYFourier2ConfigMag)
+	.def("calPhase", &pyCQCGL::PYcalPhase)
+	.def("Fourier2Phase", &pyCQCGL::PYFourier2Phase)
+	.def("orbit2sliceWrap", &pyCQCGL::PYorbit2sliceWrap)
+	.def("orbit2slice", &pyCQCGL::PYorbit2slice)
+	.def("stab", &pyCQCGL::PYstab)
+	.def("stabReq", &pyCQCGL::PYstabReq)
+	.def("reflect", &pyCQCGL::PYreflect)
+	.def("reduceReflection", &pyCQCGL::PYreduceReflection)
+	.def("refGradMat", &pyCQCGL::PYrefGradMat)
+	.def("reflectVe", &pyCQCGL::PYreflectVe)
+	.def("reflectVeAll", &pyCQCGL::PYreflectVeAll)
+	.def("ve2slice", &pyCQCGL::PYve2slice)
+	.def("reduceAllSymmetries", &pyCQCGL::PYreduceAllSymmetries)
+	.def("reduceIntg", &pyCQCGL::PYreduceIntg)
+	.def("reduceVe", &pyCQCGL::PYreduceVe)
+	.def("findReq", &pyCQCGL::PYfindReq)
+	.def("optThPhi", &pyCQCGL::PYoptThPhi)
+	.def("transRotate", &pyCQCGL::PYtransRotate) 
+	.def("transTangent", &pyCQCGL::PYtransTangent)
+	.def("phaseRotate", &pyCQCGL::PYphaseRotate)
+	.def("phaseTangent", &pyCQCGL::PYphaseTangent)
+	.def("Rotate", &pyCQCGL::PYRotate)
+	.def("rotateOrbit", &pyCQCGL::PYrotateOrbit)
+	.def("planeWave", &pyCQCGL::PYplaneWave)
+	.def("powIt", &pyCQCGL::PYpowIt)
+	.def("powEigE", &pyCQCGL::PYpowEigE)
 	;
-
-
-    bp::class_<pyCqcglETD, bp::bases<CqcglETD> >("pyCqcglETD", bp::init<
-						 int, double, double, double, double, double , double
-						 >())
-	.def_readonly("N", &pyCqcglETD::N)
-	.def_readonly("d", &pyCqcglETD::d)
-	.def("etdParam", &pyCqcglETD::PYetdParam)
-	.def("setRtol", &pyCqcglETD::PYsetRtol)
-	.def("etd", &pyCqcglETD::PYetd)
-	.def("hs", &pyCqcglETD::PYhs)
-	.def("duu", &pyCqcglETD::PYduu)
-	; 
 
 }

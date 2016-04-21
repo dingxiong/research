@@ -52,6 +52,16 @@ bn::ndarray copy2bn(const Ref<const MyAry> &x){
     return px;
 }
 
+/* non-template function overloading for real matrix */
+inline bn::ndarray copy2bn(const Ref<const ArrayXXd> &x) {
+    return copy2bn<ArrayXXd, double>(x);
+}
+
+/* non-template function overloading for imaginary matrix */
+inline bn::ndarray copy2bnc(const Ref<const ArrayXXcd> &x) {
+    return copy2bn<ArrayXXcd, dcp>(x);
+}
+
 
 /**
  * @brief std::vector to bp::list

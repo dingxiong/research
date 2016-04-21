@@ -182,7 +182,7 @@ ArrayXXd
 KS::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
     
     assert(a0.size() == N-2);
-    return constETD(a0, h, Nt, skip_rate, true);
+    return constETD(a0, h, Nt, skip_rate, true, true);
 }
 
 std::pair<ArrayXXd, ArrayXXd>
@@ -191,7 +191,7 @@ KS::intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
     assert(a0.size() == N-2);
     ArrayXXd v0(N-2, N-1); 
     v0 << a0, MatrixXd::Identity(N-2, N-2);
-    ArrayXXd aa = constETD(v0, h, Nt, skip_rate, false);
+    ArrayXXd aa = constETD(v0, h, Nt, skip_rate, false, true);
     
     int m = aa.cols() / (N-1);
     ArrayXXd x(N-2, m);
@@ -210,7 +210,7 @@ KS::aintg(const ArrayXd &a0, const double h, const double tend,
 	  const int skip_rate){
     
     assert(a0.size() == N-2);
-    return adaptETD(a0, h, tend, skip_rate, true);
+    return adaptETD(a0, h, tend, skip_rate, true, true);
 }
 
 std::tuple<VectorXd, ArrayXXd, ArrayXXd>
@@ -220,7 +220,7 @@ KS::aintgj(const ArrayXd &a0, const double h, const double tend,
     assert(a0.size() == N-2);
     ArrayXXd v0(N-2, N-1); 
     v0 << a0, MatrixXd::Identity(N-2, N-2);
-    auto tmp = adaptETD(v0, h, tend, skip_rate, false);
+    auto tmp = adaptETD(v0, h, tend, skip_rate, false, true);
     ArrayXXd &aa = tmp.second;
 
     int m = aa.cols() / (N-1);
@@ -240,7 +240,7 @@ KS::aintgj(const ArrayXd &a0, const double h, const double tend,
  */
 ArrayXXd 
 KS::constETD(const ArrayXXd a0, const double h, const int Nt, 
-	     const int skip_rate, const bool onlyOrbit){
+	     const int skip_rate, const bool onlyOrbit, bool reInitTan){
 
     int nc = 1;			// number of columns of a single state
     RFFT *f = F;
@@ -249,7 +249,7 @@ KS::constETD(const ArrayXXd a0, const double h, const int Nt,
 	nc = N-1;
     }
     
-    const int M = Nt / skip_rate + 1;
+    const int M = (Nt+skip_rate-1)/skip_rate + 1;
     f[0].vc1 = R2C(a0);
     ArrayXXd aa(N-2, M*nc);
     aa.leftCols(nc) = a0;
@@ -264,9 +264,12 @@ KS::constETD(const ArrayXXd a0, const double h, const int Nt,
 	oneStep(du, onlyOrbit);
 	f[0].vc1 = f[4].vc1;	// update state
 	NCallF += 5;
-	if ( (i+1)%skip_rate == 0 ) {
+	if ( (i+1)%skip_rate == 0 || i == Nt-1) {
 	    aa.middleCols((num+1)*nc, nc) = C2R(f[4].vc1);
 	    lte(num++) = du;  
+	    if (reInitTan && !onlyOrbit) {
+		f[0].vc1.rightCols(N-2) = R2C(MatrixXd::Identity(N-2, N-2));
+	    }
 	}
     }
 
@@ -278,7 +281,8 @@ KS::constETD(const ArrayXXd a0, const double h, const int Nt,
  */
 std::pair<VectorXd, ArrayXXd>
 KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
-	     const int skip_rate, const bool onlyOrbit){
+	     const int skip_rate, const bool onlyOrbit, 
+	     const bool reInitTan){
     
     int nc = 1;			// number of columns of a single state
     RFFT *f = F;
@@ -310,13 +314,15 @@ KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
     bool doChange, doAccept;
 
     int i = 0;
-    while(t < tend){ 
+    bool TimeEnds = false;
+    while(!TimeEnds){ 
 	i++;
 
 	if ( t + h > tend){
 	    h = tend - t;
 	    calCoe(h);
 	    NCalCoe++;
+	    TimeEnds = true;
 	}
 
 	oneStep(du, onlyOrbit);
@@ -327,7 +333,7 @@ KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
 	if (doAccept){
 	    t += h;
 	    f[0].vc1 = f[4].vc1;
-	    if ( (i+1) % skip_rate == 0 ) {
+	    if ( (i+1) % skip_rate == 0 || TimeEnds) {
 		if (num >= tt.size() ) {
 		    int m = tt.size();
 		    tt.conservativeResize(m+cellSize);
@@ -340,10 +346,14 @@ KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
 		aa.middleCols(num*nc, nc) = C2R(f[4].vc1);
 		tt(num) = t;
 		num++;
+		if (reInitTan && !onlyOrbit) {
+		    f[0].vc1.rightCols(N-2) = R2C(MatrixXd::Identity(N-2, N-2));
+		}
 	    }
 	}
 	else {
 	    NReject++;
+	    TimeEnds = false;
 	}
 	
 	if (doChange) {

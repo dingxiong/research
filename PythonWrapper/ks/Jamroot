@@ -1,11 +1,15 @@
 use-project /boost : /usr/local/home/xiong/apps/sources/boost_1_57_0 ;
 
+#define source folder
+constant RESH : /usr/local/home/xiong/00git/research ;
+constant XDAPPS : /usr/local/home/xiong/apps ;
+
 project
   : requirements <library>/boost/python//boost_python 
       		 <implicit-dependency>/boost//headers 
-		 <include>/usr/local/home/xiong/apps/BoostNumpy/include/
-		 <include>/usr/local/home/xiong/00git/research/include/
-		 <include>/usr/local/home/xiong/apps/eigen/include/eigen3
+		 <include>$(XDAPPS)/BoostNumpy/include/
+		 <include>$(XDAPPS)/eigen/include/eigen3
+                 <include>$(RESH)/include/
   : usage-requirements <implicit-dependency>/boost//headers 	 
   ;
 
@@ -14,13 +18,13 @@ import python ;
 # define a new variant => in order to keep assert() functions 
 variant release_assert : <optimization>speed <inlining>full <debug-symbols>off <runtime-debugging>off ; 
 
-lib np : : <name>boost_numpy <file>/usr/local/home/xiong/apps/BoostNumpy/lib/libboost_numpy.so ;
+lib np : : <name>boost_numpy <file>$(XDAPPS)/BoostNumpy/lib/libboost_numpy.so ;
 lib fftw3 : : <name>fftw3 <file>/usr/lib/x86_64-linux-gnu/libfftw3.so ;
-lib dense : : <name>denseRoutines <file>/usr/local/home/xiong/00git/research/lib/libdenseRoutines.so ;
-lib myfft : : <name>myfft_clean <file>/usr/local/home/xiong/00git/research/lib/libmyfft_clean.so ;
-lib iter : : <name>iterMethod <file>/usr/local/home/xiong/00git/research/lib/libiterMethod.so ;
+lib dense : : <name>denseRoutines <file>$(RESH)/lib/libdenseRoutines.so ;
+lib myfft : : <name>myfft_clean <file>$(RESH)/lib/libmyfft_clean.so ;
+lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
 
-python-extension py_ks : py_ks.cc  np fftw3 ../../ksint.cc ../../../myfft/myfft.cc dense iter
+python-extension py_ks : py_ks.cc $(RESH)/source/ks/ksint.cc $(RESH)/source/myfft/myfft.cc np fftw3 dense iter
 : <variant>release_assert <optimization>speed 
 : <link>shared <cxxflags>"-std=c++11 -DCLEAN"
 ;

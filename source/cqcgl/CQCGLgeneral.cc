@@ -254,7 +254,7 @@ CQCGLgeneral::adaptTs(bool &doChange, bool &doAccept, const double s){
  */
 ArrayXXd 
 CQCGLgeneral::constETD(const ArrayXXd a0, const double h, const int Nt, 
-		  const int skip_rate, const bool onlyOrbit){
+		       const int skip_rate, const bool onlyOrbit){
 
     int nc = 1;			// number of columns of a single state
     FFT *f = F;
@@ -278,7 +278,7 @@ CQCGLgeneral::constETD(const ArrayXXd a0, const double h, const int Nt,
 	oneStep(du, onlyOrbit);
 	f[0].v1 = f[4].v1;	// update state
 	NCallF += 5;
-	if ( (i+1)%skip_rate == 0 ) {
+	if ( (i+1)%skip_rate == 0 || i == Nt-1) {
 	    aa.middleCols((num+1)*nc, nc) = C2R(f[4].v1);
 	    lte(num++) = du;  
 	}
@@ -325,13 +325,15 @@ CQCGLgeneral::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
     bool doChange, doAccept;
 
     int i = 0;
-    while(t < tend){ 
+    bool TimeEnds = false;
+    while(!TimeEnds){ 
 	i++;
 
 	if ( t + h > tend){
 	    h = tend - t;
 	    calCoe(h);
 	    NCalCoe++;
+	    TimeEnds = true;
 	}
 
 	oneStep(du, onlyOrbit);
@@ -359,6 +361,7 @@ CQCGLgeneral::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
 	}
 	else {
 	    NReject++;
+	    TimeEnds = true;
 	}
 	
 	if (doChange) {
@@ -374,6 +377,18 @@ CQCGLgeneral::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
     return std::make_pair(tt.head(num), aa.leftCols(num*nc));
 }
 
+
+/** @brief Integrator of 1d cqCGL equation.
+ *
+ *  The intial condition a0 should be coefficients of the intial state:
+ *  [b0, c0 ,b1, c1,...] where bi, ci the real and imaginary parts of Fourier modes.
+ *  
+ * @param[in] a0 initial condition of Fourier coefficents. Size : [2*N,1]
+ * @param[in] nstp number of integration steps.
+ * @param[in] np spacing of saving the trajectory.
+ * @return state trajectory. Each column is the state followed the previous column. 
+ *         Size : [2*N, nst/np+1] 
+ */
 ArrayXXd 
 CQCGLgeneral::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
     
@@ -430,82 +445,27 @@ CQCGLgeneral::aintgj(const ArrayXd &a0, const double h, const double tend,
     return std::make_tuple(tmp.first, x, xx);
 }
 
-
-/* ------------------------------------------------------ */
-/* ----              Internal functions           ------- */
-/* ------------------------------------------------------ */
-
-#if 0
 /**
- * @brief pad the input with zeros
- *
- * For example:
- *     if N = 256
- *     0, 1, 2, ..., 127, -127, ..., -1 => insert between 127 and -127
- *     The left half has one mode more than the second half
+ * @brief integrate the state and a subspace in tangent space
  */
-ArrayXXd CQCGLgeneral::pad(const Ref<const ArrayXXd> &aa){
-    int n = aa.rows();		
-    int m = aa.cols();
-    assert(Ndim == n);
-    ArrayXXd paa(2*N, m);
-    paa << aa.topRows(2*Nplus), ArrayXXd::Zero(2*Nalias, m), 
-	aa.bottomRows(2*Nminus);
-    return paa;
-}
+ArrayXXd
+CQCGLgeneral::intgv(const ArrayXd &a0, const ArrayXXd &v, const double h,
+		    const double tend, const int skip_rate){
+    
+    // check the dimension of initial condition.
+    assert( Ndim == a0.size() && Ndim == v.rows() && DimTan == v.cols());
+    ArrayXXd v0(Ndim, DimTan+1);
+    v0 << a0, v;
+    auto tmp = adaptETD(v0, h, tend, skip_rate, false);
 
-/**
- * @brief general padding/squeeze an array (arrays).
- *
- * This function is different from pad() that it only requrie n/2
- * is an odd number. It is used to prepare initial conditions for
- * Fourier modes doubled/halfed system. Alos the padding result does not
- * have dimension 2*N, but Ndim.
- *
- * @note It is user's duty to rescale the values since Fourier mode magnitude
- *       changes after doubling/halfing.
- *       For example,
- *       Initially, a_k = \sum_{i=0}^{N} f(x_n)e^{ikx}
- *       After doubling modes, ap_k is a sum of 2*N terms, and
- *       each adjacent pair is also as twice large as the previous
- *       corresponding one term.
- */
-ArrayXXd CQCGLgeneral::generalPadding(const Ref<const ArrayXXd> &aa){
-    int n = aa.rows();
-    int m = aa.cols();
-    assert( n % 4 == 2);
-    ArrayXXd paa(Ndim, m);
-    if (n < Ndim){
-	paa << aa.topRows(n/2 + 1), ArrayXXd::Zero(Ndim - n, m),
-	    aa.bottomRows(n/2 - 1);
+    for(size_t i = 1; i < nstp + 1; i++){
+	intgjOneStep();
     }
-    else {
-	paa << aa.topRows(Ne + 1), aa.bottomRows(Ne - 1);
-    }
-    return paa;
+    
+    return unpad(C2R(jFv.v1)); //both the orbit and the perturbation
 }
 
-ArrayXXcd CQCGLgeneral::padcp(const Ref<const ArrayXXcd> &x){
-    int n = x.rows();
-    int m = x.cols();
-    assert(Ne == n);
-    ArrayXXcd px(N, m);
-    px << x.topRows(Nplus), ArrayXXcd::Zero(Nalias, m),
-	x.bottomRows(Nminus);
 
-    return px;
-}
-
-ArrayXXd CQCGLgeneral::unpad(const Ref<const ArrayXXd> &paa){
-    int n = paa.rows();
-    int m = paa.cols();
-    assert(2*N == n);
-    ArrayXXd aa(Ndim, m);
-    aa << paa.topRows(2*Nplus), paa.bottomRows(2*Nminus);
-    return aa;
-}
-
-#endif
 
 /**
  * @brief get rid of the high modes
@@ -580,79 +540,7 @@ ArrayXXcd CQCGLgeneral::R2C(const ArrayXXd &v){
 /* -------------------------------------------------- */
 
 #if 0
-/**
- * @brief calculate the inital input for calculate Jacobian
- *        It has dimension [N, Ndim]
- */
-ArrayXXcd CQCGLgeneral::initJ(){
-    // Kronecker product package is not available right now.
-    ArrayXXcd J0 = ArrayXXcd::Zero(Ne, Ndim);
-    for(size_t i = 0; i < Ne; i++) {
-	J0(i,2*i) = dcp(1,0);
-	J0(i,2*i+1) = dcp(0,1);
-    }
-    return padcp(J0);
-}
 
-/** @brief Integrator of 1d cqCGL equation.
- *
- *  The intial condition a0 should be coefficients of the intial state:
- *  [b0, c0 ,b1, c1,...] where bi, ci the real and imaginary parts of Fourier modes.
- *  
- * @param[in] a0 initial condition of Fourier coefficents. Size : [2*N,1]
- * @param[in] nstp number of integration steps.
- * @param[in] np spacing of saving the trajectory.
- * @return state trajectory. Each column is the state followed the previous column. 
- *         Size : [2*N, nst/np+1] 
- */
-ArrayXXd CQCGLgeneral::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
-    assert( Ndim == a0.rows() ); // check the dimension of initial condition.
-    Fv.v1 = R2C(pad(a0));
-    ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
-  
-    for(size_t i = 1; i < nstp+1; i++) {    
-	NL(Fv);  
-	Fa.v1 = E2*Fv.v1 + Q*Fv.v3;
-
-	NL(Fa);  
-	Fb.v1 = E2*Fv.v1 + Q*Fa.v3;
-
-	NL(Fb);  
-	Fc.v1 = E2*Fa.v1 + Q*(2.0*Fb.v3-Fv.v3);
-	
-	NL(Fc); 
-	
-	Fv.v1 = E*Fv.v1 + Fv.v3*f1 + (Fa.v3+Fb.v3)*f2 + Fc.v3*f3;
-
-	if( i%np == 0 ) uu.col(i/np) = unpad(C2R(Fv.v1));
-    }
-
-    return uu;
-}
-
-pair<ArrayXXd, ArrayXXd>
-CQCGLgeneral::intgj(const ArrayXd &a0, const size_t nstp,
-	       const size_t np, const size_t nqr){
-    assert( Ndim == a0.rows() ); // check the dimension of initial condition.
-    
-    ArrayXXcd J0 = initJ();
-    jFv.v1 << R2C(pad(a0)), J0;
-    ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
-    ArrayXXd duu(Ndim, Ndim * nstp/nqr); 
-  
-    for(size_t i = 1; i < nstp + 1; i++){
-	
-	intgjOneStep();
-
-	if ( 0 == i%np ) uu.col(i/np) = unpad(C2R(jFv.v1.col(0))); 
-	if ( 0 == i%nqr){
-	    duu.middleCols((i/nqr - 1)*Ndim, Ndim) = unpad(C2R(jFv.v1.middleCols(1, Ndim)));
-	    jFv.v1.rightCols(Ndim) = J0;
-	}    
-    }
-  
-    return make_pair(uu, duu);
-}
 
 /**
  * @brief integrate the state and a subspace in tangent space
@@ -1811,6 +1699,83 @@ CQCGLgeneral::directEigE(const ArrayXd &a0, const double th, const double phi,
 		    const int nstp){
     MatrixXd J = intgj(a0, nstp, nstp, nstp).second;
     return eEig(Rotate(J, th, phi));
+}
+
+#endif
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                   Abandoned                                                    //
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if 0
+/**
+ * @brief pad the input with zeros
+ *
+ * For example:
+ *     if N = 256
+ *     0, 1, 2, ..., 127, -127, ..., -1 => insert between 127 and -127
+ *     The left half has one mode more than the second half
+ */
+ArrayXXd CQCGLgeneral::pad(const Ref<const ArrayXXd> &aa){
+    int n = aa.rows();		
+    int m = aa.cols();
+    assert(Ndim == n);
+    ArrayXXd paa(2*N, m);
+    paa << aa.topRows(2*Nplus), ArrayXXd::Zero(2*Nalias, m), 
+	aa.bottomRows(2*Nminus);
+    return paa;
+}
+
+/**
+ * @brief general padding/squeeze an array (arrays).
+ *
+ * This function is different from pad() that it only requrie n/2
+ * is an odd number. It is used to prepare initial conditions for
+ * Fourier modes doubled/halfed system. Alos the padding result does not
+ * have dimension 2*N, but Ndim.
+ *
+ * @note It is user's duty to rescale the values since Fourier mode magnitude
+ *       changes after doubling/halfing.
+ *       For example,
+ *       Initially, a_k = \sum_{i=0}^{N} f(x_n)e^{ikx}
+ *       After doubling modes, ap_k is a sum of 2*N terms, and
+ *       each adjacent pair is also as twice large as the previous
+ *       corresponding one term.
+ */
+ArrayXXd CQCGLgeneral::generalPadding(const Ref<const ArrayXXd> &aa){
+    int n = aa.rows();
+    int m = aa.cols();
+    assert( n % 4 == 2);
+    ArrayXXd paa(Ndim, m);
+    if (n < Ndim){
+	paa << aa.topRows(n/2 + 1), ArrayXXd::Zero(Ndim - n, m),
+	    aa.bottomRows(n/2 - 1);
+    }
+    else {
+	paa << aa.topRows(Ne + 1), aa.bottomRows(Ne - 1);
+    }
+    return paa;
+}
+
+ArrayXXcd CQCGLgeneral::padcp(const Ref<const ArrayXXcd> &x){
+    int n = x.rows();
+    int m = x.cols();
+    assert(Ne == n);
+    ArrayXXcd px(N, m);
+    px << x.topRows(Nplus), ArrayXXcd::Zero(Nalias, m),
+	x.bottomRows(Nminus);
+
+    return px;
+}
+
+ArrayXXd CQCGLgeneral::unpad(const Ref<const ArrayXXd> &paa){
+    int n = paa.rows();
+    int m = paa.cols();
+    assert(2*N == n);
+    ArrayXXd aa(Ndim, m);
+    aa << paa.topRows(2*Nplus), paa.bottomRows(2*Nminus);
+    return aa;
 }
 
 #endif

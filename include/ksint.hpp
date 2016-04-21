@@ -99,10 +99,10 @@ public:
 	   const int skip_rate);
     ArrayXXd 
     constETD(const ArrayXXd a0, const double h, const int Nt, 
-	     const int skip_rate, const bool onlyOrbit);
+	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
     std::pair<VectorXd, ArrayXXd>
     adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
-	     const int skip_rate, const bool onlyOrbit);
+	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
     void NL(const int k, const bool onlyOrbit);
 
     /* ------------------------------------------------------------ */

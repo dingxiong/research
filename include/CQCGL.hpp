@@ -1,9 +1,9 @@
 #ifndef CQCGL_H
 #define CQCGL_H
 
-#include "cqcgl1d.hpp"
+#include "CQCGLgeneral.hpp"
 
-class Cqcgl : public Cqcgl1d {
+class CQCGL : public CQCGLgeneral {
 
 public:
     
@@ -14,12 +14,12 @@ public:
     double di;
 
     //////////////////////////////////////////////////////////////////////
-    Cqcgl(int N, double d,
+    CQCGL(int N, double d,
 	  double b, double c,
 	  double dr, double di,
 	  int dimTan, int threadNum);
-    ~Cqcgl();
-    Cqcgl & operator=(const Cqcgl &x);
+    ~CQCGL();
+    CQCGL & operator=(const CQCGL &x);
 
     //////////////////////////////////////////////////////////////////////
     std::tuple<ArrayXd, double, double>

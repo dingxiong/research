@@ -1,4 +1,4 @@
-#include "cqcgl1d.hpp"
+#include "CQCGLgeneral.hpp"
 #include <cmath>
 #include <iostream>
 
@@ -11,7 +11,7 @@ using namespace std;
 using namespace MyFFT;
 
 //////////////////////////////////////////////////////////////////////
-//                        Class Cqcgl1d                             //
+//                        Class CQCGLgeneral                             //
 //////////////////////////////////////////////////////////////////////
 
 /* ------------------------------------------------------ */
@@ -31,7 +31,7 @@ using namespace MyFFT;
  *                         If Njacv <= 0 integrate Jacobian
  * @param[in] threadNum    number of threads for integration
  */
-Cqcgl1d::Cqcgl1d(int N, double d,
+CQCGLgeneral::CQCGLgeneral(int N, double d,
 		 double Mu, double Dr, double Di,
 		 double Br, double Bi, double Gr,
 		 double Gi,  
@@ -58,9 +58,9 @@ Cqcgl1d::Cqcgl1d(int N, double d,
     CGLInit(); // calculate coefficients.
 }
 
-Cqcgl1d::~Cqcgl1d(){}
+CQCGLgeneral::~CQCGLgeneral(){}
 
-Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
+CQCGLgeneral & CQCGLgeneral::operator=(const CQCGLgeneral &x){
     return *this;
 }
 
@@ -72,7 +72,7 @@ Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
  * @brief calculate the number of effective modes: Ne
  * @note N must be initialized first
  */
-inline int Cqcgl1d::calNe(){
+inline int CQCGLgeneral::calNe(){
     return (N/3) * 2 - 1;	/* make it an odd number */
 }
 
@@ -85,7 +85,7 @@ inline int Cqcgl1d::calNe(){
  * 
  * @note N  and doEnableTan must be initialized first
  */
-inline int Cqcgl1d::calDimTan(int dimTan){
+inline int CQCGLgeneral::calDimTan(int dimTan){
     return dimTan >= 0 ? (dimTan > 0 ? dimTan : 2 * calNe()) : 0;
 }
 
@@ -107,7 +107,7 @@ inline int Cqcgl1d::calDimTan(int dimTan){
  *    @Note each term has real and imaginary part, so the indices are
  *          0, 1, 2,... Nplus*2, Nplus*2+1,... 2*Ne-1
  */
-void Cqcgl1d::CGLInit(){
+void CQCGLgeneral::CGLInit(){
     Ne = calNe();		
     Ndim = 2 * Ne;	
     Nplus = (Ne + 1) / 2;
@@ -125,7 +125,7 @@ void Cqcgl1d::CGLInit(){
     L.middleCols(Nplus, Nalias) = ArrayXcd::Zero(Nalias);
 }
 
-void Cqcgl1d::changeOmega(double w){
+void CQCGLgeneral::changeOmega(double w){
     Omega = w;
     L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square();
     L.middleCols(Nplus, Nalias) = ArrayXcd::Zero(Nalias);
@@ -134,7 +134,7 @@ void Cqcgl1d::changeOmega(double w){
 /**
  * @brief calculate the coefficients of ETDRK4 or Krogstad
  */
-void Cqcgl1d::calCoe(const double h){
+void CQCGLgeneral::calCoe(const double h){
     
     ArrayXcd hL = h*L;
     ArrayXXcd LR = ZR(hL);
@@ -162,7 +162,7 @@ void Cqcgl1d::calCoe(const double h){
 }
 
 void 
-Cqcgl1d::oneStep(double &du, const bool onlyOrbit){
+CQCGLgeneral::oneStep(double &du, const bool onlyOrbit){
     FFT *f = F;
     if (!onlyOrbit)  f = JF;
 
@@ -208,7 +208,7 @@ Cqcgl1d::oneStep(double &du, const bool onlyOrbit){
  * @brief calcuate the matrix to do averge of phi(z). 
  */
 
-ArrayXXcd Cqcgl1d::ZR(ArrayXcd &z){
+ArrayXXcd CQCGLgeneral::ZR(ArrayXcd &z){
 
     int M1 = z.size();
     ArrayXd K = ArrayXd::LinSpaced(M, 1, M); // 1,2,3,...,M 
@@ -228,7 +228,7 @@ ArrayXXcd Cqcgl1d::ZR(ArrayXcd &z){
  * @return     mu          final dampling factor 
  */
 double
-Cqcgl1d::adaptTs(bool &doChange, bool &doAccept, const double s){
+CQCGLgeneral::adaptTs(bool &doChange, bool &doAccept, const double s){
     double mu = 1;
     doChange = true;
     doAccept = true;
@@ -253,7 +253,7 @@ Cqcgl1d::adaptTs(bool &doChange, bool &doAccept, const double s){
  * @brief Constant time step integrator
  */
 ArrayXXd 
-Cqcgl1d::constETD(const ArrayXXd a0, const double h, const int Nt, 
+CQCGLgeneral::constETD(const ArrayXXd a0, const double h, const int Nt, 
 		  const int skip_rate, const bool onlyOrbit){
 
     int nc = 1;			// number of columns of a single state
@@ -292,7 +292,7 @@ Cqcgl1d::constETD(const ArrayXXd a0, const double h, const int Nt,
  * @brief time step adaptive integrator
  */
 std::pair<VectorXd, ArrayXXd>
-Cqcgl1d::adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
+CQCGLgeneral::adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
 		  const int skip_rate, const bool onlyOrbit){
     
     int nc = 1;			// number of columns of a single state
@@ -375,14 +375,14 @@ Cqcgl1d::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
 }
 
 ArrayXXd 
-Cqcgl1d::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
+CQCGLgeneral::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
     
     assert(a0.size() == Ndim);
     return constETD(a0, h, Nt, skip_rate, true);
 }
 
 std::pair<ArrayXXd, ArrayXXd>
-Cqcgl1d::intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
+CQCGLgeneral::intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
     
     assert(a0.size() == Ndim && DimTan == Ndim);
     ArrayXXd v0(Ndim, Ndim+1); 
@@ -402,7 +402,7 @@ Cqcgl1d::intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_r
 
 
 std::pair<VectorXd, ArrayXXd>
-Cqcgl1d::aintg(const ArrayXd &a0, const double h, const double tend, 
+CQCGLgeneral::aintg(const ArrayXd &a0, const double h, const double tend, 
 	       const int skip_rate){
     
     assert(a0.size() == Ndim);
@@ -410,7 +410,7 @@ Cqcgl1d::aintg(const ArrayXd &a0, const double h, const double tend,
 }
 
 std::tuple<VectorXd, ArrayXXd, ArrayXXd>
-Cqcgl1d::aintgj(const ArrayXd &a0, const double h, const double tend, 
+CQCGLgeneral::aintgj(const ArrayXd &a0, const double h, const double tend, 
 	   const int skip_rate){
     
     assert(a0.size() == Ndim && DimTan == Ndim);
@@ -444,7 +444,7 @@ Cqcgl1d::aintgj(const ArrayXd &a0, const double h, const double tend,
  *     0, 1, 2, ..., 127, -127, ..., -1 => insert between 127 and -127
  *     The left half has one mode more than the second half
  */
-ArrayXXd Cqcgl1d::pad(const Ref<const ArrayXXd> &aa){
+ArrayXXd CQCGLgeneral::pad(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();		
     int m = aa.cols();
     assert(Ndim == n);
@@ -470,7 +470,7 @@ ArrayXXd Cqcgl1d::pad(const Ref<const ArrayXXd> &aa){
  *       each adjacent pair is also as twice large as the previous
  *       corresponding one term.
  */
-ArrayXXd Cqcgl1d::generalPadding(const Ref<const ArrayXXd> &aa){
+ArrayXXd CQCGLgeneral::generalPadding(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();
     int m = aa.cols();
     assert( n % 4 == 2);
@@ -485,7 +485,7 @@ ArrayXXd Cqcgl1d::generalPadding(const Ref<const ArrayXXd> &aa){
     return paa;
 }
 
-ArrayXXcd Cqcgl1d::padcp(const Ref<const ArrayXXcd> &x){
+ArrayXXcd CQCGLgeneral::padcp(const Ref<const ArrayXXcd> &x){
     int n = x.rows();
     int m = x.cols();
     assert(Ne == n);
@@ -496,7 +496,7 @@ ArrayXXcd Cqcgl1d::padcp(const Ref<const ArrayXXcd> &x){
     return px;
 }
 
-ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
+ArrayXXd CQCGLgeneral::unpad(const Ref<const ArrayXXd> &paa){
     int n = paa.rows();
     int m = paa.cols();
     assert(2*N == n);
@@ -510,7 +510,7 @@ ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
 /**
  * @brief get rid of the high modes
  */
-void Cqcgl1d::dealias(const int k, const bool onlyOrbit){
+void CQCGLgeneral::dealias(const int k, const bool onlyOrbit){
     if (onlyOrbit) {
 	F[k].v3.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, F[k].v3.cols());
     }
@@ -522,7 +522,7 @@ void Cqcgl1d::dealias(const int k, const bool onlyOrbit){
 /* 3 different stage os ETDRK4:
  *  v --> ifft(v) --> fft(g(ifft(v)))
  * */
-void Cqcgl1d::NL(const int k, const bool onlyOrbit){
+void CQCGLgeneral::NL(const int k, const bool onlyOrbit){
     dcp B(Br, Bi);
     dcp G(Gr, Gi);
 
@@ -553,7 +553,7 @@ void Cqcgl1d::NL(const int k, const bool onlyOrbit){
 }
 
 /** @brief transform conjugate matrix to its real form */
-ArrayXXd Cqcgl1d::C2R(const ArrayXXcd &v){
+ArrayXXd CQCGLgeneral::C2R(const ArrayXXcd &v){
     int n = v.rows();
     int m = v.cols();
     assert(N == n);
@@ -563,7 +563,7 @@ ArrayXXd Cqcgl1d::C2R(const ArrayXXcd &v){
     return Map<ArrayXXd>((double*)(vt.data()), 2*vt.rows(), vt.cols());
 }
 
-ArrayXXcd Cqcgl1d::R2C(const ArrayXXd &v){
+ArrayXXcd CQCGLgeneral::R2C(const ArrayXXd &v){
     int n = v.rows();
     int m = v.cols();
     assert( n == Ndim);
@@ -584,7 +584,7 @@ ArrayXXcd Cqcgl1d::R2C(const ArrayXXd &v){
  * @brief calculate the inital input for calculate Jacobian
  *        It has dimension [N, Ndim]
  */
-ArrayXXcd Cqcgl1d::initJ(){
+ArrayXXcd CQCGLgeneral::initJ(){
     // Kronecker product package is not available right now.
     ArrayXXcd J0 = ArrayXXcd::Zero(Ne, Ndim);
     for(size_t i = 0; i < Ne; i++) {
@@ -605,7 +605,7 @@ ArrayXXcd Cqcgl1d::initJ(){
  * @return state trajectory. Each column is the state followed the previous column. 
  *         Size : [2*N, nst/np+1] 
  */
-ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
+ArrayXXd CQCGLgeneral::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
     assert( Ndim == a0.rows() ); // check the dimension of initial condition.
     Fv.v1 = R2C(pad(a0));
     ArrayXXd uu(Ndim, nstp/np+1); uu.col(0) = a0;  
@@ -631,7 +631,7 @@ ArrayXXd Cqcgl1d::intg(const ArrayXd &a0, const size_t nstp, const size_t np){
 }
 
 pair<ArrayXXd, ArrayXXd>
-Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
+CQCGLgeneral::intgj(const ArrayXd &a0, const size_t nstp,
 	       const size_t np, const size_t nqr){
     assert( Ndim == a0.rows() ); // check the dimension of initial condition.
     
@@ -658,7 +658,7 @@ Cqcgl1d::intgj(const ArrayXd &a0, const size_t nstp,
  * @brief integrate the state and a subspace in tangent space
  */
 ArrayXXd
-Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
+CQCGLgeneral::intgv(const ArrayXd &a0, const ArrayXXd &v,
 	       const size_t nstp){
     
     // check the dimension of initial condition.
@@ -673,7 +673,7 @@ Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
 }
 
 std::pair<ArrayXXd, ArrayXXd>
-Cqcgl1d::intgvs(const ArrayXd &a0, const ArrayXXd &v, const int nstp, 
+CQCGLgeneral::intgvs(const ArrayXd &a0, const ArrayXXd &v, const int nstp, 
 		const int np, const int nqr){
     int M = v.cols(); 
     
@@ -705,7 +705,7 @@ Cqcgl1d::intgvs(const ArrayXd &a0, const ArrayXXd &v, const int nstp,
 /**
  * @brief back Fourier transform of the states. 
  */
-ArrayXXcd Cqcgl1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
+ArrayXXcd CQCGLgeneral::Fourier2Config(const Ref<const ArrayXXd> &aa){
     int m = aa.cols();
     int n = aa.rows();
     assert(Ndim == n);
@@ -724,7 +724,7 @@ ArrayXXcd Cqcgl1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
 /**
  * @brief Fourier transform of the states. Input and output are both real.
  */
-ArrayXXd Cqcgl1d::Config2Fourier(const Ref<const ArrayXXcd> &AA){
+ArrayXXd CQCGLgeneral::Config2Fourier(const Ref<const ArrayXXcd> &AA){
     int m = AA.cols();
     int n = AA.rows();
     assert(N == n);
@@ -739,11 +739,11 @@ ArrayXXd Cqcgl1d::Config2Fourier(const Ref<const ArrayXXcd> &AA){
     return aa;
 }
 
-ArrayXXd Cqcgl1d::Fourier2ConfigMag(const Ref<const ArrayXXd> &aa){
+ArrayXXd CQCGLgeneral::Fourier2ConfigMag(const Ref<const ArrayXXd> &aa){
     return Fourier2Config(aa).abs();
 }
 
-ArrayXXd Cqcgl1d::calPhase(const Ref<const ArrayXXcd> &AA){
+ArrayXXd CQCGLgeneral::calPhase(const Ref<const ArrayXXcd> &AA){
     int m = AA.cols();
     int n = AA.rows();
     assert(N == n);
@@ -755,7 +755,7 @@ ArrayXXd Cqcgl1d::calPhase(const Ref<const ArrayXXcd> &AA){
     return phase;
 }
 
-ArrayXXd Cqcgl1d::Fourier2Phase(const Ref<const ArrayXXd> &aa){
+ArrayXXd CQCGLgeneral::Fourier2Phase(const Ref<const ArrayXXd> &aa){
     return calPhase(Fourier2Config(aa));
 }
 
@@ -767,7 +767,7 @@ ArrayXXd Cqcgl1d::Fourier2Phase(const Ref<const ArrayXXd> &aa){
 /**
  * @brief velocity field
  */
-ArrayXd Cqcgl1d::velocity(const ArrayXd &a0){
+ArrayXd CQCGLgeneral::velocity(const ArrayXd &a0){
     assert( Ndim == a0.rows() );
     F[0].v1 = R2C(a0);
     NL(0, true);
@@ -780,7 +780,7 @@ ArrayXd Cqcgl1d::velocity(const ArrayXd &a0){
  *
  *   v(x) + \omega_\tau * t_\tau(x) + \omega_\rho * t_\rho(x)
  */
-ArrayXd Cqcgl1d::velocityReq(const ArrayXd &a0, const double wth,
+ArrayXd CQCGLgeneral::velocityReq(const ArrayXd &a0, const double wth,
 			     const double wphi){
     return velocity(a0) + wth*transTangent(a0) + wphi*phaseTangent(a0);    
 }
@@ -790,7 +790,7 @@ ArrayXd Cqcgl1d::velocityReq(const ArrayXd &a0, const double wth,
  *
  * @param[in]  aH  state in the slice
  */
-VectorXd Cqcgl1d::velSlice(const Ref<const VectorXd> &aH){
+VectorXd CQCGLgeneral::velSlice(const Ref<const VectorXd> &aH){
     VectorXd v = velocity(aH);
     
     Vector2d c;
@@ -808,7 +808,7 @@ VectorXd Cqcgl1d::velSlice(const Ref<const VectorXd> &aH){
     return v - vs * (Linv * c);
 }
 
-VectorXd Cqcgl1d::velPhase(const Ref<const VectorXd> &aH){
+VectorXd CQCGLgeneral::velPhase(const Ref<const VectorXd> &aH){
     VectorXd v = velocity(aH);
  
     VectorXd tp = phaseTangent(aH);   
@@ -817,7 +817,7 @@ VectorXd Cqcgl1d::velPhase(const Ref<const VectorXd> &aH){
     return v - c * tp;
 }
 
-MatrixXd Cqcgl1d::rk4(const VectorXd &a0, const double dt, const int nstp, const int nq){
+MatrixXd CQCGLgeneral::rk4(const VectorXd &a0, const double dt, const int nstp, const int nq){
     VectorXd x(a0);
     MatrixXd xx(Ndim, nstp/nq+1);
     xx.col(0) = x;
@@ -835,7 +835,7 @@ MatrixXd Cqcgl1d::rk4(const VectorXd &a0, const double dt, const int nstp, const
     return xx;
 }
 
-MatrixXd Cqcgl1d::velJ(const MatrixXd &xj){
+MatrixXd CQCGLgeneral::velJ(const MatrixXd &xj){
     MatrixXd vj(Ndim, Ndim+1);
     vj.col(0) = velocity(xj.col(0));
     vj.middleCols(1, Ndim) = stab(xj.col(0)) * xj.middleCols(1, Ndim);
@@ -844,7 +844,7 @@ MatrixXd Cqcgl1d::velJ(const MatrixXd &xj){
 }
 
 std::pair<MatrixXd, MatrixXd>
-Cqcgl1d::rk4j(const VectorXd &a0, const double dt, const int nstp, const int nq, const int nqr){
+CQCGLgeneral::rk4j(const VectorXd &a0, const double dt, const int nstp, const int nq, const int nqr){
     MatrixXd x(Ndim, Ndim + 1);
     x << a0, MatrixXd::Identity(Ndim, Ndim);
     
@@ -891,7 +891,7 @@ Cqcgl1d::rk4j(const VectorXd &a0, const double dt, const int nstp, const int nq,
  *  \sum_n |A_n|^2 = 1/N \sum_k |a_k|^2
  */
 ArrayXcd
-Cqcgl1d::Lyap(const Ref<const ArrayXXd> &aa){
+CQCGLgeneral::Lyap(const Ref<const ArrayXXd> &aa){
     int M = aa.cols();
     VectorXcd lya(M);
     for (size_t i = 0; i < M; i++){
@@ -918,7 +918,7 @@ Cqcgl1d::Lyap(const Ref<const ArrayXXd> &aa){
  * @see Lyap(), velocity()
  */
 ArrayXd
-Cqcgl1d::LyapVel(const Ref<const ArrayXXd> &aa){
+CQCGLgeneral::LyapVel(const Ref<const ArrayXXd> &aa){
     int M = aa.cols();
     VectorXd lyavel(M);
     for (size_t i = 0; i < M; i++){
@@ -935,7 +935,7 @@ Cqcgl1d::LyapVel(const Ref<const ArrayXXd> &aa){
 /* -------------------------------------------------- */
 /* --------          stability matrix     ----------- */
 /* -------------------------------------------------- */
-MatrixXd Cqcgl1d::stab(const ArrayXd &a0){
+MatrixXd CQCGLgeneral::stab(const ArrayXd &a0){
     ArrayXXd v0(Ndim, Ndim+1); 
     v0 << a0, MatrixXd::Identity(Ndim, Ndim);
     JF[0].v1 = R2C(v0);
@@ -949,7 +949,7 @@ MatrixXd Cqcgl1d::stab(const ArrayXd &a0){
 /**
  * @brief stability for relative equilbrium
  */
-MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double wth, double wphi){
+MatrixXd CQCGLgeneral::stabReq(const ArrayXd &a0, double wth, double wphi){
     MatrixXd z = stab(a0);
     return z + wth*transGenerator() + wphi*phaseGenerator();
 }
@@ -957,14 +957,14 @@ MatrixXd Cqcgl1d::stabReq(const ArrayXd &a0, double wth, double wphi){
 /**
  * @brief stability exponents of req
  */
-VectorXcd Cqcgl1d::eReq(const ArrayXd &a0, double wth, double wphi){
+VectorXcd CQCGLgeneral::eReq(const ArrayXd &a0, double wth, double wphi){
     return eEig(stabReq(a0, wth, wphi));
 }
 
 /**
  * @brief stability vectors of req
  */
-MatrixXcd Cqcgl1d::vReq(const ArrayXd &a0, double wth, double wphi){
+MatrixXcd CQCGLgeneral::vReq(const ArrayXd &a0, double wth, double wphi){
     return vEig(stabReq(a0, wth, wphi));
 }
 
@@ -972,7 +972,7 @@ MatrixXcd Cqcgl1d::vReq(const ArrayXd &a0, double wth, double wphi){
  * @brief stability exponents and vectors of req
  */
 std::pair<VectorXcd, MatrixXcd>
-Cqcgl1d::evReq(const ArrayXd &a0, double wth, double wphi){
+CQCGLgeneral::evReq(const ArrayXd &a0, double wth, double wphi){
     return evEig(stabReq(a0, wth, wphi));
 }
 
@@ -986,7 +986,7 @@ Cqcgl1d::evReq(const ArrayXd &a0, double wth, double wphi){
  *
  * Reflection : a_k -> a_{-k}. so a_0 keeps unchanged
  */
-ArrayXXd Cqcgl1d::reflect(const Ref<const ArrayXXd> &aa){
+ArrayXXd CQCGLgeneral::reflect(const Ref<const ArrayXXd> &aa){
     ArrayXXcd raa = R2C(aa);
     const int n = raa.rows(); // n is an odd number
     for(size_t i = 1; i < (n+1)/2; i++){
@@ -1000,7 +1000,7 @@ ArrayXXd Cqcgl1d::reflect(const Ref<const ArrayXXd> &aa){
 /**
  * @ brief calculate (x^2 - y^2) / \sqrt{x^2 + y^2}
  */
-inline ArrayXd Cqcgl1d::rcos2th(const ArrayXd &x, const ArrayXd &y){
+inline ArrayXd CQCGLgeneral::rcos2th(const ArrayXd &x, const ArrayXd &y){
     ArrayXd x2 = x.square();
     ArrayXd y2 = y.square();
     return (x2 - y2) / (x2 + y2).sqrt();
@@ -1009,7 +1009,7 @@ inline ArrayXd Cqcgl1d::rcos2th(const ArrayXd &x, const ArrayXd &y){
 /**
  * @ brief calculate x * y / \sqrt{x^2 + y^2}
  */
-inline ArrayXd Cqcgl1d::rsin2th(const ArrayXd &x, const ArrayXd &y){
+inline ArrayXd CQCGLgeneral::rsin2th(const ArrayXd &x, const ArrayXd &y){
     return x * y / (x.square() + y.square()).sqrt();
 }
 
@@ -1019,7 +1019,7 @@ inline ArrayXd Cqcgl1d::rsin2th(const ArrayXd &x, const ArrayXd &y){
  *        partial derivative over x :   (x^3 + 3*x*y^2) / (x^2 + y^2)^{3/2}
  *        partial derivative over y : - (y^3 + 3*y*x^2) / (x^2 + y^2)^{3/2}
  */
-inline double Cqcgl1d::rcos2thGrad(const double x, const double y){
+inline double CQCGLgeneral::rcos2thGrad(const double x, const double y){
     // only return derivative over x. Derivative over y can be obtained
     // by exchange x and y and flip sign
     double denorm = sqrt(x*x + y*y);
@@ -1033,7 +1033,7 @@ inline double Cqcgl1d::rcos2thGrad(const double x, const double y){
  *        partial derivative over x :   y^3 / (x^2 + y^2)^{3/2}
  *        partial derivative over y :   x^3 / (x^2 + y^2)^{3/2}
  */
-inline double Cqcgl1d::rsin2thGrad(const double x, const double y){
+inline double CQCGLgeneral::rsin2thGrad(const double x, const double y){
     // only return derivative over x. Derivative over y can be obtained
     // by exchange x and y
     double denorm = sqrt(x*x + y*y);
@@ -1046,7 +1046,7 @@ inline double Cqcgl1d::rsin2thGrad(const double x, const double y){
  *
  * @param[in] aaHat   states after reducing continous symmetries
  */
-ArrayXXd Cqcgl1d::reduceRef1(const Ref<const ArrayXXd> &aaHat){
+ArrayXXd CQCGLgeneral::reduceRef1(const Ref<const ArrayXXd> &aaHat){
     const int m = aaHat.cols(); 
     const int n = aaHat.rows(); 
     assert(n == Ndim);
@@ -1063,7 +1063,7 @@ ArrayXXd Cqcgl1d::reduceRef1(const Ref<const ArrayXXd> &aaHat){
     return step1;
 }
 
-ArrayXXd Cqcgl1d::reduceRef2(const Ref<const ArrayXXd> &step1){
+ArrayXXd CQCGLgeneral::reduceRef2(const Ref<const ArrayXXd> &step1){
     ArrayXXd step2(step1);
     ArrayXd p1s = step1.row(2).square(); 
     ArrayXd q1s = step1.row(3).square();
@@ -1085,7 +1085,7 @@ ArrayXXd Cqcgl1d::reduceRef2(const Ref<const ArrayXXd> &step1){
  *
  *        1, 4, 6, ...
  */
-std::vector<int> Cqcgl1d::refIndex3(){
+std::vector<int> CQCGLgeneral::refIndex3(){
     std::vector<int> index; // vector storing indices which flip sign
     index.push_back(1);
     for(size_t i = 2; i < Nplus; i++) index.push_back(2*i);
@@ -1103,7 +1103,7 @@ std::vector<int> Cqcgl1d::refIndex3(){
  * @brief the 3rd step to reduce the discrete symmetry
  *
  */
-ArrayXXd Cqcgl1d::reduceRef3(const Ref<const ArrayXXd> &aa){
+ArrayXXd CQCGLgeneral::reduceRef3(const Ref<const ArrayXXd> &aa){
 
     ArrayXXd aaTilde(aa);
     aaTilde.row(0) = rcos2th(aa.row(0), aa.row(1));
@@ -1117,7 +1117,7 @@ ArrayXXd Cqcgl1d::reduceRef3(const Ref<const ArrayXXd> &aa){
     return aaTilde;
 }
 
-ArrayXXd Cqcgl1d::reduceReflection(const Ref<const ArrayXXd> &aaHat){
+ArrayXXd CQCGLgeneral::reduceReflection(const Ref<const ArrayXXd> &aaHat){
     return reduceRef3(reduceRef2(reduceRef1(aaHat)));
 }
 
@@ -1140,7 +1140,7 @@ ArrayXXd Cqcgl1d::reduceReflection(const Ref<const ArrayXXd> &aaHat){
  *         |         1/2                   1/2   |
  *         ---------------------------------------
  */
-MatrixXd Cqcgl1d::refGrad1(){
+MatrixXd CQCGLgeneral::refGrad1(){
     MatrixXd Gamma(MatrixXd::Zero(Ndim, Ndim));
     Gamma(0, 0) = 1;
     Gamma(1, 1) = 1;
@@ -1179,7 +1179,7 @@ MatrixXd Cqcgl1d::refGrad1(){
  *         ------------------------------------
  *               
  */
-MatrixXd Cqcgl1d::refGrad2(const ArrayXd &x){
+MatrixXd CQCGLgeneral::refGrad2(const ArrayXd &x){
     assert (x.size() == Ndim);
     MatrixXd Gamma(MatrixXd::Zero(Ndim, Ndim));
     Gamma(0, 0) = 1;
@@ -1200,7 +1200,7 @@ MatrixXd Cqcgl1d::refGrad2(const ArrayXd &x){
  * @brief The gradient of the reflection reduction transformation for the
  *        3rd step.
  */
-MatrixXd Cqcgl1d::refGrad3(const ArrayXd &x){
+MatrixXd CQCGLgeneral::refGrad3(const ArrayXd &x){
     assert(x.size() == Ndim);
     MatrixXd Gamma(MatrixXd::Identity(Ndim, Ndim));
     std::vector<int> index = refIndex3();
@@ -1219,7 +1219,7 @@ MatrixXd Cqcgl1d::refGrad3(const ArrayXd &x){
 /**
  * @brief calculate the tranformation matrix for reflection reduction
  */
-MatrixXd Cqcgl1d::refGradMat(const ArrayXd &x){
+MatrixXd CQCGLgeneral::refGradMat(const ArrayXd &x){
     ArrayXd step1 = reduceRef1(x); 
     ArrayXd step2 = reduceRef2(step1);
     return refGrad3(step2) * refGrad2(step1) * refGrad1();
@@ -1231,7 +1231,7 @@ MatrixXd Cqcgl1d::refGradMat(const ArrayXd &x){
  * @param[in] veHat    covariant vectors after reducing the continuous symmetries.
  * @param[in] xHat     orbit point after reducing continuous symmetries.
  */
-MatrixXd Cqcgl1d::reflectVe(const MatrixXd &veHat, const Ref<const ArrayXd> &xHat){
+MatrixXd CQCGLgeneral::reflectVe(const MatrixXd &veHat, const Ref<const ArrayXd> &xHat){
     MatrixXd Gamma = refGradMat(xHat);
     return Gamma * veHat;
 }
@@ -1254,7 +1254,7 @@ MatrixXd Cqcgl1d::reflectVe(const MatrixXd &veHat, const Ref<const ArrayXd> &xHa
  *
  *  @note vectors are not normalized
  */
-MatrixXd Cqcgl1d::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
+MatrixXd CQCGLgeneral::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
 			       const int trunc /* = 0*/){
     int Trunc = trunc;
     if(trunc == 0) Trunc = veHat.rows();
@@ -1279,7 +1279,7 @@ MatrixXd Cqcgl1d::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
 /** @brief group rotation for spatial translation of set of arrays.
  *  th : rotation angle
  *  */
-ArrayXXd Cqcgl1d::transRotate(const Ref<const ArrayXXd> &aa, const double th){
+ArrayXXd CQCGLgeneral::transRotate(const Ref<const ArrayXXd> &aa, const double th){
     ArrayXcd R = ( dcp(0,1) * th * K2 ).exp(); // e^{ik\theta}
     ArrayXXcd raa = R2C(aa); 
     raa.colwise() *= R;
@@ -1291,7 +1291,7 @@ ArrayXXd Cqcgl1d::transRotate(const Ref<const ArrayXXd> &aa, const double th){
  *
  *  x=(b0, c0, b1, c1, b2, c2 ...) ==> tx=(0, 0, -c1, b1, -2c2, 2b2, ...)
  */
-ArrayXXd Cqcgl1d::transTangent(const Ref<const ArrayXXd> &aa){
+ArrayXXd CQCGLgeneral::transTangent(const Ref<const ArrayXXd> &aa){
     ArrayXcd R = dcp(0,1) * K2;
     ArrayXXcd raa = R2C(aa);
     raa.colwise() *= R;
@@ -1300,7 +1300,7 @@ ArrayXXd Cqcgl1d::transTangent(const Ref<const ArrayXXd> &aa){
 }
 
 /** @brief group generator. */
-MatrixXd Cqcgl1d::transGenerator(){
+MatrixXd CQCGLgeneral::transGenerator(){
     MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
     for(size_t i = 0; i < Ne; i++){
 	T(2*i, 2*i+1) = -K2(i);
@@ -1313,18 +1313,18 @@ MatrixXd Cqcgl1d::transGenerator(){
 /** @brief group transform for complex rotation
  * phi: rotation angle
  * */
-ArrayXXd Cqcgl1d::phaseRotate(const Ref<const ArrayXXd> &aa, const double phi){
+ArrayXXd CQCGLgeneral::phaseRotate(const Ref<const ArrayXXd> &aa, const double phi){
   
     return C2R( R2C(aa) * exp(dcp(0,1)*phi) ); // a0*e^{i\phi}
 }
 
 /** @brief group tangent.  */
-ArrayXXd Cqcgl1d::phaseTangent(const Ref<const ArrayXXd> &aa){
+ArrayXXd CQCGLgeneral::phaseTangent(const Ref<const ArrayXXd> &aa){
     return C2R( R2C(aa) * dcp(0,1) );
 }
 
 /** @brief group generator  */
-MatrixXd Cqcgl1d::phaseGenerator(){
+MatrixXd CQCGLgeneral::phaseGenerator(){
     MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
     for(size_t i = 0; i < Ne; i++){
 	T(2*i, 2*i+1) = -1;
@@ -1339,7 +1339,7 @@ MatrixXd Cqcgl1d::phaseGenerator(){
  * @note     for performance purpose, this function is not written as the
  *           superposition of 2 functions
  */
-ArrayXXd Cqcgl1d::Rotate(const Ref<const ArrayXXd> &aa, const double th,
+ArrayXXd CQCGLgeneral::Rotate(const Ref<const ArrayXXd> &aa, const double th,
 			 const double phi){
     ArrayXcd R = ( dcp(0,1) * (th * K2 + phi) ).exp(); // e^{ik\theta + \phi}
     ArrayXXcd raa = R2C(aa); 
@@ -1351,7 +1351,7 @@ ArrayXXd Cqcgl1d::Rotate(const Ref<const ArrayXXd> &aa, const double th,
 /**
  * @brief rotate the whole orbit with different phase angles at different point
  */
-ArrayXXd Cqcgl1d::rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
+ArrayXXd CQCGLgeneral::rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
 			      const ArrayXd &phi){
     const int m = aa.cols();
     const int n = aa.rows();
@@ -1377,7 +1377,7 @@ ArrayXXd Cqcgl1d::rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
  *        meaning to transform the sum/subtraction of two state points.
  */
 std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-Cqcgl1d::orbit2sliceWrap(const Ref<const ArrayXXd> &aa){
+CQCGLgeneral::orbit2sliceWrap(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();
     int m = aa.cols();
     assert(Ndim == n);
@@ -1401,7 +1401,7 @@ Cqcgl1d::orbit2sliceWrap(const Ref<const ArrayXXd> &aa){
  * @see orbit2sliceWrap()
  */
 std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
+CQCGLgeneral::orbit2slice(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();
     int m = aa.cols();
     assert(Ndim == n);
@@ -1443,7 +1443,7 @@ Cqcgl1d::orbit2slice(const Ref<const ArrayXXd> &aa){
 /**
  * @ simple version of orbit2slice(). Discard translation and phase information.
  */
-ArrayXXd Cqcgl1d::orbit2sliceSimple(const Ref<const ArrayXXd> &aa){
+ArrayXXd CQCGLgeneral::orbit2sliceSimple(const Ref<const ArrayXXd> &aa){
     auto tmp = orbit2slice(aa);
     return std::get<0>(tmp);
 }
@@ -1463,7 +1463,7 @@ ArrayXXd Cqcgl1d::orbit2sliceSimple(const Ref<const ArrayXXd> &aa){
  *
  * @note vectors are not normalized
  */
-MatrixXd Cqcgl1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
+MatrixXd CQCGLgeneral::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
     int n = x.size();
     std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(x);
     ArrayXXd &xhat =  std::get<0>(tmp); // dimension [2*N, 1]
@@ -1484,7 +1484,7 @@ MatrixXd Cqcgl1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
  * @brief a wrap function => reduce all symmetries of an orbit
  */
 std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-Cqcgl1d::reduceAllSymmetries(const Ref<const ArrayXXd> &aa){
+CQCGLgeneral::reduceAllSymmetries(const Ref<const ArrayXXd> &aa){
     std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(aa);
     return std::make_tuple(reduceReflection(std::get<0>(tmp)),
 			   std::get<1>(tmp), std::get<2>(tmp));
@@ -1493,7 +1493,7 @@ Cqcgl1d::reduceAllSymmetries(const Ref<const ArrayXXd> &aa){
 /**
  * @brief a wrap function => reduce all the symmetries of covariant vectors
  */
-MatrixXd Cqcgl1d::reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
+MatrixXd CQCGLgeneral::reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
     std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(x);
     return reflectVe(ve2slice(ve, x), std::get<0>(tmp).col(0));
 }
@@ -1516,7 +1516,7 @@ MatrixXd Cqcgl1d::reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
  * @param[in] th     translation rotation angle
  * @param[in] phi    phase change angle
  */
-VectorXd Cqcgl1d::multiF(const ArrayXXd &x, const int nstp, const double th, const double phi){
+VectorXd CQCGLgeneral::multiF(const ArrayXXd &x, const int nstp, const double th, const double phi){
     int m = x.cols();
     int n = x.rows();
     assert( Ndim == n );
@@ -1547,8 +1547,8 @@ VectorXd Cqcgl1d::multiF(const ArrayXXd &x, const int nstp, const double th, con
  *               -I                   g(\theta, \phi)J(x_{M-1})   v(f(x_{M-1}))  tx1  tx2 ]
  *  
  */
-pair<Cqcgl1d::SpMat, VectorXd>
-Cqcgl1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
+pair<CQCGLgeneral::SpMat, VectorXd>
+CQCGLgeneral::multishoot(const ArrayXXd &x, const int nstp, const double th,
 		    const double phi, bool doesPrint /* = false*/){
     int m = x.cols();		/* number of shooting points */
     int n = x.rows();
@@ -1632,7 +1632,7 @@ Cqcgl1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
  * 
  */
 std::pair<MatrixXd, VectorXd>
-Cqcgl1d::newtonReq(const ArrayXd &a0, const double wth, const double wphi){
+CQCGLgeneral::newtonReq(const ArrayXd &a0, const double wth, const double wphi){
     int n = a0.rows();
     assert(Ndim == n);
     
@@ -1663,7 +1663,7 @@ Cqcgl1d::newtonReq(const ArrayXd &a0, const double wth, const double wphi){
  * @return    [a, wth, wphi, err]
  */
 std::tuple<ArrayXd, double, double, double>
-Cqcgl1d::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
+CQCGLgeneral::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
 		 const int MaxN /* = 100 */, const double tol /* = 1e-14 */,
 		 const bool doesUseMyCG /* = true */,
 		 const bool doesPrint /* = true */){ 
@@ -1751,7 +1751,7 @@ Cqcgl1d::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
  *  @return    [wth, wphi, err] such that velocityReq(a0, wth, wphi) minimal
  */
 std::vector<double>
-Cqcgl1d::optThPhi(const ArrayXd &a0){ 
+CQCGLgeneral::optThPhi(const ArrayXd &a0){ 
     VectorXd t1 = transTangent(a0);
     VectorXd t2 = phaseTangent(a0);
     double c = t2.dot(t1) / t1.dot(t1);
@@ -1772,7 +1772,7 @@ Cqcgl1d::optThPhi(const ArrayXd &a0){
 /*                Floquet spectrum/vectors                    */
 /**************************************************************/
 std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
-Cqcgl1d::powIt(const ArrayXd &a0, const double th, const double phi,
+CQCGLgeneral::powIt(const ArrayXd &a0, const double th, const double phi,
 	       const MatrixXd &Q0, 
 	       const bool onlyLastQ, int nstp, int nqr,
 	       const int maxit, const double Qtol, const bool Print,
@@ -1790,7 +1790,7 @@ Cqcgl1d::powIt(const ArrayXd &a0, const double th, const double phi,
 }
 
 MatrixXd
-Cqcgl1d::powEigE(const ArrayXd &a0, const double th, const double phi,
+CQCGLgeneral::powEigE(const ArrayXd &a0, const double th, const double phi,
 		 const MatrixXd &Q0, int nstp, int nqr,
 		 const int maxit, const double Qtol, const bool Print,
 		 const int PrintFreqency){
@@ -1807,7 +1807,7 @@ Cqcgl1d::powEigE(const ArrayXd &a0, const double th, const double phi,
 }
 
 VectorXcd
-Cqcgl1d::directEigE(const ArrayXd &a0, const double th, const double phi, 
+CQCGLgeneral::directEigE(const ArrayXd &a0, const double th, const double phi, 
 		    const int nstp){
     MatrixXd J = intgj(a0, nstp, nstp, nstp).second;
     return eEig(Rotate(J, th, phi));

@@ -7,8 +7,8 @@
  *  g++ cqcgl1d.cc -shared -fpic -lfftw3 -lm -fopenmp  -march=corei7 -O3 -msse2 -msse4 -I/usr/include/eigen3 -I../../include -std=c++0x
  *
  *  */
-#ifndef CQCGL1D_H
-#define CQCGL1D_H
+#ifndef CQCGLGENERAL_H
+#define CQCGLGENERAL_H
 
 // #include <fftw3.h>
 #include <complex>
@@ -32,9 +32,9 @@ using Eigen::PartialPivLU;
 using Eigen::Map; using Eigen::Ref;
 
 //////////////////////////////////////////////////////////////////////
-//                       class Cqcgl1d                              //
+//                       class CQCGLgeneral                              //
 //////////////////////////////////////////////////////////////////////
-class Cqcgl1d {
+class CQCGLgeneral {
   
 public:
     typedef std::complex<double> dcp;
@@ -84,13 +84,13 @@ public:
     ////////////////////////////////////////////////////////////
     //         constructor, destructor, copy assignment.      //
     ////////////////////////////////////////////////////////////
-    Cqcgl1d(int N, double d,
+    CQCGLgeneral(int N, double d,
 	    double Mu, double Dr, double Di,
 	    double Br, double Bi, double Gr,
 	    double Gi,  
 	    int dimTan, int threadNum);
-    ~Cqcgl1d();
-    Cqcgl1d & operator=(const Cqcgl1d &x);
+    ~CQCGLgeneral();
+    CQCGLgeneral & operator=(const CQCGLgeneral &x);
 
     ////////////////////////////////////////////////////////////
     //                    member functions.                   //
@@ -226,4 +226,4 @@ public:
 
 
 
-#endif  /* CQCGL1D_H */
+#endif  /* CQCGLGENERAL_H */

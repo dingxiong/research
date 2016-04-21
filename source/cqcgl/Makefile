@@ -7,9 +7,9 @@ EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 
 CFLAGS = -std=c++11
 
-SOURCE = cqcgl1d.cc cqcgl.cc
-SHARED = libcqcgl1d.so
-STATIC = libcqcgl1d.a
+SOURCE = CQCGLgeneral.cc CQCGL.cc
+SHARED = libCQCGL.so
+STATIC = libCQCGL.a
 
 # for RPO code
 CFLAGS2 = -std=c++11

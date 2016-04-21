@@ -1,5 +1,5 @@
 #include <iostream>
-#include "cqcgl.hpp"
+#include "CQCGL.hpp"
 
 using namespace sparseRoutines;
 using namespace denseRoutines;
@@ -10,11 +10,11 @@ using namespace std;
  * Constructor of cubic quintic complex Ginzburg-Landau equation
  * A_t = -A + (1 + b*i) A_{xx} + (1 + c*i) |A|^2 A - (dr + di*i) |A|^4 A
  */
-Cqcgl::Cqcgl(int N, double d,
+CQCGL::CQCGL(int N, double d,
 	     double b, double c,
 	     double dr, double di,
 	     int dimTan, int threadNum)
-    : Cqcgl1d(N, d, -1, 1, b, 1, c, -dr, -di, dimTan, threadNum),
+    : CQCGLgeneral(N, d, -1, 1, b, 1, c, -dr, -di, dimTan, threadNum),
       b(b), 
       c(c),
       dr(dr),
@@ -22,9 +22,9 @@ Cqcgl::Cqcgl(int N, double d,
 {				
 }
 
-Cqcgl::~Cqcgl(){}
+CQCGL::~CQCGL(){}
 
-Cqcgl & Cqcgl::operator=(const Cqcgl &x){
+CQCGL & CQCGL::operator=(const CQCGL &x){
     return *this;
 }
 
@@ -43,7 +43,7 @@ Cqcgl & Cqcgl::operator=(const Cqcgl &x){
  * @note This function only works for the b, c, dr, di construction
  */
 std::tuple<ArrayXd, double, double>
-Cqcgl::planeWave(int k, bool isPositve){
+CQCGL::planeWave(int k, bool isPositve){
     double qk, a2, w;
     
     qk = 2 * M_PI * k / d;
@@ -62,7 +62,7 @@ Cqcgl::planeWave(int k, bool isPositve){
  * @brief Return plane waves.  -- short version
  */
 void 
-Cqcgl::planeWave(ArrayXd &a0, double &a, double &w, 
+CQCGL::planeWave(ArrayXd &a0, double &a, double &w, 
 		   int k, bool isPositve){
     auto tmp = planeWave(k, isPositve);
     a0 = std::get<0>(tmp);
@@ -75,13 +75,13 @@ Cqcgl::planeWave(ArrayXd &a0, double &a, double &w,
  *
  * @see planeWave(), eReq()
  */
-VectorXcd Cqcgl::planeWaveStabE(int k, bool isPositve){
+VectorXcd CQCGL::planeWaveStabE(int k, bool isPositve){
     auto tmp = planeWave(k, isPositve);
     return eReq(std::get<0>(tmp), 0, std::get<2>(tmp));
 }
 
 std::pair<VectorXcd, MatrixXcd>
-Cqcgl::planeWaveStabEV(int k, bool isPositve){
+CQCGL::planeWaveStabEV(int k, bool isPositve){
     auto tmp = planeWave(k, isPositve);
     return evReq(std::get<0>(tmp), 0, std::get<2>(tmp));
 }

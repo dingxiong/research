@@ -14,11 +14,10 @@ public:
     double di;
 
     //////////////////////////////////////////////////////////////////////
-    Cqcgl(int N, double d, double h,
-	  bool enableJacv, int Njacv,
+    Cqcgl(int N, double d,
 	  double b, double c,
 	  double dr, double di,
-	  int threadNum);
+	  int dimTan, int threadNum);
     ~Cqcgl();
     Cqcgl & operator=(const Cqcgl &x);
 

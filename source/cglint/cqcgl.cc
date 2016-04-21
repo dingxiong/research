@@ -10,12 +10,11 @@ using namespace std;
  * Constructor of cubic quintic complex Ginzburg-Landau equation
  * A_t = -A + (1 + b*i) A_{xx} + (1 + c*i) |A|^2 A - (dr + di*i) |A|^4 A
  */
-Cqcgl::Cqcgl(int N, double d, double h,
-	     bool enableJacv, int Njacv,
+Cqcgl::Cqcgl(int N, double d,
 	     double b, double c,
 	     double dr, double di,
-	     int threadNum)
-    : Cqcgl1d(N, d, h, enableJacv, Njacv, -1, 1, c, 1, b, -dr, -di, threadNum),
+	     int dimTan, int threadNum)
+    : Cqcgl1d(N, d, -1, 1, b, 1, c, -dr, -di, dimTan, threadNum),
       b(b), 
       c(c),
       dr(dr),

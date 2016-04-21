@@ -195,15 +195,15 @@ def ergoPoinc(ks, bases, x0, theta, si):
 def ergoPoinc2(ks, bases, x0, theta1, theta2):
     N = ks.N
     a0 = rand(N-2) * 0.1
-    aa = ks.intg(a0, 10000, 10000)
+    aa = ks.intg(a0, 0.002, 10000, 10000)
     poinc = np.zeros((0, 3))
     poincf = np.zeros((0, 3))
     poincRaw = np.zeros((0, N-2))
     paas = np.zeros((0, 3))
     
-    for i in range(15):
+    for i in range(20):
         a0 = aa[-1]
-        aa = ks.intg(a0, 850000, 100)[1:]
+        aa = ks.intg(a0, 0.002, 500000, 10)[1:]
         raa, ths = ks.redO2(aa)
         paa = raa.dot(bases.T)
         paa -= x0
@@ -245,7 +245,7 @@ def getCurveIndex(x, y):
     row of y such that these two rows have the minimal
     distance.
     """
-    m, n = xf.shape
+    m, n = x.shape
     minDs = np.zeros(m)
     minIds = np.zeros(m, dtype=np.int)
     for i in range(m):
@@ -274,7 +274,7 @@ def getCurveCoordinate(sortId, poinc):
 
 ##############################################################################################################
 
-case = 110
+case = 90
 
 if case == 10:
     """
@@ -646,8 +646,7 @@ if case == 90:
     """
     N = 64
     d = 22
-    h = 0.001
-    ks = pyKS(N, h, d)
+    ks = pyKS(N, d)
 
     req, ws, reqr, eq, eqr = loadRE('../../data/ks22Reqx64.h5', N)
     pev, bases = getBases(ks, 'eq', eq[1], [6, 7, 10])
@@ -674,15 +673,19 @@ if case == 90:
     ax.scatter(poinc[:, 1], poinc[:, 2], c='r', edgecolors='none')
     ax2d(fig, ax)
     
-    
+    plt.hold('on')
+    for i in range(40):
+        print i
+        ax.scatter(poinc[i, 1], poinc[i, 2], c='g', s=20)
+        plt.savefig(str(i))
+
 if case == 100:
     """
     New version to get Poincare points from pos
     """
     N = 64
     d = 22
-    h = 0.001
-    ks = pyKS(N, h, d)
+    ks = pyKS(N, d)
 
     req, ws, reqr, eq, eqr = loadRE('../../data/ks22Reqx64.h5', N)
     pev, bases = getBases(ks, 'eq', eq[1], [6, 7, 10])

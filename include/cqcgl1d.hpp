@@ -43,20 +43,17 @@ public:
     
     const int N;		/* dimension of FFT */
     const double d;		/* system domain size */
-    const bool enableJacv;	/* wether turn on tangent dynamics */
-    const int Njacv;		/* number of tangent dimension. 0 => full */
     
-    double h;			/* integration time step */
-    int trueNjacv;    		/* true tangent space dimension */
+    int DimTan;    		/* true tangent space dimension */
     int Ne;			/* effective number of modes */
     int Ndim;			/* dimension of state space */
-    int aliasStart, aliasEnd;	/* start and end index of
-				   dealias part */
     int Nplus, Nminus, Nalias;
     
-    double Br, Bi, Gr, Gi, Dr, Di, Mu; 
-    ArrayXd K, Kindex, KindexUnpad;    
-    ArrayXcd L, E, E2, Q, f1, f2, f3;
+    double Br, Bi, Gr, Gi, Dr, Di, Mu;
+    double Omega = 0;		/* used for comoving frame */
+    ArrayXd K, K2, QK;
+
+    ArrayXcd L, E, E2, a21, a31, a32, a41, a43, b1, b2, b4;
 
     MyFFT::FFT F[5], JF[5];
 
@@ -87,70 +84,55 @@ public:
     ////////////////////////////////////////////////////////////
     //         constructor, destructor, copy assignment.      //
     ////////////////////////////////////////////////////////////
-    Cqcgl1d(int N, double d, double h,
-	    bool enableJacv, int Njacv,
-	    double Mu, double Br, double Bi,
-	    double Dr, double Di, double Gr,
-	    double Gi, int threadNum);
+    Cqcgl1d(int N, double d,
+	    double Mu, double Dr, double Di,
+	    double Br, double Bi, double Gr,
+	    double Gi,  
+	    int dimTan, int threadNum);
     ~Cqcgl1d();
     Cqcgl1d & operator=(const Cqcgl1d &x);
 
     ////////////////////////////////////////////////////////////
     //                    member functions.                   //
     ////////////////////////////////////////////////////////////
-    
-    void changeh(const double hnew);
-    
-    ArrayXXd
-    intg(const ArrayXd &a0, const size_t nstp, const size_t np = 1);
-    pair<ArrayXXd, ArrayXXd>
-    intgj(const ArrayXd &a0, const size_t nstp, const size_t np = 1,
-	  const size_t nqr = 1);
-    ArrayXXd
-    intgv(const ArrayXd &a0, const ArrayXXd &v,
-	  const size_t nstp);
-    std::pair<ArrayXXd, ArrayXXd>
-    intgvs(const ArrayXd &a0, const ArrayXXd &v, const int nstp, 
-	   const int np, const int nqr);
+
+    //============================================================    
+    inline int calNe();
+    inline int calDimTan(int dimTan);
+    void CGLInit();
+    void changeOmega(double w);
+    void calCoe(const double h);
+    void oneStep(double &du, const bool onlyOrbit);
+    ArrayXXcd ZR(ArrayXcd &z);
+    double adaptTs(bool &doChange, bool &doAccept, const double s);
+
+    ArrayXXd constETD(const ArrayXXd a0, const double h, const int Nt, 
+		      const int skip_rate, const bool onlyOrbit);
+    std::pair<VectorXd, ArrayXXd>
+    adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
+	     const int skip_rate, const bool onlyOrbit);
     ArrayXXd 
-    gintgv(const ArrayXd &a0, const ArrayXXd &v, 
-	   const double th, const double phi, const size_t nstp);
-
-    std::tuple<ArrayXXd, MatrixXd, MatrixXd>
-    intgQgGeneral(const ArrayXd &a0,
-		  const double th, const double phi,
-		  const bool useSym,
-		  const MatrixXd &Q0, 
-		  const bool onlyLastQ,
-		  const size_t nstp, const size_t nqr);
-    std::tuple<ArrayXXd, MatrixXd, MatrixXd>
-    intgQ(const ArrayXd &a0, const MatrixXd &Q0, 
-	  const bool onlyLastQ,
-	  const size_t nstp, const size_t nqr);
-    std::tuple<ArrayXXd, MatrixXd, MatrixXd>
-    intgQg(const ArrayXd &a0,
-	   const double th, const double phi,
-	   const MatrixXd &Q0, 
-	   const bool onlyLastQ,
-	   const size_t nstp, const size_t nqr);
-    std::tuple<ArrayXXd, MatrixXd, MatrixXd> 
-    intgQ(const ArrayXd &a0, const bool onlyLastQ, 
-	  const size_t nstp, const size_t nqr);
-    void intgjOneStep();
-
-    ArrayXXd pad(const Ref<const ArrayXXd> &aa);
-    ArrayXXd generalPadding(const Ref<const ArrayXXd> &aa);
-    ArrayXXcd padcp(const Ref<const ArrayXXcd> &x);
-    ArrayXXd unpad(const Ref<const ArrayXXd> &paa);
-    ArrayXXcd initJ();
-    MatrixXd initQ();
+    intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
+    std::pair<ArrayXXd, ArrayXXd>
+    intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
+    std::pair<VectorXd, ArrayXXd>
+    aintg(const ArrayXd &a0, const double h, const double tend, 
+	       const int skip_rate);
+    std::tuple<VectorXd, ArrayXXd, ArrayXXd>
+    aintgj(const ArrayXd &a0, const double h, const double tend, 
+	   const int skip_rate);
+    
+    void dealias(const int k, const bool onlyOrbit);
+    void NL(const int k, const bool onlyOrbit);
     ArrayXXd C2R(const ArrayXXcd &v);
     ArrayXXcd R2C(const ArrayXXd &v);
-    ArrayXXd Fourier2Config(const Ref<const ArrayXXd> &aa);
-    ArrayXXd Config2Fourier(const Ref<const ArrayXXd> &AA);
-    ArrayXXd calMag(const Ref<const ArrayXXd> &AA);
+
+    //============================================================  
+
+    ArrayXXcd Fourier2Config(const Ref<const ArrayXXd> &aa);
+    ArrayXXd Config2Fourier(const Ref<const ArrayXXcd> &AA);
     ArrayXXd Fourier2ConfigMag(const Ref<const ArrayXXd> &aa);
-    ArrayXXd calPhase(const Ref<const ArrayXXd> &AA);
+    ArrayXXd calPhase(const Ref<const ArrayXXcd> &AA);
     ArrayXXd Fourier2Phase(const Ref<const ArrayXXd> &aa);
     
     ArrayXd velocity(const ArrayXd &a0);
@@ -211,8 +193,6 @@ public:
     MatrixXd ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x);
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
     reduceAllSymmetries(const Ref<const ArrayXXd> &aa);
-    std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-    reduceIntg(const ArrayXd &a0, const size_t nstp, const size_t np = 1);
     MatrixXd reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x);
     
     VectorXd multiF(const ArrayXXd &x, const int nstp, const double th, const double phi);
@@ -241,14 +221,7 @@ public:
 	    const int PrintFreqency);
    VectorXcd directEigE(const ArrayXd &a0, const double th, const double phi, 
 			const int nstp);
-  
-    void CGLInit();
-    void calculateCoefficients();
-    virtual void NL( FFT &f);
-    virtual void jNL(FFT &f);
-    void dealias(FFT &Fv);
-    inline int calNe();
-    inline int calJacv();
+ 
 };
 
 

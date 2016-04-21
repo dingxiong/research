@@ -1,6 +1,9 @@
 #include "cqcgl1d.hpp"
 #include <cmath>
 #include <iostream>
+
+#define PROD(x, y) ((y).colwise() * (x))
+
 using namespace sparseRoutines;
 using namespace denseRoutines;
 using namespace Eigen;
@@ -22,33 +25,36 @@ using namespace MyFFT;
  * @param[in] N            the number of Fourier modes
  * @param[in] d            the spacial period, size
  * @param[in] h            integration time step
- * @param[in] enableJacv   false : forbid tangent space integration 
+ * @param[in] doEnableTan   false : forbid tangent space integration 
  * @param[in] Njacv        number of tangent vectors. so the number of fft columns
  *                         is Njacv + 1.
  *                         If Njacv <= 0 integrate Jacobian
  * @param[in] threadNum    number of threads for integration
  */
-Cqcgl1d::Cqcgl1d(int N, double d, double h,
-		 bool enableJacv, int Njacv,
-		 double Mu, double Br, double Bi,
-		 double Dr, double Di, double Gr,
-		 double Gi,  int threadNum)
-    : N(N), d(d), h(h),
-      enableJacv(enableJacv),
-      Njacv(Njacv),
+Cqcgl1d::Cqcgl1d(int N, double d,
+		 double Mu, double Dr, double Di,
+		 double Br, double Bi, double Gr,
+		 double Gi,  
+		 int dimTan, int threadNum)
+    : N(N), d(d),
       Mu(Mu), Br(Br), Bi(Bi),
       Dr(Dr), Di(Di), Gr(Gr),
       Gi(Gi),
+      DimTan(calDimTan(dimTan)),
       
-      Fv(N, 1, threadNum),
-      Fa(N, 1, threadNum),
-      Fb(N, 1, threadNum),
-      Fc(N, 1, threadNum),
-      jFv(N, calJacv(), threadNum),
-      jFa(N, calJacv(), threadNum),
-      jFb(N, calJacv(), threadNum),
-      jFc(N, calJacv(), threadNum)
+      F{ FFT(N, 1, threadNum), 
+	FFT(N, 1, threadNum), 
+	FFT(N, 1, threadNum), 
+	FFT(N, 1, threadNum), 
+	FFT(N, 1, threadNum) },
+    
+    JF{ FFT(N, DimTan+1, threadNum), 
+	    FFT(N, DimTan+1, threadNum), 
+	    FFT(N, DimTan+1, threadNum), 
+	    FFT(N, DimTan+1, threadNum), 
+	    FFT(N, DimTan+1, threadNum) }      
 {
+    
     CGLInit(); // calculate coefficients.
 }
 
@@ -67,22 +73,20 @@ Cqcgl1d & Cqcgl1d::operator=(const Cqcgl1d &x){
  * @note N must be initialized first
  */
 inline int Cqcgl1d::calNe(){
-    return (N/3) * 2 - 1;
+    return (N/3) * 2 - 1;	/* make it an odd number */
 }
 
 /**
- * @brief calculate the dimension of fft tangent space
+ * @brief calculate the dimension of tangent space
  *
- * enableJacv :
- *             false  => M = 0
- *
- *             true   =>  Njacv <=0 => M = Ndim + 1
- *                        Njacv >0  => M = Njacv + 1          
+ * dimTan > 0 => dimTan
+ * dimTan = 0 => 2*calNe()
+ * dimTan < 0 => 0
  * 
- * @note N  and enableJacv must be initialized first
+ * @note N  and doEnableTan must be initialized first
  */
-inline int Cqcgl1d::calJacv(){
-    return enableJacv ? (Njacv > 0 ? Njacv + 1 : 2 * calNe() + 1) : 0;
+inline int Cqcgl1d::calDimTan(int dimTan){
+    return dimTan >= 0 ? (dimTan > 0 ? dimTan : 2 * calNe()) : 0;
 }
 
 /**
@@ -104,72 +108,337 @@ inline int Cqcgl1d::calJacv(){
  *          0, 1, 2,... Nplus*2, Nplus*2+1,... 2*Ne-1
  */
 void Cqcgl1d::CGLInit(){
-    trueNjacv = calJacv() - 1;
-    // Ne = N - 1 			/* no dealiasing */
-    Ne = calNe();		/* make it an odd number */
+    Ne = calNe();		
     Ndim = 2 * Ne;	
-    aliasStart = (Ne + 1) / 2;
-    aliasEnd = N - (Ne - 1) / 2;
     Nplus = (Ne + 1) / 2;
     Nminus = (Ne - 1) / 2;
     Nalias = N - Ne;
     
-    // calculate the ETDRK4 coefficients
-    Kindex.resize(N,1);
-    Kindex << ArrayXd::LinSpaced(N/2, 0, N/2-1), N/2, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
-    KindexUnpad.resize(Ne, 1);
-    KindexUnpad << ArrayXd::LinSpaced(Nplus, 0, Nplus-1), ArrayXd::LinSpaced(Nminus, -Nminus, -1);
+    // calculate the Linear part
+    K.resize(N,1);
+    K << ArrayXd::LinSpaced(N/2, 0, N/2-1), N/2, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
+    K2.resize(Ne, 1);
+    K2 << ArrayXd::LinSpaced(Nplus, 0, Nplus-1), ArrayXd::LinSpaced(Nminus, -Nminus, -1);
       
-    K = 2*M_PI/d * Kindex;
-    L = Mu - dcp(Dr, Di) * K.square();
+    QK = 2*M_PI/d * K;
+    L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square();
+    L.middleCols(Nplus, Nalias) = ArrayXcd::Zero(Nalias);
+}
 
-    calculateCoefficients();
+void Cqcgl1d::changeOmega(double w){
+    Omega = w;
+    L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square();
+    L.middleCols(Nplus, Nalias) = ArrayXcd::Zero(Nalias);
 }
 
 /**
- * @brief calculate coefficients which depend on the time step
- *
- *  Thi function is used in the constructor, also used when you want
- *  to change the time step.
- *
- *  @see changeh
+ * @brief calculate the coefficients of ETDRK4 or Krogstad
  */
-void Cqcgl1d::calculateCoefficients(){
-    E = (h*L).exp(); 
-    E2 =(h/2*L).exp();
-  
-    ArrayXd tmp = ArrayXd::LinSpaced(M, 1, M);
-    ArrayXXcd r = (tmp/M*dcp(0,2*M_PI)).exp().transpose(); // row array.
-
-    ArrayXXcd LR = h*L.replicate(1, M) + r.replicate(N, 1);
-    ArrayXXcd LR2 = LR. square();
+void Cqcgl1d::calCoe(const double h){
+    
+    ArrayXcd hL = h*L;
+    ArrayXXcd LR = ZR(hL);
+    
+    E = hL.exp();
+    E2 = (hL/2).exp();
+    
+    ArrayXXcd LR2 = LR.square();
     ArrayXXcd LR3 = LR.cube();
     ArrayXXcd LRe = LR.exp();
+    ArrayXXcd LReh = (LR/2).exp();
+    
+    a21 = h * ( (LReh - 1)/LR ).rowwise().mean(); 
+    b1 = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean();
+    b2 = h * 2 * ( (2.0 + LR + LRe*(-2.0 + LR)) / LR3 ).rowwise().mean();
+    b4 = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean();
 
-    Q = h * ( ((LR/2.0).exp() - 1)/LR ).rowwise().mean();
-    f1 = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean();
-    f2 = h * ( (4.0 + 2.0*LR + LRe*(-4.0 + 2.0*LR)) / LR3 ).rowwise().mean();
-    f3 = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean();
+    if (Method == 2) {
+	a31 = h * ( (LReh*(LR - 4) + LR + 4) / LR2 ).rowwise().mean();
+	a32 = h * 2 * ( (2*LReh - LR - 2) / LR2 ).rowwise().mean();
+	a41 = h * ( (LRe*(LR-2) + LR + 2) / LR2 ).rowwise().mean();
+	a43 = h * 2 * ( (LRe - LR - 1)  / LR2 ).rowwise().mean();
+    }
+    
+}
+
+void 
+Cqcgl1d::oneStep(double &du, const bool onlyOrbit){
+    FFT *f = F;
+    if (!onlyOrbit)  f = JF;
+
+    if (1 == Method) {
+	NL(0, onlyOrbit);
+	
+	f[1].v1 = PROD(E2, f[0].v1) + PROD(a21, f[0].v3); 
+	NL(1, onlyOrbit);
+
+	f[2].v1 = PROD(E2, f[0].v1) + PROD(a21, f[1].v3);
+	NL(2, onlyOrbit);
+	
+	f[3].v1 = PROD(E2, f[1].v1) + PROD(a21, 2*f[2].v3 - f[0].v3);
+	NL(3, onlyOrbit);
+
+	f[4].v1 = PROD(E, f[0].v1) + PROD(b1, f[0].v3) + PROD(b2, f[1].v3+f[2].v3) + PROD(b4, f[3].v3);
+	NL(4, onlyOrbit);
+
+	du = PROD(b4, f[4].v3-f[3].v3).matrix().norm() / f[4].v1.matrix().norm(); 
+    }
+    else {
+	NL(0, onlyOrbit);
+
+	f[1].v1 = PROD(E2, f[0].v1) + PROD(a21, f[0].v3); 
+	NL(1, onlyOrbit);
+
+	f[2].v1 = PROD(E2, f[0].v1) + PROD(a31, f[0].v3) + PROD(a32, f[1].v3);
+	NL(2, onlyOrbit);
+
+	f[3].v1 = PROD(E, f[0].v1) + PROD(a41, f[0].v3) + PROD(a43, f[2].v3);
+	NL(3, onlyOrbit);
+	
+	f[4].v1 = PROD(E, f[0].v1) + PROD(b1, f[0].v3) + PROD(b2, f[1].v3+f[2].v3) + PROD(b4, f[3].v3);
+	NL(4, onlyOrbit);
+
+	du = PROD(b4, f[4].v3-f[3].v3).matrix().norm() / f[4].v1.matrix().norm();
+    }
+}
+
+
+
+/**
+ * @brief calcuate the matrix to do averge of phi(z). 
+ */
+
+ArrayXXcd Cqcgl1d::ZR(ArrayXcd &z){
+
+    int M1 = z.size();
+    ArrayXd K = ArrayXd::LinSpaced(M, 1, M); // 1,2,3,...,M 
+
+    ArrayXXcd r = R * (K/M*dcp(0,2*M_PI)).exp().transpose(); // row array.
+    
+    return z.replicate(1, M) + r.replicate(M1, 1);
+    
 }
 
 /**
- * @brief change the default time step. The integration coeffients should also
- *        be recalculated.
+ * @brief calculat the damping factor of time step
+ *
+ * @param[out] doChange    true if time step needs change
+ * @param[out] doAccept    true if accept current time step
+ * @param[in]  s           estimate damping factor
+ * @return     mu          final dampling factor 
  */
-void Cqcgl1d::changeh(const double hnew){
-    h = hnew;
-    calculateCoefficients();
+double
+Cqcgl1d::adaptTs(bool &doChange, bool &doAccept, const double s){
+    double mu = 1;
+    doChange = true;
+    doAccept = true;
+
+    if ( s > mumax) mu = mumax;
+    else if (s > mue) mu = s;
+    else if (s >= 1) {
+	mu = 1;
+	doChange = false;
+    }
+    else {
+	doAccept = false;
+	if (s > muc) mu = muc;
+	else if (s > mumin) mu = s;
+	else mu = mumin;
+    }
+
+    return mu;
+}
+
+/**
+ * @brief Constant time step integrator
+ */
+ArrayXXd 
+Cqcgl1d::constETD(const ArrayXXd a0, const double h, const int Nt, 
+		  const int skip_rate, const bool onlyOrbit){
+
+    int nc = 1;			// number of columns of a single state
+    FFT *f = F;
+    if (!onlyOrbit)  {
+	f = JF;
+	nc = DimTan+1;
+    }
+    
+    const int M = Nt / skip_rate + 1;
+    f[0].v1 = R2C(a0);
+    ArrayXXd aa(Ndim, M*nc);
+    aa.leftCols(nc) = a0;
+    lte.resize(M-1);
+    NCallF = 0;
+
+    calCoe(h);
+
+    double du;
+    int num = 0;
+    for(int i = 0; i < Nt; i++){
+	oneStep(du, onlyOrbit);
+	f[0].v1 = f[4].v1;	// update state
+	NCallF += 5;
+	if ( (i+1)%skip_rate == 0 ) {
+	    aa.middleCols((num+1)*nc, nc) = C2R(f[4].v1);
+	    lte(num++) = du;  
+	}
+    }
+
+    return aa;
+}
+
+
+/**
+ * @brief time step adaptive integrator
+ */
+std::pair<VectorXd, ArrayXXd>
+Cqcgl1d::adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
+		  const int skip_rate, const bool onlyOrbit){
+    
+    int nc = 1;			// number of columns of a single state
+    FFT *f = F;
+    if (!onlyOrbit)  {
+	f = JF;
+	nc = DimTan+1;
+    }
+    
+    double h = h0; 
+    calCoe(h);
+
+    const int Nt = (int)round(tend/h);
+    const int M = Nt /skip_rate + 1;
+    f[0].v1 = R2C(a0);
+
+    ArrayXXd aa(Ndim, M*nc);
+    VectorXd tt(M);
+    aa.leftCols(nc) = a0;
+    tt(0) = 0;
+    NCalCoe = 0;
+    NReject = 0;
+    NCallF = 0;    
+    hs.resize(M-1);
+    lte.resize(M-1);
+
+    double t = 0;
+    double du = 0;
+    int num = 1;
+    bool doChange, doAccept;
+
+    int i = 0;
+    while(t < tend){ 
+	i++;
+
+	if ( t + h > tend){
+	    h = tend - t;
+	    calCoe(h);
+	    NCalCoe++;
+	}
+
+	oneStep(du, onlyOrbit);
+	NCallF += 5;		
+	double s = nu * std::pow(rtol/du, 1.0/4);
+	double mu = adaptTs(doChange, doAccept, s);
+	
+	if (doAccept){
+	    t += h;
+	    f[0].v1 = f[4].v1;
+	    if ( (i+1) % skip_rate == 0 ) {
+		if (num >= tt.size() ) {
+		    int m = tt.size();
+		    tt.conservativeResize(m+cellSize);
+		    aa.conservativeResize(Eigen::NoChange, (m+cellSize)*nc); // rows not change, just extend cols
+		    hs.conservativeResize(m-1+cellSize);
+		    lte.conservativeResize(m-1+cellSize);
+		}
+		hs(num-1) = h;
+		lte(num-1) = du;
+		aa.middleCols(num*nc, nc) = C2R(f[4].v1);
+		tt(num) = t;
+		num++;
+	    }
+	}
+	else {
+	    NReject++;
+	}
+	
+	if (doChange) {
+	    h *= mu;
+	    calCoe(h);
+	    NCalCoe++;
+	}
+    }
+    
+    // lte = lte.head(num) has aliasing problem 
+    hs.conservativeResize(num-1);
+    lte.conservativeResize(num-1);
+    return std::make_pair(tt.head(num), aa.leftCols(num*nc));
+}
+
+ArrayXXd 
+Cqcgl1d::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
+    
+    assert(a0.size() == Ndim);
+    return constETD(a0, h, Nt, skip_rate, true);
+}
+
+std::pair<ArrayXXd, ArrayXXd>
+Cqcgl1d::intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
+    
+    assert(a0.size() == Ndim && DimTan == Ndim);
+    ArrayXXd v0(Ndim, Ndim+1); 
+    v0 << a0, MatrixXd::Identity(Ndim, Ndim);
+    ArrayXXd aa = constETD(v0, h, Nt, skip_rate, false);
+    
+    int m = aa.cols() / (Ndim+1);
+    ArrayXXd x(Ndim, m);
+    ArrayXXd xx(Ndim, m*Ndim);
+    for(int i = 0; i < m; i++){
+	x.col(i) = aa.col(i*(Ndim+1));
+	xx.middleCols(Ndim*i, Ndim) = aa.middleCols((Ndim+1)*i+1, Ndim);
+    }
+
+    return std::make_pair(x, xx);
+}
+
+
+std::pair<VectorXd, ArrayXXd>
+Cqcgl1d::aintg(const ArrayXd &a0, const double h, const double tend, 
+	       const int skip_rate){
+    
+    assert(a0.size() == Ndim);
+    return adaptETD(a0, h, tend, skip_rate, true);
+}
+
+std::tuple<VectorXd, ArrayXXd, ArrayXXd>
+Cqcgl1d::aintgj(const ArrayXd &a0, const double h, const double tend, 
+	   const int skip_rate){
+    
+    assert(a0.size() == Ndim && DimTan == Ndim);
+    ArrayXXd v0(Ndim, Ndim+1); 
+    v0 << a0, MatrixXd::Identity(Ndim, Ndim);
+    auto tmp = adaptETD(v0, h, tend, skip_rate, false);
+    ArrayXXd &aa = tmp.second;
+    
+    int m = aa.cols() / (Ndim+1);
+    ArrayXXd x(Ndim, m);
+    ArrayXXd xx(Ndim, m*Ndim);
+    for(int i = 0; i < m; i++){
+	x.col(i) = aa.col(i*(Ndim+1));
+	xx.middleCols(Ndim*i, Ndim) = aa.middleCols((Ndim+1)*i+1, Ndim);
+    }
+    
+    return std::make_tuple(tmp.first, x, xx);
 }
 
 
 /* ------------------------------------------------------ */
 /* ----              Internal functions           ------- */
 /* ------------------------------------------------------ */
+
+#if 0
 /**
  * @brief pad the input with zeros
  *
- * The dimension of input is Ndim = 2N-2, with is smaller than the internal
- * FFT length 2*N, so we need to pad zeros
  * For example:
  *     if N = 256
  *     0, 1, 2, ..., 127, -127, ..., -1 => insert between 127 and -127
@@ -236,20 +505,30 @@ ArrayXXd Cqcgl1d::unpad(const Ref<const ArrayXXd> &paa){
     return aa;
 }
 
+#endif
 
-void Cqcgl1d::dealias(FFT &Fv){
-    // Fv.v1.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, Fv.v1.cols());
-    Fv.v3.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, Fv.v3.cols());
+/**
+ * @brief get rid of the high modes
+ */
+void Cqcgl1d::dealias(const int k, const bool onlyOrbit){
+    if (onlyOrbit) {
+	F[k].v3.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, F[k].v3.cols());
+    }
+    else {
+	JF[k].v3.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, JF[k].v3.cols());
+    }
 }
 
-
+/* 3 different stage os ETDRK4:
+ *  v --> ifft(v) --> fft(g(ifft(v)))
+ * */
 void Cqcgl1d::NL(const int k, const bool onlyOrbit){
     dcp B(Br, Bi);
     dcp G(Gr, Gi);
 
     if(onlyOrbit){
 	F[k].ifft();
-	ArrayXcd A2 = F[k].v2.real().square() + F[k].v2.imag().square();
+	ArrayXcd A2 = (F[k].v2.real().square() + F[k].v2.imag().square()).cast<dcp>();
 	F[k].v2 = B * F[k].v2 * A2 + G * F[k].v2 * A2.square();
 	F[k].fft();
 
@@ -258,12 +537,12 @@ void Cqcgl1d::NL(const int k, const bool onlyOrbit){
     else {
 	JF[k].ifft(); 
 	ArrayXcd A = JF[k].v2.col(0);
-	ArrayXcd aA2 = A.real().square() + A.imag().square();
+	ArrayXcd aA2 = (A.real().square() + A.imag().square()).cast<dcp>();
 	ArrayXcd A2 = A.square();
 	
 	JF[k].v2.col(0) = B * A * aA2 + G * A * aA2.square();
 	
-	const int M = JF[k].cols() - 1;
+	const int M = JF[k].v2.cols() - 1;
 	JF[k].v2.rightCols(M) = JF[k].v2.rightCols(M).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
 	    JF[k].v2.rightCols(M).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
 	
@@ -273,55 +552,34 @@ void Cqcgl1d::NL(const int k, const bool onlyOrbit){
     }
 }
 
-#if 0
-/* 3 different stage os ETDRK4:
- *  v --> ifft(v) --> fft(g(ifft(v)))
- * */
-void Cqcgl1d::NL(FFT &f){
-    f.ifft();
-    ArrayXcd A2 = f.v2 * f.v2.conjugate();
-    f.v2 =  dcp(Br, Bi) * f.v2 * A2 + dcp(Gr, Gi) * f.v2 * A2.square();
-    f.fft();
-
-    dealias(f);
-}
-
-void Cqcgl1d::jNL(FFT &f){
-    f.ifft(); 
-    ArrayXcd A = f.v2.col(0);
-    ArrayXcd aA2 = A * A.conjugate();
-    ArrayXcd A2 = A.square();
-    dcp B(Br, Bi);
-    dcp G(Gr, Gi);
-    f.v2.col(0) = dcp(Br, Bi) * A * aA2 + dcp(Gr, Gi) * A * aA2.square();
-
-    const int M = f.v2.cols() - 1;
-    f.v2.rightCols(M) = f.v2.rightCols(M).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
-    	f.v2.rightCols(M).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
-
-    f.fft();
-
-    dealias(f);
-}
-#endif
-
-
 /** @brief transform conjugate matrix to its real form */
 ArrayXXd Cqcgl1d::C2R(const ArrayXXcd &v){
-    // allocate memory for new array, so it will not change the original array.
-    return Map<ArrayXXd>((double*)&v(0,0), 2*v.rows(), v.cols());
+    int n = v.rows();
+    int m = v.cols();
+    assert(N == n);
+    ArrayXXcd vt(Ne, m);
+    vt << v.topRows(Nplus), v.bottomRows(Nminus);
+
+    return Map<ArrayXXd>((double*)(vt.data()), 2*vt.rows(), vt.cols());
 }
 
 ArrayXXcd Cqcgl1d::R2C(const ArrayXXd &v){
-    assert( 0 == v.rows() % 2);
-    return Map<ArrayXXcd>((dcp*)&v(0,0), v.rows()/2, v.cols());
+    int n = v.rows();
+    int m = v.cols();
+    assert( n == Ndim);
+    
+    Map<ArrayXXcd> vp((dcp*)&v(0,0), Ne, m);
+    ArrayXXcd vpp(N, m);
+    vpp << vp.topRows(Nplus), ArrayXXcd::Zero(Nalias, m), vp.bottomRows(Nminus);
+
+    return vpp;
 }
 
 /* -------------------------------------------------- */
 /* ---------        integrator         -------------- */
 /* -------------------------------------------------- */
 
-
+#if 0
 /**
  * @brief calculate the inital input for calculate Jacobian
  *        It has dimension [N, Ndim]
@@ -404,7 +662,7 @@ Cqcgl1d::intgv(const ArrayXd &a0, const ArrayXXd &v,
 	       const size_t nstp){
     
     // check the dimension of initial condition.
-    assert( Ndim == a0.rows() && Ndim == v.rows() && trueNjacv == v.cols());
+    assert( Ndim == a0.rows() && Ndim == v.rows() && DimTan == v.cols());
     jFv.v1 << R2C(pad(a0)), R2C(pad(v));
 
     for(size_t i = 1; i < nstp + 1; i++){
@@ -419,7 +677,7 @@ Cqcgl1d::intgvs(const ArrayXd &a0, const ArrayXXd &v, const int nstp,
 		const int np, const int nqr){
     int M = v.cols(); 
     
-    assert(Ndim == a0.rows() && Ndim == v.rows() && trueNjacv == v.cols());
+    assert(Ndim == a0.rows() && Ndim == v.rows() && DimTan == v.cols());
     jFv.v1 << R2C(pad(a0)), R2C(pad(v));
     
     ArrayXXd uu(Ndim, nstp/np+1);
@@ -438,174 +696,25 @@ Cqcgl1d::intgvs(const ArrayXd &a0, const ArrayXXd &v, const int nstp,
     return std::make_pair(uu, duu);
 }
 
-/**
- * @brief integrate subspace in tangent space, and also
- *        perform rotation.
- *        
- * @note the state is not included.
- */
-ArrayXXd 
-Cqcgl1d::gintgv(const ArrayXd &a0, const ArrayXXd &v, 
-	       const double th, const double phi, const size_t nstp){
-    int m = v.cols();
-    return Rotate(intgv(a0, v, nstp).rightCols(m), th, phi);
-}
-
-/**
- * @brief Integrate the system and the tangent dynamics with consecutive QR decomposition
- *
- * This integration is different from the others because no matter whether nqr divides
- * nstp or not, the final point will be recored.
- *
- * * User has control of whether store the intermediate Q matrices by setting onlyLastQ.
- * * User has control of whether apply \f$ g(\theta, \phi) \f$ to the last Jacobian by
- *   setting useSym
- *
- * @param[in] a0                initial state
- * @param[in] Q0                initial tangent matrix
- * @param[in] th                translational symmetry angle
- * @param[in] phi               phase symmetry angle
- * @param[in] useSym            whether rotate the last Jacobian
- * @param[in] nstp              number of integration steps
- * @param[in] nqr               QR freqency
- * @param[in] onlyLastQ         store the last Q or all intermediate Qs.              
- * @return                      [ssp, Q, R]:
- *                              state space trajactory,
- *                              only last Q or the sequence of Q in form [Q_m, Q_{m-1}, ... Q_1]
- *                              the sequence of R in form [R_m, R_{m-1}, ... R_1]
- */
-std::tuple<ArrayXXd, MatrixXd, MatrixXd>
-Cqcgl1d::intgQgGeneral(const ArrayXd &a0,
-		       const double th, const double phi,
-		       const bool useSym,
-		       const MatrixXd &Q0, 
-		       const bool onlyLastQ,
-		       const size_t nstp, const size_t nqr){
-    assert(Ndim == a0.rows());
-    jFv.v1 << R2C(pad(a0)), R2C(pad(Q0));
-    
-    int M;			// number of pieces
-    if(nstp%nqr == 0) M = nstp / nqr;
-    else M = nstp / nqr + 1;
-    
-    ArrayXXd ssp(Ndim, M+1);
-    ssp.col(0) = a0;
-    MatrixXd Q, Qp;
-    if(!onlyLastQ) Qp = MatrixXd(Ndim, trueNjacv * M);
-    MatrixXd R( MatrixXd::Zero(trueNjacv, trueNjacv * M) );
-    
-    int k = 0;
-    for(size_t i = 1; i < nstp + 1; i++){
-	intgjOneStep();
-	
-	if( 0 == i%nqr || i == nstp){
-	    ssp.col(k+1) = unpad(C2R(jFv.v1.col(0)));
-	    MatrixXd aa = unpad(C2R(jFv.v1.middleCols(1, trueNjacv)));
-
-	    if(i == nstp && useSym){
-		MatrixXd raa = Rotate(aa, th, phi);
-		aa = raa;
-	    }
-
-	    auto qr = QR(aa);
-	    if(!onlyLastQ) {
-		Qp.middleCols((M-k-1)*trueNjacv, trueNjacv) = qr.first;
-	    }
-
-	    R.middleCols((M-k-1)*trueNjacv, trueNjacv) = qr.second;
-	    Q = qr.first; 
-	    jFv.v1.middleCols(1, trueNjacv) << R2C(pad(Q));
-	    k++;
-	}
-    }
-    if(onlyLastQ) return std::make_tuple(ssp, Q, R);
-    else return std::make_tuple(ssp, Qp, R);
-}
-
-
-std::tuple<ArrayXXd, MatrixXd, MatrixXd>
-Cqcgl1d::intgQ(const ArrayXd &a0, const MatrixXd &Q0, 
-	       const bool onlyLastQ,
-	       const size_t nstp, const size_t nqr){
-    return intgQgGeneral(a0, 0, 0, false, Q0, onlyLastQ, nstp, nqr);
-}
-
-std::tuple<ArrayXXd, MatrixXd, MatrixXd>
-Cqcgl1d::intgQg(const ArrayXd &a0,
-		const double th, const double phi,
-		const MatrixXd &Q0, 
-		const bool onlyLastQ,
-		const size_t nstp, const size_t nqr){
-    return intgQgGeneral(a0, th, phi, true, Q0, onlyLastQ, nstp, nqr);
-}
-
-
-/**
- * @brief construct an orthonormal matrix for calculate a few
- *        leading Floquet vectors
- *  Note, we can use any initial matrix, but here we make perturbation
- *  only in the first few modes because we think the iteration weill
- *  terminate earily othen random initial Q0.
- *  Also, this function is quite different from initJ().
- *
- *  @see initJ()
- */
-MatrixXd Cqcgl1d::initQ(){
-    int k1 = trueNjacv / 2;
-    int k2 = trueNjacv - k1;
-    
-    MatrixXd Q0 ( MatrixXd::Zero(Ndim, trueNjacv));
-    for(int i = 0; i < k1; i++) Q0(i, i) = 1;
-    for(int i = 0; i < k2; i++) Q0(Ndim-1-i, trueNjacv-1-i) = 1;
-
-    return Q0;
-}
-
-std::tuple<ArrayXXd, MatrixXd, MatrixXd> 
-Cqcgl1d::intgQ(const ArrayXd &a0, const bool onlyLastQ, 
-	       const size_t nstp, const size_t nqr){
-    MatrixXd Q0 = initQ();
-    return intgQ(a0, Q0, onlyLastQ, nstp, nqr);
-}
-
-/**
- * @brief one step of intgj()
- */
-void 
-Cqcgl1d::intgjOneStep(){
-    jNL(jFv); 
-    jFa.v1 = jFv.v1.colwise() * E2 + jFv.v3.colwise() * Q; 
-    
-    jNL(jFa); 
-    jFb.v1 = jFv.v1.colwise() * E2 + jFa.v3.colwise() * Q;
-
-    jNL(jFb); 
-    jFc.v1 = jFa.v1.colwise() * E2 + (2.0*jFb.v3 - jFv.v3).colwise() * Q;
-
-    jNL(jFc); 
-    
-    jFv.v1 = jFv.v1.colwise() * E + jFv.v3.colwise() * f1 + (jFa.v3 + jFb.v3).colwise() * f2 + jFc.v3.colwise() * f3;
-
-}
+#endif
 
 /* -------------------------------------------------- */
 /* -------  Fourier/Configure transformation -------- */
 /* -------------------------------------------------- */
 
 /**
- * @brief back Fourier transform of the states. xInput and output are both real.
+ * @brief back Fourier transform of the states. 
  */
-ArrayXXd Cqcgl1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
-    ArrayXXd paa = pad(aa);
-    int m = paa.cols();
-    int n = paa.rows();
-    assert(2*N == n);
-    ArrayXXd AA(n, m);
+ArrayXXcd Cqcgl1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
+    int m = aa.cols();
+    int n = aa.rows();
+    assert(Ndim == n);
+    ArrayXXcd AA(N, m);
     
     for(size_t i = 0; i < m; i++){
-	Fv.v1 = R2C(paa.col(i));
-	Fv.ifft();
-	AA.col(i) = C2R(Fv.v2);
+	F[0].v1 = R2C(aa.col(i));
+	F[0].ifft();
+	AA.col(i) = F[0].v2;
     }
     
     return AA;
@@ -615,39 +724,37 @@ ArrayXXd Cqcgl1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
 /**
  * @brief Fourier transform of the states. Input and output are both real.
  */
-ArrayXXd Cqcgl1d::Config2Fourier(const Ref<const ArrayXXd> &AA){
+ArrayXXd Cqcgl1d::Config2Fourier(const Ref<const ArrayXXcd> &AA){
     int m = AA.cols();
     int n = AA.rows();
-    assert(2*N == n);
+    assert(N == n);
     ArrayXXd aa(Ndim, m);
     
     for(size_t i = 0; i < m; i++){
-	Fv.v2 = R2C(AA.col(i));
-	Fv.fft();
-	aa.col(i) = unpad(C2R(Fv.v3));
+	F[0].v2 = AA.col(i);
+	F[0].fft();
+	aa.col(i) = C2R(F[0].v3);
     }
     
     return aa;
 }
 
-ArrayXXd Cqcgl1d::calMag(const Ref<const ArrayXXd> &AA){
-    return R2C(AA).abs();
-}
-
 ArrayXXd Cqcgl1d::Fourier2ConfigMag(const Ref<const ArrayXXd> &aa){
-    return calMag(Fourier2Config(aa));
+    return Fourier2Config(aa).abs();
 }
 
-ArrayXXd Cqcgl1d::calPhase(const Ref<const ArrayXXd> &AA){
+ArrayXXd Cqcgl1d::calPhase(const Ref<const ArrayXXcd> &AA){
     int m = AA.cols();
     int n = AA.rows();
-    assert(2*N == n);
-    ArrayXXd phase(n/2, m);
+    assert(N == n);
+    ArrayXXd phase(n, m);
     for(size_t i = 0; i < m; i++)
-	for(size_t j =0; j < n/2; j++)
-	    phase(j, i) = atan2(AA(2*j, i), AA(2*j+1, i));
+	for(size_t j =0; j < n; j++)
+	    phase(j, i) = atan2(AA(j, i).imag(), AA(j, i).real());
+
     return phase;
 }
+
 ArrayXXd Cqcgl1d::Fourier2Phase(const Ref<const ArrayXXd> &aa){
     return calPhase(Fourier2Config(aa));
 }
@@ -662,10 +769,10 @@ ArrayXXd Cqcgl1d::Fourier2Phase(const Ref<const ArrayXXd> &aa){
  */
 ArrayXd Cqcgl1d::velocity(const ArrayXd &a0){
     assert( Ndim == a0.rows() );
-    Fv.v1 = R2C(pad(a0));
-    NL(Fv);
-    ArrayXcd vel = L*Fv.v1 + Fv.v3;
-    return unpad(C2R(vel));
+    F[0].v1 = R2C(a0);
+    NL(0, true);
+    ArrayXcd vel = L*F[0].v1 + F[0].v3;
+    return C2R(vel);
 }
 
 /**
@@ -764,6 +871,7 @@ Cqcgl1d::rk4j(const VectorXd &a0, const double dt, const int nstp, const int nq,
     return std::make_pair(xx, JJ);
 }
 
+#if 0
 /* -------------------------------------------------- */
 /* --------         Lyapunov functional   ----------- */
 /* -------------------------------------------------- */
@@ -787,16 +895,16 @@ Cqcgl1d::Lyap(const Ref<const ArrayXXd> &aa){
     int M = aa.cols();
     VectorXcd lya(M);
     for (size_t i = 0; i < M; i++){
-	ArrayXcd a = R2C(pad(aa.col(i)));
+	ArrayXcd a = R2C(aa.col(i));
 	ArrayXcd a2 = a * a.conjugate();
-	Fv.v1 = a;
-	Fv.ifft();
-	ArrayXcd A = Fv.v2;
+	F[0].v1 = a;
+	F[0].ifft();
+	ArrayXcd A = F[0].v2;
 	ArrayXcd A2 = A * A.conjugate();
 	lya(i) =  -Mu * A2.sum()
 	    - 1.0/2 * dcp(Br, Bi) * (A2*A2).sum()
 	    - 1.0/3 * dcp(Gr, Gi) * (A2*A2*A2).sum()
-	    + 1.0/N * dcp(Dr, Di) * (K.square() * a2).sum();
+	    + 1.0/N * dcp(Dr, Di) * (QK.square() * a2).sum();
     }
     
     return lya;
@@ -815,24 +923,27 @@ Cqcgl1d::LyapVel(const Ref<const ArrayXXd> &aa){
     VectorXd lyavel(M);
     for (size_t i = 0; i < M; i++){
 	ArrayXd vel = velocity(aa.col(i)); // Fourier mode of velocity
-	ArrayXcd cvel = R2C(pad(vel));
+	ArrayXcd cvel = R2C(vel);
 	Fv.v1 = cvel;
 	Fv.ifft();		// Fv.v2 is A_t
 	lyavel(i) = -2 * (Fv.v2 * Fv.v2.conjugate()).sum().real();
     }
     return lyavel;
 }
+#endif
 
 /* -------------------------------------------------- */
 /* --------          stability matrix     ----------- */
 /* -------------------------------------------------- */
 MatrixXd Cqcgl1d::stab(const ArrayXd &a0){
-    ArrayXXcd j0 = initJ(); 
-    jFv.v1 << R2C(pad(a0)), j0;
-    jNL(jFv);
-    MatrixXcd Z = j0.colwise() * L + jFv.v3.rightCols(Ndim);
+    ArrayXXd v0(Ndim, Ndim+1); 
+    v0 << a0, MatrixXd::Identity(Ndim, Ndim);
+    JF[0].v1 = R2C(v0);
+    NL(0, false);
+    ArrayXXcd j0 = R2C(MatrixXd::Identity(Ndim, Ndim));
+    MatrixXcd Z = j0.colwise() * L + JF[0].v3.rightCols(Ndim);
   
-    return unpad(C2R(Z));
+    return C2R(Z);
 }
 
 /**
@@ -1169,7 +1280,7 @@ MatrixXd Cqcgl1d::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
  *  th : rotation angle
  *  */
 ArrayXXd Cqcgl1d::transRotate(const Ref<const ArrayXXd> &aa, const double th){
-    ArrayXcd R = ( dcp(0,1) * th * KindexUnpad ).exp(); // e^{ik\theta}
+    ArrayXcd R = ( dcp(0,1) * th * K2 ).exp(); // e^{ik\theta}
     ArrayXXcd raa = R2C(aa); 
     raa.colwise() *= R;
   
@@ -1181,7 +1292,7 @@ ArrayXXd Cqcgl1d::transRotate(const Ref<const ArrayXXd> &aa, const double th){
  *  x=(b0, c0, b1, c1, b2, c2 ...) ==> tx=(0, 0, -c1, b1, -2c2, 2b2, ...)
  */
 ArrayXXd Cqcgl1d::transTangent(const Ref<const ArrayXXd> &aa){
-    ArrayXcd R = dcp(0,1) * KindexUnpad;
+    ArrayXcd R = dcp(0,1) * K2;
     ArrayXXcd raa = R2C(aa);
     raa.colwise() *= R;
   
@@ -1192,8 +1303,8 @@ ArrayXXd Cqcgl1d::transTangent(const Ref<const ArrayXXd> &aa){
 MatrixXd Cqcgl1d::transGenerator(){
     MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
     for(size_t i = 0; i < Ne; i++){
-	T(2*i, 2*i+1) = -KindexUnpad(i);
-	T(2*i+1, 2*i) = KindexUnpad(i);
+	T(2*i, 2*i+1) = -K2(i);
+	T(2*i+1, 2*i) = K2(i);
     }
     return T;
 }
@@ -1230,7 +1341,7 @@ MatrixXd Cqcgl1d::phaseGenerator(){
  */
 ArrayXXd Cqcgl1d::Rotate(const Ref<const ArrayXXd> &aa, const double th,
 			 const double phi){
-    ArrayXcd R = ( dcp(0,1) * (th * KindexUnpad + phi) ).exp(); // e^{ik\theta + \phi}
+    ArrayXcd R = ( dcp(0,1) * (th * K2 + phi) ).exp(); // e^{ik\theta + \phi}
     ArrayXXcd raa = R2C(aa); 
     raa.colwise() *= R;
   
@@ -1380,14 +1491,6 @@ Cqcgl1d::reduceAllSymmetries(const Ref<const ArrayXXd> &aa){
 }
 
 /**
- * @brief a wrap function => integrate the system and reduce the symmetries
- */
-std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-Cqcgl1d::reduceIntg(const ArrayXd &a0, const size_t nstp, const size_t np){
-    return reduceAllSymmetries(intg(a0, nstp, np));
-}
-
-/**
  * @brief a wrap function => reduce all the symmetries of covariant vectors
  */
 MatrixXd Cqcgl1d::reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
@@ -1395,6 +1498,7 @@ MatrixXd Cqcgl1d::reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
     return reflectVe(ve2slice(ve, x), std::get<0>(tmp).col(0));
 }
 
+#if 0
 /* -------------------------------------------------- */
 /* --------          shooting related     ----------- */
 /* -------------------------------------------------- */
@@ -1708,3 +1812,5 @@ Cqcgl1d::directEigE(const ArrayXd &a0, const double th, const double phi,
     MatrixXd J = intgj(a0, nstp, nstp, nstp).second;
     return eEig(Rotate(J, th, phi));
 }
+
+#endif

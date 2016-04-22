@@ -23,6 +23,10 @@ public:
 	    int dimTan, int threadNum) :
 	CQCGL(N, d, b, c, dr, di, dimTan, threadNum) {}
 
+    bn::ndarray PYTs(){
+	return copy2bn(Ts);
+    }
+
     bn::ndarray PYlte(){
 	return copy2bn(lte);
     }
@@ -58,12 +62,11 @@ public:
 	return bp::make_tuple(copy2bn(result.first), copy2bn(result.second));
     }
     
-    bp::tuple PYaintg(bn::ndarray a0, double h, double tend, int skip_rate){
+    bn::ndarray PYaintg(bn::ndarray a0, double h, double tend, int skip_rate){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	auto result = aintg(tmpa, h, tend, skip_rate);
-	return bp::make_tuple(copy2bn(result.first), copy2bn(result.second));
+	return copy2bn(aintg(tmpa, h, tend, skip_rate));
     }
 
     bp::tuple PYaintgj(bn::ndarray a0, double h, double tend, int skip_rate){
@@ -71,10 +74,27 @@ public:
 	getDims(a0, m, n);
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
 	auto result = aintgj(tmpa, h, tend, skip_rate);
-	return bp::make_tuple(copy2bn(std::get<0>(result)), 
-			      copy2bn(std::get<1>(result)), 
-			      copy2bn(std::get<2>(result))
+	return bp::make_tuple(copy2bn(result.first), 
+			      copy2bn(result.second)
 			      );
+    }
+
+    bn::ndarray PYintgv(bn::ndarray a0, bn::ndarray v, double h, int Nt){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	getDims(v, m, n);
+	Map<ArrayXXd> tmpv((double*)v.get_data(), n, m);
+	return copy2bn(intgv(tmpa, tmpv, h, Nt));
+    }    
+
+    bn::ndarray PYaintgv(bn::ndarray a0, bn::ndarray v, double h, double tend){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	getDims(v, m, n);
+	Map<ArrayXXd> tmpv((double*)v.get_data(), n, m);
+	return copy2bn(aintgv(tmpa, tmpv, h, tend));
     }
 
 
@@ -366,7 +386,9 @@ BOOST_PYTHON_MODULE(py_CQCGL_threads) {
 	.def_readwrite("NCalCoe", &pyCQCGL::NCalCoe)
 	.def_readwrite("NReject", &pyCQCGL::NReject)
 	.def_readwrite("NCallF", &pyCQCGL::NCallF)
+	.def_readwrite("NSteps", &pyCQCGL::NSteps)
 	.def_readwrite("Method", &pyCQCGL::Method)
+	.def("Ts", &pyCQCGL::PYTs)
 	.def("hs", &pyCQCGL::PYhs)
 	.def("lte", &pyCQCGL::PYlte)
 	.def("K", &pyCQCGL::PYK)
@@ -377,6 +399,8 @@ BOOST_PYTHON_MODULE(py_CQCGL_threads) {
 	.def("intgj", &pyCQCGL::PYintgj)
 	.def("aintg", &pyCQCGL::PYaintg)
 	.def("aintgj", &pyCQCGL::PYaintgj)
+	.def("intgv", &pyCQCGL::PYintgv)
+	.def("aintgv", &pyCQCGL::PYaintgv)
 	.def("velocity", &pyCQCGL::PYvelocity)
 	.def("velSlice", &pyCQCGL::PYvelSlice)
 	.def("velPhase", &pyCQCGL::PYvelPhase)

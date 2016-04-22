@@ -293,7 +293,7 @@ CQCGLgeneral::constETD(const ArrayXXd a0, const double h, const int Nt,
 /**
  * @brief time step adaptive integrator
  */
-std::pair<VectorXd, ArrayXXd>
+ArrayXXd
 CQCGLgeneral::adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
 		       const int skip_rate, const bool onlyOrbit, bool reInitTan){
     
@@ -312,12 +312,13 @@ CQCGLgeneral::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
     f[0].v1 = R2C(a0);
 
     ArrayXXd aa(Ndim, M*nc);
-    VectorXd tt(M);
+    Ts.resize(M);
     aa.leftCols(nc) = a0;
-    tt(0) = 0;
+    Ts(0) = 0;
     NCalCoe = 0;
     NReject = 0;
     NCallF = 0;    
+    NSteps = 0;
     hs.resize(M-1);
     lte.resize(M-1);
 
@@ -326,10 +327,8 @@ CQCGLgeneral::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
     int num = 1;
     bool doChange, doAccept;
 
-    int i = 0;
     bool TimeEnds = false;
     while(!TimeEnds){ 
-	i++;
 
 	if ( t + h > tend){
 	    h = tend - t;
@@ -345,11 +344,12 @@ CQCGLgeneral::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
 	
 	if (doAccept){
 	    t += h;
+	    NSteps++;
 	    f[0].v1 = f[4].v1;
-	    if ( (i+1) % skip_rate == 0 ) {
-		if (num >= tt.size() || TimeEnds) {
-		    int m = tt.size();
-		    tt.conservativeResize(m+cellSize);
+	    if ( NSteps % skip_rate == 0 || TimeEnds) {
+		if (num >= Ts.size()) {
+		    int m = Ts.size();
+		    Ts.conservativeResize(m+cellSize);
 		    aa.conservativeResize(Eigen::NoChange, (m+cellSize)*nc); // rows not change, just extend cols
 		    hs.conservativeResize(m-1+cellSize);
 		    lte.conservativeResize(m-1+cellSize);
@@ -357,7 +357,7 @@ CQCGLgeneral::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
 		hs(num-1) = h;
 		lte(num-1) = du;
 		aa.middleCols(num*nc, nc) = C2R(f[4].v1);
-		tt(num) = t;
+		Ts(num) = t;
 		num++;
 		if (reInitTan && !onlyOrbit) {
 		    f[0].v1.rightCols(DimTan) = R2C(MatrixXd::Identity(DimTan, DimTan));
@@ -379,7 +379,9 @@ CQCGLgeneral::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
     // lte = lte.head(num) has aliasing problem 
     hs.conservativeResize(num-1);
     lte.conservativeResize(num-1);
-    return std::make_pair(tt.head(num), aa.leftCols(num*nc));
+    Ts.conservativeResize(num);
+    
+    return aa.leftCols(num*nc);
 }
 
 
@@ -421,7 +423,7 @@ CQCGLgeneral::intgj(const ArrayXd &a0, const double h, const int Nt, const int s
 }
 
 
-std::pair<VectorXd, ArrayXXd>
+ArrayXXd
 CQCGLgeneral::aintg(const ArrayXd &a0, const double h, const double tend, 
 		    const int skip_rate){
     
@@ -429,15 +431,14 @@ CQCGLgeneral::aintg(const ArrayXd &a0, const double h, const double tend,
     return adaptETD(a0, h, tend, skip_rate, true, true);
 }
 
-std::tuple<VectorXd, ArrayXXd, ArrayXXd>
+std::pair<ArrayXXd, ArrayXXd>
 CQCGLgeneral::aintgj(const ArrayXd &a0, const double h, const double tend, 
 		     const int skip_rate){
     
     assert(a0.size() == Ndim && DimTan == Ndim);
     ArrayXXd v0(Ndim, Ndim+1); 
     v0 << a0, MatrixXd::Identity(Ndim, Ndim);
-    auto tmp = adaptETD(v0, h, tend, skip_rate, false, true);
-    ArrayXXd &aa = tmp.second;
+    ArrayXXd aa = adaptETD(v0, h, tend, skip_rate, false, true);
     
     int m = aa.cols() / (Ndim+1);
     ArrayXXd x(Ndim, m);
@@ -447,7 +448,7 @@ CQCGLgeneral::aintgj(const ArrayXd &a0, const double h, const double tend,
 	xx.middleCols(Ndim*i, Ndim) = aa.middleCols((Ndim+1)*i+1, Ndim);
     }
     
-    return std::make_tuple(tmp.first, x, xx);
+    return std::make_pair(x, xx);
 }
  
 /**
@@ -472,8 +473,8 @@ CQCGLgeneral::aintgv(const ArrayXXd &a0, const ArrayXXd &v, const double h,
     assert( Ndim == a0.size() && Ndim == v.rows() && DimTan == v.cols());
     ArrayXXd v0(Ndim, DimTan+1);
     v0 << a0, v;
-    auto tmp = adaptETD(v0, h, tend, 100000, false, false);
-    return tmp.second.rightCols(DimTan+1);
+    ArrayXXd aa = adaptETD(v0, h, tend, 1000000, false, false);
+    return aa.rightCols(DimTan+1);
 }
 
 /**

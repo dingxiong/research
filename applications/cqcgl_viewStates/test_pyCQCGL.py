@@ -5,7 +5,7 @@ from time import time
 from py_CQCGL_threads import *
 from personalFunctions import *
 
-case = 30
+case = 40
 
 if case == 10:
     """
@@ -34,16 +34,17 @@ if case == 20:
     d = 30
     di = 0.06
 
-    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, -1, 4)
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, 1, 4)
 
     Ndim = cgl.Ndim
     A0 = 3*centerRand(N, 0.2, True)
     a0 = cgl.Config2Fourier(A0)
 
     t = time()
-    # aa, daa = cgl.intgj(a0, 1000, 1, 1000)
-    aa = cgl.intg(a0, 0.0001, 40000, 1)
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
+    # aa, daa = cgl.intgj(a0, 0.0001, 100, 100)
+    # aa = cgl.intg(a0, 0.0001, 40000, 1)
+    x = cgl.intgv(a0, rand(Ndim), 0.001, 100)
+    # plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
     print time() - t
 
 if case == 30:
@@ -54,7 +55,7 @@ if case == 30:
     d = 30
     di = 0.06
 
-    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, -1, 4)
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, 0, 4)
 
     Ndim = cgl.Ndim
     A0 = 3*centerRand(N, 0.2, True)
@@ -62,15 +63,37 @@ if case == 30:
 
     t = time()
     cgl.changeOmega(-176.67504941219335)
-    tt, aa = cgl.aintg(a0, 0.001, 4,  1)
-    tt, aa = cgl.aintg(aa[-1], 0.001, 4,  1)
+    # aa = cgl.aintg(a0, 0.001, 4,  1)
+    aa, daa = cgl.aintgj(a0, 0.001, 0.1, 100)
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
     plot1dfig(cgl.hs(), yscale='log')
     plot1dfig(cgl.lte(), yscale='log')
     print time() - t
 
+if case == 40:
+    """
+    test time step adaptive tangent space integration routines
+    """
+    N = 1024
+    d = 30
+    di = 0.06
+
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, 1, 4)
+
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+
+    t = time()
+    cgl.changeOmega(-176.67504941219335)
+    # aa = cgl.aintg(a0, 0.001, 4,  1)
+    x = cgl.aintgv(a0, rand(Ndim), 0.001, 1)
+    plot1dfig(cgl.hs(), yscale='log')
+    plot1dfig(cgl.lte(), yscale='log')
+    print time() - t
+
 # compare fft with Fourier2Config
-if case == 2:
+if case == 80:
     cgl = pyCqcgl1d(256, 50, 0.01, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
     a0 = rand(510)
     aa = cgl.intg(a0, 1000, 1)
@@ -94,7 +117,7 @@ if case == 2:
     print np.amax(np.abs(AA - AA3))
 
 # test plotting fiugres
-if case == 3:
+if case == 90:
     cgl = pyCqcgl1d(512, 50, 0.01, False, 0,
                     -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
                     4)
@@ -105,7 +128,7 @@ if case == 3:
     plotConfigSpace(AA, [0, 50, 0, 1000*0.01])
 
 # test reflection
-if case == 4:
+if case == 100:
     cgl = pyCqcgl1d(256, 50, 0.01, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
     a0 = rand(510)
     aa = cgl.intg(a0, 1000, 1)
@@ -115,7 +138,7 @@ if case == 4:
     print raa[:2, -10:]
     print aa[:2, -10:]
 
-if case == 5:
+if case == 110:
     # test continous symmetry reduction
     cgl = pyCqcgl1d(256, 50, 0.01, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
     a0 = rand(510)
@@ -125,7 +148,7 @@ if case == 5:
     print aaHat[:, 3]
     print aaHat[:, -1]
 
-if case == 6:
+if case == 120:
     # test the reduceReflection function
     cgl = pyCqcgl1d(256, 50, 0.01, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
     A0 = centerRand(512, 0.2)

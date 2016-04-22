@@ -67,12 +67,14 @@ public:
     double mue = 1.25;		/* upper lazy threshold */
     double muc = 0.85;		/* lower lazy threshold */
 
-    int NCalCoe = 0;		/* times to evaluate coefficient */
-    int NReject = 0;		/* times that new state is rejected */
-    int NCallF = 0;	       /* times to call velocity function f */
-    VectorXd hs;	       /* time step sequnce */
-    VectorXd lte;	       /* local relative error estimation */
-
+    int NCalCoe = 0;	      /* times to evaluate coefficient */
+    int NReject = 0;	      /* times that new state is rejected */
+    int NCallF = 0;	      /* times to call velocity function f */
+    int NSteps = 0;	      /* total number of integrations steps */
+    VectorXd hs;	      /* time step sequnce */
+    VectorXd lte;	      /* local relative error estimation */
+    VectorXd Ts;	      /* time sequnence for adaptive method */
+    
     int cellSize = 500;	/* size of cell when resize output container */
     int M = 64;			/* number of sample points */
     int R = 1;			/* radius for evaluating phi(z) */
@@ -109,17 +111,17 @@ public:
     ArrayXXd 
     constETD(const ArrayXXd a0, const double h, const int Nt, 
 	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
-    std::pair<VectorXd, ArrayXXd>
+    ArrayXXd
     adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
 	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
     ArrayXXd 
     intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
     std::pair<ArrayXXd, ArrayXXd>
     intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
-    std::pair<VectorXd, ArrayXXd>
+    ArrayXXd
     aintg(const ArrayXd &a0, const double h, const double tend, 
-	       const int skip_rate);
-    std::tuple<VectorXd, ArrayXXd, ArrayXXd>
+	  const int skip_rate);
+    std::pair<ArrayXXd, ArrayXXd>
     aintgj(const ArrayXd &a0, const double h, const double tend, 
 	   const int skip_rate);
     ArrayXXd

@@ -205,7 +205,7 @@ KS::intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
 }
 
 
-std::pair<VectorXd, ArrayXXd>
+ArrayXXd
 KS::aintg(const ArrayXd &a0, const double h, const double tend, 
 	  const int skip_rate){
     
@@ -213,15 +213,14 @@ KS::aintg(const ArrayXd &a0, const double h, const double tend,
     return adaptETD(a0, h, tend, skip_rate, true, true);
 }
 
-std::tuple<VectorXd, ArrayXXd, ArrayXXd>
+std::pair<ArrayXXd, ArrayXXd>
 KS::aintgj(const ArrayXd &a0, const double h, const double tend, 
 	   const int skip_rate){
     
     assert(a0.size() == N-2);
     ArrayXXd v0(N-2, N-1); 
     v0 << a0, MatrixXd::Identity(N-2, N-2);
-    auto tmp = adaptETD(v0, h, tend, skip_rate, false, true);
-    ArrayXXd &aa = tmp.second;
+    ArrayXXd aa = adaptETD(v0, h, tend, skip_rate, false, true);
 
     int m = aa.cols() / (N-1);
     ArrayXXd x(N-2, m);
@@ -231,7 +230,7 @@ KS::aintgj(const ArrayXd &a0, const double h, const double tend,
 	xx.middleCols((N-2)*i, N-2) = aa.middleCols((N-1)*i+1, N-2);
     }
 
-    return std::make_tuple(tmp.first, x, xx);
+    return std::make_pair(x, xx);
 }
 
 
@@ -279,7 +278,7 @@ KS::constETD(const ArrayXXd a0, const double h, const int Nt,
 /**
  * @brief time step adaptive integrator
  */
-std::pair<VectorXd, ArrayXXd>
+ArrayXXd
 KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
 	     const int skip_rate, const bool onlyOrbit, 
 	     const bool reInitTan){
@@ -299,12 +298,13 @@ KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
     f[0].vc1 = R2C(a0);
 
     ArrayXXd aa(N-2, M*nc);
-    VectorXd tt(M);
+    Ts.resize(M);
     aa.leftCols(nc) = a0;
-    tt(0) = 0;
+    Ts(0) = 0;
     NCalCoe = 0;
     NReject = 0;
     NCallF = 0;    
+    NSteps = 0;
     hs.resize(M-1);
     lte.resize(M-1);
 
@@ -313,10 +313,8 @@ KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
     int num = 1;
     bool doChange, doAccept;
 
-    int i = 0;
     bool TimeEnds = false;
     while(!TimeEnds){ 
-	i++;
 
 	if ( t + h > tend){
 	    h = tend - t;
@@ -332,11 +330,12 @@ KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
 	
 	if (doAccept){
 	    t += h;
+	    NSteps++;
 	    f[0].vc1 = f[4].vc1;
-	    if ( (i+1) % skip_rate == 0 || TimeEnds) {
-		if (num >= tt.size() ) {
-		    int m = tt.size();
-		    tt.conservativeResize(m+cellSize);
+	    if ( NSteps % skip_rate == 0 || TimeEnds) {
+		if (num >= Ts.size() ) {
+		    int m = Ts.size();
+		    Ts.conservativeResize(m+cellSize);
 		    aa.conservativeResize(Eigen::NoChange, (m+cellSize)*nc); // rows not change, just extend cols
 		    hs.conservativeResize(m-1+cellSize);
 		    lte.conservativeResize(m-1+cellSize);
@@ -344,7 +343,7 @@ KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
 		hs(num-1) = h;
 		lte(num-1) = du;
 		aa.middleCols(num*nc, nc) = C2R(f[4].vc1);
-		tt(num) = t;
+		Ts(num) = t;
 		num++;
 		if (reInitTan && !onlyOrbit) {
 		    f[0].vc1.rightCols(N-2) = R2C(MatrixXd::Identity(N-2, N-2));
@@ -366,7 +365,9 @@ KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
     // lte = lte.head(num) has aliasing problem 
     hs.conservativeResize(num-1);
     lte.conservativeResize(num-1);
-    return std::make_pair(tt.head(num), aa.leftCols(num*nc));
+    Ts.conservativeResize(num);
+    
+    return aa.leftCols(num*nc);
 }
 
 #if 0

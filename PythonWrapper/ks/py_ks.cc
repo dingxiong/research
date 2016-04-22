@@ -27,6 +27,10 @@ class pyKS : public KS {
 public:
     pyKS(int N, double d) : KS(N, d) {}
     
+    bn::ndarray PYTs(){
+	return copy2bn(Ts);
+    }
+    
     bn::ndarray PYlte(){
 	return copy2bn(lte);
     }
@@ -88,13 +92,11 @@ public:
 	return bp::make_tuple(copy2bn(tmpav.first), copy2bn(tmpav.second));
     }
 
-   bp::tuple PYaintg(bn::ndarray a0, double h, double tend, int skip_rate){
+    bn::ndarray PYaintg(bn::ndarray a0, double h, double tend, int skip_rate){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXd> tmpa((double*)a0.get_data(), n*m);
-	auto result = aintg(tmpa, h, tend, skip_rate);
-	
-	return bp::make_tuple(copy2bn(result.first), copy2bn(result.second));
+	return copy2bn(aintg(tmpa, h, tend, skip_rate));
     }
 
     bp::tuple PYaintgj(bn::ndarray a0, double h, double tend, int skip_rate){
@@ -103,9 +105,8 @@ public:
 	Map<ArrayXd> tmpa((double*)a0.get_data(), n*m);
 	auto result = aintgj(tmpa, h, tend, skip_rate);
 	
-	return bp::make_tuple(copy2bn(std::get<0>(result)),
-			      copy2bn(std::get<1>(result)),
-			      copy2bn(std::get<2>(result))
+	return bp::make_tuple(copy2bn(result.first),
+			      copy2bn(result.second)
 			      );
     }
     
@@ -310,7 +311,9 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def_readwrite("NCalCoe", &pyKS::NCalCoe)
 	.def_readwrite("NReject", &pyKS::NReject)
 	.def_readwrite("NCallF", &pyKS::NCallF)
+	.def_readwrite("NSteps", &pyKS::NSteps)
 	.def_readwrite("Method", &pyKS::Method)
+	.def("Ts", &pyKS::PYTs)
 	.def("hs", &pyKS::PYhs)
 	.def("lte", &pyKS::PYlte)
 	.def("velocity", &pyKS::PYvelocity)

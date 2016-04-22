@@ -118,14 +118,14 @@ public:
 	int m, n;
 	getDims(aa, m, n);
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( Fourier2Config(tmpaa) );
+	return copy2bnc( Fourier2Config(tmpaa) );
     }
 
     /* wrap Config2Fourier */
     bn::ndarray PYConfig2Fourier(bn::ndarray AA){
 	int m, n;
 	getDims(AA, m, n);
-	Map<ArrayXXd> tmpAA((double*)AA.get_data(), n, m);
+	Map<ArrayXXcd> tmpAA((dcp*)AA.get_data(), n, m);
 	return copy2bn( Config2Fourier(tmpAA) );
     }
     
@@ -135,14 +135,6 @@ public:
 	getDims(aa, m, n);
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
 	return copy2bn( Fourier2ConfigMag(tmpaa) );
-    }
-
-    /* wrap calPhase */
-    bn::ndarray PYcalPhase(bn::ndarray AA){
-	int m, n;
-	getDims(AA, m, n);
-	Map<ArrayXXd> tmpAA((double*)AA.get_data(), n, m);
-	return copy2bn( calPhase(tmpAA) );
     }
     
     /* wrap Fourier2Phase */
@@ -334,7 +326,7 @@ public:
 
 
 
-BOOST_PYTHON_MODULE(py_CQCGL) {
+BOOST_PYTHON_MODULE(py_CQCGL_threads) {
     bn::initialize();
 
     // must provide the constructor
@@ -392,7 +384,6 @@ BOOST_PYTHON_MODULE(py_CQCGL) {
 	.def("Fourier2Config", &pyCQCGL::PYFourier2Config)
 	.def("Config2Fourier", &pyCQCGL::PYConfig2Fourier)
 	.def("Fourier2ConfigMag", &pyCQCGL::PYFourier2ConfigMag)
-	.def("calPhase", &pyCQCGL::PYcalPhase)
 	.def("Fourier2Phase", &pyCQCGL::PYFourier2Phase)
 	.def("orbit2sliceWrap", &pyCQCGL::PYorbit2sliceWrap)
 	.def("orbit2slice", &pyCQCGL::PYorbit2slice)

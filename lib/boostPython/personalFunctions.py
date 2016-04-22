@@ -156,21 +156,6 @@ def scatter2dfig(x, y, s=20, marker='o', fc='r', ec='none', labs=['x', 'y'],
     plt.show(block=False)
 
 
-def multiScatter2dfig(x, y, s=[20], marker=['o'], fc=['r'],
-                      ec='none', labs=['x', 'y'],
-                      size=[8, 6], axisLabelSize=25):
-    fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111)
-    M = len(x)
-    for i in range(M):
-        ax.scatter(x[i], y[i], s=s[i], marker=marker[i],
-                   facecolor=fc[i], edgecolors=ec)
-    ax.set_xlabel(labs[0], fontsize=axisLabelSize)
-    ax.set_ylabel(labs[1], fontsize=axisLabelSize)
-    fig.tight_layout(pad=0)
-    plt.show(block=False)
-
-
 def plot3dfig(x, y, z, c='r', lw=1, labs=['x', 'y', 'z'],
               size=[8, 6], axisLabelSize=25):
     """
@@ -212,9 +197,7 @@ def plotConfigSpace(AA, ext, barTicks=[0, 3], colortype='jet',
     """
     plot the color map of the states
     """
-    Ar = AA[:, 0::2]
-    Ai = AA[:, 1::2]
-    Aamp = abs(Ar + 1j*Ai)
+    Aamp = np.abs(AA)
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
     ax.set_xlabel('x', fontsize=axisLabelSize)
@@ -967,12 +950,17 @@ def removeMarginal(e, k):
     return ep
 
 
-def centerRand(N, frac):
+def centerRand(N, frac, isComplex=True):
     """
     generate a localized random vector.
     frac: the fraction of the nonzero center in the totol size
     """
-    a = rand(N)
+    
+    if isComplex:
+        a = rand(N) + 1j*rand(N)
+    else:
+        a = rand(N)
+        
     N2 = np.int((1-frac)*0.5*N)
     a[:N2] = 0
     a[-N2:] = 0

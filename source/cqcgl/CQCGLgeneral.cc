@@ -54,7 +54,6 @@ CQCGLgeneral::CQCGLgeneral(int N, double d,
 	    FFT(N, DimTan+1, threadNum), 
 	    FFT(N, DimTan+1, threadNum) }      
 {
-    
     CGLInit(); // calculate coefficients.
 }
 
@@ -116,19 +115,19 @@ void CQCGLgeneral::CGLInit(){
     
     // calculate the Linear part
     K.resize(N,1);
-    K << ArrayXd::LinSpaced(N/2, 0, N/2-1), N/2, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
+    K << ArrayXd::LinSpaced(N/2, 0, N/2-1), N/2, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1); 
     K2.resize(Ne, 1);
-    K2 << ArrayXd::LinSpaced(Nplus, 0, Nplus-1), ArrayXd::LinSpaced(Nminus, -Nminus, -1);
+    K2 << ArrayXd::LinSpaced(Nplus, 0, Nplus-1), ArrayXd::LinSpaced(Nminus, -Nminus, -1); 
       
-    QK = 2*M_PI/d * K;
-    L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square();
-    L.middleCols(Nplus, Nalias) = ArrayXcd::Zero(Nalias);
+    QK = 2*M_PI/d * K; 
+    L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square(); 
+    L.segment(Nplus, Nalias) = ArrayXcd::Zero(Nalias); 
 }
 
 void CQCGLgeneral::changeOmega(double w){
     Omega = w;
     L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square();
-    L.middleCols(Nplus, Nalias) = ArrayXcd::Zero(Nalias);
+    L.segment(Nplus, Nalias) = ArrayXcd::Zero(Nalias);
 }
 
 /**
@@ -279,7 +278,7 @@ CQCGLgeneral::constETD(const ArrayXXd a0, const double h, const int Nt,
 	f[0].v1 = f[4].v1;	// update state
 	NCallF += 5;
 	if ( (i+1)%skip_rate == 0 || i == Nt-1) {
-	    aa.middleCols((num+1)*nc, nc) = C2R(f[4].v1);
+	    aa.middleCols((num+1)*nc, nc) = C2R(f[4].v1); 
 	    lte(num++) = du;  
 	    if (reInitTan && !onlyOrbit) {
 		f[0].v1.rightCols(DimTan) = R2C(MatrixXd::Identity(DimTan, DimTan));
@@ -367,7 +366,7 @@ CQCGLgeneral::adaptETD(const ArrayXXd &a0, const double h0, const double tend,
 	}
 	else {
 	    NReject++;
-	    TimeEnds = true;
+	    TimeEnds = false;
 	}
 	
 	if (doChange) {

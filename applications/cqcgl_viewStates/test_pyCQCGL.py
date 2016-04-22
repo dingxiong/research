@@ -2,46 +2,71 @@ import numpy as np
 from numpy.random import rand
 from numpy.fft import fft, ifft
 from time import time
-from py_cqcgl1d_threads import pyCqcgl1d
+from py_CQCGL_threads import *
 from personalFunctions import *
 
-case = 1
+case = 30
 
-if case == 0:
+if case == 10:
     """
-    test changh()
+    test fourier to physical states and vice verse
     """
-    cgl = pyCqcgl1d(512, 50, 0.01, False, 1,
-                    -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
-                    4)
+    N = 1024
+    d = 30
+    di = 0.05
+
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, -1, 4)
+
     Ndim = cgl.Ndim
-    a0 = rand(Ndim)
-    aa = cgl.intg(a0, 2000, 1)
-    cgl2 = pyCqcgl1d(512, 50, 0.02, False, 1,
-                     -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
-                     4)
-    aa2 = cgl2.intg(a0, 2000, 1)
-    cgl2.changeh(0.01)
-    aa3 = cgl2.intg(a0, 2000, 1)
-
-    print cgl2.h
-    print norm(aa-aa2), norm(aa-aa3)
-
-if case == 1:
+    aa = rand(100, Ndim)
+    AA = cgl.Fourier2Config(aa)
+    aAA = cgl.Fourier2ConfigMag(aa)
+    phase = cgl.Fourier2Phase(aa)
+    aa2 = cgl.Config2Fourier(AA)
+    print norm(aa-aa2)
+    print norm(np.abs(AA)-aAA)
+    
+if case == 20:
     """
-    test the integration routines
+    test the const time step integration routines
     """
-    cgl = pyCqcgl1d(512, 50, 0.01, True, 0,
-                    -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
-                    4)
+    N = 1024
+    d = 30
+    di = 0.06
+
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, -1, 4)
+
     Ndim = cgl.Ndim
-    A0 = centerRand(512*2, 0.2)
+    A0 = 3*centerRand(N, 0.2, True)
     a0 = cgl.Config2Fourier(A0)
-    # a0 = rand(Ndim)
-    # aa = cgl.intg(a0, 50000, 1)
+
     t = time()
     # aa, daa = cgl.intgj(a0, 1000, 1, 1000)
-    aa = cgl.intg(a0, 10000, 1)
+    aa = cgl.intg(a0, 0.0001, 40000, 1)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
+    print time() - t
+
+if case == 30:
+    """
+    test time step adaptive integration routines
+    """
+    N = 1024
+    d = 30
+    di = 0.06
+
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, -1, 4)
+
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+
+    t = time()
+    cgl.changeOmega(-176.67504941219335)
+    tt, aa = cgl.aintg(a0, 0.001, 4,  1)
+    tt, aa = cgl.aintg(aa[-1], 0.001, 4,  1)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
+    plot1dfig(cgl.hs(), yscale='log')
+    plot1dfig(cgl.lte(), yscale='log')
     print time() - t
 
 # compare fft with Fourier2Config

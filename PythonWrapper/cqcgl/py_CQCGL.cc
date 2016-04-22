@@ -23,6 +23,14 @@ public:
 	    int dimTan, int threadNum) :
 	CQCGL(N, d, b, c, dr, di, dimTan, threadNum) {}
 
+    bn::ndarray PYlte(){
+	return copy2bn(lte);
+    }
+
+    bn::ndarray PYhs(){
+	return copy2bn(hs);
+    }
+
     /* K */
     bn::ndarray PYK(){
 	return copy2bn(K);
@@ -30,16 +38,52 @@ public:
 
     /* L */
     bn::ndarray PYL(){
-	return copy2bn<ArrayXXcd, std::complex<double>>(L);
+	return copy2bnc(L);
     }
+
+   /* wrap the integrator */
+    bn::ndarray PYintg(bn::ndarray a0, double h, int Nt, int skip_rate){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	return copy2bn(intg(tmpa, h, Nt, skip_rate));
+    }
+
+    /* wrap the integrator with Jacobian */
+    bp::tuple PYintgj(bn::ndarray a0, double h, int Nt, size_t skip_rate){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	auto result = intgj(tmpa, h, Nt, skip_rate);
+	return bp::make_tuple(copy2bn(result.first), copy2bn(result.second));
+    }
+    
+    bp::tuple PYaintg(bn::ndarray a0, double h, double tend, int skip_rate){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	auto result = aintg(tmpa, h, tend, skip_rate);
+	return bp::make_tuple(copy2bn(result.first), copy2bn(result.second));
+    }
+
+    bp::tuple PYaintgj(bn::ndarray a0, double h, double tend, int skip_rate){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	auto result = aintgj(tmpa, h, tend, skip_rate);
+	return bp::make_tuple(copy2bn(std::get<0>(result)), 
+			      copy2bn(std::get<1>(result)), 
+			      copy2bn(std::get<2>(result))
+			      );
+    }
+
 
     /* wrap the velocity */
     bn::ndarray PYvelocity(bn::ndarray a0){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	ArrayXd tmpv = velocity(tmpa);
-	return copy2bn(tmpv);
+	return copy2bn(velocity(tmpa));
     }
 
     /* wrap the velSlice */
@@ -47,8 +91,7 @@ public:
 	int m, n;
 	getDims(aH, m, n);
 	Map<VectorXd> tmpa((double*)aH.get_data(), m*n);
-	VectorXd tmpv = velSlice(tmpa);
-	return copy2bn(tmpv);
+	return copy2bn(velSlice(tmpa));
     }
 
     /* wrap the velPhase */
@@ -60,41 +103,7 @@ public:
 	return copy2bn(tmpv);
     }
     
-    bn::ndarray PYrk4(bn::ndarray a0, const double dt, const int nstp, const int nq){
-	int m, n;
-	getDims(a0, m, n);
-	Map<VectorXd> tmpa((double*)a0.get_data(), m*n);
-	return copy2bn(rk4(tmpa, dt, nstp, nq));
-    }
 
-    bp::tuple PYrk4j(bn::ndarray a0, double dt, int nstp, int nq, int nqr) {
-	int m, n;
-	getDims(a0, m, n);
-	Map<VectorXd> tmpa((double*)a0.get_data(), m*n);
-	auto tmp = rk4j(tmpa, dt, nstp, nq, nqr);
-	return bp::make_tuple(copy2bn(tmp.first), copy2bn(tmp.second));
-    }
-    
-    /* wrap the Lyap */
-    bp::tuple PYLyap(bn::ndarray aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXcd lya = Lyap(tmpaa);
-	return bp::make_tuple(copy2bn( lya.real() ),
-			      copy2bn( lya.imag() )
-			      );
-    }
-    
-    /* wrap the LyapVel */
-    bn::ndarray PYLyapVel(bn::ndarray aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXd lyavel = LyapVel(tmpaa);
-	return copy2bn(lyavel);
-    }
-    
     /* wrap velocityReq */
     bn::ndarray PYvelocityReq(bn::ndarray a0, double th, double phi){
 	int m, n;
@@ -104,74 +113,6 @@ public:
 	return copy2bn(tmpv);
     }
 
-
-    /* pad */
-    bn::ndarray PYpad(bn::ndarray aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	ArrayXXd tmppaa = pad(tmpaa);
-	return copy2bn(pad(tmpaa));
-    }
-
-    /* generalPadding */
-    bn::ndarray PYgeneralPadding(bn::ndarray aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( generalPadding(tmpaa) );
-    }
-
-    /* unpad */
-    bn::ndarray PYunpad(bn::ndarray paa){
-	int m, n;
-	getDims(paa, m, n);
-	Map<ArrayXXd> tmppaa((double*)paa.get_data(), n, m);
-	return copy2bn(unpad(tmppaa));
-    }
-
-    
-    /* wrap the integrator */
-    bn::ndarray PYintg(bn::ndarray a0, int nstp, int np){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	return copy2bn(intg(tmpa, nstp, np));
-    }
-    
-
-    /* wrap the integrator with Jacobian */
-    bp::tuple PYintgj(bn::ndarray a0, size_t nstp, size_t np, size_t nqr){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	std::pair<ArrayXXd, ArrayXXd> tmp = intgj(tmpa, nstp, np, nqr);
-	return bp::make_tuple(copy2bn(tmp.first), copy2bn(tmp.second));
-    }
-
-    /* wrap intgv */
-    bn::ndarray PYintgv(const bn::ndarray &a0, const bn::ndarray &v,
-		      size_t nstp){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	getDims(v, m, n);
-	Map<ArrayXXd> tmpv((double*)v.get_data(), n, m);
-	return copy2bn( intgv(tmpa, tmpv, nstp));
-    }
-
-    /* wrap intgvs */
-   bp::tuple PYintgvs(const bn::ndarray &a0, const bn::ndarray &v,
-		      int nstp, int np, int nqr){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	getDims(v, m, n);
-	Map<ArrayXXd> tmpv((double*)v.get_data(), n, m);
-	std::pair<ArrayXXd, ArrayXXd> tmp = intgvs(tmpa, tmpv, nstp, np, nqr);
-	return bp::make_tuple(copy2bn(tmp.first), copy2bn(tmp.second));
-    }
-    
     /* wrap Fourier2Config */
     bn::ndarray PYFourier2Config(bn::ndarray aa){
 	int m, n;
@@ -322,20 +263,6 @@ public:
 	
     }
 
-    /* reduceIntg */
-    bp::tuple PYreduceIntg(const bn::ndarray &a0, const size_t nstp,
-			   const size_t np){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
-	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = 
-	    reduceIntg(tmpa0, nstp, np);
-	return bp::make_tuple(copy2bn(std::get<0>(tmp)),
-			      copy2bn(std::get<1>(tmp)),
-			      copy2bn(std::get<2>(tmp)));
-	
-    }
-
     /* reduceVe */
     bn::ndarray PYreduceVe(const bn::ndarray &ve, const bn::ndarray &x){
 	int m, n;
@@ -345,28 +272,6 @@ public:
 	getDims(x, m2, n2);
 	Map<ArrayXd> tmpx((double*)x.get_data(), n2*m2);
 	return copy2bn(reduceVe(tmpve, tmpx));
-    }
-    
-    /* findReq */
-    bp::tuple PYfindReq(bn::ndarray a0, double wth0, double wphi0,
-			int MaxN, double tol, bool doesUseMyCG,
-			bool doesPrint){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
-	std::tuple<ArrayXd, double, double, double> tmp = 
-	    findReq(tmpa0, wth0, wphi0, MaxN, tol, doesUseMyCG, doesPrint);
-	return bp::make_tuple(copy2bn(std::get<0>(tmp)),  std::get<1>(tmp),
-			      std::get<2>(tmp), std::get<3>(tmp));
-    }
-    
-    /* optThPhi */
-    bp::list PYoptThPhi(bn::ndarray a0){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
-	
-	return toList(optThPhi(tmpa0));
     }
     
     /* transRotate */
@@ -423,51 +328,13 @@ public:
 	return copy2bn( rotateOrbit(tmpaa, tmpth, tmpphi) );
     }
     
-    /* planeWave */
-    bp::tuple PYplaneWave(int k, bool isPositve){
-	auto tmp = planeWave(k, isPositve);
-	return bp::make_tuple(copy2bn(std::get<0>(tmp)),
-			      std::get<1>(tmp),
-			      std::get<2>(tmp));
-    }
-    
-    /* powIt */
-    bp::tuple PYpowIt(bn::ndarray a0, double th, double phi, bn::ndarray Q0, 
-		      bool onlyLastQ, int nstp, int nqr, 
-		      int maxit, double Qtol, bool Print, int PrintFreqency){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
-	getDims(Q0, m, n);	
-	Map<MatrixXd> tmpQ0((double*)Q0.get_data(), n, m);
-	auto tmp = powIt(tmpa0, th, phi, tmpQ0, onlyLastQ, nstp, nqr, maxit, Qtol, Print, PrintFreqency);
-	return bp::make_tuple(copy2bn(std::get<0>(tmp)),
-			      copy2bn(std::get<1>(tmp)),
-			      copy2bn(std::get<2>(tmp)),
-			      toList(std::get<3>(tmp))
-			      );
-    }
-
-    /* powEigE */
-    bn::ndarray PYpowEigE(bn::ndarray a0, double th, double phi, bn::ndarray Q0, 
-			  int nstp, int nqr, 
-			  int maxit, double Qtol, bool Print, int PrintFreqency){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa0((double*)a0.get_data(), n*m);
-	getDims(Q0, m, n);	
-	Map<MatrixXd> tmpQ0((double*)Q0.get_data(), n, m);
-	MatrixXd tmp = powEigE(tmpa0, th, phi, tmpQ0, nstp, nqr, maxit, Qtol, Print, PrintFreqency);
-	return copy2bn(tmp);
-    }
-    
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
-BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
+BOOST_PYTHON_MODULE(py_CQCGL) {
     bn::initialize();
 
     // must provide the constructor
@@ -497,23 +364,31 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
 	.def_readonly("c", &pyCQCGL::c)
 	.def_readonly("dr", &pyCQCGL::dr)
 	.def_readonly("di", &pyCQCGL::di)
+	.def_readonly("Omega", &pyCQCGL::Omega)
+	.def_readwrite("rtol", &pyCQCGL::rtol)
+	.def_readwrite("nu", &pyCQCGL::nu)
+	.def_readwrite("mumax", &pyCQCGL::mumax)
+	.def_readwrite("mumin", &pyCQCGL::mumin)
+	.def_readwrite("mue", &pyCQCGL::mue)
+	.def_readwrite("muc", &pyCQCGL::muc)
+	.def_readwrite("NCalCoe", &pyCQCGL::NCalCoe)
+	.def_readwrite("NReject", &pyCQCGL::NReject)
+	.def_readwrite("NCallF", &pyCQCGL::NCallF)
+	.def_readwrite("Method", &pyCQCGL::Method)
+	.def("hs", &pyCQCGL::PYhs)
+	.def("lte", &pyCQCGL::PYlte)
 	.def("K", &pyCQCGL::PYK)
 	.def("L", &pyCQCGL::PYL)
+	
+	.def("changeOmega", &pyCQCGL::changeOmega)
+	.def("intg", &pyCQCGL::PYintg)
+	.def("intgj", &pyCQCGL::PYintgj)
+	.def("aintg", &pyCQCGL::PYaintg)
+	.def("aintgj", &pyCQCGL::PYaintgj)
 	.def("velocity", &pyCQCGL::PYvelocity)
 	.def("velSlice", &pyCQCGL::PYvelSlice)
 	.def("velPhase", &pyCQCGL::PYvelPhase)
-	.def("rk4", &pyCQCGL::PYrk4)
-	.def("rk4j", &pyCQCGL::PYrk4j)
 	.def("velocityReq", &pyCQCGL::PYvelocityReq)
-	.def("Lyap", &pyCQCGL::PYLyap)
-	.def("LyapVel", &pyCQCGL::PYLyapVel)
-	.def("pad", &pyCQCGL::PYpad)
-	.def("generalPadding", &pyCQCGL::PYgeneralPadding)
-	.def("unpad", &pyCQCGL::PYunpad)
-	.def("intg", &pyCQCGL::PYintg)
-	.def("intgj", &pyCQCGL::PYintgj)
-	.def("intgv", &pyCQCGL::PYintgv)
-	.def("intgvs", &pyCQCGL::PYintgvs)
 	.def("Fourier2Config", &pyCQCGL::PYFourier2Config)
 	.def("Config2Fourier", &pyCQCGL::PYConfig2Fourier)
 	.def("Fourier2ConfigMag", &pyCQCGL::PYFourier2ConfigMag)
@@ -530,19 +405,13 @@ BOOST_PYTHON_MODULE(py_cqcgl1d_threads) {
 	.def("reflectVeAll", &pyCQCGL::PYreflectVeAll)
 	.def("ve2slice", &pyCQCGL::PYve2slice)
 	.def("reduceAllSymmetries", &pyCQCGL::PYreduceAllSymmetries)
-	.def("reduceIntg", &pyCQCGL::PYreduceIntg)
 	.def("reduceVe", &pyCQCGL::PYreduceVe)
-	.def("findReq", &pyCQCGL::PYfindReq)
-	.def("optThPhi", &pyCQCGL::PYoptThPhi)
 	.def("transRotate", &pyCQCGL::PYtransRotate) 
 	.def("transTangent", &pyCQCGL::PYtransTangent)
 	.def("phaseRotate", &pyCQCGL::PYphaseRotate)
 	.def("phaseTangent", &pyCQCGL::PYphaseTangent)
 	.def("Rotate", &pyCQCGL::PYRotate)
 	.def("rotateOrbit", &pyCQCGL::PYrotateOrbit)
-	.def("planeWave", &pyCQCGL::PYplaneWave)
-	.def("powIt", &pyCQCGL::PYpowIt)
-	.def("powEigE", &pyCQCGL::PYpowEigE)
 	;
 
 }

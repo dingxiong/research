@@ -106,11 +106,12 @@ public:
     ArrayXXcd ZR(ArrayXcd &z);
     double adaptTs(bool &doChange, bool &doAccept, const double s);
 
-    ArrayXXd constETD(const ArrayXXd a0, const double h, const int Nt, 
-		      const int skip_rate, const bool onlyOrbit);
+    ArrayXXd 
+    constETD(const ArrayXXd a0, const double h, const int Nt, 
+	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
     std::pair<VectorXd, ArrayXXd>
     adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
-	     const int skip_rate, const bool onlyOrbit);
+	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
     ArrayXXd 
     intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
     std::pair<ArrayXXd, ArrayXXd>
@@ -121,6 +122,12 @@ public:
     std::tuple<VectorXd, ArrayXXd, ArrayXXd>
     aintgj(const ArrayXd &a0, const double h, const double tend, 
 	   const int skip_rate);
+    ArrayXXd
+    intgv(const ArrayXd &a0, const ArrayXXd &v, const double h,
+	  const int Nt);
+    ArrayXXd 
+    aintgv(const ArrayXXd &a0, const ArrayXXd &v, const double h,
+	   const double tend);
     
     void dealias(const int k, const bool onlyOrbit);
     void NL(const int k, const bool onlyOrbit);

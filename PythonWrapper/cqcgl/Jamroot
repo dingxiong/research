@@ -8,14 +8,21 @@
 #
 #  3) after version 1.47.0 bjam is replace by b2
 # 
+
 use-project /boost : /usr/local/home/xiong/apps/sources/boost_1_57_0 ;
+
+#define source folder
+constant RESH : /usr/local/home/xiong/00git/research ;
+constant XDAPPS : /usr/local/home/xiong/apps ;
+
+
 
 project
 : requirements <library>/boost/python//boost_python 
 <implicit-dependency>/boost//headers 
-<include>/usr/local/home/xiong/apps/BoostNumpy/include/
-<include>../../../include
-<include>/usr/local/home/xiong/apps/eigen/include/eigen3
+<include>$(XDAPPS)/BoostNumpy/include/
+<include>$(RESH)/include
+<include>$(XDAPPS)/eigen/include/eigen3
 : usage-requirements <implicit-dependency>/boost//headers 	 
 ;
 
@@ -24,37 +31,36 @@ import python ;
 # define a new variant => in order to keep assert() functions 
 variant release_assert : <optimization>speed <inlining>full <debug-symbols>off <runtime-debugging>off ;
 
-lib np : : <name>boost_numpy <file>/usr/local/home/xiong/apps/BoostNumpy/lib/libboost_numpy.so ;
+lib np : : <name>boost_numpy <file>$(XDAPPS)/BoostNumpy/lib/libboost_numpy.so ;
 # lib fftw3 : : <name>fftw3 <file>/usr/lib/libfftw3.so ;
 lib fftw3 : : <name>fftw3 <file>/usr/lib/x86_64-linux-gnu/libfftw3.so ;
 # lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/libfftw3_threads.so ;
 lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/x86_64-linux-gnu/libfftw3_threads.so ;
-lib sparse : : <name>sparseRoutines <file>/usr/local/home/xiong/00git/research/lib/libsparseRoutines.so ;
-lib dense : : <name>denseRoutines <file>/usr/local/home/xiong/00git/research/lib/libdenseRoutines.so ;
-lib iter : : <name>iterMethod <file>/usr/local/home/xiong/00git/research/lib/libiterMethod.so ;
-lib ped : : <name>iterMethod <file>/usr/local/home/xiong/00git/research/lib/libped.so ;
-lib myfft : : <name>myfft_clean <file>/usr/local/home/xiong/00git/research/lib/libmyfft_clean.so ;
-lib myfft_threads : : <name>myfft_clean_threads <file>/usr/local/home/xiong/00git/research/lib/libmyfft_clean_threads.so ;
-lib cqcgl : : <name>cqcgl1d <file>/usr/local/home/xiong/00git/research/lib/libcqcgl1d.so ;
+lib sparse : : <name>sparseRoutines <file>$(RESH)/lib/libsparseRoutines.so ;
+lib dense : : <name>denseRoutines <file>$(RESH)/lib/libdenseRoutines.so ;
+lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
+lib ped : : <name>iterMethod <file>$(RESH)/lib/libped.so ;
+lib myfft : : <name>myfft_clean <file>$(RESH)/lib/libmyfft_clean.so ;
+lib myfft_threads : : <name>myfft_clean_threads <file>$(RESH)/lib/libmyfft_clean_threads.so ;
 
 
 choice = 2 ;
 
 if $(choice) = 1 {		# single thread case
-  python-extension py_cqcgl1d : py_cqcgl1d.cc np sparse dense fftw3 iter ped ../../myfft/myfft.cc ../cqcgl1d.cc ../cqcgl.cc ../CqcglETD.cc
+  python-extension py_CQCGL : py_CQCGL.cc np sparse dense fftw3 iter ped $(RESH)/source/myfft/myfft.cc $(RESH)/source/cqcgl/CQCGLgeneral.cc $(RESH)/source/cqcgl/CQCGL.cc
   : <variant>release_assert <optimization>speed
-  : <link>shared <cxxflags>"-std=c++11 -DGMRES_PRINT -DINB_PRINT -DCLEAN" 
+  : <link>shared <cxxflags>"-std=c++11 -DCLEAN" 
   ;
 
-  install py_extension : py_cqcgl1d : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
+  install py_extension : py_CQCGL : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
  
 }
 
 else if $(choice) = 2 {		# multi fftw threads case
-  python-extension py_cqcgl1d_threads : py_cqcgl1d.cc np sparse dense fftw3 fftw3_threads iter ped ../../myfft/myfft.cc ../cqcgl.cc ../cqcgl1d.cc ../CqcglETD.cc
+  python-extension py_CQCGL_threads : py_CQCGL.cc np sparse dense fftw3 fftw3_threads iter ped $(RESH)/source/myfft/myfft.cc $(RESH)/source/cqcgl/CQCGLgeneral.cc $(RESH)/source/cqcgl/CQCGL.cc
   : <variant>release_assert <optimization>speed 
-  : <link>shared <cxxflags>"-std=c++11 -DGMRES_PRINT -DINB_PRINT -lpthread -DCLEAN -DTFFT" 
+  : <link>shared <cxxflags>"-std=c++11 -DCLEAN -DTFFT" 
   ;
   
-  install py_extension : py_cqcgl1d_threads : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
+  install py_extension : py_CQCGL_threads : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
 }

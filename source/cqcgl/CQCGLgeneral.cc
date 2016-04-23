@@ -545,6 +545,15 @@ ArrayXXcd CQCGLgeneral::R2C(const ArrayXXd &v){
     return vpp;
 }
 
+ArrayXXd CQCGLgeneral::c2r(const ArrayXXcd &v){
+    return Map<ArrayXXd>((double*)&v(0,0), 2*v.rows(), v.cols());
+}
+
+ArrayXXcd CQCGLgeneral::r2c(const ArrayXXd &v){
+    assert( 0 == v.rows() % 2);
+    return Map<ArrayXXcd>((dcp*)&v(0,0), v.rows()/2, v.cols());
+}
+
 
 /* -------------------------------------------------- */
 /* -------  Fourier/Configure transformation -------- */
@@ -1014,10 +1023,10 @@ MatrixXd CQCGLgeneral::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat
  *  */
 ArrayXXd CQCGLgeneral::transRotate(const Ref<const ArrayXXd> &aa, const double th){
     ArrayXcd R = ( dcp(0,1) * th * K2 ).exp(); // e^{ik\theta}
-    ArrayXXcd raa = R2C(aa); 
+    ArrayXXcd raa = r2c(aa); 
     raa.colwise() *= R;
   
-    return C2R(raa);
+    return c2r(raa);
 }
 
 /** @brief group tangent in angle unit.
@@ -1026,10 +1035,10 @@ ArrayXXd CQCGLgeneral::transRotate(const Ref<const ArrayXXd> &aa, const double t
  */
 ArrayXXd CQCGLgeneral::transTangent(const Ref<const ArrayXXd> &aa){
     ArrayXcd R = dcp(0,1) * K2;
-    ArrayXXcd raa = R2C(aa);
+    ArrayXXcd raa = r2c(aa);
     raa.colwise() *= R;
   
-    return C2R(raa);
+    return c2r(raa);
 }
 
 /** @brief group generator. */
@@ -1047,13 +1056,12 @@ MatrixXd CQCGLgeneral::transGenerator(){
  * phi: rotation angle
  * */
 ArrayXXd CQCGLgeneral::phaseRotate(const Ref<const ArrayXXd> &aa, const double phi){
-  
-    return C2R( R2C(aa) * exp(dcp(0,1)*phi) ); // a0*e^{i\phi}
+    return c2r( r2c(aa) * exp(dcp(0,1)*phi) ); // a0*e^{i\phi}
 }
 
 /** @brief group tangent.  */
 ArrayXXd CQCGLgeneral::phaseTangent(const Ref<const ArrayXXd> &aa){
-    return C2R( R2C(aa) * dcp(0,1) );
+    return c2r( r2c(aa) * dcp(0,1) );
 }
 
 /** @brief group generator  */
@@ -1075,10 +1083,10 @@ MatrixXd CQCGLgeneral::phaseGenerator(){
 ArrayXXd CQCGLgeneral::Rotate(const Ref<const ArrayXXd> &aa, const double th,
 			      const double phi){
     ArrayXcd R = ( dcp(0,1) * (th * K2 + phi) ).exp(); // e^{ik\theta + \phi}
-    ArrayXXcd raa = R2C(aa); 
+    ArrayXXcd raa = r2c(aa); 
     raa.colwise() *= R;
   
-    return C2R(raa);
+    return c2r(raa);
 }
 
 /**
@@ -1490,51 +1498,6 @@ CQCGLgeneral::optThPhi(const ArrayXd &a0){
     return x;
 }
 
-
-/**************************************************************/
-/*                Floquet spectrum/vectors                    */
-/**************************************************************/
-std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
-CQCGLgeneral::powIt(const ArrayXd &a0, const double th, const double phi,
-		    const MatrixXd &Q0, 
-		    const bool onlyLastQ, int nstp, int nqr,
-		    const int maxit, const double Qtol, const bool Print,
-		    const int PrintFreqency){
-    
-    auto sqr = [&a0, th, phi, nstp, nqr, this](MatrixXd Q, bool onlyLastQ) 
-	-> std::pair<MatrixXd, MatrixXd> {
-	auto qr = intgQg(a0, th, phi, Q, onlyLastQ, nstp, nqr);
-	return std::make_pair(std::get<1>(qr), 	// Q
-			      std::get<2>(qr)	// R
-			      );
-    };
-    PED ped;
-    return ped.PowerIter0(sqr, Q0, onlyLastQ, maxit, Qtol, Print, PrintFreqency);
-}
-
-MatrixXd
-CQCGLgeneral::powEigE(const ArrayXd &a0, const double th, const double phi,
-		      const MatrixXd &Q0, int nstp, int nqr,
-		      const int maxit, const double Qtol, const bool Print,
-		      const int PrintFreqency){
-
-    auto sqr = [&a0, th, phi, nstp, nqr, this](MatrixXd Q, bool onlyLastQ) 
-	-> std::pair<MatrixXd, MatrixXd> {
-	auto qr = intgQg(a0, th, phi, Q, onlyLastQ, nstp, nqr);
-	return std::make_pair(std::get<1>(qr), 	// Q
-			      std::get<2>(qr)	// R
-			      );
-    };
-    PED ped;
-    return ped.PowerEigE0(sqr, Q0, maxit, Qtol, Print, PrintFreqency);
-}
-
-VectorXcd
-CQCGLgeneral::directEigE(const ArrayXd &a0, const double th, const double phi, 
-			 const int nstp){
-    MatrixXd J = intgj(a0, nstp, nstp, nstp).second;
-    return eEig(Rotate(J, th, phi));
-}
 
 #endif
 

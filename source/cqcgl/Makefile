@@ -5,6 +5,7 @@ OPTIM = -O3 -msse2 -msse4 -march=corei7
 INCLUDE = ../../include
 EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 
+# for integration
 CFLAGS = -std=c++11
 
 SOURCE = CQCGLgeneral.cc CQCGL.cc
@@ -14,7 +15,7 @@ STATIC = libCQCGL.a
 # for RPO code
 CFLAGS2 = -std=c++11
 
-SOURCE2 = cqcglRPO.cc 
+SOURCE2 = CQCGLRPO.cc 
 SHARED2 = $(addprefix lib, $(addsuffix .so, $(basename $(SOURCE2))))
 STATIC2 = $(addprefix lib, $(addsuffix .a, $(basename $(SOURCE2))))
 

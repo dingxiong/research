@@ -307,7 +307,7 @@ public:
 	int m, n;
 	getDims(aa, m, n);	
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( transRotate(tmpaa, phi) );
+	return copy2bn( phaseRotate(tmpaa, phi) );
     }
     
     /* phaseTangent */

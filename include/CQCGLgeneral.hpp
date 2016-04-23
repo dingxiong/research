@@ -135,7 +135,9 @@ public:
     void NL(const int k, const bool onlyOrbit);
     ArrayXXd C2R(const ArrayXXcd &v);
     ArrayXXcd R2C(const ArrayXXd &v);
-
+    ArrayXXd c2r(const ArrayXXcd &v);
+    ArrayXXcd r2c(const ArrayXXd &v);
+    
     //============================================================  
 
     ArrayXXcd Fourier2Config(const Ref<const ArrayXXd> &aa);
@@ -216,21 +218,7 @@ public:
 	    const bool doesUseMyCG = true, const bool doesPrint = true);
     std::vector<double>
     optThPhi(const ArrayXd &a0);
-    
-    std::tuple<MatrixXd, MatrixXd, MatrixXd, vector<int> >
-    powIt(const ArrayXd &a0, const double th, const double phi,
-	  const MatrixXd &Q0, 
-	  const bool onlyLastQ, int nstp, int nqr,
-	  const int maxit, const double Qtol, const bool Print,
-	  const int PrintFreqency);
-    MatrixXd
-    powEigE(const ArrayXd &a0, const double th, const double phi,
-	    const MatrixXd &Q0, int nstp, int nqr,
-	    const int maxit, const double Qtol, const bool Print,
-	    const int PrintFreqency);
-   VectorXcd directEigE(const ArrayXd &a0, const double th, const double phi, 
-			const int nstp);
- 
+
 };
 
 

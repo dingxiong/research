@@ -1,7 +1,7 @@
 /* to comiple:
  * (Note : libreadks.a is static library, so the following order is important)
  *
- * h5c++ test_findPO.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lcqcglRPO -lcqcgl1d -lmyfft_threads -lfftw3_threads -lfftw3 -lm -lpthread -lsparseRoutines -ldenseRoutines -literMethod -lped -lmyH5
+ * h5c++ test_findPO.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lCQCGLRPO -lCQCGL -lmyfft_threads -lfftw3_threads -lfftw3 -lm -lsparseRoutines -ldenseRoutines -literMethod -lped -lmyH5
  *
  * or
  * h5c++ test_findPO.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lcqcglRPO_omp -lcqcgl1d -lmyfft -lfftw3 -lm -fopenmp -lsparseRoutines -ldenseRoutines -literMethod -lped -lmy5H
@@ -15,8 +15,8 @@
 #include <ctime>
 #include <H5Cpp.h>
 
-#include "cqcgl1d.hpp"
-#include "cqcglRPO.hpp"
+#include "CQCGL.hpp"
+#include "CQCGLRPO.hpp"
 #include "myH5.hpp"
 #include "iterMethod.hpp"
 
@@ -30,7 +30,7 @@ int main(){
     cout.precision(15);
     
     switch (28){
-	
+#if 0
     case 1:{
 	/* try to find periodic orbit with the old form of cqcgl
 	 * space resolution N = 512 is small  
@@ -177,18 +177,20 @@ int main(){
 	break;
     }
 
+#endif
+
     case 28: {
 	/* try to find periodic orbit with the new form of cqcgl
 	 * using GMRES Hook v2 method with multishooting method
 	 * space resolution is large
 	 */
-	GMRES_IN_PRINT_FREQUENCE = 10;
+	GMRES_IN_PRINT_FREQUENCE = 1;
 
-	const int N = 512;
+	const int N = 1024;
 	const double d = 30;
-	const double h = 1e-5;
+	const double di = 0.06;
 
-	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo5.h5");
+	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo2.h5");
 	int nstp;
 	double T, th, phi, err;
 	MatrixXd x;
@@ -197,8 +199,9 @@ int main(){
 	int M = x.cols();
 	
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
-	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, 0.01, 0.04, 4);
-	auto result = cglrpo.findRPOM_hook2(x, 1e-12, 1e-3, 10, 20, 8e-1, 300, 1);
+	CQCGLRPO cglrpo(M, N, d, 4.0, 0.8, 0.01, di, 4);
+	cglrpo.changeOmega(-176.67504941219335);
+	auto result = cglrpo.findRPOM_hook2(x, 1e-12, 1e-3, 10, 20, 7e-1, 300, 1);
 
 	CqcglWriteRPO2("rpo5.h5", "2", 
 		       std::get<0>(result),
@@ -209,6 +212,7 @@ int main(){
 	break;
     }
 
+#if 0
     case 30: {
 	/* try to find periodic orbit with the new form of cqcgl
 	 * using GMRES Hook method with multishooting method
@@ -497,6 +501,8 @@ int main(){
 	
     }
 
+#endif
+	
     default: {
 	cout << "please choose a case" << endl;
     }

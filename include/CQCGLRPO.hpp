@@ -1,30 +1,29 @@
-#ifndef CQCGLRPO
-#define CQCGLRPO
+#ifndef CQCGLRPO_H
+#define CQCGLRPO_H
 
 #include <complex>
 #include <utility>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <vector>
-#include <omp.h>
-#include "cqcgl.hpp"
+#include "CQCGL.hpp"
 #include "iterMethod.hpp"
 #include "sparseRoutines.hpp"
 #include "denseRoutines.hpp"
 
-class CqcglRPO{
-    public:
+class CQCGLRPO {
+
+public:
+
     typedef std::complex<double> dcp;
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> Tri;
 
-    Cqcgl cgl1, cgl2, cgl3;
-    int nstp;			/* integration steps for each piece */
+    CQCGL cgl1, cgl2, cgl3;
     int M;			/* pieces of multishoot */
     const int N;		/* dimension of FFT */
     int Ndim;			/* dimension of state space */
 
-    // Non-static Data Member Initializers => new feature of C++11
     double alpha1 = 0.01;	/* strength scale for v constraint */
     double alpha2 = 0.01;	/* strength scale for t1 constraint */
     double alpha3 = 0.01;	/* strength scale for t2 constraint */
@@ -32,23 +31,22 @@ class CqcglRPO{
     double Eps = 1e-4;
     MatrixXd V;
     
+
+    double h0Trial = 1e-3;
+    int skipRateTrial = 1000000;
+    double Omega = 0;
     
     /*---------------   constructors    ------------------------- */
-    CqcglRPO(int nstp, int M,
-	     int N = 512, double d = 50, double h = 0.01,
-	     double Mu = -0.1, double Br = 1.0, double Bi = 0.8,
-	     double Dr = 0.125, double Di = 0.5, double Gr = -0.1,
-	     double Gi = -0.6, int threadNum = 4);
-    CqcglRPO(int nstp, int M,
-	     int N, double d, double h,
-	     double b, double c,
-	     double dr, double di,
+    CQCGLRPO(int M, int N, double d, 
+	     double b, double c, double dr, double di,
 	     int threadNum);
     
-    ~CqcglRPO();
-    CqcglRPO & operator=(const CqcglRPO &x);
+    ~CQCGLRPO();
+    CQCGLRPO & operator=(const CQCGLRPO &x);
 
     /*---------------  member functions ------------------------- */
+    void changeOmega(double w);
+
     VectorXd Fx(const VectorXd & x);
     VectorXd DFx(const VectorXd &x, const VectorXd &dx);
     VectorXd MFx(const VectorXd &x);
@@ -129,10 +127,10 @@ template<class Mat>
 struct cqcglJJF {
     typedef Eigen::SparseMatrix<double> SpMat;
     
-    CqcglRPO &rpo;
+    CQCGLRPO &rpo;
     
     
-    cqcglJJF(CqcglRPO &rpo_) : rpo(rpo_){}
+    cqcglJJF(CQCGLRPO &rpo_) : rpo(rpo_){}
     
     std::tuple<SpMat, SpMat, VectorXd>
     operator()(const VectorXd &x) {

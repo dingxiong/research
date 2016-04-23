@@ -1,4 +1,4 @@
-#include "cqcglRPO.hpp"
+#include "CQCGLRPO.hpp"
 #include <functional>   // std::bind
 namespace ph = std::placeholders;
 
@@ -12,31 +12,37 @@ using namespace std;
 //                      constructor                                 //
 //////////////////////////////////////////////////////////////////////
 
-CqcglRPO::CqcglRPO(int nstp, int M,
-		   int N, double d, double h,
-		   double b, double c,
-		   double dr, double di,
+CQCGLRPO::CQCGLRPO(int M, int N, double d,
+		   double b, double c, double dr, double di,
 		   int threadNum)
     : N(N),
-      nstp(nstp),
       M(M),
-      cgl1(N, d, h, false, 0, b, c, dr, di, threadNum),
-      cgl1(N, d, h, true, 1, b, c, dr, di, threadNum),
-      cgl1(N, d, h, true, 0, b, c, dr, di, threadNum),
+      cgl1(N, d, b, c, dr, di, -1, threadNum),
+      cgl2(N, d, b, c, dr, di,  1, threadNum),
+      cgl3(N, d, b, c, dr, di,  0, threadNum)
 {
     Ndim = cgl1.Ndim;
 }
 
 
-CqcglRPO::~CqcglRPO(){}
+CQCGLRPO::~CQCGLRPO(){}
 
-CqcglRPO & CqcglRPO::operator=(const CqcglRPO &x){
+CQCGLRPO & CQCGLRPO::operator=(const CQCGLRPO &x){
     return *this;
 }
 
 //////////////////////////////////////////////////////////////////////
 //                      member functions                            //
 //////////////////////////////////////////////////////////////////////
+
+void CQCGLRPO::changeOmega(double w){
+    Omega = w;
+    cgl1.changeOmega(w);
+    cgl2.changeOmega(w);
+    cgl3.changeOmega(w);
+}
+
+#if 0
 
 /**
  * @brief         form g*f(x,t) - x
@@ -47,11 +53,11 @@ CqcglRPO & CqcglRPO::operator=(const CqcglRPO &x){
  *                  |       0      |
  *                  |       0      |
  */
-VectorXd CqcglRPO::Fx(const VectorXd & x){
+VectorXd CQCGLRPO::Fx(const VectorXd & x){
     Vector3d t = x.tail<3>();
     assert(t(0) > 0); 		/* make sure T > 0 */
     cgl1.changeh(t(0)/nstp);
-    VectorXd fx = cgl1.intg(x.head(Ndim), nstp, nstp).rightCols<1>();
+    VectorXd fx = cgl1.aintg(x.head(Ndim), h0Trial, t(0), skipRateTrial).rightCols<1>();
     VectorXd F(Ndim + 3);
     F << cgl1.Rotate(fx, t(1), t(2)), t;
     return F - x;
@@ -66,12 +72,11 @@ VectorXd CqcglRPO::Fx(const VectorXd & x){
  *          |     t1(x),         0             0                  0    |
  *          |     t2(x),         0             0                  0    |
  */
-VectorXd CqcglRPO::DFx(const VectorXd &x, const VectorXd &dx){
+VectorXd CQCGLRPO::DFx(const VectorXd &x, const VectorXd &dx){
     Vector3d t = x.tail<3>();
     Vector3d dt = dx.tail<3>();
     assert(t(0) > 0); 		/* make sure T > 0 */
-    cgl2.changeh(t(0)/nstp);
-    ArrayXXd tmp = cgl2.intgv(x.head(Ndim), dx.head(Ndim), nstp); /* f(x, t) and J(x, t)*dx */
+    ArrayXXd tmp = cgl2.aintgv(x.head(Ndim), dx.head(Ndim), h0Trial, t(0)); /* f(x, t) and J(x, t)*dx */
     ArrayXd gfx = cgl2.Rotate(tmp.col(0), t(1), t(2)); /* g(theta, phi)*f(x, t) */
     ArrayXd gJx = cgl2.Rotate(tmp.col(1), t(1), t(2)); /* g(theta, phi)*J(x,t)*dx */
     ArrayXd v1 = cgl2.velocity(x.head(Ndim));	       /* v(x) */
@@ -105,7 +110,7 @@ VectorXd CqcglRPO::DFx(const VectorXd &x, const VectorXd &dx){
  *               |       0              |
  *
  */
-VectorXd CqcglRPO::MFx(const VectorXd &x){
+VectorXd CQCGLRPO::MFx(const VectorXd &x){
     Vector3d t = x.tail<3>();	   /* T, theta, phi */
     assert(t(0) > 0);		   /* make sure T > 0 */
     cgl1.changeh(t(0) / nstp / M); /* period T = h*nstp*M */
@@ -128,7 +133,7 @@ VectorXd CqcglRPO::MFx(const VectorXd &x){
  * @brief get the multishooting product J * dx. Dimension [nstp*M+3, 1]
  * @see MFx()
  */
-VectorXd CqcglRPO::MDFx(const VectorXd &x, const VectorXd &dx){
+VectorXd CQCGLRPO::MDFx(const VectorXd &x, const VectorXd &dx){
     Vector3d t = x.tail<3>();
     Vector3d dt = dx.tail<3>();
     assert(t(0) > 0); 		/* make sure T > 0 */
@@ -183,7 +188,7 @@ VectorXd CqcglRPO::MDFx(const VectorXd &x, const VectorXd &dx){
  * @return [x, T, theta, phi, err]
  */
 std::tuple<VectorXd, double, double, double, double>
-CqcglRPO::findRPO(const VectorXd &x0, const double T,
+CQCGLRPO::findRPO(const VectorXd &x0, const double T,
 		  const double th0, const double phi0,
 		  const double tol,
 		  const int btMaxIt,
@@ -195,8 +200,8 @@ CqcglRPO::findRPO(const VectorXd &x0, const double T,
 		  const int GmresRestart,
 		  const int GmresMaxit){
     assert(x0.size() == Ndim);
-    auto fx = std::bind(&CqcglRPO::Fx, this, ph::_1);
-    auto dfx = std::bind(&CqcglRPO::DFx, this, ph::_1, ph::_2);
+    auto fx = std::bind(&CQCGLRPO::Fx, this, ph::_1);
+    auto dfx = std::bind(&CQCGLRPO::DFx, this, ph::_1, ph::_2);
     VectorXd x(Ndim+3);
     x << x0, T, th0, phi0;
     auto result = InexactNewtonBacktrack(fx, dfx, x, tol, btMaxIt, maxit, eta0,
@@ -218,7 +223,7 @@ CqcglRPO::findRPO(const VectorXd &x0, const double T,
  * @return [x, T, theta, phi, err]
  */
 std::tuple<MatrixXd, double, double, double, double>
-CqcglRPO::findRPOM(const MatrixXd &x0, const double T,
+CQCGLRPO::findRPOM(const MatrixXd &x0, const double T,
 		   const double th0, const double phi0,
 		   const double tol,
 		   const int btMaxIt,
@@ -230,8 +235,8 @@ CqcglRPO::findRPOM(const MatrixXd &x0, const double T,
 		   const int GmresRestart,
 		   const int GmresMaxit){
     assert(x0.cols() == M && x0.rows() == Ndim);
-    auto fx = std::bind(&CqcglRPO::MFx, this, ph::_1);
-    auto dfx = std::bind(&CqcglRPO::MDFx, this, ph::_1, ph::_2);
+    auto fx = std::bind(&CQCGLRPO::MFx, this, ph::_1);
+    auto dfx = std::bind(&CQCGLRPO::MDFx, this, ph::_1, ph::_2);
     
     // initialize input 
     VectorXd x(M * Ndim + 3);
@@ -274,7 +279,7 @@ CqcglRPO::findRPOM(const MatrixXd &x0, const double T,
  * @see  findRPOM_hook() for multishooting method
  */
 std::tuple<VectorXd, double, double, double, double>
-CqcglRPO::findRPO_hook(const VectorXd &x0, const double T,
+CQCGLRPO::findRPO_hook(const VectorXd &x0, const double T,
 		       const double th0, const double phi0,
 		       const double tol,
 		       const double minRD,
@@ -284,8 +289,8 @@ CqcglRPO::findRPO_hook(const VectorXd &x0, const double T,
 		       const int GmresRestart,
 		       const int GmresMaxit){
     assert(x0.size() == Ndim);
-    auto fx = std::bind(&CqcglRPO::Fx, this, ph::_1);
-    auto dfx = std::bind(&CqcglRPO::DFx, this, ph::_1, ph::_2);
+    auto fx = std::bind(&CQCGLRPO::Fx, this, ph::_1);
+    auto dfx = std::bind(&CQCGLRPO::DFx, this, ph::_1, ph::_2);
     VectorXd x(Ndim + 3);
     x << x0, T, th0, phi0;
     
@@ -313,7 +318,7 @@ CqcglRPO::findRPO_hook(const VectorXd &x0, const double T,
  * @see findRPO_hook() for single shooting method
  */
 std::tuple<MatrixXd, double, double, double, double>
-CqcglRPO::findRPOM_hook(const MatrixXd &x0, const double T,
+CQCGLRPO::findRPOM_hook(const MatrixXd &x0, const double T,
 			const double th0, const double phi0,
 			const double tol,
 			const double minRD,
@@ -323,8 +328,8 @@ CqcglRPO::findRPOM_hook(const MatrixXd &x0, const double T,
 			const int GmresRestart,
 			const int GmresMaxit){
     assert(x0.cols() == M && x0.rows() == Ndim);
-    auto fx = std::bind(&CqcglRPO::MFx, this, ph::_1);
-    auto dfx = std::bind(&CqcglRPO::MDFx, this, ph::_1, ph::_2);
+    auto fx = std::bind(&CQCGLRPO::MFx, this, ph::_1);
+    auto dfx = std::bind(&CQCGLRPO::MDFx, this, ph::_1, ph::_2);
     
     // initialize input 
     VectorXd x(M * Ndim + 3);
@@ -349,10 +354,12 @@ CqcglRPO::findRPOM_hook(const MatrixXd &x0, const double T,
 			   );
 }
 
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // new version of F and DF, This version use a full multishooting method
 
-VectorXd CqcglRPO::MFx2(const VectorXd &x){
+VectorXd CQCGLRPO::MFx2(const VectorXd &x){
     int N = Ndim + 3;
     VectorXd F(VectorXd::Zero(N*M));
     
@@ -366,8 +373,7 @@ VectorXd CqcglRPO::MFx2(const VectorXd &x){
 	double phi = xi(Ndim+2);	
 	assert(t > 0);
 	
-	cgl1.changeh( t / nstp );
-	VectorXd fx = cgl1.intg(xi.head(Ndim), nstp, nstp).rightCols<1>();
+	VectorXd fx = cgl1.aintg(xi.head(Ndim), h0Trial, t, skipRateTrial).rightCols<1>();
 	
 	F.segment(i*N, Ndim) = cgl1.Rotate(fx, th, phi).matrix() - xn.head(Ndim);
     }
@@ -375,7 +381,7 @@ VectorXd CqcglRPO::MFx2(const VectorXd &x){
     return F;
 }
 
-VectorXd CqcglRPO::MDFx2(const VectorXd &x, const VectorXd &dx){
+VectorXd CQCGLRPO::MDFx2(const VectorXd &x, const VectorXd &dx){
     int N = Ndim + 3;
     VectorXd DF(VectorXd::Zero(N*M));
 
@@ -393,8 +399,7 @@ VectorXd CqcglRPO::MDFx2(const VectorXd &x, const VectorXd &dx){
 	double dth = dxi(Ndim+1);
 	double dphi = dxi(Ndim+2);
 	
-	cgl2.changeh(t / nstp);
-	MatrixXd tmp = cgl2.intgv(xi.head(Ndim), dxi.head(Ndim), nstp);
+	MatrixXd tmp = cgl2.aintgv(xi.head(Ndim), dxi.head(Ndim), h0Trial, t);
 
 	VectorXd gfx = cgl2.Rotate(tmp.col(0), th, phi);
 	VectorXd gJx = cgl2.Rotate(tmp.col(1), th, phi);
@@ -421,7 +426,7 @@ VectorXd CqcglRPO::MDFx2(const VectorXd &x, const VectorXd &dx){
 
 std::tuple<MatrixXd, double>
 
-CqcglRPO::findRPOM_hook2(const MatrixXd &x0, 
+CQCGLRPO::findRPOM_hook2(const MatrixXd &x0, 
 			 const double tol,
 			 const double minRD,
 			 const int maxit,
@@ -431,8 +436,8 @@ CqcglRPO::findRPOM_hook2(const MatrixXd &x0,
 			 const int GmresMaxit){
     int N = Ndim + 3;
     assert(x0.cols() == M && x0.rows() == N);
-    auto fx = std::bind(&CqcglRPO::MFx2, this, ph::_1);
-    auto dfx = std::bind(&CqcglRPO::MDFx2, this, ph::_1, ph::_2);
+    auto fx = std::bind(&CQCGLRPO::MFx2, this, ph::_1);
+    auto dfx = std::bind(&CQCGLRPO::MDFx2, this, ph::_1, ph::_2);
     
     // initialize input 
     MatrixXd x(x0);
@@ -452,8 +457,10 @@ CqcglRPO::findRPOM_hook2(const MatrixXd &x0,
 			   );
 }
 
+#if 0
+
 std::tuple<SpMat, SpMat, VectorXd> 
-CqcglRPO::calJJF(const VectorXd &x){
+CQCGLRPO::calJJF(const VectorXd &x){
     int N = Ndim + 3;
     SpMat JJ(N*M, N*M);
     SpMat D(N*M, N*M);
@@ -527,13 +534,13 @@ CqcglRPO::calJJF(const VectorXd &x){
 }
 
 std::tuple<MatrixXd, double>
-CqcglRPO::findRPOM_LM(const MatrixXd &x0, 
+CQCGLRPO::findRPOM_LM(const MatrixXd &x0, 
 		      const double tol,
 		      const int maxit,
 		      const int innerMaxit){
     int N = Ndim + 3;
     assert(x0.cols() == M && x0.rows() == N);
-    auto fx = std::bind(&CqcglRPO::MFx2, this, ph::_1);
+    auto fx = std::bind(&CQCGLRPO::MFx2, this, ph::_1);
     
     MatrixXd x(x0);
     x.resize(M * N, 1); 
@@ -551,3 +558,4 @@ CqcglRPO::findRPOM_LM(const MatrixXd &x0,
 }
 
 
+#endif

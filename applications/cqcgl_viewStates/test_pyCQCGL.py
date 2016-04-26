@@ -1,11 +1,7 @@
-import numpy as np
-from numpy.random import rand
-from numpy.fft import fft, ifft
-from time import time
 from py_CQCGL_threads import *
 from personalFunctions import *
 
-case = 40
+case = 70
 
 if case == 10:
     """
@@ -91,6 +87,102 @@ if case == 40:
     plot1dfig(cgl.hs(), yscale='log')
     plot1dfig(cgl.lte(), yscale='log')
     print time() - t
+
+if case == 50:
+    """
+    Test the accuracy of our numerical method
+    using different LTE
+    """
+    N = 1024
+    d = 30
+    di = 0.06
+    T = 2
+
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, -1, 4)
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+
+    cgl.changeOmega(-176.67504941219335)
+    aa = cgl.aintg(a0, 0.001, 4,  10000)
+    
+    cgl.rtol = 1e-12
+    aa1 = cgl.aintg(aa[-1], 0.001, T, 10)
+    plot1dfig(cgl.hs(), yscale='log')
+    plot1dfig(cgl.lte(), yscale='log')
+    print cgl.Ts()
+    plotConfigSpaceFromFourier(cgl, aa1, [0, d, 0, T])
+    
+    cgl.rtol = 1e-13
+    aa2 = cgl.aintg(aa[-1], 0.001, T, 10)
+    plot1dfig(cgl.hs(), yscale='log')
+    plot1dfig(cgl.lte(), yscale='log')
+    print cgl.Ts()
+    plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, T])
+
+    print norm(aa1[-1]-aa2[-1]) / norm(aa1[-1])
+
+if case == 60:
+    """
+    Test the accuracy of our numerical method
+    using slightly different initial condition
+    """
+    N = 1024*2
+    d = 30
+    di = 0.06
+    T = 2
+
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, -1, 4)
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+
+    cgl.changeOmega(-176.67504941219335)
+    aa = cgl.aintg(a0, 0.001, 4, 10000)
+    
+    aa1 = cgl.aintg(aa[-1], 0.001, T, 10)
+    plot1dfig(cgl.hs(), yscale='log')
+    plot1dfig(cgl.lte(), yscale='log')
+    print cgl.Ts()
+    plotConfigSpaceFromFourier(cgl, aa1, [0, d, 0, T])
+    
+    aa2 = cgl.aintg(aa[-1]+1e-15*rand(Ndim), 0.001, T, 10)
+    plot1dfig(cgl.hs(), yscale='log')
+    plot1dfig(cgl.lte(), yscale='log')
+    print cgl.Ts()
+    plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, T])
+
+    print norm(aa1[-1]-aa2[-1])
+    
+if case == 70:
+    """
+    test intgv() function
+    """
+    N = 1024
+    d = 30
+    di = 0.06
+    T = 3
+
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, 1, 4)
+    cgl.changeOmega(-176.67504941219335)
+    cgl.rtol = 1e-10
+
+    A0 = 3*centerRand(N, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+    aa = cgl.aintg(a0, 0.001, T, 10000)
+    aa2 = cgl.aintg(aa[-1], 0.001, T, 10)
+    print cgl.NSteps
+    plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, T])
+
+    v0 = rand(cgl.Ndim)
+    v0 /= norm(v0)
+
+    av = cgl.aintgv(aa[-1], v0, 0.001, T)
+    print cgl.NSteps
+    av2 = cgl.aintgv(aa[-1], v0/10, 0.001, T)
+    print cgl.NSteps
+
+    plotOneConfigFromFourier(cgl, av[0], d)
 
 # compare fft with Fourier2Config
 if case == 80:

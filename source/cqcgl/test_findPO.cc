@@ -201,7 +201,10 @@ int main(){
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
 	CQCGLRPO cglrpo(M, N, d, 4.0, 0.8, 0.01, di, 4);
 	cglrpo.changeOmega(-176.67504941219335);
-	auto result = cglrpo.findRPOM_hook2(x, 1e-12, 1e-3, 10, 20, 7e-1, 300, 1);
+	cglrpo.cgl1.rtol = 1e-10;
+	cglrpo.cgl2.rtol = 1e-10;
+	cglrpo.cgl3.rtol = 1e-10;
+	auto result = cglrpo.findRPOM_hook2(x, 1e-12, 1e-3, 10, 20, 3e-1, 300, 1);
 
 	CqcglWriteRPO2("rpo5.h5", "2", 
 		       std::get<0>(result),

@@ -414,9 +414,9 @@ VectorXd CQCGLRPO::MDFx2(const VectorXd &x, const VectorXd &dx){
 	VectorXd tgf2 = cgl2.phaseTangent(gfx);
 	
 	DF.segment(i*N, Ndim) = gJx + vgf*dt + tgf1*dth + tgf2*dphi - dxn.head(Ndim);
-	DF(i*N+Ndim) = v.dot(dxi.head(Ndim));
-	DF(i*N+Ndim+1) = t1.dot(dxi.head(Ndim));
-	DF(i*N+Ndim+2) = t2.dot(dxi.head(Ndim));
+	// DF(i*N+Ndim) = v.dot(dxi.head(Ndim));
+	// DF(i*N+Ndim+1) = t1.dot(dxi.head(Ndim));
+	// DF(i*N+Ndim+2) = t2.dot(dxi.head(Ndim));
 	
     }
     

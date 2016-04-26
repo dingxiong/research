@@ -4,6 +4,7 @@
 import h5py
 from pylab import *
 import numpy as np
+from scipy.spatial.distance import pdist, cdist, squareform
 import numpy.linalg as LA
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -1062,3 +1063,39 @@ def rotz(x, y, th):
     s = np.sin(th)
     return c * x - s * y, s * x + c * y
 
+
+def difMap(x, farSize, size=[6, 6], percent='5%', colortype='jet'):
+    m, n = x.shape
+    y = np.zeros((m, farSize))
+    for i in range(m-farSize):
+        y[i] = norm(x[i]-x[i:i+farSize], axis=1)
+    
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111)
+    # ax.set_xlabel('x', fontsize=axisLabelSize)
+    # ax.set_ylabel('t', fontsize=axisLabelSize)
+    im = ax.imshow(y, cmap=plt.get_cmap(colortype),
+                   aspect='auto', origin='lower')
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax = dr.append_axes('right', size=percent, pad=0.05)
+    plt.colorbar(im, cax=cax)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+
+def difMap2(x1, x2, size=[6, 4], percent='5%', colortype='jet'):
+    y = cdist(x1, x2)
+    
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111)
+    # ax.set_xlabel('x', fontsize=axisLabelSize)
+    # ax.set_ylabel('t', fontsize=axisLabelSize)
+    im = ax.imshow(y, cmap=plt.get_cmap(colortype),
+                   aspect='auto', origin='lower')
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax = dr.append_axes('right', size=percent, pad=0.05)
+    plt.colorbar(im, cax=cax)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)

@@ -1,11 +1,4 @@
-import h5py
-from pylab import *
-import numpy as np
-from numpy.linalg import norm, eig
-from numpy.random import rand
-from numpy.fft import fft, ifft
-from time import time
-from py_cqcgl1d_threads import pyCqcgl1d
+from py_CQCGL_threads import *
 from personalFunctions import *
 
 
@@ -59,11 +52,11 @@ if case == 1:
 
 # view relative equlibria
 if case == 2:
-    N = 512
-    d = 50
-    h = 0.01
+    N = 1024
+    d = 30
+    di = 0.06
 
-    cgl = pyCqcgl1d(N, d, h, -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6)
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, -1, 4)
     a0, wth0, wphi0, err = cqcglReadReq('../../data/cgl/reqN512.h5', '1')
 
     vReq = cgl.velocityReq(a0, wth0, wphi0)
@@ -178,29 +171,3 @@ if case == 5:
         x.append(aa)
 
 
-if case == 7:
-    """
-    test intgv() function of the new form of cqcgl
-    """
-    N = 512*2
-    d = 30
-    h = 0.0005
-
-    cgl = pyCqcgl1d(N, d, h, True, 1, 4.0, 0.8, -0.01, -0.04, 4)
-    A0 = 5*centerRand(2*N, 0.2)
-    a0 = cgl.Config2Fourier(A0)
-    nstp = 6000
-    aa = cgl.intg(a0, 1000, 1)
-    aa = cgl.intg(aa[-1], nstp, 1)
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
-
-    i1 = 4000
-    i2 = 4100
-    v0 = rand(cgl.Ndim)
-    v0 /= norm(v0)
-    av = cgl.intgv(aa[i1], v0, i2-i1)
-    av2 = cgl.intgv(aa[i1], v0/10.0, i2-i1)
-
-    plotOneConfigFromFourier(cgl, av[0], d)
-    plotConfigSpaceFromFourier(cgl, aa[i1:i2], [0, d, 0, nstp*h])
-    print norm(av[0]), norm(av[1]), norm(av2[1])

@@ -110,20 +110,22 @@ if case == 4:
     N = 1024
     d = 30
     di = 0.06
+    T = 3
 
     cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, -1, 4)
     cgl.changeOmega(-176.67504941219335)
-    A0 = 5*centerRand(N, 0.2, True)
+    cgl.rtol = 1e-10
+    
+    A0 = 3*centerRand(N, 0.2, True)
     a0 = cgl.Config2Fourier(A0)
-    aa = cgl.aintg(a0, 0.001, 1, 10000)
-    for i in range(2):
-        aa = cgl.aintg(aa[-1], 0.001, 4, 1)
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 1])
+    a1 = cgl.aintg(a0, 0.001, T, 10000)
+    aa = cgl.aintg(a1[-1], 0.001, T, 1)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
 
     S = aa.shape[0]
     aaHat, ths, phis = cgl.orbit2sliceWrap(aa)
-    i1 = 9930
-    i2 = 18547
+    i1 = 99
+    i2 = 28307
     th = ths[i1] - ths[i2]
     phi = phis[i1] - phis[i2]
     err = norm(aaHat[i1]-aaHat[i2])

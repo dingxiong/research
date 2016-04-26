@@ -1,7 +1,7 @@
-from py_cqcgl1d_threads import pyCqcgl1d
+from py_CQCGL_threads import *
 from personalFunctions import *
 
-case = 12
+case = 90
 
 if case == 10:
     """
@@ -10,11 +10,10 @@ if case == 10:
     """
     N = 1024
     d = 30
-    h = 0.0002
-    
-    di = -0.05
-    a0, wth0, wphi0, err = cqcglReadReq('req2.h5', '1')
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, -0.01, di, 4)
+    di = 0.06
+
+    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5', di, 1)
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, 0, 4)
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
     print eigvalues[:10]
 
@@ -349,49 +348,41 @@ if case == 90:
     """
     N = 1024
     d = 30
-    h = 0.0002
-
-    di = 0.4227
+    di = 0.06
+   
     a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
                                           di, 1)
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
-
-    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, 0, 4)
+    cgl.changeOmega(-wphi0)
+    cgl.rtol = 1e-10
+    eigvalues, eigvectors = eigReq(cgl, a0, wth0, 0)
     eigvectors = Tcopy(realve(eigvectors))
     a0Hat = cgl.orbit2slice(a0)[0]
     veHat = cgl.ve2slice(eigvectors, a0)
 
-    h3 = 0.0005
-    cgl3 = pyCqcgl1d(N, d, h3, False, 0, 4.0, 0.8, 0.01, di, 4)
-    nstp = 70000
+    T = 20
+    
     a0Erg = a0 + eigvectors[0]*1e-3
-    aaErg = cgl3.intg(a0Erg, 50000, 50000)
-    a0Erg = aaErg[-1]
-    aaErg = cgl3.intg(a0Erg, nstp, 2)
-    aaErgHat, th3, th3 = cgl3.orbit2slice(aaErg)
+    aaErg = cgl.aintg(a0Erg, 0.001, T, 1)
+    aaErgHat, th, th = cgl.orbit2slice(aaErg)
     aaErgHat -= a0Hat
     
     # e1, e2 = orthAxes2(veHat[0], veHat[1])
-    e1, e2, e3 = orthAxes(veHat[0], veHat[1], veHat[6])
-    aaErgHatProj = np.dot(aaErgHat, np.vstack((e1, e2, e3)).T)
-    OProj = np.dot(-a0Hat, np.vstack((e1, e2, e3)).T)
+    e1, e2, e3 = orthAxes(veHat[0], veHat[2], veHat[6])
+    bases = np.vstack((e1, e2, e3)).T
+    aaErgHatProj = np.dot(aaErgHat, bases)
+    OProj = np.dot(-a0Hat, bases)
 
-    fig = plt.figure(figsize=[6, 4])
-    ax = fig.add_subplot(111, projection='3d')
+    fig, ax = pl3d(labs=[r'$e_1$', r'$e_2$', r'$e_3$'],
+                   axisLabelSize=25)
     ax.plot(aaErgHatProj[:, 0], aaErgHatProj[:, 1],
             aaErgHatProj[:, 2], c='g', lw=1, alpha=0.4)
-    i1 = -1000
-    ax.plot(aaErgHatProj[i1:, 0], aaErgHatProj[i1:, 1],
-            aaErgHatProj[i1:, 2], c='k', lw=2)
     ax.scatter([0], [0], [0], s=80, marker='o', c='b',  edgecolors='none')
     ax.scatter(OProj[0], OProj[1], OProj[2], s=60, marker='o', c='c',
                edgecolors='none')
-    ax.set_xlabel(r'$e_1$', fontsize=25)
-    ax.set_ylabel(r'$e_2$', fontsize=25)
-    ax.set_zlabel(r'$e_3$', fontsize=25)
-    fig.tight_layout(pad=0)
-    plt.show(block=False)
-    # plotConfigSurfaceFourier(cgl, aa1, [0, d, 0, T1])
+    ax3d(fig, ax)
+
+    plotConfigSpaceFromFourier(cgl, aaErg[::10].copy(), [0, d, 0, T])
 
     # vel = []
     # for i in range(-10000, -000):

@@ -1,6 +1,7 @@
 ##################################################
 # Functions used for cqcgl1d system
 ##################################################
+from time import time
 import h5py
 from pylab import *
 import numpy as np
@@ -1085,6 +1086,9 @@ def difMap(x, farSize, size=[6, 6], percent='5%', colortype='jet'):
 
 
 def difMap2(x1, x2, size=[6, 4], percent='5%', colortype='jet'):
+    """
+    try to locate the possible po
+    """
     y = cdist(x1, x2)
     
     fig = plt.figure(figsize=size)

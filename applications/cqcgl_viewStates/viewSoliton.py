@@ -1,7 +1,7 @@
-from py_cqcgl1d_threads import pyCqcgl1d
+from py_CQCGL_threads import pyCQCGL
 from personalFunctions import *
 
-case = 20
+case = 60
 
 if case == 1:
     """
@@ -449,3 +449,25 @@ if case == 50:
                  labs=[r'$e_2$', r'$e_3$'])
     dis = getCurveCoor(PointsFull)
     # np.savez_compressed('PoincarePoints', totalPoints=totalPoints)
+
+if case == 60:
+    """
+    change parameter of b, see how the soliton changes
+    """
+    N = 1024
+    d = 30
+    di = 0.06
+    b = 4
+    T = 3
+
+    cgl = pyCQCGL(N, d, b, 0.8, 0.01, di, 0, 4)
+    cgl.changeOmega(-176.67504941219335)
+
+    Ndim = cgl.Ndim
+    A0 = 5*centerRand(N, 0.1, True)
+    a0 = cgl.Config2Fourier(A0)
+
+    aa = cgl.aintg(a0, 0.001, T, 1)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+    t1 = cgl.Ts()
+    plot2dfig(t1, aa[:, 0], labs=['t', r'$Re(a_0)$'])

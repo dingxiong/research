@@ -1,7 +1,7 @@
 from py_CQCGL_threads import *
 from personalFunctions import *
 
-case = 70
+case = 35
 
 if case == 10:
     """
@@ -59,12 +59,40 @@ if case == 30:
 
     t = time()
     cgl.changeOmega(-176.67504941219335)
-    # aa = cgl.aintg(a0, 0.001, 4,  1)
-    aa, daa = cgl.aintgj(a0, 0.001, 0.1, 100)
+    aa = cgl.aintg(a0, 0.001, 4,  1)
+    # aa, daa = cgl.aintgj(a0, 0.001, 0.1, 100)
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
     plot1dfig(cgl.hs(), yscale='log')
     plot1dfig(cgl.lte(), yscale='log')
     print time() - t
+
+if case == 35:
+    """
+    test phase rotation and perturbation ossilation
+    """
+    N = 1024
+    d = 30
+    di = 0.06
+    T = 3
+
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, 0, 4)
+
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+
+    aa = cgl.aintg(a0, 0.001, T, 1)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+    t1 = cgl.Ts()
+    plot2dfig(t1, aa[:, 0], labs=['t', r'$Re(a_0)$'])
+
+    cgl.changeOmega(-176.67504941219335)
+    aa2 = cgl.aintg(a0, 0.001, T,  1)
+    t2 = cgl.Ts()
+    plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, T])
+    plot2dfig(t2, aa2[:, 0], labs=['t', r'$Re(a_0)$'])
+
+    # plot1dfig(cgl.hs(), yscale='log')
 
 if case == 40:
     """

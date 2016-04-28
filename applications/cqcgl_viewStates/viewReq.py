@@ -367,22 +367,38 @@ if case == 90:
     aaErgHat, th, th = cgl.orbit2slice(aaErg)
     aaErgHat -= a0Hat
     
+    a0E2 = a0 + eigvectors[2]*1e-3
+    aaE2 = cgl.aintg(a0E2, 0.001, T, 1)
+    aaE2H, th2, phi2 = cgl.orbit2slice(aaE2)
+    aaE2H -= a0Hat
+
     # e1, e2 = orthAxes2(veHat[0], veHat[1])
-    e1, e2, e3 = orthAxes(veHat[0], veHat[2], veHat[6])
+    e1, e2, e3 = orthAxes(veHat[3], veHat[2], veHat[6])
     bases = np.vstack((e1, e2, e3)).T
     aaErgHatProj = np.dot(aaErgHat, bases)
     OProj = np.dot(-a0Hat, bases)
+    
+    aaE2HP = np.dot(aaE2H, bases)
 
+    i1 = 32000
+    i2 = 38000
     fig, ax = pl3d(labs=[r'$e_1$', r'$e_2$', r'$e_3$'],
                    axisLabelSize=25)
-    ax.plot(aaErgHatProj[:, 0], aaErgHatProj[:, 1],
-            aaErgHatProj[:, 2], c='g', lw=1, alpha=0.4)
+    #ax.plot(aaErgHatProj[i1:i2, 0], aaErgHatProj[i1:i2, 1],
+    #        aaErgHatProj[i1:i2, 2], c='g', lw=1, alpha=0.4)
+    ax.plot(aaE2HP[i1:i2, 0], aaE2HP[i1:i2, 1],
+            aaE2HP[i1:i2, 2], c='r', lw=1, alpha=0.4)
+    ax.plot(aaE2HP[:9000, 0], aaE2HP[:9000, 1],
+            aaE2HP[:9000, 2], c='g', lw=1, alpha=0.4)
+    ax.plot(aaErgHatProj[:11000, 0], aaErgHatProj[:11000, 1],
+            aaErgHatProj[:11000, 2], c='y', lw=1, alpha=1)
     ax.scatter([0], [0], [0], s=80, marker='o', c='b',  edgecolors='none')
     ax.scatter(OProj[0], OProj[1], OProj[2], s=60, marker='o', c='c',
                edgecolors='none')
     ax3d(fig, ax)
 
     plotConfigSpaceFromFourier(cgl, aaErg[::10].copy(), [0, d, 0, T])
+    plotConfigSpaceFromFourier(cgl, aaE2[::10].copy(), [0, d, 0, T])
 
     # vel = []
     # for i in range(-10000, -000):

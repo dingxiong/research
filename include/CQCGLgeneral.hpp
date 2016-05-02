@@ -60,7 +60,7 @@ public:
     /* for time step adaptive ETDRK4 and Krogstad  */
     ////////////////////////////////////////////////////////////
     // time adaptive method related parameters
-    double rtol = 1e-8;
+    double rtol = 1e-10;
     double nu = 0.9;		/* safe factor */
     double mumax = 2.5;		/* maximal time step increase factor */
     double mumin = 0.4;		/* minimal time step decrease factor */

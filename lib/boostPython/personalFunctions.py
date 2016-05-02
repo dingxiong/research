@@ -86,7 +86,7 @@ def pl2d(size=[8, 6], labs=[r'$x$', r'$y$'], axisLabelSize=25,
 
 def ax2d(fig, ax, doBlock=False):
     fig.tight_layout(pad=0)
-    ax.legend()
+    ax.legend(loc='best')
     plt.show(block=doBlock)
 
 
@@ -203,7 +203,7 @@ def plot3dfig2lines(x1, y1, z1, x2, y2, z2, c1='r', lw1=1,
 def plotConfigSpace(AA, ext, tt=None, yls=None,
                     barTicks=[2, 7], colortype='jet',
                     percent='5%', size=[4, 5],
-                    axisLabelSize=20,
+                    axisLabelSize=20, tickSize=None,
                     save=False, name='out.png'):
     """
     plot the color map of the states
@@ -219,7 +219,6 @@ def plotConfigSpace(AA, ext, tt=None, yls=None,
         n = len(tt)
         ids = findTimeSpots(tt, yls)
         yts = ids / float(n) * ext[3]
-        print yts
         ax.set_yticks(yts)
         ax.set_yticklabels(yls)
 
@@ -227,6 +226,10 @@ def plotConfigSpace(AA, ext, tt=None, yls=None,
     dr = make_axes_locatable(ax)
     cax = dr.append_axes('right', size=percent, pad=0.05)
     plt.colorbar(im, cax=cax, ticks=barTicks)
+
+    if tickSize is not None:
+        ax.tick_params(axis='both', which='major', labelsize=tickSize)
+        
     fig.tight_layout(pad=0)
     if save:
         plt.savefig(name)
@@ -257,7 +260,7 @@ def plotConfigSpaceFromFourier(cgl, aa, ext, tt=None, yls=None,
                                barTicks=[2, 7],
                                colortype='jet',
                                percent='5%', size=[4, 5],
-                               axisLabelSize=20,
+                               axisLabelSize=20, tickSize=None,
                                save=False, name='out.png'):
     """
     plot the configuration from Fourier mode
@@ -265,7 +268,7 @@ def plotConfigSpaceFromFourier(cgl, aa, ext, tt=None, yls=None,
     plotConfigSpace(cgl.Fourier2Config(aa), ext, tt, yls,
                     barTicks,
                     colortype, percent, size,
-                    axisLabelSize, save, name)
+                    axisLabelSize, tickSize, save, name)
 
 
 def plotConfigSurface(AA, ext, barTicks=[2, 4], colortype='jet',
@@ -314,7 +317,7 @@ def plotConfigSurfaceFourier(cgl, aa, ext, barTicks=[2, 7],
 
 
 def plotConfigWire(AA, ext, barTicks=[2, 7], size=[7, 6], axisLabelSize=25,
-                   c='r',
+                   tickSize=15, c='r',
                    save=False, name='out.png'):
     """
     plot the meshframe plot
@@ -334,6 +337,9 @@ def plotConfigWire(AA, ext, barTicks=[2, 7], size=[7, 6], axisLabelSize=25,
     ax.set_ylabel(r'$t$', fontsize=axisLabelSize)
     ax.set_zlabel(r'$|A|$', fontsize=axisLabelSize)
 
+    if tickSize is not None:
+        ax.tick_params(axis='both', which='major', labelsize=tickSize)
+
     fig.tight_layout(pad=0)
     if save:
         plt.savefig(name)
@@ -342,10 +348,10 @@ def plotConfigWire(AA, ext, barTicks=[2, 7], size=[7, 6], axisLabelSize=25,
     
 
 def plotConfigWireFourier(cgl, aa, ext, barTicks=[2, 7], size=[7, 6],
-                          c='r',
-                          axisLabelSize=25, save=False, name='out.png'):
+                          axisLabelSize=25, tickSize=15, c='r',
+                          save=False, name='out.png'):
     plotConfigWire(cgl.Fourier2Config(aa), ext, barTicks, size,
-                   axisLabelSize, c, save, name)
+                   axisLabelSize, tickSize, c, save, name)
     
 
 def plotOneConfig(A, d=30, size=[6, 5], axisLabelSize=20,

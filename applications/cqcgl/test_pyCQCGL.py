@@ -1,7 +1,7 @@
 from py_CQCGL_threads import *
 from personalFunctions import *
 
-case = 35
+case = 37
 
 if case == 10:
     """
@@ -93,6 +93,53 @@ if case == 35:
     plot2dfig(t2, aa2[:, 0], labs=['t', r'$Re(a_0)$'])
 
     # plot1dfig(cgl.hs(), yscale='log')
+
+if case == 37:
+    """
+    see the phase
+    """
+    N = 1024
+    d = 30
+    di = 0.06
+    T = 4
+
+    cgl = pyCQCGL(N, d, 4, 0.8, 0.01, di, 0, 4)
+    cgl.changeOmega(-176.67504941219335)
+
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+
+    aa = cgl.aintg(a0, 0.001, T, 10)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T],
+                               tt=cgl.Ts(), yls=range(0, T+1))
+    t1 = cgl.Ts()
+    plot2dfig(t1, aa[:, 0], labs=['t', r'$Re(a_0)$'])
+    
+    AA = cgl.Fourier2Config(aa)
+    p = np.angle(AA)
+    plot1dfig(np.unwrap(p[-1]-p[-2]))
+    plot1dfig(np.unwrap(p[-1, :-1]-p[-1, 1:]))
+
+if case == 38:
+    """
+    test different b value
+    """
+    N = 1024
+    d = 10
+    di = 0.06
+    T = 4
+
+    cgl = pyCQCGL(N, d, -1.5, 0.8, 0.01, di, 0, 4)
+
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+
+    aa = cgl.aintg(a0, 0.001, T, 10)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+    t1 = cgl.Ts()
+    plot2dfig(t1, aa[:, 0], labs=['t', r'$Re(a_0)$'])
 
 if case == 40:
     """

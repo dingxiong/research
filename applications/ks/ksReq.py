@@ -5,6 +5,11 @@ from sklearn.grid_search import GridSearchCV
 
 
 def loadRE(fileName, N):
+    """
+    load all req and eq and their corresponding
+    symmetry reduced states in the fundamental
+    domain. Here we use 2nd mode slice
+    """
     req = np.zeros((2, N-2))
     ws = np.zeros(2)
     reqr = np.zeros((2, N-2))
@@ -12,18 +17,16 @@ def loadRE(fileName, N):
         a0, w, err = KSreadReq(fileName, i+1)
         req[i] = a0
         ws[i] = w
-        tmp = ks.redO2(a0)
+        tmp = ks.redO2f(a0, 2)
         reqr[i] = tmp[0]
-        # print tmp[1]
         
     eq = np.zeros((3, N-2))
     eqr = np.zeros((3, N-2))
     for i in range(3):
         a0, err = KSreadEq(fileName, i+1)
         eq[i] = a0
-        tmp = ks.redO2(a0)
+        tmp = ks.redO2f(a0, 2)
         eqr[i] = tmp[0]
-        # print tmp[1]
 
     return req, ws, reqr, eq, eqr
 
@@ -49,6 +52,15 @@ def plotRE2d(ax, reqr, eqr, ii):
         ax.scatter(eqr[i, ii[0]], eqr[i, ii[1]], c=c2[i], s=70,
                    edgecolors='none', label='E'+str(i+1))
 
+        
+def plotFundOrbit(ax, faa, jumps, ii):
+    c = rand(3, 1)
+    x = concatenate(([-1], jumps, [len(jumps)-1]))
+    for i in range(len(x)-1):
+        r = range(x[i]+1, x[i+1]+1)
+        ax.plot(faa[r, ii[0]], faa[r, ii[1]], faa[r, ii[2]],
+                c=c, alpha=0.5)
+        
 
 def loadPO(fileName, poIds):
     aas = []
@@ -93,7 +105,7 @@ def getBases(ks, etype, a, ii, w=0):
     if etype == 'eq':
         es, evt = KSstabEig(ks, a)
         ev = Tcopy(realve(evt))
-        pev = ks.redV2(ev, a)
+        pev = ks.redV(ev, a)[1]
         v1, v2, v3 = orthAxes(pev[ii[0]], pev[ii[1]], pev[ii[2]])
         bases = np.vstack((v1, v2, v3))
 
@@ -302,28 +314,31 @@ if case == 30:
     N = 64
     d = 22
     ks = pyKS(N, d)
+    # ks.rtol = 1e-10
 
     req, ws, reqr, eq, eqr = loadRE('../../data/ks22Reqx64.h5', N)
 
     k = 1
-    # es, evt = KSstabReqEig(ks, req[k], ws[k])
-    es, evt = KSstabEig(ks, eq[k])
+    es, evt = KSstabEig(ks, eqr[k])
     ev = Tcopy(realve(evt))
     aas = []
+    dom = []
+    jumps = []
     nn = 30
     for i in range(nn):
-        a0 = eq[k] + 1e-5 * (i+1) * ev[0]
-        # a0 = rand(N-2) * 0.1
-        aa = ks.intg(a0, 150000, 100)
-        raa, ths = ks.redO2(aa)
+        a0 = eqr[k] + 1e-5 * (i+1) * ev[0]
+        aa = ks.aintg(a0, 0.01, 200, 1)
+        raa, dids, ths = ks.redO2f(aa, 2)
         aas.append(raa)
+        dom.append(dids)
+        jumps.append(getJumpPts(dids))
 
     ns = -1
-    ii = [7, 8, 11]
+    ii = [1, 3, 5]
  
-    doProj = True
+    doProj = False
     if doProj:
-        pev, bases = getBases(ks, 'eq', eq[1], [6, 7, 10])
+        pev, bases = getBases(ks, 'eq', req[1], [0, 1, 3])
         reqr = reqr.dot(bases.T)
         eqr = eqr.dot(bases.T)
         reqr -= eqr[1]
@@ -349,8 +364,9 @@ if case == 30:
         ax.plot(E3[:, ii[0]], E3[:, ii[1]], E3[:, ii[2]])
     else:
         for i in range(nn):
-            ax.plot(aas[i][:ns, ii[0]], aas[i][:ns, ii[1]], aas[i][:ns, ii[2]],
-                    alpha=0.5)
+            plotFundOrbit(ax, aas[i], jumps[i], ii)
+            # ax.plot(aas[i][:ns, ii[0]], aas[i][:ns, ii[1]], aas[i][:ns, ii[2]],
+            #         alpha=0.5)
     ax3d(fig, ax)
 
 if case == 40:

@@ -1117,22 +1117,117 @@ MatrixXd KS::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief transform the SO2 symmetry to C_p.
+ *
+ * Use p-th mode to reduce SO2 symmetry. If p > 1, then the symmetry is not reduced
+ * but tranformed to cyclic symmetry.
+ *
+ * @param[in]   p          index of Fourier mode 
+ * @param[in]  toY         True => tranform to positive imaginary axis.
+ */
 std::pair<MatrixXd, VectorXd>
-KS::redSO2(const Ref<const MatrixXd> &aa){
-    int p = 2;			// index of Fourier mode
-
+KS::redSO2(const Ref<const MatrixXd> &aa, const int p, const bool toY){
     int n = aa.rows();
     int m = aa.cols();
-    assert( 0 == n%2);
+    assert( 0 == n%2 && p > 0);
     MatrixXd raa(n, m);
     VectorXd ang(m);
-
-    for(size_t i = 0; i < m; i++){
-	double th = (atan2(aa(2*p-1, i), aa(2*p-2, i)) - M_PI/2 )/ p;
+    
+    double s = 0;		/* rotate to positive x-axis */
+    if (toY) s = M_PI/2;	/* rotate to positive y-axis */
+    
+    for(int i = 0; i < m; i++){
+	double th = (atan2(aa(2*p-1, i), aa(2*p-2, i)) - s )/ p;
 	ang(i) = th;
 	raa.col(i) = Rotation(aa.col(i), -th);
     }
     return std::make_pair(raa, ang);
+}
+
+/**
+ * If we use the 2nd mode to reduce SO2, then we use 1st mode
+ * to define fundamental domain. b_1 > 0 && c_1 > 0
+ *
+ * If we use the 1st mode to reduce SO2, then we use 2nd mode
+ * to define fundamental domain. b_2 > 0
+ *
+ * In all these cases, we assume SO2 is reduced to positive y-axis.
+ */
+std::pair<MatrixXd, VectorXi>
+KS::fundDomain(const Ref<const MatrixXd> &aa, const int p){
+    int n = aa.rows();
+    int m = aa.cols();
+    assert( 0 == n%2 && p > 0); 
+    MatrixXd faa(n, m);
+    VectorXi DomainIds(m);
+    
+    ////////////////////////////////////
+    // get reflection matrice
+    ArrayXd R1(n);
+    for(int i = 0; i < n/2; i++){
+	R1(2*i) = -1;
+	R1(2*i+1) = 1;
+    }
+    
+    ArrayXd R2(n);
+    int s = -1;
+    for(int i = 0; i < n/2; i++){
+	R2(2*i) = s;
+	R2(2*i+1) = s;
+	s *= -1;
+    }
+    
+    ArrayXd R3 = R1 * R2;
+    
+    ///////////////////////////////////
+    if (p == 1){
+	for(int i = 0; i < m; i++){
+	    bool x = aa(0, i) > 0;
+	    bool y = aa(1, i) > 0;
+	    if(x && y) {
+		faa.col(i) = aa.col(i);
+		DomainIds(i) = 1;
+	    }
+	    else if (!x && y) {
+		faa.col(i) = aa.col(i).array() * R1;
+		DomainIds(i) = 2;
+	    }
+	    else if (!x && !y) {
+		faa.col(i) = aa.col(i).array() * R2;
+		DomainIds(i) = 3;
+	    }
+	    else if (x && !y) {
+		faa.col(i) = aa.col(i).array() * R3;
+		DomainIds(i) = 4;
+	    }
+	}
+    }
+    else if (p == 2){
+	for (int i = 0; i < m; i++) {
+	    if(aa(2, i) > 0 ) {
+		faa.col(i) = aa.col(i);
+		DomainIds(i) = 1;
+	    }
+	    else {
+		faa.col(i) = aa.col(i).array() * R1;
+		DomainIds(i) = 2;
+	    }
+	}
+    }
+
+    return std::make_pair(faa, DomainIds);
+}
+    
+std::tuple<MatrixXd, VectorXi, VectorXd>
+KS::redO2f(const Ref<const MatrixXd> &aa, const int p){
+    auto tmp = redSO2(aa, p, true);
+    int s;
+    if ( p == 1) s = 2; 
+    else if (p == 2) s = 1;
+    auto tmp2 = fundDomain(tmp.first, s);
+
+    return std::make_tuple(tmp2.first, tmp2.second, tmp.second);
 }
 
 MatrixXd KS::redR1(const Ref<const MatrixXd> &aa){
@@ -1178,8 +1273,8 @@ MatrixXd KS::redRef(const Ref<const MatrixXd> &aa){
 }
 
 std::pair<MatrixXd, VectorXd>
-KS::redO2(const Ref<const MatrixXd> &aa){
-    auto tmp = redSO2(aa);
+KS::redO2(const Ref<const MatrixXd> &aa, const int p, const bool toY){
+    auto tmp = redSO2(aa, p, toY);
     return std::make_pair(redRef(tmp.first), tmp.second);
 }
 
@@ -1232,7 +1327,7 @@ MatrixXd KS::Gmat2(const Ref<const VectorXd> &x){
 
 std::pair<VectorXd, MatrixXd>
 KS::redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a){
-    auto tmp = redSO2(a);
+    auto tmp = redSO2(a, 2, true);
     MatrixXd &aH = tmp.first;
     double th = tmp.second(0);
     VectorXd tx = gTangent(aH);

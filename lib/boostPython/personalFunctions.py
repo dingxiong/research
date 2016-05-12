@@ -20,7 +20,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 ##################################################
 
 
-def pl3d(size=[8, 6], labs=['x', 'y', 'z'], axisLabelSize=25,
+def pl3d(size=[8, 6], labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
          xlim=None, ylim=None, zlim=None, isBlack=False):
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111, projection='3d')
@@ -121,7 +121,7 @@ def makeMovie(data):
     plt.show()
 
 
-def plot1dfig(x, c='r', lw=1, ls='-', marker=None, labs=['x', 'y'],
+def plot1dfig(x, c='r', lw=1, ls='-', marker=None, labs=[r'$x$', r'$y$'],
               size=[8, 6], axisLabelSize=25, yscale=None):
     """
     plot 2d figures in genereal
@@ -139,7 +139,7 @@ def plot1dfig(x, c='r', lw=1, ls='-', marker=None, labs=['x', 'y'],
     plt.show(block=False)
 
 
-def plot2dfig(x, y, c='r', lw=1, ls='-', labs=['x', 'y'],
+def plot2dfig(x, y, c='r', lw=1, ls='-', labs=[r'$x$', r'$y$'],
               size=[8, 6], axisLabelSize=25):
     """
     plot 2d figures in genereal
@@ -153,7 +153,7 @@ def plot2dfig(x, y, c='r', lw=1, ls='-', labs=['x', 'y'],
     plt.show(block=False)
 
 
-def scatter2dfig(x, y, s=20, marker='o', fc='r', ec='none', labs=['x', 'y'],
+def scatter2dfig(x, y, s=20, marker='o', fc='r', ec='none', labs=[r'$x$', r'$y$'],
                  size=[8, 6], axisLabelSize=25, ratio='auto'):
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
@@ -166,7 +166,7 @@ def scatter2dfig(x, y, s=20, marker='o', fc='r', ec='none', labs=['x', 'y'],
     plt.show(block=False)
 
 
-def plot3dfig(x, y, z, c='r', lw=1, labs=['x', 'y', 'z'],
+def plot3dfig(x, y, z, c='r', lw=1, labs=[r'$x$', r'$y$', r'$z$'],
               size=[8, 6], axisLabelSize=25):
     """
     plot 3d figures in genereal
@@ -177,25 +177,6 @@ def plot3dfig(x, y, z, c='r', lw=1, labs=['x', 'y', 'z'],
     ax.set_xlabel(labs[0], fontsize=axisLabelSize)
     ax.set_ylabel(labs[1], fontsize=axisLabelSize)
     ax.set_zlabel(labs[2], fontsize=axisLabelSize)
-    fig.tight_layout(pad=0)
-    plt.show(block=False)
-
-
-def plot3dfig2lines(x1, y1, z1, x2, y2, z2, c1='r', lw1=1,
-                    c2='b', lw2=1, labs=['x', 'y', 'z'],
-                    lab1='line 1', lab2='line 2',
-                    size=[8, 6]):
-    """
-    plot 3d figures in genereal
-    """
-    fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(x1, y1, z1, c=c1, lw=lw1, label=lab1)
-    ax.plot(x2, y2, z2, c=c2, lw=lw2, label=lab2)
-    ax.set_xlabel(labs[0])
-    ax.set_ylabel(labs[1])
-    ax.set_zlabel(labs[2])
-    ax.legend(loc='best')
     fig.tight_layout(pad=0)
     plt.show(block=False)
 
@@ -1167,3 +1148,15 @@ def difMap2(x1, x2, size=[6, 4], percent='5%', colortype='jet'):
     plt.colorbar(im, cax=cax)
     fig.tight_layout(pad=0)
     plt.show(block=False)
+
+    
+def getJumpPts(x):
+    """
+    for a sequence of integers x, try to get the
+    locations when it jumps
+    """
+    n = x.shape[0]
+    d = x[1:] - x[:-1]
+    y = np.arange(n-1)
+    y = y[d != 0]
+    return y

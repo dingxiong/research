@@ -274,18 +274,18 @@ def getCurveCoordinate(sortId, poinc):
 
 ##############################################################################################################
 
-case = 90
+case = 30
 
 if case == 10:
     """
     test ks.stab() function
     """
-    N = 32
+    N = 64
     d = 22
-    h = 0.1
-    ks = pyKS(N, h, d)
+    ks = pyKS(N, d)
     
-    a0 = KSreadEq('/usr/local/home/xiong/00git/research/data/ksReqx32.h5', 3)
+    fileName = '/usr/local/home/xiong/00git/research/data/ks22Reqx64.h5'
+    a0, err = KSreadEq(fileName, 3)
     print norm(ks.velocity(a0))
 
     A = ks.stab(a0)
@@ -295,54 +295,13 @@ if case == 10:
     v = v[:, idx]
     print e
 
-
-if case == 20:
-    """
-    Have a look at the flow in the state space
-    """
-    N = 64
-    d = 22
-    h = 0.001
-    ks = pyKS(N, h, d)
-    
-    a0, w, err = KSreadReq('../../data/ks22Reqx64.h5', 1)
-    es, vs = KSstabReqEig(ks, a0, w)
-    # aa = ks.intg(a0 + 1e-1*vs[0].real, 200000, 100)
-    aa = ks.intg(rand(N-2)*0.1, 200000, 100)
-    aaH = ks.orbitToSlice(aa)[0]
-    # plot3dfig(aa[:, 0], aa[:, 3], aa[:, 2])
-    plot3dfig(aaH[:, 0], aaH[:, 3], aaH[:, 2])
-    raa, ths = rSO3(ks, aa)
-    plot3dfig(raa[:, 0], raa[:, 3], raa[:, 2])
-
-
-if case == 25:
-    """
-    test the 2nd slice
-    """
-    N = 64
-    d = 22
-    h = 0.001
-    ks = pyKS(N, h, d)
-
-    x = rand(N-2)-0.5
-    y = ks.Reflection(x)
-    th0 = np.pi*2.47
-    th1 = np.pi*4.22
-    x1, t1 = ks.redO2(x)
-    x2, t2 = ks.redO2(ks.Rotation(x, th0))
-    y1, r1 = ks.redO2(y)
-    y2, r2 = ks.redO2(ks.Rotation(y, th1))
-    print norm(x2-x1), norm(y2-y1), norm(y2-x2)
-
 if case == 30:
     """
     view the unstable manifold of E2
     """
     N = 64
     d = 22
-    h = 0.001
-    ks = pyKS(N, h, d)
+    ks = pyKS(N, d)
 
     req, ws, reqr, eq, eqr = loadRE('../../data/ks22Reqx64.h5', N)
 

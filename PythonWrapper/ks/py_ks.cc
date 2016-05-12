@@ -235,17 +235,40 @@ public:
     }
 
     
-    bp::tuple PYredSO2(bn::ndarray aa){
+    bp::tuple PYredSO2(bn::ndarray aa, int p, bool toY){
 	int m, n;
 	getDims(aa, m, n);
 	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
-
-	auto tmp = redSO2(tmpaa);
+	
+	auto tmp = redSO2(tmpaa, p, toY);
 	return bp::make_tuple(copy2bn(tmp.first), 
 			      copy2bn(tmp.second)
 			      );
     }
 
+    bp::tuple PYfundDomain(bn::ndarray aa, int p){
+	int m, n;
+	getDims(aa, m, n);
+	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
+	
+	auto tmp = fundDomain(tmpaa, p);
+	return bp::make_tuple( copy2bn(tmp.first),
+			       copy2bn<ArrayXXi, int>(tmp.second)
+			       );
+    }
+    
+    bp::tuple PYredO2f(bn::ndarray aa, int p){
+	int m, n;
+	getDims(aa, m, n);
+	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
+	
+	auto tmp = redO2f(tmpaa, p);
+	return bp::make_tuple( copy2bn(std::get<0>(tmp)),
+			       copy2bn<ArrayXXi, int>(std::get<1>(tmp)),
+			       copy2bn(std::get<2>(tmp))
+			       );
+    }
+    
     bn::ndarray PYredRef(bn::ndarray aa){
 	int m, n;
 	getDims(aa, m, n);
@@ -254,12 +277,12 @@ public:
 	return copy2bn(redRef(tmpaa));
     }
 
-    bp::tuple PYredO2(bn::ndarray aa){
+    bp::tuple PYredO2(bn::ndarray aa, int p, bool toY){
 	int m, n;
 	getDims(aa, m, n);
 	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
 
-	auto tmp = redO2(tmpaa);
+	auto tmp = redO2(tmpaa, p, toY);
 	return bp::make_tuple(copy2bn(tmp.first), 
 			      copy2bn(tmp.second)
 			      );
@@ -337,6 +360,8 @@ BOOST_PYTHON_MODULE(py_ks) {
 	.def("calMag", &pyKS::PYcalMag)
 	.def("toPole", &pyKS::PYtoPole)
 	.def("redSO2", &pyKS::PYredSO2)
+	.def("fundDomain", &pyKS::PYfundDomain)
+	.def("redO2f", &pyKS::PYredO2f)
 	.def("redRef", &pyKS::PYredRef)
 	.def("redO2", &pyKS::PYredO2)
 	.def("redV", &pyKS::PYredV)

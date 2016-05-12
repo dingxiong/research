@@ -25,8 +25,9 @@ using Eigen::ArrayXXd;
 using Eigen::ArrayXcd;
 using Eigen::ArrayXd;
 using Eigen::MatrixXd; using Eigen::VectorXd;
-using Eigen::VectorXcd;
+using Eigen::VectorXcd; 
 using Eigen::Matrix2d;
+using Eigen::VectorXi;
 using Eigen::Map; using Eigen::Ref;
 
 /*============================================================
@@ -187,12 +188,16 @@ public:
     f2a(const Ref<const MatrixXcd> &f);
 
     std::pair<MatrixXd, VectorXd>
-    redSO2(const Ref<const MatrixXd> &aa);
+    redSO2(const Ref<const MatrixXd> &aa, const int p, const bool toY);
+    std::pair<MatrixXd, VectorXi>
+    fundDomain(const Ref<const MatrixXd> &aa, const int p);
+    std::tuple<MatrixXd, VectorXi, VectorXd>
+    redO2f(const Ref<const MatrixXd> &aa, const int p);
     MatrixXd redR1(const Ref<const MatrixXd> &aa);
     MatrixXd redR2(const Ref<const MatrixXd> &cc);
     MatrixXd redRef(const Ref<const MatrixXd> &aa);
     std::pair<MatrixXd, VectorXd>
-    redO2(const Ref<const MatrixXd> &aa);
+    redO2(const Ref<const MatrixXd> &aa, const int p, const bool toY);
     MatrixXd Gmat1(const Ref<const VectorXd> &x);
     MatrixXd Gmat2(const Ref<const VectorXd> &x);
     std::pair<VectorXd, MatrixXd>

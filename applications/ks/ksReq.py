@@ -19,6 +19,16 @@ class KSReq():
         """
         N : number of Fourier modes in KS
         L : domain size of KS
+        -------
+        Eq : eq and req in the full state sapce
+        ws : phase shift of req
+        Eqr : eq and req in the fundamental domain
+        Eg : group orbits of E2 and E3
+        Es : eigenvalues of eq/req
+        Ev : eigenvector in the full state space
+        Evr : eigvenctor projected onto slice
+        EqrP : projected Eqr
+        EgP : projected Eg
         """
         self.N = N
         self.L = L
@@ -27,9 +37,14 @@ class KSReq():
         self.ks = pyKS(N, L)
         
         self.req, self.ws, self.reqr, self.eq, self.eqr = self.loadRE(fileName, p)
+        self.Eq = {'e': self.eq, 'tw': self.req}
+        self.Eqr = {'e': self.eqr, 'tw': self.reqr}
 
         self.Eg = self.EqGroupOrbit()
         self.Es, self.Ev, self.Evr = self.calEsEv(p)
+
+        self.EqrP = {'e': np.zeros([3, 3]), 'tw': np.zeros([2, 3])}
+        self.EgP = None
 
     def loadRE(self, fileName, p):
         """
@@ -84,6 +99,11 @@ class KSReq():
     def calEsEv(self, p):
         """
         get the eigenvector of eq/req
+        -----
+        return:
+        Es : eigenvalues
+        Ev : eigenvectors in the full state space
+        Evr: eigenvectors projected in the slice
         """
         Eqe = []
         EqV = []
@@ -127,9 +147,10 @@ class KSReq():
         aas : symmetry reduced state space
         pas : projected state space
         """
-        aas = []
         aars = []
         aaps = []
+        dom = []
+        jumps = []
         types = ['rpo', 'ppo']
         for i in range(2):
             poType = types[i]
@@ -137,16 +158,17 @@ class KSReq():
                 a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
                 h = T / nstp
                 aa = self.ks.intg(a0, h, nstp, 5)
-                aar = self.ks.redO2f(aa, p)[0]
-                aas.append(aa)
+                aar, dids, ths = self.ks.redO2f(aa, p)
                 aars.append(aar)
+                dom.append(dids)
+                jumps.append(getJumpPts(dids))
                 if bases is not None:
                     aaps.append(aar.dot(bases.T) - x0)
 
         if bases is not None:
-            return aas, aars, aaps
+            return aars, aaps, dom, jumps
         else:
-            return aas, aars
+            return aars, dom, jumps
 
     def getMu(self, x0, v0, p, T=200, r0=1e-5, nn=30):
         """
@@ -171,6 +193,19 @@ class KSReq():
             jumps.append(getJumpPts(dids))
         
         return aars, dom, jumps
+
+    def getMuEq(self, etype, eId, vId, p, T=200, r0=1e-5, nn=30):
+        """
+        obtain the unstable manifold of eq/req
+        """
+        if etype == 'e':
+            a0 = self.eqr[eId]
+            v0 = self.Ev['e'][eId][vId]  # Ev not Evr
+        elif etype == 'tw':
+            a0 = self.reqr[eId]
+            v0 = self.Ev['tw'][eId][vId]
+        
+        return self.getMu(a0, v0, p, T=T, r0=r0, nn=nn)
 
     def getMuAll(self, p, T=200, r0=1e-5, nn=30):
         """
@@ -204,34 +239,38 @@ class KSReq():
 
         return MuE, MuTw
 
-    def plotRE(self, ax, ii, do3d=True):
+    def plotRE(self, ax, ii, doProject=False, do3d=True):
         """
         construct the plotting block for req/eq
         """
-        reqr = self.reqr
-        eqr = self.eqr
+        if doProject:
+            x = self.EqrP['tw']
+            y = self.EqrP['e']
+        else:
+            x = self.Eqr['tw']
+            y = self.Eqr['e']
 
         c1 = ['r', 'b']
         for i in range(2):
             if do3d:
-                ax.scatter(reqr[i, ii[0]], reqr[i, ii[1]], reqr[i, ii[2]],
+                ax.scatter(x[i, ii[0]], x[i, ii[1]], x[i, ii[2]],
                            c=c1[i], s=70,
                            edgecolors='none', label='TW'+str(i+1))
             else:
-                ax.scatter(reqr[i, ii[0]], reqr[i, ii[1]],
-                           c=c1[i], s=70, edgecolors='none', label='TW'+str(i+1))
+                ax.scatter(x[i, ii[0]], x[i, ii[1]], c=c1[i], s=70,
+                           edgecolors='none', label='TW'+str(i+1))
 
         c2 = ['c', 'k', 'y']
         for i in range(3):
             if do3d:
-                ax.scatter(eqr[i, ii[0]], eqr[i, ii[1]], eqr[i, ii[2]],
+                ax.scatter(y[i, ii[0]], y[i, ii[1]], y[i, ii[2]],
                            c=c2[i], s=70,
                            edgecolors='none', label='E'+str(i+1))
             else:
-                ax.scatter(eqr[i, ii[0]], eqr[i, ii[1]], c=c2[i], s=70,
+                ax.scatter(y[i, ii[0]], y[i, ii[1]], c=c2[i], s=70,
                            edgecolors='none', label='E'+str(i+1))
 
-    def plotFundOrbit(self, ax, faa, jumps, ii, c=None, alpha=0.5):
+    def plotFundOrbit(self, ax, faa, jumps, ii, c=None, alpha=0.5, lw=1):
         """
         plot orbit in the fundamental domain. sudden jumps are avoided.
         
@@ -242,30 +281,33 @@ class KSReq():
         if c is None:
             c = rand(3, 1)
 
-        x = concatenate(([-1], jumps, [len(jumps)-1]))
+        x = concatenate(([-1], jumps, [len(faa)-1]))
         for i in range(len(x)-1):
             r = range(x[i]+1, x[i+1]+1)
             ax.plot(faa[r, ii[0]], faa[r, ii[1]], faa[r, ii[2]],
-                    c=c, alpha=alpha)
+                    c=c, alpha=alpha, lw=lw)
 
-    def getBases(self, etype, a, ii, w=0):
+    def getBases(self, etype, eId, ii):
         """
         get projection bases
 
-        pev : in-slice vector
+        x0 : origin
         bases : selected bases
         """
-        if etype == 'eq':
-            es, evt = KSstabEig(self.ks, a)
-        elif etype == 'req':
-            es, evt = KSstabReqEig(self.ks, a, w)
-            
-        ev = Tcopy(realve(evt))
-        pev = ks.redV(ev, a)[1]
-        v1, v2, v3 = orthAxes(pev[ii[0]], pev[ii[1]], pev[ii[2]])
+        v = self.Evr[etype][eId]
+        v1, v2, v3 = orthAxes(v[ii[0]], v[ii[1]], v[ii[2]])
         bases = np.vstack((v1, v2, v3))
 
-        return pev, bases
+        x0 = self.Eqr[etype][eId].dot(bases.T)
+
+        self.EqrP['e'] = self.Eqr['e'].dot(bases.T) - x0
+        self.EqrP['tw'] = self.Eqr['tw'].dot(bases.T) - x0
+        
+        E2 = self.Eg['E2'].dot(bases.T) - x0
+        E3 = self.Eg['E3'].dot(bases.T) - x0
+        self.EgP = {'E2': E2, 'E3': E3}
+
+        return x0, bases
 
     """
     def getPoinc(data, theta):
@@ -442,46 +484,96 @@ if __name__ == '__main__':
     L = 22
     ksreq = KSReq(N, L, '../../data/ks22Reqx64.h5', 1)
 
-    case = 10
+    case = 20
 
     if case == 10:
         """
-        view the unstable manifold of E2
+        view the unstable manifold of eq/req
         """
         nn = 30
-        a0 = ksreq.eqr[0]
-        v0 = ksreq.Ev['e'][0][0]
-        aas, dom, jumps = ksreq.getMu(a0, v0, 1, nn=nn, T=110)
+        aas, dom, jumps = ksreq.getMuEq('tw', eId=0, vId=0, p=1, nn=nn, T=100)
         ii = [1, 5, 3]
+        spt = aas
+        E2, E3 = ksreq.Eg['E2'], ksreq.Eg['E3']
 
         doProj = False
         if doProj:
-            Ori = eqr[1].copy()
-            pev, bases = getBases(ks, 'eq', Ori, [0, 1, 3])
-            OriP = Ori.dot(bases.T)
-            reqr = reqr.dot(bases.T) - OriP
-            eqr = eqr.dot(bases.T) - OriP
-            paas = []
+            x0, bases = ksreq.getBases('tw', 0, [0, 1, 3])
+            aap = []
             for i in range(len(aas)):
-                paas.append(aas[i].dot(bases.T) - OriP)
-
+                aap.append(aas[i].dot(bases.T) - x0)
             ii = [0, 1, 2]
-
+            spt = aap
+            E2, E3 = ksreq.EgP['E2'], ksreq.EgP['E3']
+            
         fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
-        ksreq.plotRE(ax, ii)
-        if doProj:
-            for i in range(nn):
-                ksreq.plotFundOrbit(ax, paas, jumps[i], ii)
-            ax.plot(E3[:, ii[0]], E3[:, ii[1]], E3[:, ii[2]])
-        else:
-            for i in range(nn):
-                ksreq.plotFundOrbit(ax, aas[i], jumps[i], ii)
-            E2, E3 = ksreq.Eg['E2'], ksreq.Eg['E3']
-            ax.plot(E2[:, ii[0]], E2[:, ii[1]], E2[:, ii[2]])
-            ax.plot(E3[:, ii[0]], E3[:, ii[1]], E3[:, ii[2]])
+        ksreq.plotRE(ax, ii, doProject=doProj)
+        for i in range(nn):
+            ksreq.plotFundOrbit(ax, spt[i], jumps[i], ii)
+        ax.plot(E2[:, ii[0]], E2[:, ii[1]], E2[:, ii[2]])
+        ax.plot(E3[:, ii[0]], E3[:, ii[1]], E3[:, ii[2]])
         ax3d(fig, ax)
 
     if case == 20:
+        """
+        view the unstable manifold of a single eq/req and one po/rpo
+        This is done in Fourier projection space
+        """
+        nn = 30
+        aas, dom, jumps = ksreq.getMuEq('e', eId=1, vId=0, p=1, nn=nn, T=100)
+
+        poIds = [[1, 5, 22], range(4, 4)]
+        pos, poDom, poJumps = ksreq.loadPO('../../data/ks22h001t120x64EV.h5',
+                                           poIds, 1)
+        
+        ii = [1, 2, 3]
+        spt = aas
+        sptPo = pos
+        E2, E3 = ksreq.Eg['E2'], ksreq.Eg['E3']
+
+        doProj = True
+        if doProj:
+            x0, bases = ksreq.getBases('tw', 0, [0, 1, 3])
+            aap = []
+            for i in range(len(aas)):
+                aap.append(aas[i].dot(bases.T) - x0)
+            pop = []
+            for i in range(len(pos)):
+                pop.append(pos[i].dot(bases.T) - x0)
+            ii = [0, 1, 2]
+            spt = aap
+            sptPo = pop
+            E2, E3 = ksreq.EgP['E2'], ksreq.EgP['E3']
+
+        fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
+        ksreq.plotRE(ax, ii, doProject=doProj)
+        for i in range(len(spt)):
+            ksreq.plotFundOrbit(ax, spt[i], jumps[i], ii)
+        for i in range(len(sptPo)):
+            ksreq.plotFundOrbit(ax, sptPo[i], poJumps[i], ii,
+                                c='k' if i > 0 else 'r',
+                                alpha=1, lw=1.5)
+        ax.plot(E2[:, ii[0]], E2[:, ii[1]], E2[:, ii[2]])
+        ax.plot(E3[:, ii[0]], E3[:, ii[1]], E3[:, ii[2]])
+        ax3d(fig, ax)
+
+    if case == 25:
+        """
+        view 2 shadowing orbits
+        """
+        poIds = [[1, 26], range(4, 4)]
+        pos, poDom, poJumps = ksreq.loadPO('../../data/ks22h001t120x64EV.h5',
+                                           poIds, 1)
+        ii = [1, 3, 2]
+
+        fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
+        for i in range(len(pos)):
+            ksreq.plotFundOrbit(ax, pos[i], poJumps[i], ii,
+                                c='k' if i > 0 else 'r',
+                                alpha=1, lw=1.5)
+        ax3d(fig, ax)
+        
+    if case == 30:
         """
         visualize the unstable manifold of eq and req together
         """

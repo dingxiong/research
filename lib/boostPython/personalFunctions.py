@@ -153,7 +153,8 @@ def plot2dfig(x, y, c='r', lw=1, ls='-', labs=[r'$x$', r'$y$'],
     plt.show(block=False)
 
 
-def scatter2dfig(x, y, s=20, marker='o', fc='r', ec='none', labs=[r'$x$', r'$y$'],
+def scatter2dfig(x, y, s=20, marker='o', fc='r', ec='none',
+                 labs=[r'$x$', r'$y$'],
                  size=[8, 6], axisLabelSize=25, ratio='auto'):
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
@@ -910,7 +911,7 @@ def KScopyTo(inFile, outFile, poType, r):
     
 
 def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
-                        percent='5%', size=[3, 6],
+                        percent='5%', size=[3, 6], axisLabelSize=20,
                         axisOn=True, barOn=True,
                         save=False, name='out'):
     """
@@ -926,8 +927,8 @@ def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
     if axisOn:
-        ax.set_xlabel('x', fontsize=20)
-        ax.set_ylabel('t', fontsize=20)
+        ax.set_xlabel(r'$x$', fontsize=axisLabelSize)
+        ax.set_ylabel(r'$t$', fontsize=axisLabelSize)
         
     im = ax.imshow(AA, cmap=plt.get_cmap(colortype), extent=ext,
                    aspect='auto', origin='lower')
@@ -943,6 +944,24 @@ def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
         plt.savefig(name+'.eps', format='eps')
     else:
         plt.show(block=False)
+
+
+def KSplotPoHeat(ks, fileName, poType, poId, NT=1, Ts=100, fixT=False):
+    """
+    plot the heat map of ppo/rpo.
+    Sometimes, a few periods make it easy to observe the state space.
+    Also, fixing an integration time makes it easy to see the transition
+    
+    NT : the number of periods need to be ploted
+    """
+    a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
+    h = T / nstp
+    if fixT:
+        aa = ks.intg(a0, h, np.int(Ts/h), 5)
+        KSplotColorMapOrbit(aa, [0, ks.d, 0, Ts])
+    else:
+        aa = ks.intg(a0, h, nstp*NT, 5)
+        KSplotColorMapOrbit(aa, [0, ks.d, 0, T*NT])
 
 
 ############################################################

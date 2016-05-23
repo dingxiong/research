@@ -1,7 +1,7 @@
 from personalFunctions import *
 from py_ks import *
 
-case = 30
+case = 80
 
 if case == 1:
     ks = pyKS(32, 0.1, 22)
@@ -130,3 +130,30 @@ if case == 60:
     e = e[idx]
     v = v[:, idx]
     print e
+
+if case == 70:
+    """
+    visualize heat map of ppo/rpo
+    """
+    N = 64
+    L = 22
+    ks = pyKS(N, L)
+    
+    fileName = '/usr/local/home/xiong/00git/research/data/ks22h001t120x64EV.h5'
+    poType = 'rpo'
+    poId = 1
+    
+    KSplotPoHeat(ks, fileName, poType, poId, NT=2, Ts=100, fixT=True)
+
+if case == 80:
+    """
+    print the period
+    """
+    fileName = '/usr/local/home/xiong/00git/research/data/ks22h001t120x64EV.h5'
+    Ts = []
+    for poId in range(1, 31):
+        a0, T, nstp, r, s = KSreadPO(fileName, 'rpo', poId)
+        print '%0.2f\n' % T,
+        Ts.append(T)
+
+    

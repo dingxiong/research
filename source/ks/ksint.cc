@@ -1134,8 +1134,7 @@ KS::redSO2(const Ref<const MatrixXd> &aa, const int p, const bool toY){
     MatrixXd raa(n, m);
     VectorXd ang(m);
     
-    double s = 0;		/* rotate to positive x-axis */
-    if (toY) s = M_PI/2;	/* rotate to positive y-axis */
+    double s = toY ? M_PI/2 : 0; /* pi/2 or 0 */
     
     for(int i = 0; i < m; i++){
 	double th = (atan2(aa(2*p-1, i), aa(2*p-2, i)) - s )/ p;
@@ -1225,6 +1224,8 @@ KS::redO2f(const Ref<const MatrixXd> &aa, const int p){
     int s;
     if ( p == 1) s = 2; 
     else if (p == 2) s = 1;
+    else fprintf(stderr, "redO2f wrong\n");
+
     auto tmp2 = fundDomain(tmp.first, s);
 
     return std::make_tuple(tmp2.first, tmp2.second, tmp.second);
@@ -1325,26 +1326,29 @@ MatrixXd KS::Gmat2(const Ref<const VectorXd> &x){
     return G;
 } 
 
-std::pair<VectorXd, MatrixXd>
-KS::redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a){
-    auto tmp = redSO2(a, 2, true);
+MatrixXd
+KS::redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a,
+	 const int p, const bool toY){
+    auto tmp = redSO2(a, p, toY);
     MatrixXd &aH = tmp.first;
     double th = tmp.second(0);
     VectorXd tx = gTangent(aH);
 
-    int p = 2;
-
+    VectorXd x0(VectorXd::Zero(N-2));
+    if (toY) x0(2*p-1) = 1;
+    else x0(2*p-2) = 1;    
+    VectorXd t0 = gTangent(x0);
+    
     MatrixXd vep = Rotation(v, -th);
-    MatrixXd dot = vep.row(2*p-2) / (-p * aH(2*p-1));  
+    MatrixXd dot = (t0.transpose() * vep) / (t0.transpose() * tx);
     vep = vep - tx * dot;
-
-    return std::make_pair(aH, vep);
+    
+    return vep;
 }
 
 MatrixXd KS::redV2(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a){
-    auto tmp = redV(v, a);    
-    VectorXd &aH = tmp.first;
-    MatrixXd &vp = tmp.second;
+    auto vp = redV(v, a, 2, true);  
+    VectorXd aH = redSO2(a, 2, true).first;
     
     VectorXd aH1 = redR1(aH);
     

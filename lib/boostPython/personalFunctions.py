@@ -1051,7 +1051,7 @@ def realve(ve):
             rve[:, i+1] = ve[:, i].imag
             i = i+2
         else:
-            rve[:, i] = ve[:, i]
+            rve[:, i] = ve[:, i].real
             i = i+1
 
     return rve

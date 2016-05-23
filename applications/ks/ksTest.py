@@ -111,3 +111,22 @@ if case == 50:
     y1, id3, r1 = ks.redO2f(y, 2)
     y2, id4, r2 = ks.redO2f(ks.Rotation(y, th1), 2)
     print norm(x2-x1), norm(y2-y1), norm(y2-x2)
+
+if case == 60:
+    """
+    test ks.stab() function
+    """
+    N = 64
+    d = 22
+    ks = pyKS(N, d)
+
+    fileName = '/usr/local/home/xiong/00git/research/data/ks22Reqx64.h5'
+    a0, err = KSreadEq(fileName, 3)
+    print norm(ks.velocity(a0))
+
+    A = ks.stab(a0)
+    e, v = eig(A.T)
+    idx = argsort(e.real)[::-1]
+    e = e[idx]
+    v = v[:, idx]
+    print e

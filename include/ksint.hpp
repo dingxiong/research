@@ -200,8 +200,9 @@ public:
     redO2(const Ref<const MatrixXd> &aa, const int p, const bool toY);
     MatrixXd Gmat1(const Ref<const VectorXd> &x);
     MatrixXd Gmat2(const Ref<const VectorXd> &x);
-    std::pair<VectorXd, MatrixXd>
-    redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
+    MatrixXd
+    redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a,
+	 const int p, const bool toY);
     MatrixXd redV2(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
 
 };

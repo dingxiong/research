@@ -288,17 +288,14 @@ public:
 			      );
     }
 
-    bp::tuple PYredV(bn::ndarray v, bn::ndarray a){
+    bn::ndarray PYredV(bn::ndarray v, bn::ndarray a, int p, bool toY){
 	int m, n;
 	getDims(v, m, n);
 	Map<MatrixXd> tmpv((double*)v.get_data(), n, m);
 	getDims(a, m, n);
 	Map<VectorXd> tmpa((double*)a.get_data(), n * m);
 
-	auto tmp = redV(tmpv, tmpa);
-	return bp::make_tuple(copy2bn(tmp.first), 
-			      copy2bn(tmp.second)
-			      );
+	return copy2bn( redV(tmpv, tmpa, p, toY) );
     }
 
     bn::ndarray PYredV2(bn::ndarray v, bn::ndarray a){

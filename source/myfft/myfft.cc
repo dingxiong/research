@@ -191,9 +191,10 @@ namespace MyFFT {
 	new (&v2) Eigen::Map<Eigen::ArrayXXcd>( (dcp*)&(c2[0][0]), N, M );
 	new (&v3) Eigen::Map<Eigen::ArrayXXcd>( (dcp*)&(c3[0][0]), N, M );
 	
-	
-	p = fftw_plan_dft_2d(N, M, c2, c3, FFTW_FORWARD, FFTW_MEASURE);
-	rp = fftw_plan_dft_2d(N, M, c1, c2, FFTW_BACKWARD, FFTW_MEASURE);
+
+	/* note, FFTW use row-major format, so M, N exchanged */
+	p = fftw_plan_dft_2d(M, N, c2, c3, FFTW_FORWARD, FFTW_MEASURE);
+	rp = fftw_plan_dft_2d(M, N, c1, c2, FFTW_BACKWARD, FFTW_MEASURE);
 
     }
     

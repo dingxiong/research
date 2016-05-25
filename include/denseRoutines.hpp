@@ -64,6 +64,8 @@ namespace denseRoutines {
     randM(int M, int N);
     void 
     savetxt(const std::string f, const Ref<const MatrixXd> &A);
+    MatrixXcd loadComplex(const std::string f1, const std::string f2);
+    
     /////////////////////////// template function implementation /////////////////////////////////////////////////////////////////////////////////////////////
     
     /** @brief read data from file  */
@@ -103,7 +105,7 @@ namespace denseRoutines {
 
 	return result;
     }
-
+    
 }
 
 #endif	// DENSEROUTINES_H

@@ -3,6 +3,7 @@
 #include "myfft.hpp"
 #include "denseRoutines.hpp"
 #include <iostream>
+#include <time.h>
 
 #define CE(x) cout << (x) << endl << endl
 
@@ -26,19 +27,28 @@ int main(){
     }
        
     case 2 : {			/* test FFT2d */
-	FFT2d F(4, 4);
-	ArrayXXcd x(4, 4);
-	x.real()= loadtxt("re.dat");
-	x.imag() = loadtxt("im.dat");
+	/* for large 2d matrix
+	   The c++ version is 2 times slower than
+	   Matlab FFT
+	*/
 	
+	clock_t t;
+	FFT2d F(8, 4);
+	ArrayXXcd x = loadComplex("re.dat", "im.dat");	
 	CE(x);
 	F.v1 = x;
-	F.ifft();
-
+	
+	t = clock();
+	for (int i = 0; i < 100; i++) F.ifft();
+	t = clock() - t;
+	cout << "ifft time: " << ((float)t)/CLOCKS_PER_SEC << endl;
+	
+	savetxt("f1.dat", F.v2.real());
+	savetxt("f2.dat", F.v2.imag());
 	CE(F.v2);
 
 	F.fft();
-	CE(F.v3);
+	// CE(F.v3);
 
 	break;
     }

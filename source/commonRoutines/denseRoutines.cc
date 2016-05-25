@@ -414,3 +414,21 @@ denseRoutines::savetxt(const std::string f, const Ref<const MatrixXd> &A){
     file << A << endl;
     file.close();
 }
+
+
+MatrixXcd 
+denseRoutines::loadComplex(const std::string f1, const std::string f2){
+    MatrixXd re = loadtxt<double>(f1);
+    MatrixXd im = loadtxt<double>(f2);
+    int n1 = re.rows();
+    int m1 = re.cols();
+    int n2 = im.rows();
+    int m2 = im.cols();
+    assert(n1 == n2 && m1 == m2);
+    
+    MatrixXcd A(n1, m1);
+    A.real() = re;
+    A.imag() = im;
+
+    return A;
+}

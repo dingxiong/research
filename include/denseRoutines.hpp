@@ -14,6 +14,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
+#include <fstream>
 
 namespace denseRoutines {
 
@@ -65,6 +66,44 @@ namespace denseRoutines {
     savetxt(const std::string f, const Ref<const MatrixXd> &A);
     /////////////////////////// template function implementation /////////////////////////////////////////////////////////////////////////////////////////////
     
+    /** @brief read data from file  */
+    template<class T = double>
+    Matrix<T, Dynamic, Dynamic>
+    loadtxt(const std::string f){
+	int cols = 0; 
+	int rows = 0;
+	std::vector<T> buff;
+	buff.reserve(1000);
+	
+	ifstream infile(f);
+	assert(!infile.fail());
+	while (! infile.eof()) {
+	    string line;
+	    std::getline(infile, line); 
+	
+	    int temp_cols = 0;
+	    stringstream stream(line); 
+	    while(!stream.eof()){
+		T x;
+		stream >> x; 
+		buff.push_back(x);
+		temp_cols++;
+	    }
+	    if (rows == 0) cols = temp_cols;
+	    else if (temp_cols != cols) break;
+
+	    rows++;
+	}
+	infile.close();
+
+	Matrix<T, Dynamic, Dynamic> result(rows, cols);
+	for (int i = 0; i < rows; i++)
+	    for (int j = 0; j < cols; j++)
+		result(i, j) = buff[ cols*i+j];
+
+	return result;
+    }
+
 }
 
 #endif	// DENSEROUTINES_H

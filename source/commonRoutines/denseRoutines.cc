@@ -1,6 +1,4 @@
 #include "denseRoutines.hpp"
-#include <iostream>
-#include <fstream>
 #include <vector>
 #include <algorithm>
 #include <time.h>       /* time */
@@ -416,4 +414,3 @@ denseRoutines::savetxt(const std::string f, const Ref<const MatrixXd> &A){
     file << A << endl;
     file.close();
 }
-

@@ -167,6 +167,9 @@ namespace MyFFT {
     //////////////////////////////////////////////////////////////////////////////////////////
     //                                 2d FFT                                               //
     //////////////////////////////////////////////////////////////////////////////////////////
+    
+    /* @brief 2dFFT for a [N x M] matrix. Note N rows M colums */
+    
     FFT2d::FFT2d(const int N, const int M, const int threadNum):
 	N(N), M(M), threadNum(threadNum),
 	v1(NULL, 0, 0), v2(NULL, 0, 0), v3(NULL, 0, 0)

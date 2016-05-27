@@ -432,3 +432,15 @@ denseRoutines::loadComplex(const std::string f1, const std::string f2){
 
     return A;
 }
+
+ArrayXXd 
+denseRoutines::calPhase(const Ref<const ArrayXXcd> &AA){
+    int m = AA.cols();
+    int n = AA.rows();
+    ArrayXXd phase(n, m);
+    for(size_t i = 0; i < m; i++)
+	for(size_t j =0; j < n; j++)
+	    phase(j, i) = atan2(AA(j, i).imag(), AA(j, i).real());
+
+    return phase;
+}

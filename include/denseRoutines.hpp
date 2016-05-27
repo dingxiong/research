@@ -64,7 +64,10 @@ namespace denseRoutines {
     randM(int M, int N);
     void 
     savetxt(const std::string f, const Ref<const MatrixXd> &A);
-    MatrixXcd loadComplex(const std::string f1, const std::string f2);
+    MatrixXcd 
+    loadComplex(const std::string f1, const std::string f2);
+    ArrayXXd 
+    calPhase(const Ref<const ArrayXXcd> &AA);
     
     /////////////////////////// template function implementation /////////////////////////////////////////////////////////////////////////////////////////////
     

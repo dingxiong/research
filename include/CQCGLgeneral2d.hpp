@@ -7,8 +7,8 @@
  *  g++ cqcgl1d.cc -shared -fpic -lfftw3 -lm -fopenmp  -march=corei7 -O3 -msse2 -msse4 -I/usr/include/eigen3 -I../../include -std=c++0x
  *
  *  */
-#ifndef CQCGLGENERAL_H
-#define CQCGLGENERAL_H
+#ifndef CQCGLGENERAL2D_H
+#define CQCGLGENERAL2D_H
 
 // #include <fftw3.h>
 #include <complex>
@@ -20,7 +20,6 @@
 #include "sparseRoutines.hpp"
 #include "denseRoutines.hpp"
 #include "iterMethod.hpp"
-#include "ped.hpp"
 #include "myfft.hpp"
 using std::pair; using std::make_pair;
 using Eigen::MatrixXd; using Eigen::VectorXd;
@@ -34,20 +33,19 @@ using Eigen::Map; using Eigen::Ref;
 //////////////////////////////////////////////////////////////////////
 //                       class CQCGLgeneral                              //
 //////////////////////////////////////////////////////////////////////
-class CQCGLgeneral {
+class CQCGLgeneral2d {
   
 public:
     typedef std::complex<double> dcp;
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> Tri;
     
-    const int N;		/* dimension of FFT */
-    const double d;		/* system domain size */
+    const int N, M;		/* dimension of FFT */
+    const double dx, dy;	/* system domain size */
     
-    int DimTan;    		/* true tangent space dimension */
-    int Ne;			/* effective number of modes */
-    int Ndim;			/* dimension of state space */
+    int Ne, Me;			/* effective number of modes */
     int Nplus, Nminus, Nalias;
+    int Mplus, Mminus, Malias;
     
     double Br, Bi, Gr, Gi, Dr, Di, Mu;
     double Omega = 0;		/* used for comoving frame */
@@ -55,7 +53,7 @@ public:
 
     ArrayXXcd L, E, E2, a21, a31, a32, a41, a43, b1, b2, b4;
 
-    MyFFT::FFT F[5], JF[5];
+    MyFFT::FFT2d F[5], JF[5];
     
     /* for time step adaptive ETDRK4 and Krogstad  */
     ////////////////////////////////////////////////////////////
@@ -76,8 +74,8 @@ public:
     VectorXd Ts;	      /* time sequnence for adaptive method */
     
     int cellSize = 500;	/* size of cell when resize output container */
-    int M = 64;			/* number of sample points */
-    int R = 1;			/* radius for evaluating phi(z) */
+    int MC = 64;	/* number of sample points */
+    int R = 1;		/* radius for evaluating phi(z) */
 
     int Method = 1;
     ////////////////////////////////////////////////////////////
@@ -90,7 +88,7 @@ public:
 		   double Mu, double Dr, double Di,
 		   double Br, double Bi, double Gr,
 		   double Gi,  
-		   int dimTan, int threadNum);
+		   int threadNum);
     ~CQCGLgeneral2d();
     CQCGLgeneral2d & operator=(const CQCGLgeneral2d &x);
     
@@ -99,52 +97,45 @@ public:
     ////////////////////////////////////////////////////////////
 
     //============================================================    
-    inline int calNe();
-    inline int calDimTan(int dimTan);
+    inline int calNe(const double N);
     void CGLInit();
     void changeOmega(double w);
     void calCoe(const double h);
     void oneStep(double &du, const bool onlyOrbit);
-    ArrayXXcd ZR(ArrayXcd &z);
+    ArrayXXcd ZR(const Ref<const ArrayXcd> &z);
     double adaptTs(bool &doChange, bool &doAccept, const double s);
 
-    ArrayXXd 
-    constETD(const ArrayXXd a0, const double h, const int Nt, 
-	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
-    ArrayXXd
-    adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
-	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
-    ArrayXXd 
-    intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
-    std::pair<ArrayXXd, ArrayXXd>
-    intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
-    ArrayXXd
-    aintg(const ArrayXd &a0, const double h, const double tend, 
+    ArrayXXcd 
+    constETD(const ArrayXXcd &a0, const ArrayXXcd &v0, 
+	     const double h, const int Nt, 
+	     const int skip_rate, const bool onlyOrbit);
+    ArrayXXcd
+    adaptETD(const ArrayXXcd &a0, const ArrayXXcd &v0, 
+	     const double h0, const double tend, 
+	     const int skip_rate, const bool onlyOrbit);
+    ArrayXXcd 
+    intg(const ArrayXXcd &a0, const double h, const int Nt, const int skip_rate);
+    ArrayXXcd
+    aintg(const ArrayXXcd &a0, const double h, const double tend, 
 	  const int skip_rate);
-    std::pair<ArrayXXd, ArrayXXd>
-    aintgj(const ArrayXd &a0, const double h, const double tend, 
-	   const int skip_rate);
-    ArrayXXd
-    intgv(const ArrayXd &a0, const ArrayXXd &v, const double h,
-	  const int Nt);
-    ArrayXXd 
-    aintgv(const ArrayXXd &a0, const ArrayXXd &v, const double h,
-	   const double tend);
+    ArrayXXcd
+    intgv(const ArrayXXcd &a0, const ArrayXXcd &v0, const double h,
+	  const int Nt, const int skip_rate);
+    ArrayXXcd 
+    aintgv(const ArrayXXcd &a0, const ArrayXXcd &v0, const double h,
+	   const double tend, const int skip_rate);
     
     void dealias(const int k, const bool onlyOrbit);
     void NL(const int k, const bool onlyOrbit);
-    ArrayXXd C2R(const ArrayXXcd &v);
-    ArrayXXcd R2C(const ArrayXXd &v);
+    ArrayXXcd unpad(const ArrayXXcd &v);
+    ArrayXXcd pad(const ArrayXXcd &v);
     ArrayXXd c2r(const ArrayXXcd &v);
     ArrayXXcd r2c(const ArrayXXd &v);
     
     //============================================================  
 
-    ArrayXXcd Fourier2Config(const Ref<const ArrayXXd> &aa);
-    ArrayXXd Config2Fourier(const Ref<const ArrayXXcd> &AA);
-    ArrayXXd Fourier2ConfigMag(const Ref<const ArrayXXd> &aa);
-    ArrayXXd calPhase(const Ref<const ArrayXXcd> &AA);
-    ArrayXXd Fourier2Phase(const Ref<const ArrayXXd> &aa);
+    ArrayXXcd Fourier2Config(const Ref<const ArrayXXcd> &aa);
+    ArrayXXcd Config2Fourier(const Ref<const ArrayXXcd> &AA);
     
     ArrayXd velocity(const ArrayXd &a0);
     ArrayXd velocityReq(const ArrayXd &a0, const double th,
@@ -223,4 +214,4 @@ public:
 
 
 
-#endif  /* CQCGLGENERAL_H */
+#endif  /* CQCGLGENERAL2D_H */

@@ -12,6 +12,11 @@ SOURCE = CQCGLgeneral.cc CQCGL.cc
 SHARED = libCQCGL.so
 STATIC = libCQCGL.a
 
+# for 2d CQCGL class
+SOURCE4 = CQCGLgeneral2d.cc CQCGL2d.cc	
+SHARED4 = libCQCGL2d.so
+STATIC4 = libCQCGL2d.a 	
+
 # for RPO code
 CFLAGS2 = -std=c++11
 
@@ -27,10 +32,11 @@ SHARED3 = $(addprefix lib, $(addsuffix .so, $(basename $(SOURCE3))))
 STATIC3 = $(addprefix lib, $(addsuffix .a, $(basename $(SOURCE3))))
 
 
-all : int rpo etd
+all : int rpo etd int2d
 int : $(SHARED) $(STATIC)
 rpo : $(SHARED2) $(STATIC2) 
 etd : $(SHARED3) $(STATIC3)
+int2d : $(SHARED4) $(STATIC4)
 
 $(SHARED): $(SOURCE)
 	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
@@ -51,6 +57,13 @@ $(SHARED3): $(SOURCE3)
 $(SOURCE3:.cc=.o) : $(SOURCE3)
 	$(CC) -c $(CFLAGS3) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
 $(STATIC3): $(SOURCE3:.cc=.o)
+	$(AR) crs $@ $^
+
+$(SHARED4): $(SOURCE4)
+	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
+$(SOURCE4:.cc=.o) : $(SOURCE4)
+	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
+$(STATIC4): $(SOURCE4:.cc=.o)
 	$(AR) crs $@ $^
 
 

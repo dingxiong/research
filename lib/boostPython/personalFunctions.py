@@ -20,6 +20,24 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 ##################################################
 
 
+class Arrow3D(FancyArrowPatch):
+    """
+    The 3d arrow class
+    """
+    def __init__(self, xs, ys, zs, *args, **kwargs):
+        FancyArrowPatch.__init__(self, (0, 0), (0, 0), *args, **kwargs)
+        self._verts3d = xs, ys, zs
+
+    def draw(self, renderer):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
+        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
+        FancyArrowPatch.draw(self, renderer)
+
+    def setvalue(self, x, y, z):
+        self._verts3d = x, y, z
+
+
 def pl3d(size=[8, 6], labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
          xlim=None, ylim=None, zlim=None, isBlack=False):
     fig = plt.figure(figsize=size)
@@ -88,13 +106,6 @@ def ax2d(fig, ax, doBlock=False):
     fig.tight_layout(pad=0)
     ax.legend(loc='best')
     plt.show(block=doBlock)
-
-
-def addRect(ax, verts, fc='b', alpha=0.5, lw=1):
-    ax.add_collection3d(
-        Poly3DCollection(verts, facecolors=fc, zorder=10,
-                         linewidths=lw, alpha=alpha)
-    )
     
 
 def makeMovie(data):
@@ -180,6 +191,25 @@ def plot3dfig(x, y, z, c='r', lw=1, labs=[r'$x$', r'$y$', r'$z$'],
     ax.set_zlabel(labs[2], fontsize=axisLabelSize)
     fig.tight_layout(pad=0)
     plt.show(block=False)
+
+
+def plotMat(y, colortype='jet', percent='5%', colorBar=True):
+    """
+    plot a matrix
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    im = ax.matshow(y, cmap=plt.get_cmap(colortype))
+    ax.grid('on')
+    if colorBar:
+        dr = make_axes_locatable(ax)
+        cax = dr.append_axes('right', size=percent, pad=0.05)
+        plt.colorbar(im, cax=cax)
+    plt.show(block=False)
+
+##################################################
+#            1d CQCGL related                    #
+##################################################
 
 
 def plotConfigSpace(AA, ext, tt=None, yls=None,
@@ -401,24 +431,6 @@ def plotOnePhase(cgl, a0, d=50, size=[6, 4], axisLabelSize=20,
         plt.savefig(name)
     else:
         plt.show(block=False)
-
-
-class Arrow3D(FancyArrowPatch):
-    """
-    The 3d arrow class
-    """
-    def __init__(self, xs, ys, zs, *args, **kwargs):
-        FancyArrowPatch.__init__(self, (0, 0), (0, 0), *args, **kwargs)
-        self._verts3d = xs, ys, zs
-
-    def draw(self, renderer):
-        xs3d, ys3d, zs3d = self._verts3d
-        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
-        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
-        FancyArrowPatch.draw(self, renderer)
-
-    def setvalue(self, x, y, z):
-        self._verts3d = x, y, z
 
         
 def sortByReal(eigvalue, eigvector=None):
@@ -1021,7 +1033,6 @@ def centerRand(N, frac, isComplex=True):
     generate a localized random vector.
     frac: the fraction of the nonzero center in the totol size
     """
-    
     if isComplex:
         a = rand(N) + 1j*rand(N)
     else:
@@ -1030,6 +1041,24 @@ def centerRand(N, frac, isComplex=True):
     N2 = np.int((1-frac)*0.5*N)
     a[:N2] = 0
     a[-N2:] = 0
+    return a
+
+
+def centerRand2d(M, N, f1, f2, isComplex=True):
+    """
+    generatate a localized random MxN matrix
+    """
+    if isComplex:
+        a = rand(M, N) + 1j*rand(M, N)
+    else:
+        a = rand(M, N)
+    
+    M2 = np.int((1-f1)*0.5*M)
+    N2 = np.int((1-f2)*0.5*N)
+    a[:M2, :] = 0
+    a[-M2:, :] = 0
+    a[:, :N2] = 0
+    a[:, -N2:] = 0
     return a
 
 

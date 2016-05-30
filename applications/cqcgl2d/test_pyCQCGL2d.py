@@ -1,7 +1,7 @@
 from py_CQCGL2d import *
 from personalFunctions import *
 
-case = 10
+case = 20
 
 if case == 10:
     """
@@ -28,18 +28,17 @@ if case == 20:
     """
     N = 1024
     d = 30
-    di = 0.06
+    di = 0.05
 
-    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, 1, 4)
+    cgl = pyCQCGL2d(N, d, 4.0, 0.8, 0.01, di, 4)
 
-    Ndim = cgl.Ndim
-    A0 = 3*centerRand(N, 0.2, True)
+    A0 = 3*centerRand2d(N, N, 0.2, 0.2, True)
     a0 = cgl.Config2Fourier(A0)
 
     t = time()
     # aa, daa = cgl.intgj(a0, 0.0001, 100, 100)
     # aa = cgl.intg(a0, 0.0001, 40000, 1)
-    x = cgl.intgv(a0, rand(Ndim), 0.001, 100)
+    # x = cgl.intgv(a0, rand(Ndim), 0.001, 100)
     # plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
     print time() - t
 

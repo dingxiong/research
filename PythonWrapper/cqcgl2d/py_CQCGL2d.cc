@@ -58,33 +58,47 @@ public:
 	return copy2bnc(intg(tmpa, h, Nt, skip_rate));
     }
     
-#if 0
     bn::ndarray PYaintg(bn::ndarray a0, double h, double tend, int skip_rate){
 	int m, n;
 	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	return copy2bn(aintg(tmpa, h, tend, skip_rate));
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	return copy2bnc(aintg(tmpa, h, tend, skip_rate));
     }
 
-    bn::ndarray PYintgv(bn::ndarray a0, bn::ndarray v, double h, int Nt){
+    bn::ndarray PYintgv(bn::ndarray a0, bn::ndarray v0, double h, int Nt, int skip_rate){
 	int m, n;
 	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	getDims(v, m, n);
-	Map<ArrayXXd> tmpv((double*)v.get_data(), n, m);
-	return copy2bn(intgv(tmpa, tmpv, h, Nt));
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	getDims(v0, m, n);
+	Map<ArrayXXcd> tmpv((dcp*)v0.get_data(), n, m);
+	return copy2bnc(intgv(tmpa, tmpv, h, Nt, skip_rate));
     }    
 
-    bn::ndarray PYaintgv(bn::ndarray a0, bn::ndarray v, double h, double tend){
+    bn::ndarray PYaintgv(bn::ndarray a0, bn::ndarray v0, double h, double tend, int skip_rate){
 	int m, n;
 	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	getDims(v, m, n);
-	Map<ArrayXXd> tmpv((double*)v.get_data(), n, m);
-	return copy2bn(aintgv(tmpa, tmpv, h, tend));
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	getDims(v0, m, n);
+	Map<ArrayXXcd> tmpv((dcp*)v0.get_data(), n, m);
+	return copy2bnc(aintgv(tmpa, tmpv, h, tend, skip_rate));
     }
 
+    bn::ndarray PYFourier2Config(bn::ndarray aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<ArrayXXcd> tmpaa((dcp*)aa.get_data(), n, m);
+	return copy2bnc( Fourier2Config(tmpaa) );
+    }
 
+    bn::ndarray PYConfig2Fourier(bn::ndarray AA){
+	int m, n;
+	getDims(AA, m, n);
+	Map<ArrayXXcd> tmpAA((dcp*)AA.get_data(), n, m);
+	return copy2bnc( Config2Fourier(tmpAA) );
+    }
+    
+#if 0
+    
     /* wrap the velocity */
     bn::ndarray PYvelocity(bn::ndarray a0){
 	int m, n;
@@ -119,39 +133,7 @@ public:
 	ArrayXd tmpv = velocityReq(tmpa, th, phi);
 	return copy2bn(tmpv);
     }
-
-    /* wrap Fourier2Config */
-    bn::ndarray PYFourier2Config(bn::ndarray aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bnc( Fourier2Config(tmpaa) );
-    }
-
-    /* wrap Config2Fourier */
-    bn::ndarray PYConfig2Fourier(bn::ndarray AA){
-	int m, n;
-	getDims(AA, m, n);
-	Map<ArrayXXcd> tmpAA((dcp*)AA.get_data(), n, m);
-	return copy2bn( Config2Fourier(tmpAA) );
-    }
-    
-    /* wrap Fourier2ConfigMag */
-    bn::ndarray PYFourier2ConfigMag(bn::ndarray aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( Fourier2ConfigMag(tmpaa) );
-    }
-    
-    /* wrap Fourier2Phase */
-    bn::ndarray PYFourier2Phase(bn::ndarray aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( Fourier2Phase(tmpaa) );
-    }
-    
+   
     /* orbit2slice */
     bp::tuple PYorbit2slice(const bn::ndarray &aa){
 	int m, n;
@@ -388,18 +370,16 @@ BOOST_PYTHON_MODULE(py_CQCGL2d) {
 	
 	.def("changeOmega", &pyCQCGL2d::changeOmega)
 	.def("intg", &pyCQCGL2d::PYintg)
-#if 0
 	.def("aintg", &pyCQCGL2d::PYaintg)
 	.def("intgv", &pyCQCGL2d::PYintgv)
 	.def("aintgv", &pyCQCGL2d::PYaintgv)
+	.def("Fourier2Config", &pyCQCGL2d::PYFourier2Config)
+	.def("Config2Fourier", &pyCQCGL2d::PYConfig2Fourier)
+#if 0
 	.def("velocity", &pyCQCGL2d::PYvelocity)
 	.def("velSlice", &pyCQCGL2d::PYvelSlice)
 	.def("velPhase", &pyCQCGL2d::PYvelPhase)
 	.def("velocityReq", &pyCQCGL2d::PYvelocityReq)
-	.def("Fourier2Config", &pyCQCGL2d::PYFourier2Config)
-	.def("Config2Fourier", &pyCQCGL2d::PYConfig2Fourier)
-	.def("Fourier2ConfigMag", &pyCQCGL2d::PYFourier2ConfigMag)
-	.def("Fourier2Phase", &pyCQCGL2d::PYFourier2Phase)
 	.def("orbit2sliceWrap", &pyCQCGL2d::PYorbit2sliceWrap)
 	.def("orbit2slice", &pyCQCGL2d::PYorbit2slice)
 	.def("stab", &pyCQCGL2d::PYstab)

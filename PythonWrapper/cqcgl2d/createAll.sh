@@ -23,7 +23,7 @@ if [ $1 -eq 0 ] || [ $1 -eq 2 ]; then
     mv Jamroot jam.tmp && cp jam.tmp Jamroot
     perl -p -i -e 's/choice = \d/choice = 2/' Jamroot
     perl -p -i -e 's/py_CQCGL2d.cc/pytmp.cc/' Jamroot
-    perl -p -e 's/MODULE\(py_CQCGL2d\S*\)/MODULE\(py_CQCGL2d_threads\)/' py_CQCGL.cc > pytmp.cc
+    perl -p -e 's/MODULE\(py_CQCGL2d\S*\)/MODULE\(py_CQCGL2d_threads\)/' py_CQCGL2d.cc > pytmp.cc
     rm -rf bin pylib
     b2 && mv pylib/py_CQCGL2d*.so $DEST && mv jam.tmp Jamroot && rm pytmp.cc && rm -rf bin pylib
     echo 

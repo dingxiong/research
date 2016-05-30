@@ -419,7 +419,7 @@ CQCGLgeneral2d::intg(const ArrayXXcd &a0, const double h, const int Nt, const in
 
 ArrayXXcd
 CQCGLgeneral2d::aintg(const ArrayXXcd &a0, const double h, const double tend, 
-		    const int skip_rate){
+		      const int skip_rate){
     assert(a0.rows() == Me && a0.cols() == Ne);
     ArrayXXcd v0(1, 1);
     return adaptETD(a0, v0, h, tend, skip_rate, true);

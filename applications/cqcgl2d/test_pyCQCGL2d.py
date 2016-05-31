@@ -1,26 +1,19 @@
 from py_CQCGL2d import *
 from personalFunctions import *
 
-case = 20
+case = 10
 
 if case == 10:
     """
-    test fourier to physical states and vice verse
+    test the plot function
     """
     N = 1024
     d = 30
     di = 0.05
 
     cgl = pyCQCGL2d(N, d, 4.0, 0.8, 0.01, di, 4)
-
-    # Ndim = cgl.Ndim
-    # aa = rand(100, Ndim)
-    # AA = cgl.Fourier2Config(aa)
-    # aAA = cgl.Fourier2ConfigMag(aa)
-    # phase = cgl.Fourier2Phase(aa)
-    # aa2 = cgl.Config2Fourier(AA)
-    # print norm(aa-aa2)
-    # print norm(np.abs(AA)-aAA)
+    CQCGL2dPlotOneState(cgl, 'ex', 0)
+    CQCGL2dSavePlots(cgl, 'ex', range(501), 'fig')
     
 if case == 20:
     """

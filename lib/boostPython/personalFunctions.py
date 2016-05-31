@@ -14,6 +14,7 @@ from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import os
 
 ##################################################
 #               Plot related                     #
@@ -193,7 +194,8 @@ def plot3dfig(x, y, z, c='r', lw=1, labs=[r'$x$', r'$y$', r'$z$'],
     plt.show(block=False)
 
 
-def plotMat(y, colortype='jet', percent='5%', colorBar=True):
+def plotMat(y, colortype='jet', percent='5%', colorBar=True,
+            save=False, name='out.png'):
     """
     plot a matrix
     """
@@ -205,7 +207,11 @@ def plotMat(y, colortype='jet', percent='5%', colorBar=True):
         dr = make_axes_locatable(ax)
         cax = dr.append_axes('right', size=percent, pad=0.05)
         plt.colorbar(im, cax=cax)
-    plt.show(block=False)
+    if save:
+        plt.savefig(name)
+        plt.close()
+    else:
+        plt.show(block=False)
 
 ##################################################
 #            1d CQCGL related                    #
@@ -245,6 +251,7 @@ def plotConfigSpace(AA, ext, tt=None, yls=None,
     fig.tight_layout(pad=0)
     if save:
         plt.savefig(name)
+        plt.close()
     else:
         plt.show(block=False)
 
@@ -313,6 +320,7 @@ def plotConfigSurface(AA, ext, barTicks=[2, 4], colortype='jet',
     fig.tight_layout(pad=0)
     if save:
         plt.savefig(name)
+        plt.close()
     else:
         plt.show(block=False)
 
@@ -355,6 +363,7 @@ def plotConfigWire(AA, ext, barTicks=[2, 7], size=[7, 6], axisLabelSize=25,
     fig.tight_layout(pad=0)
     if save:
         plt.savefig(name)
+        plt.close()
     else:
         plt.show(block=False)
     
@@ -828,7 +837,30 @@ def getCurveCoor(points):
         dis[i] = np.linalg.norm(points[indices[i]] - points[indices[i-1]])
 
     return dis
-    
+   
+##################################################
+#            2d CQCGL related                    #
+##################################################
+
+
+def CQCGL2dPlotOneState(cgl, folder, sid, save=False, name='out.png'):
+    f1 = folder + '/ar' + str(sid) + '.dat'
+    f2 = folder + '/ai' + str(sid) + '.dat'
+    a = np.loadtxt(f1) + 1j * np.loadtxt(f2)
+    A = cgl.Fourier2Config(a.T.copy())
+    plotMat(np.abs(A), save=save, name=name)
+
+
+def CQCGL2dSavePlots(cgl, f1, sids, f2):
+    if os.path.exists(f2):
+        print 'folder already exists'
+    else:
+        os.makedirs(f2)
+        for i in sids:
+            CQCGL2dPlotOneState(cgl, f1, i, save=True,
+                                name=f2+'/a'+str(i)+'.png')
+        
+
 ############################################################
 #                        KS related                        #
 ############################################################

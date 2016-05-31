@@ -3,6 +3,7 @@
  */
 #include "CQCGL2d.hpp"
 #include "myH5.hpp"
+#include "denseRoutines.hpp"
 #include <iostream>
 #include <fstream>
 #include <Eigen/Dense>
@@ -25,19 +26,17 @@ int main(){
     case 1: {			/* test integrator */
 	int N = 1024; 
 	double L = 30;
-	double di = 0.05;
-	CQCGL2d cgl(N, L, 4.0, 0.8, 0.01, di, 4);
+	double di = 0.3;
+	CQCGL2d cgl(N, L, 4.0, 0.8, 0.05, di, 4);
 	
-	ArrayXXcd A0 = centerRand2d<dcp>(N, N, 0.2, 0.2);
+	ArrayXXcd A0 = 5*centerRand2d<dcp>(N, N, 0.2, 0.2);
 	ArrayXXcd a0 = cgl.Config2Fourier(A0);
-	savetxt("ar0.dat", a0.real());
-	savetxt("ai0.dat", a0.imag());
-	/*
+	ArrayXXcd A2 = cgl.Fourier2Config(a0);
+	
 	for(int i = 0; i < 1; i++){
-	    ArrayXXcd aa = cgl.intg(a0, 0.001, 500, 10, true, "ex");
+	    ArrayXXcd aa = cgl.intg(a0, 0.001, 2000, 10, true, "ex");
 	    CE(a0.rows()); CE(a0.cols()); CE(aa.rows()); CE(aa.cols());
 	}
-	*/
 	
 	break;
     }

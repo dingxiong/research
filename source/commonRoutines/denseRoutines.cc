@@ -157,12 +157,13 @@ denseRoutines::subspBound(const MatrixXi subspDim, const MatrixXi ixSp){
  */
 VectorXd denseRoutines::centerRand(const int N, const double frac){
     VectorXd a(VectorXd::Random(N)); /* -1 to 1 */
-    int N2 = (int) 0.5 * N * (1-frac);
+    int N2 = (int) (0.5 * N * (1-frac));
     a.head(N2) = VectorXd::Zero(N2);
     a.tail(N2) = VectorXd::Zero(N2);
     
     return a;
 }
+
 
 
 /** @brief normalize each column of a matrix  */
@@ -405,14 +406,6 @@ denseRoutines::randM(int M, int N){
 	    A(i,j) = (double)rand() / RAND_MAX - 0.5; 
 
     return A;
-}
-
-void 
-denseRoutines::savetxt(const std::string f, const Ref<const MatrixXd> &A){
-    ofstream file(f, ios::trunc);
-    file.precision(16);
-    file << A << endl;
-    file.close();
 }
 
 

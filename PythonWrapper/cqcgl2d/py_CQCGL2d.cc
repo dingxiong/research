@@ -88,7 +88,7 @@ public:
 	getDims(aa, m, n);
 	Map<ArrayXXcd> tmpaa((dcp*)aa.get_data(), n, m);
 	return copy2bnc( Fourier2Config(tmpaa) );
-    }
+    
 
     bn::ndarray PYConfig2Fourier(bn::ndarray AA){
 	int m, n;

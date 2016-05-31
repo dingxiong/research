@@ -21,7 +21,7 @@
 #include "denseRoutines.hpp"
 #include "iterMethod.hpp"
 #include "myfft.hpp"
-using std::pair; using std::make_pair;
+using std::pair; using std::make_pair; 
 using Eigen::MatrixXd; using Eigen::VectorXd;
 using Eigen::MatrixXcd; using Eigen::VectorXcd;
 using Eigen::ArrayXXcd; using Eigen::ArrayXcd;
@@ -108,19 +108,22 @@ public:
     ArrayXXcd 
     constETD(const ArrayXXcd &a0, const ArrayXXcd &v0, 
 	     const double h, const int Nt, 
-	     const int skip_rate, const bool onlyOrbit);
+	     const int skip_rate, const bool onlyOrbit,
+	     const bool doSaveDisk, const std::string folderName);
     ArrayXXcd
     adaptETD(const ArrayXXcd &a0, const ArrayXXcd &v0, 
 	     const double h0, const double tend, 
 	     const int skip_rate, const bool onlyOrbit);
     ArrayXXcd 
-    intg(const ArrayXXcd &a0, const double h, const int Nt, const int skip_rate);
+    intg(const ArrayXXcd &a0, const double h, const int Nt, const int skip_rate,
+	 const bool doSaveDisk, const std::string folderName);
     ArrayXXcd
     aintg(const ArrayXXcd &a0, const double h, const double tend, 
 	  const int skip_rate);
     ArrayXXcd
     intgv(const ArrayXXcd &a0, const ArrayXXcd &v0, const double h,
-	  const int Nt, const int skip_rate);
+	  const int Nt, const int skip_rate,
+	  const bool doSaveDisk, const std::string folderName);
     ArrayXXcd 
     aintgv(const ArrayXXcd &a0, const ArrayXXcd &v0, const double h,
 	   const double tend, const int skip_rate);

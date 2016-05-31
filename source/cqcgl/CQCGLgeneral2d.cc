@@ -2,6 +2,8 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>    // std::max
+#include <sys/types.h>
+#include <sys/stat.h> 		/* for create folder */
 
 #define CE(x) (cout << (x) << endl << endl)
 
@@ -132,6 +134,7 @@ void CQCGLgeneral2d::changeOmega(double w){
     L.middleCols(Nplus, Nalias) = ArrayXXcd::Zero(M, Nalias);
 }
 
+#if 0
 /** 
  * @brief calculate the coefficients of ETDRK4 or Krogstad
  */
@@ -170,8 +173,60 @@ void CQCGLgeneral2d::calCoe(const double h){
 	a41.resize(M, N);
 	a43.resize(M, N);
     }
-    
 }
+#endif
+
+/** 
+ * @brief calculate the coefficients of ETDRK4 or Krogstad
+ *
+ * Note, we give up using
+ *     Map<ArrayXcd> hLv(hL.data(), hL.size());
+ *     ArrayXXcd LR = ZR(hLv);
+ * to save memory
+ */
+void CQCGLgeneral2d::calCoe(const double h){
+    
+    ArrayXXcd hL = h*L;
+    
+    E = hL.exp();
+    E2 = (hL/2).exp();
+    
+    a21.resize(M, N);
+    b1.resize(M, N);
+    b2.resize(M, N);
+    b4.resize(M, N);
+    
+    if (Method == 2){
+	a31.resize(M, N);
+	a32.resize(M, N);
+	a41.resize(M, N);
+	a43.resize(M, N);
+    }
+    
+    for (int i = 0; i < N; i++){
+
+	ArrayXXcd LR = ZR(hL.col(i));
+
+	ArrayXXcd LR2 = LR.square();
+	ArrayXXcd LR3 = LR.cube();
+	ArrayXXcd LRe = LR.exp();
+	ArrayXXcd LReh = (LR/2).exp();
+    
+	a21.col(i) = h * ( (LReh - 1)/LR ).rowwise().mean(); 
+	b1.col(i) = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean();
+	b2.col(i) = h * 2 * ( (2.0 + LR + LRe*(-2.0 + LR)) / LR3 ).rowwise().mean();
+	b4.col(i) = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean();
+    
+	if (Method == 2) {
+	    a31.col(i) = h * ( (LReh*(LR - 4) + LR + 4) / LR2 ).rowwise().mean();
+	    a32.col(i) = h * 2 * ( (2*LReh - LR - 2) / LR2 ).rowwise().mean();
+	    a41.col(i) = h * ( (LRe*(LR-2) + LR + 2) / LR2 ).rowwise().mean();
+	    a43.col(i) = h * 2 * ( (LRe - LR - 1)  / LR2 ).rowwise().mean();
+	}
+
+    }
+}
+
 
 void 
 CQCGLgeneral2d::oneStep(double &du, const bool onlyOrbit){
@@ -278,16 +333,35 @@ CQCGLgeneral2d::adaptTs(bool &doChange, bool &doAccept, const double s){
 ArrayXXcd 
 CQCGLgeneral2d::constETD(const ArrayXXcd &a0, const ArrayXXcd &v0, 
 			 const double h, const int Nt, 
-			 const int skip_rate, const bool onlyOrbit){
+			 const int skip_rate, const bool onlyOrbit,
+			 const bool doSaveDisk, const string folderName){
     int s = 1;
     if(!onlyOrbit) s = 2;
     
-    const int M = (Nt+skip_rate-1)/skip_rate + 1;
+    ArrayXXcd aa;
+    string folder;
+    if (doSaveDisk){
+	char buf[1000];
+	char* buffer = getcwd(buf, 1000);
+	folder = string(buf) + '/' + folderName;
+	int s = mkdir( folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
+	assert( s == 0);
+	savetxt(folder + "/ar" + std::to_string(0)+".dat", a0.real());
+	savetxt(folder + "/ai" + std::to_string(0)+".dat", a0.imag());
+	if(!onlyOrbit){
+	    savetxt(folder + "/vr" + std::to_string(0)+".dat", v0.real());
+	    savetxt(folder + "/vi" + std::to_string(0)+".dat", v0.imag());
+	}
+    }
+    else{
+	const int M = (Nt+skip_rate-1)/skip_rate + 1;
+	aa.resize(Me, Ne*M*s);
+	aa.leftCols(Ne) = a0;
+	if(!onlyOrbit) aa.middleCols(Ne, Ne) = v0;
+    }
+    
     F[0].v1 = pad(a0);
     if(!onlyOrbit) JF[0].v1 = pad(v0);
-    ArrayXXcd aa(Me, Ne*M*s);
-    aa.leftCols(Ne) = a0;
-    if(!onlyOrbit) aa.middleCols(Ne*M, Ne) = v0;
     lte.resize(M-1);
     NCallF = 0;
 
@@ -301,11 +375,24 @@ CQCGLgeneral2d::constETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
 	if(!onlyOrbit) JF[0].v1 = JF[4].v1;
 	NCallF += 5;
 	if ( (i+1)%skip_rate == 0 || i == Nt-1) {
-	    aa.middleCols((num+1)*Ne, Ne) = unpad(F[4].v1);
-	    if(!onlyOrbit) aa.middleCols((M+num+1)*Ne, Ne) = unpad(JF[4].v1);
+	    if(doSaveDisk){
+		ArrayXXcd x = unpad(F[4].v1);
+		savetxt(folder + "/ar" + std::to_string(num+1)+".dat", x.real());
+		savetxt(folder + "/ai" + std::to_string(num+1)+".dat", x.imag());
+		if(!onlyOrbit){
+		    ArrayXXcd y = unpad(JF[4].v1);
+		    savetxt(folder + "/vr" + std::to_string(num+1)+".dat", y.real());
+		    savetxt(folder + "/vi" + std::to_string(num+1)+".dat", y.imag());
+		}
+	    }
+	    else{
+		aa.middleCols((num+1)*Ne, Ne) = unpad(F[4].v1);
+		if(!onlyOrbit) aa.middleCols((M+num+1)*Ne, Ne) = unpad(JF[4].v1);
+	    }
 	    lte(num++) = du;
 	}
     }	
+    
     return aa;
 }
 
@@ -409,11 +496,12 @@ CQCGLgeneral2d::adaptETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
  *
  */
 ArrayXXcd 
-CQCGLgeneral2d::intg(const ArrayXXcd &a0, const double h, const int Nt, const int skip_rate){
+CQCGLgeneral2d::intg(const ArrayXXcd &a0, const double h, const int Nt, const int skip_rate,
+		     const bool doSaveDisk, const string folderName){
     
     assert(a0.rows() == Me && a0.cols() == Ne);
     ArrayXXcd v0(1, 1);
-    return constETD(a0, v0, h, Nt, skip_rate, true);
+    return constETD(a0, v0, h, Nt, skip_rate, true, doSaveDisk, folderName);
 }
 
 
@@ -430,9 +518,10 @@ CQCGLgeneral2d::aintg(const ArrayXXcd &a0, const double h, const double tend,
  */
 ArrayXXcd
 CQCGLgeneral2d::intgv(const ArrayXXcd &a0, const ArrayXXcd &v0, const double h,
-		      const int Nt, const int skip_rate){
+		      const int Nt, const int skip_rate,
+		      const bool doSaveDisk, const string folderName){
     assert(a0.rows() == Me && a0.cols() == Ne && v0.rows() == Me && v0.cols() == Ne);
-    ArrayXXcd aa = constETD(a0, v0, h, Nt, skip_rate, false);
+    ArrayXXcd aa = constETD(a0, v0, h, Nt, skip_rate, false, doSaveDisk, folderName);
     return aa;
 }
 

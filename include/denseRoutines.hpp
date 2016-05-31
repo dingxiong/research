@@ -62,15 +62,20 @@ namespace denseRoutines {
     QR(const Ref<const MatrixXd> &A);
     MatrixXd
     randM(int M, int N);
-    void 
-    savetxt(const std::string f, const Ref<const MatrixXd> &A);
     MatrixXcd 
     loadComplex(const std::string f1, const std::string f2);
     ArrayXXd 
     calPhase(const Ref<const ArrayXXcd> &AA);
     
-    /////////////////////////// template function implementation /////////////////////////////////////////////////////////////////////////////////////////////
-    
+    /////////////////////////// template or inline function implementation ////////////////////////////////////////////////////////////////////////////////////
+
+    inline void savetxt(const std::string f, const Ref<const MatrixXd> &A){
+	ofstream file(f, ios::trunc);
+	file.precision(16);
+	file << A << endl;
+	file.close();
+    }
+
     /** @brief read data from file  */
     template<class T = double>
     Matrix<T, Dynamic, Dynamic>
@@ -107,6 +112,21 @@ namespace denseRoutines {
 		result(i, j) = buff[ cols*i+j];
 
 	return result;
+    }
+    
+    /* @brief create 2d centerized random variables */
+    template<class T = double>
+    Matrix<T, Dynamic, Dynamic>
+    centerRand2d(const int M, const int N, const double f1, const double f2){
+	Matrix<T, Dynamic, Dynamic> a(Matrix<T, Dynamic, Dynamic>::Random(M, N)); /* -1 to 1 */
+	int M2 = (int) (0.5 * M * (1-f1));
+	int N2 = (int) (0.5 * N * (1-f2));
+	a.topRows(M2) = Matrix<T, Dynamic, Dynamic>::Zero(M2, N);
+	a.bottomRows(M2) = Matrix<T, Dynamic, Dynamic>::Zero(M2, N);
+	a.leftCols(N2) = Matrix<T, Dynamic, Dynamic>::Zero(M, N2);
+	a.rightCols(N2) = Matrix<T, Dynamic, Dynamic>::Zero(M, N2);
+
+	return a;
     }
     
 }

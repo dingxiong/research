@@ -65,10 +65,14 @@ def pl3d(size=[8, 6], labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
     return fig, ax
 
 
-def ax3d(fig, ax, doBlock=False):
+def ax3d(fig, ax, doBlock=False, save=False, name='output.png'):
     fig.tight_layout(pad=0)
     ax.legend()
-    plt.show(block=doBlock)
+    if save:
+        plt.savefig(name)
+        plt.close()
+    else:
+        plt.show(block=doBlock)
 
 
 def pl2d(size=[8, 6], labs=[r'$x$', r'$y$'], axisLabelSize=25,

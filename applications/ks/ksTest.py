@@ -1,7 +1,7 @@
 from personalFunctions import *
 from py_ks import *
 
-case = 80
+case = 70
 
 if case == 1:
     ks = pyKS(32, 0.1, 22)
@@ -140,8 +140,8 @@ if case == 70:
     ks = pyKS(N, L)
     
     fileName = '/usr/local/home/xiong/00git/research/data/ks22h001t120x64EV.h5'
-    poType = 'rpo'
-    poId = 1
+    poType = 'ppo'
+    poId = 2
     
     KSplotPoHeat(ks, fileName, poType, poId, NT=2, Ts=100, fixT=True)
 

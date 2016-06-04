@@ -2,6 +2,7 @@ from personalFunctions import *
 from py_ks import *
 from sklearn.svm import SVR
 from sklearn.grid_search import GridSearchCV
+from personalPlotly import *
 
 
 class KSReq():
@@ -541,7 +542,69 @@ if __name__ == '__main__':
         ax.plot(E2[:, ii[0]], E2[:, ii[1]], E2[:, ii[2]])
         ax.plot(E3[:, ii[0]], E3[:, ii[1]], E3[:, ii[2]])
         ax3d(fig, ax)
-    
+
+    if case == 17:
+        """
+        use the poincare section b2=0 and b2 from negative to positive for
+        unstable manifold of E2
+        """
+        nn = 50
+        pos, poDom, poJumps = ksreq.getMuEq('e', eId=1, vId=0, p=1, nn=nn,
+                                            T=100)
+        M = len(pos)
+        borderIds = []
+        borderPts = []
+        borderNum = 0
+        for i in range(M):
+            x = poDom[i][poJumps[i]]
+            y = poDom[i][poJumps[i]+1]
+            if poDom[i][0] == 1:
+                t1 = poJumps[i][x == 2]
+                t2 = poJumps[i][y == 1]
+            else:
+                t1 = poJumps[i][x == 1]
+                t2 = poJumps[i][y == 2]
+            assert np.array_equal(t1, t2)
+            borderIds.append(t1+1)  # next one
+            borderPts.append(pos[i][t1+1])
+            borderNum += len(t1)
+
+        data = np.load('bases.npz')
+        Ori = data['Ori']
+        bases = data['bases']
+        borderPtsP = []
+        for i in range(M):
+            p = (borderPts[i]-Ori).dot(bases.T)
+            borderPtsP.append(p)
+           
+        ii = [0, 1, 2]
+        fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
+        ax.scatter(0, 0, 0, c='k', s=70, edgecolors='none')
+        for i in range(M):
+            ax.scatter(borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
+                       borderPtsP[i][:, ii[2]], c='b' if i < 50 else 'r',
+                       marker='o' if i < 50 else 's',
+                       s=20, edgecolors='none')
+        ax3d(fig, ax)
+        
+        if False:
+            trace = []
+            trace.append(ptlyTrace3d(0, 0, 0, plotType=1, ms=7, mc='black'))
+            for i in range(M):
+                trace.append(ptlyTrace3d(borderPtsP[i][:, ii[0]],
+                                         borderPtsP[i][:, ii[1]],
+                                         borderPtsP[i][:, ii[2]],
+                                         plotType=1, ms=2, mc='red'))
+            ptly3d(trace, 'E2Poincare', labs=['$v_1$', '$v_2$', '$v_3$'])
+
+        spt = pos
+        ii = [1, 5, 3]
+        fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
+        ksreq.plotRE(ax, ii)
+        for i in range(nn):
+            ksreq.plotFundOrbit(ax, spt[i], poJumps[i], ii)
+        ax3d(fig, ax)
+
     if case == 18:
         """
         use the poincare section b2=0 and b2 from negative to positive for
@@ -549,7 +612,7 @@ if __name__ == '__main__':
         """
         a0 = rand(N-2)
         aa = ksreq.ks.aintg(a0, 0.01, 100, 1)
-        aa = ksreq.ks.aintg(aa[-1], 0.01, 3000, 1)
+        aa = ksreq.ks.aintg(aa[-1], 0.01, 5000, 1)
         raa, dids, ths = ksreq.ks.redO2f(aa, 1)
         jumps = getJumpPts(dids)
 
@@ -557,18 +620,37 @@ if __name__ == '__main__':
         borderPts = []
         x = dids[jumps]
         y = dids[jumps+1]
-        t1 = jumps[x == 2]
-        t2 = jumps[y == 1]
+        if dids[0] == 1:
+            t1 = jumps[x == 2]
+            t2 = jumps[y == 1]
+        else:
+            t1 = jumps[x == 1]
+            t2 = jumps[y == 2]
         assert np.array_equal(t1, t2)
-        borderIds = t1
-        borderPts = raa[t1]
+        borderIds = t1+1
+        borderPts = raa[t1+1]
 
-        ii = [1, 5, 3]
+        data = np.load('bases.npz')
+        Ori = data['Ori']
+        bases = data['bases']
+        borderPtsP = (borderPts - Ori).dot(bases.T)
+
+        ii = [0, 1, 2]
         fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
-        ax.scatter(borderPts[:, ii[0]], borderPts[:, ii[1]],
-                   borderPts[:, ii[2]], c='k',
+        ax.scatter(0, 0, 0, c='k', s=70, edgecolors='none')
+        ax.scatter(borderPtsP[:, ii[0]], borderPtsP[:, ii[1]],
+                   borderPtsP[:, ii[2]], c='r', s=20,
                    edgecolors='none')
         ax3d(fig, ax)
+
+        if True:
+            trace = []
+            trace.append(ptlyTrace3d(0, 0, 0, plotType=1, ms=7, mc='black'))
+            trace.append(ptlyTrace3d(borderPtsP[:, ii[0]],
+                                     borderPtsP[:, ii[1]],
+                                     borderPtsP[:, ii[2]],
+                                     plotType=1, ms=2, mc='red'))
+            ptly3d(trace, 'ErgodicPoincare', labs=['$v_1$', '$v_2$', '$v_3$'])
 
     if case == 19:
         """
@@ -613,6 +695,18 @@ if __name__ == '__main__':
                        s=20, edgecolors='none')
         ax3d(fig, ax)
         
+        if True:
+            trace = []
+            trace.append(ptlyTrace3d(0, 0, 0, plotType=1, ms=7, mc='black'))
+            for i in range(M):
+                trace.append(ptlyTrace3d(borderPtsP[i][:, ii[0]],
+                                         borderPtsP[i][:, ii[1]],
+                                         borderPtsP[i][:, ii[2]],
+                                         plotType=1, ms=2, mc='red',
+                                         mt='circle' if i < 50 else 'square'))
+                ptly3d(trace, 'PoPoincare', labs=['$v_1$', '$v_2$', '$v_3$'])
+
+        # np.savez_compressed('bases', Ori=Ori, bases=bases)
         """
         ii = [2, 6, 4]
         # ii = [1, 5, 3]

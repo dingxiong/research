@@ -337,27 +337,25 @@ class KSReq():
 
         return x0, bases
 
+    def getPoinc(self, raa, dids, jumps):
+        """
+        get the poincare intersection points. Poincare section is
+        b_2 = 0 from negative to positive. Note it is very important to
+        record the point after crossing Poincare section. Also both
+        crossings are recorded due to reflection symmetry.
+        --------
+        Paramters
+        raa : orbit in the fundamental domain
+        dids : indices of regions
+        jumps : indices when orbit crosses Poincare section
+        """
+        t = jumps+1
+        borderIds = t
+        borderPts = raa[t]
+
+        return borderIds, borderPts
+
     """
-    def getPoinc(data, theta):
-        x, y = rotz(data[:, 0], data[:, 1], theta)
-        aa = np.vstack((x, y, data[:, 2])).T
-        n, m = aa.shape
-        pc = np.zeros((n, m))
-        pcf = np.zeros((n, m))
-        num = 0
-        for i in range(n-1):
-            if aa[i, 0] < 0 and aa[i+1, 0] >= 0:
-                p = int2p(aa[i], aa[i+1])
-                pc[num] = p
-                x, y = rotz(p[0], p[1], -theta)
-                pcf[num] = np.array([x, y, p[2]])
-                num += 1
-        pc = pc[:num]
-        pcf = pcf[:num]
-
-        return pc, pcf
-
-
     def getPoinc2(data, theta1, theta2):
         x1, y1 = rotz(data[:, 0], data[:, 1], theta1)
         x2, y2 = rotz(data[:, 0], data[:, 1], theta2)
@@ -603,24 +601,6 @@ if __name__ == '__main__':
         pos, poDom, poJumps = ksreq.getMuEq('e', eId=1, vId=0, p=1, nn=nn,
                                             T=100)
         M = len(pos)
-        """
-        borderIds = []
-        borderPts = []
-        borderNum = 0
-        for i in range(M):
-            x = poDom[i][poJumps[i]]
-            y = poDom[i][poJumps[i]+1]
-            if poDom[i][0] == 1:
-                t1 = poJumps[i][x == 2]
-                t2 = poJumps[i][y == 1]
-            else:
-                t1 = poJumps[i][x == 1]
-                t2 = poJumps[i][y == 2]
-            assert np.array_equal(t1, t2)
-            borderIds.append(t1+1)  # next one
-            borderPts.append(pos[i][t1+1])
-            borderNum += len(t1)
-        """
         borderPts = []
         for i in range(M):
             borderPts.append(pos[i][::100, :])
@@ -674,19 +654,7 @@ if __name__ == '__main__':
         raa, dids, ths = ksreq.ks.redO2f(aa, 1)
         jumps = getJumpPts(dids)
 
-        borderIds = []
-        borderPts = []
-        x = dids[jumps]
-        y = dids[jumps+1]
-        if dids[0] == 1:
-            t1 = jumps[x == 2]
-            t2 = jumps[y == 1]
-        else:
-            t1 = jumps[x == 1]
-            t2 = jumps[y == 2]
-        assert np.array_equal(t1, t2)
-        borderIds = t1+1
-        borderPts = raa[t1+1]
+        borderIds, borderPts = ksreq.getPoinc(raa, dids, jumps)
 
         data = np.load('bases.npz')
         Ori = data['Ori']
@@ -724,18 +692,10 @@ if __name__ == '__main__':
         borderPts = []
         borderNum = 0
         for i in range(M):
-            x = poDom[i][poJumps[i]]
-            y = poDom[i][poJumps[i]+1]
-            if poDom[i][0] == 1:
-                t1 = poJumps[i][x == 2]
-                t2 = poJumps[i][y == 1]
-            else:
-                t1 = poJumps[i][x == 1]
-                t2 = poJumps[i][y == 2]
-            assert np.array_equal(t1, t2)
-            borderIds.append(t1+1)  # next one
-            borderPts.append(pos[i][t1+1])
-            borderNum += len(t1)
+            ids, pts = ksreq.getPoinc(pos[i], poDom[i], poJumps[i])
+            borderIds.append(ids)
+            borderPts.append(pts)
+            borderNum += len(ids)
 
         ptsId = borderIds[0][0]
         fe, fv, rfv, bases = ksreq.poFvPoinc('rpo', 1, ptsId, 1, [0, 3, 4])
@@ -768,16 +728,16 @@ if __name__ == '__main__':
 
         # np.savez_compressed('bases', Ori=Ori, bases=bases)
         # np.save('PoPoincare', borderPtsP)
-        """
-        ii = [2, 6, 4]
-        # ii = [1, 5, 3]
-        fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
-        for i in range(len(pos)):
-            ksreq.plotFundOrbit(ax, pos[i], poJumps[i], ii, alpha=0.5)
-            ax.scatter(borderPts[i][:, ii[0]], borderPts[i][:, ii[1]],
-                       borderPts[i][:, ii[2]], c='k')
-        ax3d(fig, ax)
-        """
+        if False:
+            ii = [2, 6, 4]
+            # ii = [1, 5, 3]
+            fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
+            for i in range(len(pos)):
+                ksreq.plotFundOrbit(ax, pos[i], poJumps[i], ii, alpha=0.5)
+                ax.scatter(borderPts[i][:, ii[0]], borderPts[i][:, ii[1]],
+                           borderPts[i][:, ii[2]], c='k')
+            ax3d(fig, ax)
+
     if case == 20:
         """
         view the unstable manifold of a single eq/req and one po/rpo

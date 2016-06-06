@@ -1,4 +1,5 @@
 import plotly.plotly as py
+import plotly.offline as pyoff
 import plotly.graph_objs as go
 
 
@@ -63,18 +64,22 @@ def ptlyLayout3d(labs=['$x$', '$y$', '$z$'], showLegend=False):
     return layout
 
 
-def ptly3d(trace, fileName, labs=['$x$', '$y$', '$z$'], showLegend=False):
+def ptly3d(trace, fileName, off=True, labs=['$x$', '$y$', '$z$'],
+           showLegend=False):
     layout = ptlyLayout3d(labs=labs, showLegend=showLegend)
     fig = go.Figure(data=trace, layout=layout)
-    py.plot(fig, filename=fileName, fileopt='overwrite')
+    if off:
+        pyoff.plot(fig, filename=fileName)
+    else:
+        py.plot(fig, filename=fileName, fileopt='overwrite')
 
 
-def ptlyPlot3d(x, y, z, fileName, plotType=0, lw=2, lc='blue', ls='solid',
+def ptlyPlot3d(x, y, z, fileName, off=True, plotType=0, lw=2, lc='blue',
+               ls='solid',
                mc='red', ms=5,  mt='circle', label=None,
                labs=['$x$', '$y$', '$z$'], showLegend=False):
     trace = ptlyTrace3d(x, y, z, plotType=plotType, lw=lw, lc=lc, ls=ls,
                         mc=mc, ms=ms, mt=mt, label=label)
-    layout = ptlyLayout3d(labs=labs, showLegend=showLegend)
-    fig = go.Figure(data=[trace], layout=layout)
-    py.plot(fig, filename=fileName, fileopt='overwrite')
+    ptly3d([trace], fileName, off=off, labs=labs, showLegend=showLegend)
+
 

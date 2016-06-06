@@ -543,15 +543,67 @@ if __name__ == '__main__':
         ax.plot(E3[:, ii[0]], E3[:, ii[1]], E3[:, ii[2]])
         ax3d(fig, ax)
 
+    if case == 16:
+        """
+        plot 3 cases together
+        """
+        trace = []
+        trace.append(ptlyTrace3d([0], [0], [0], plotType=1, ms=7, mc='black'))
+        
+        ii = [0, 1, 2]
+        fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
+        ax.scatter(0, 0, 0, c='k', s=70, edgecolors='none')
+        if True:
+            borderPtsP = np.load('ErgodicPoincare.npy')
+            ax.scatter(borderPtsP[:, ii[0]], borderPtsP[:, ii[1]],
+                       borderPtsP[:, ii[2]], c='r', s=20,
+                       edgecolors='none')
+            trace.append(ptlyTrace3d(borderPtsP[:, ii[0]],
+                                     borderPtsP[:, ii[1]],
+                                     borderPtsP[:, ii[2]],
+                                     plotType=1, ms=2, mc='red'))
+        if True:
+            borderPtsP = np.load('E2Poincare.npy')
+            M = borderPtsP.shape[0]
+            for i in range(M):
+                ax.scatter(borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
+                           borderPtsP[i][:, ii[2]], c='b', marker='s',
+                           s=20, edgecolors='none')
+            for i in range(M):
+                trace.append(ptlyTrace3d(borderPtsP[i][:, ii[0]],
+                                         borderPtsP[i][:, ii[1]],
+                                         borderPtsP[i][:, ii[2]],
+                                         plotType=1, ms=2, mc='blue'))
+        if True:
+            borderPtsP = np.load('PoPoincare.npy')
+            M = borderPtsP.shape[0]
+            for i in range(M):
+                ax.scatter(borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
+                           borderPtsP[i][:, ii[2]], c='g', marker='o',
+                           s=20, edgecolors='none')
+            for i in range(M):
+                trace.append(ptlyTrace3d(borderPtsP[i][:, ii[0]],
+                                         borderPtsP[i][:, ii[1]],
+                                         borderPtsP[i][:, ii[2]],
+                                         plotType=1, ms=2, mc='green'))
+        ax3d(fig, ax)
+        
+        if True:
+            ptly3d(trace, 'mixPoincare', off=True,
+                   labs=['$v_1$', '$v_2$', '$v_3$'])
+
     if case == 17:
         """
         use the poincare section b2=0 and b2 from negative to positive for
-        unstable manifold of E2
+        unstable manifold of E2.
+        Note, the unstable manifold lives in the invariant subspace,
+        which is also the poincare section border.
         """
         nn = 50
         pos, poDom, poJumps = ksreq.getMuEq('e', eId=1, vId=0, p=1, nn=nn,
                                             T=100)
         M = len(pos)
+        """
         borderIds = []
         borderPts = []
         borderNum = 0
@@ -568,6 +620,10 @@ if __name__ == '__main__':
             borderIds.append(t1+1)  # next one
             borderPts.append(pos[i][t1+1])
             borderNum += len(t1)
+        """
+        borderPts = []
+        for i in range(M):
+            borderPts.append(pos[i][::100, :])
 
         data = np.load('bases.npz')
         Ori = data['Ori']
@@ -596,7 +652,7 @@ if __name__ == '__main__':
                                          borderPtsP[i][:, ii[2]],
                                          plotType=1, ms=2, mc='red'))
             ptly3d(trace, 'E2Poincare', labs=['$v_1$', '$v_2$', '$v_3$'])
-
+        
         spt = pos
         ii = [1, 5, 3]
         fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
@@ -605,6 +661,8 @@ if __name__ == '__main__':
             ksreq.plotFundOrbit(ax, spt[i], poJumps[i], ii)
         ax3d(fig, ax)
 
+        # np.save('E2Poincare', borderPtsP)
+
     if case == 18:
         """
         use the poincare section b2=0 and b2 from negative to positive for
@@ -612,7 +670,7 @@ if __name__ == '__main__':
         """
         a0 = rand(N-2)
         aa = ksreq.ks.aintg(a0, 0.01, 100, 1)
-        aa = ksreq.ks.aintg(aa[-1], 0.01, 5000, 1)
+        aa = ksreq.ks.aintg(aa[-1], 0.01, 6000, 1)
         raa, dids, ths = ksreq.ks.redO2f(aa, 1)
         jumps = getJumpPts(dids)
 
@@ -643,7 +701,7 @@ if __name__ == '__main__':
                    edgecolors='none')
         ax3d(fig, ax)
 
-        if True:
+        if False:
             trace = []
             trace.append(ptlyTrace3d(0, 0, 0, plotType=1, ms=7, mc='black'))
             trace.append(ptlyTrace3d(borderPtsP[:, ii[0]],
@@ -652,6 +710,8 @@ if __name__ == '__main__':
                                      plotType=1, ms=2, mc='red'))
             ptly3d(trace, 'ErgodicPoincare', labs=['$v_1$', '$v_2$', '$v_3$'])
 
+        # np.save('ErgodicPoincare', borderPtsP)
+        
     if case == 19:
         """
         use the poincare section b2=0 and b2 from negative to positive
@@ -695,7 +755,7 @@ if __name__ == '__main__':
                        s=20, edgecolors='none')
         ax3d(fig, ax)
         
-        if True:
+        if False:
             trace = []
             trace.append(ptlyTrace3d(0, 0, 0, plotType=1, ms=7, mc='black'))
             for i in range(M):
@@ -707,6 +767,7 @@ if __name__ == '__main__':
                 ptly3d(trace, 'PoPoincare', labs=['$v_1$', '$v_2$', '$v_3$'])
 
         # np.savez_compressed('bases', Ori=Ori, bases=bases)
+        # np.save('PoPoincare', borderPtsP)
         """
         ii = [2, 6, 4]
         # ii = [1, 5, 3]

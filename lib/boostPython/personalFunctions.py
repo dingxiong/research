@@ -65,8 +65,16 @@ def pl3d(size=[8, 6], labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
     return fig, ax
 
 
-def ax3d(fig, ax, doBlock=False, save=False, name='output.png'):
+def ax3d(fig, ax, doBlock=False, save=False, name='output.png',
+         angle=None, title=None):
     fig.tight_layout(pad=0)
+
+    if angle is not None:
+        ax.view_init(angle[0], angle[1])
+    
+    if title is not None:
+        ax.set_title(title)
+
     ax.legend()
     if save:
         plt.savefig(name)
@@ -74,6 +82,32 @@ def ax3d(fig, ax, doBlock=False, save=False, name='output.png'):
     else:
         plt.show(block=doBlock)
 
+
+def add3d(fig, ax, x, y, z, maxShow=5, c='r', s=70):
+    i = 0
+    pts = []
+    while raw_input(i) == '':
+        if i >= len(x):
+            for p in pts:
+                p.remove()
+            break
+        
+        if len(pts) > maxShow:
+            p = pts.pop(0)
+            p.remove()
+           
+        if len(pts) > 0:
+            pts[-1].set_sizes([2*s])
+        if len(pts) > 1:
+            pts[-2].set_sizes([s])
+
+        tmp = ax.scatter(x[i], y[i], z[i], c=c, s=s,
+                         edgecolors='none')
+        pts.append(tmp)
+        fig.canvas.draw()
+        # plt.show(block=False)
+        i += 1
+    
 
 def pl2d(size=[8, 6], labs=[r'$x$', r'$y$'], axisLabelSize=25,
          yscale=None,
@@ -216,6 +250,7 @@ def plotMat(y, colortype='jet', percent='5%', colorBar=True,
         plt.close()
     else:
         plt.show(block=False)
+
 
 ##################################################
 #            1d CQCGL related                    #

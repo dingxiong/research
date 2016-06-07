@@ -140,7 +140,7 @@ class KSReq():
         Evr = {'e': EqVr, 'tw': ReqVr}
         return Es, Ev, Evr
         
-    def loadPO(self, fileName, poIds, p, bases=None, x0=None):
+    def loadPO(self, poIds, p, bases=None, x0=None):
         """
         Load rpo and ppo and reduce the symmetry.
         If bases and orgin x0 are given, then also return the
@@ -164,7 +164,7 @@ class KSReq():
         for i in range(2):
             poType = types[i]
             for poId in poIds[i]:
-                a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
+                a0, T, nstp, r, s = KSreadPO(self.poFile, poType, poId)
                 h = T / nstp
                 aa = self.ks.intg(a0, h, nstp, 5)
                 aar, dids, ths = self.ks.redO2f(aa, p)
@@ -179,14 +179,22 @@ class KSReq():
         else:
             return aars, dom, jumps
 
-    def poFvPoinc(self, poType, poId, ptsId, p, ii):
+    def poFvPoinc(self, poType, poId, ptsId, p, ii, reflect=False):
+        """
+        get the in-slice Floquet vector
+        """
         a0, T, nstp, r, s = KSreadPO(self.poFile, poType, poId)
         h = T / nstp
         aa = self.ks.intg(a0, h, nstp, 5)
         fe = KSreadFE(self.poFile, poType, poId)
-        fv = KSreadFV(self.poFile, poType, poId)[ptsId]
-        fv = fv.reshape(30, N-2)
-        rfv = self.ks.redV(fv, aa[ptsId], p, True)
+        fv = KSreadFV(self.poFile, poType, poId)[ptsId].reshape(30, self.N-2)
+
+        x0 = aa[ptsId]
+        if reflect:
+            x0 = self.ks.Reflection(x0)
+            fv = self.ks.Reflection(fv)
+
+        rfv = self.ks.redV(fv, x0, p, True)
         
         v1, v2, v3 = orthAxes(rfv[ii[0]], rfv[ii[1]], rfv[ii[2]])
         bases = np.vstack((v1, v2, v3))
@@ -342,166 +350,32 @@ class KSReq():
         get the poincare intersection points. Poincare section is
         b_2 = 0 from negative to positive. Note it is very important to
         record the point after crossing Poincare section. Also both
-        crossings are recorded due to reflection symmetry.
+        crossings are recorded due to reflection symmetry, but the
+        order should be shuffled.
         --------
         Paramters
         raa : orbit in the fundamental domain
         dids : indices of regions
         jumps : indices when orbit crosses Poincare section
         """
-        t = jumps+1
-        borderIds = t
-        borderPts = raa[t]
+        x = dids[jumps]
+        y = dids[jumps+1]
+        x1 = jumps[x == 2]
+        y1 = jumps[y == 1]
+        assert np.array_equal(x1, y1)
+        x2 = jumps[x == 1]
+        y2 = jumps[y == 2]
+        assert np.array_equal(x2, y2)
 
-        return borderIds, borderPts
+        pcN = len(x1)           # positive crossing number
+        ncN = len(x2)
+        assert pcN + ncN == len(jumps)
+        
+        borderIds = np.append(x1+1, x2+1)
+        borderPts = raa[borderIds]
+        
+        return borderIds, borderPts, pcN, ncN
 
-    """
-    def getPoinc2(data, theta1, theta2):
-        x1, y1 = rotz(data[:, 0], data[:, 1], theta1)
-        x2, y2 = rotz(data[:, 0], data[:, 1], theta2)
-        aa1 = np.vstack((x1, y1, data[:, 2])).T
-        aa2 = np.vstack((x2, y2, data[:, 2])).T
-        n, m = aa1.shape
-        pc = np.zeros((n, m))
-        pcf = np.zeros((n, m))
-        coe = np.zeros(n)
-        ixs = np.zeros(n, dtype=np.int)
-        num = 0
-        for i in range(n-1):
-            if aa1[i, 0] < 0 and aa1[i+1, 0] >= 0:
-                p, c1 = int2p(aa1[i], aa1[i+1])
-                if p[1] >= 0:
-                    pc[num] = p
-                    coe[num] = c1
-                    ixs[num] = i
-                    x, y = rotz(p[0], p[1], -theta1)
-                    pcf[num] = np.array([x, y, p[2]])
-                    num += 1
-            if aa2[i, 0] < 0 and aa2[i+1, 0] >= 0:
-                p, c1 = int2p(aa2[i], aa2[i+1])
-                if p[1] <= 0:
-                    pc[num] = p
-                    coe[num] = c1
-                    ixs[num] = i
-                    x, y = rotz(p[0], p[1], -theta2)
-                    pcf[num] = np.array([x, y, p[2]])
-                    num += 1
-        pc = pc[:num]
-        pcf = pcf[:num]
-        coe = coe[:num]
-        ixs = ixs[:num]
-
-        return pc, pcf, coe, ixs
-
-
-    def ergoPoinc(ks, bases, x0, theta, si):
-        a0 = rand(N-2) * 0.1
-        aa = ks.intg(a0, 10000, 10000)
-        poinc = np.zeros((0, 3))
-        poincf = np.zeros((0, 3))
-        paas = np.zeros((0, 3))
-        for i in range(15):
-            a0 = aa[-1]
-            aa = ks.intg(a0, 850000, 100)[1:]
-            raa, ths = ks.redO2(aa)
-            paa = raa.dot(bases.T)
-            paa -= x0
-            pc, pcf = getPoinc(paa, theta)
-            if si == 'p':
-                ix = pc[:, 1] >= 0
-                pc = pc[ix]
-                pcf = pcf[ix]
-            else:
-                ix = pc[:, 1] <= 0
-                pc = pc[ix]
-                pcf = pcf[ix]
-            poinc = np.vstack((poinc, pc))
-            poincf = np.vstack((poincf, pcf))
-            paas = np.vstack((paas, paa))
-        return paas, poinc, poincf
-
-
-    def ergoPoinc2(ks, bases, x0, theta1, theta2):
-        N = ks.N
-        a0 = rand(N-2) * 0.1
-        aa = ks.intg(a0, 0.002, 10000, 10000)
-        poinc = np.zeros((0, 3))
-        poincf = np.zeros((0, 3))
-        poincRaw = np.zeros((0, N-2))
-        paas = np.zeros((0, 3))
-
-        for i in range(20):
-            a0 = aa[-1]
-            aa = ks.intg(a0, 0.002, 500000, 10)[1:]
-            raa, ths = ks.redO2(aa)
-            paa = raa.dot(bases.T)
-            paa -= x0
-            pc, pcf, coe, ixs = getPoinc2(paa, theta1, theta2)
-            raw = (coe * raa[ixs].T + (1-coe) * raa[ixs+1].T).T
-            poincRaw = np.vstack((poincRaw, raw))
-            poinc = np.vstack((poinc, pc))
-            poincf = np.vstack((poincf, pcf))
-            paas = np.vstack((paas, paa))
-        return paas, poinc, poincf, poincRaw
-
-
-    def poPoinc(fileName, poIds, bases, x0, theta1, theta2):
-        '''
-        pas : projected orbits
-        poinc : poincare intersection points on the plane
-        poincf : intersection points in the 3d space
-        '''
-        N = 64
-        aas, pas = loadPO2(fileName, poIds, bases, x0)
-        poinc = np.zeros((0, 3))
-        poincf = np.zeros((0, 3))
-        poincRaw = np.zeros((0, N-2))
-        nums = []
-        for i in range(len(pas)):
-            pc, pcf, coe, ixs = getPoinc2(pas[i], theta1, theta2)
-            nums.append(pc.shape[0])
-            raw = (coe * aas[i][ixs].T + (1-coe) * aas[i][ixs+1].T).T
-            poincRaw = np.vstack((poincRaw, raw))
-            poinc = np.vstack((poinc, pc))
-            poincf = np.vstack((poincf, pcf))
-
-        return pas, poinc, poincf, poincRaw, np.array(nums)
-
-
-    def getCurveIndex(x, y):
-        '''
-        for each row of x, try to find the corresponding
-        row of y such that these two rows have the minimal
-        distance.
-        '''
-        m, n = x.shape
-        minDs = np.zeros(m)
-        minIds = np.zeros(m, dtype=np.int)
-        for i in range(m):
-            dif = x[i]-y
-            dis = norm(dif, axis=1)
-            minDs[i] = np.min(dis)
-            minIds[i] = np.argmin(dis)
-
-        return minIds, minDs
-
-
-    def getCurveCoordinate(sortId, poinc):
-        '''
-        get the curve coordinate
-        '''
-        m = sortId.shape[0]
-        dis = np.zeros(m)
-        coor = np.zeros(m)
-        for i in range(1, m):
-            dis[i] = dis[i-1] + norm(poinc[sortId[i]]-poinc[sortId[i-1]])
-
-        for i in range(m):
-            coor[sortId[i]] = dis[i]
-
-        return dis, coor
-
-        """
 ##############################################################################################################
 
 if __name__ == '__main__':
@@ -511,7 +385,7 @@ if __name__ == '__main__':
     ksreq = KSReq(N, L, '../../data/ks22Reqx64.h5',
                   '../../data/ks22h001t120x64EV.h5', 1)
 
-    case = 19
+    case = 14
 
     if case == 10:
         """
@@ -540,6 +414,58 @@ if __name__ == '__main__':
         ax.plot(E2[:, ii[0]], E2[:, ii[1]], E2[:, ii[2]])
         ax.plot(E3[:, ii[0]], E3[:, ii[1]], E3[:, ii[2]])
         ax3d(fig, ax)
+
+    if case == 14:
+        """
+        save the symbolic dynamcis
+        """
+        data = np.load('PoPoincare.npz')
+        borderPtsP = data['borderPtsP']
+        pcN = data['pcN']
+        ncN = data['ncN']
+        M = len(borderPtsP)
+
+        ii = [0, 1, 2]
+        for k in range(100, 150):
+            fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
+            ax.scatter(0, 0, 0, c='m', edgecolors='none', s=100, marker='^')
+            for i in range(M):
+                x, y, z = [borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
+                           borderPtsP[i][:, ii[2]]]
+                ax.scatter(x, y, z, c=[0, 0, 0, 0.2], marker='o', s=10,
+                           edgecolors='none')
+            x, y, z = [borderPtsP[k][:, ii[0]], borderPtsP[k][:, ii[1]],
+                       borderPtsP[k][:, ii[2]]]
+            for i in range(pcN[k]+ncN[k]):
+                ax.scatter(x[i], y[i], z[i], c='r' if i < pcN[k] else 'b',
+                           marker='o', s=70, edgecolors='none')
+                ax.text(x[i], y[i], z[i], str(i+1), fontsize=20, color='g')
+            s = 'ppo'+str(k+1-100)
+            ax3d(fig, ax, angle=[40, -120], save=True, name=s+'.png', title=s)
+        
+    if case == 15:
+        """
+        visulaize the symmbolic dynamcis
+        """
+        data = np.load('PoPoincare.npz')
+        borderPtsP = data['borderPtsP']
+        pcN = data['pcN']
+        ncN = data['ncN']
+        M = len(borderPtsP)
+
+        ii = [0, 1, 2]
+        fig, ax = pl3d(size=[12, 10], labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
+        ax.scatter(0, 0, 0, c='k', s=70, edgecolors='none')
+        for i in range(M):
+            x, y, z = [borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
+                       borderPtsP[i][:, ii[2]]]
+            ax.scatter(x, y, z, c=[0, 0, 0, 0.2], marker='o', s=10,
+                       edgecolors='none')
+        ax3d(fig, ax)
+        for i in range(100, 110):
+            x, y, z = [borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
+                       borderPtsP[i][:, ii[2]]]
+            add3d(fig, ax, x, y, z, maxShow=20)
 
     if case == 16:
         """
@@ -654,7 +580,7 @@ if __name__ == '__main__':
         raa, dids, ths = ksreq.ks.redO2f(aa, 1)
         jumps = getJumpPts(dids)
 
-        borderIds, borderPts = ksreq.getPoinc(raa, dids, jumps)
+        borderIds, borderPts, pcN, ncN = ksreq.getPoinc(raa, dids, jumps)
 
         data = np.load('bases.npz')
         Ori = data['Ori']
@@ -662,12 +588,13 @@ if __name__ == '__main__':
         borderPtsP = (borderPts - Ori).dot(bases.T)
 
         ii = [0, 1, 2]
+        x, y, z = [borderPtsP[:, ii[0]], borderPtsP[:, ii[1]],
+                   borderPtsP[:, ii[2]]]
         fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
         ax.scatter(0, 0, 0, c='k', s=70, edgecolors='none')
-        ax.scatter(borderPtsP[:, ii[0]], borderPtsP[:, ii[1]],
-                   borderPtsP[:, ii[2]], c='r', s=20,
-                   edgecolors='none')
+        ax.scatter(x, y, z, c='y', s=20, edgecolors='none')
         ax3d(fig, ax)
+        add3d(fig, ax, x, y, z, maxShow=20)
 
         if False:
             trace = []
@@ -685,22 +612,26 @@ if __name__ == '__main__':
         use the poincare section b2=0 and b2 from negative to positive
         """
         poIds = [range(1, 101), range(1, 101)]
-        pos, poDom, poJumps = ksreq.loadPO('../../data/ks22h001t120x64EV.h5',
-                                           poIds, 1)
+        pos, poDom, poJumps = ksreq.loadPO(poIds, 1)
         M = len(pos)
         borderIds = []
         borderPts = []
+        pcN = []
+        ncN = []
         borderNum = 0
         for i in range(M):
-            ids, pts = ksreq.getPoinc(pos[i], poDom[i], poJumps[i])
+            ids, pts, pcn, ncn = ksreq.getPoinc(pos[i], poDom[i], poJumps[i])
             borderIds.append(ids)
             borderPts.append(pts)
+            pcN.append(pcn)
+            ncN.append(ncn)
             borderNum += len(ids)
 
-        ptsId = borderIds[0][0]
-        fe, fv, rfv, bases = ksreq.poFvPoinc('rpo', 1, ptsId, 1, [0, 3, 4])
+        ptsId = borderIds[0][1]
+        fe, fv, rfv, bases = ksreq.poFvPoinc('rpo', 1, ptsId, 1, [0, 3, 4],
+                                             reflect=True)
+        Ori = borderPts[0][1]
         borderPtsP = []
-        Ori = borderPts[0][0]
         for i in range(M):
             p = (borderPts[i]-Ori).dot(bases.T)
             borderPtsP.append(p)
@@ -709,11 +640,16 @@ if __name__ == '__main__':
         fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
         ax.scatter(0, 0, 0, c='k', s=70, edgecolors='none')
         for i in range(M):
-            ax.scatter(borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
-                       borderPtsP[i][:, ii[2]], c='b' if i < 50 else 'r',
+            x, y, z = [borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
+                       borderPtsP[i][:, ii[2]]]
+            ax.scatter(x, y, z, c='y' if i < 50 else 'y',
                        marker='o' if i < 50 else 's',
                        s=20, edgecolors='none')
         ax3d(fig, ax)
+        i = 1
+        x, y, z = [borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
+                   borderPtsP[i][:, ii[2]]]
+        add3d(fig, ax, x, y, z)
         
         if False:
             trace = []
@@ -727,7 +663,8 @@ if __name__ == '__main__':
                 ptly3d(trace, 'PoPoincare', labs=['$v_1$', '$v_2$', '$v_3$'])
 
         # np.savez_compressed('bases', Ori=Ori, bases=bases)
-        # np.save('PoPoincare', borderPtsP)
+        # np.savez_compressed('PoPoincare', borderPtsP=borderPtsP,
+        #                     pcN=pcN, ncN=ncN)
         if False:
             ii = [2, 6, 4]
             # ii = [1, 5, 3]

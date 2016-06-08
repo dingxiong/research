@@ -20,6 +20,7 @@
 #include "sparseRoutines.hpp"
 #include "denseRoutines.hpp"
 #include "iterMethod.hpp"
+#include "myH5.hpp"
 #include "myfft.hpp"
 using std::pair; using std::make_pair; 
 using Eigen::MatrixXd; using Eigen::VectorXd;
@@ -105,28 +106,33 @@ public:
     ArrayXXcd ZR(const Ref<const ArrayXcd> &z);
     double adaptTs(bool &doChange, bool &doAccept, const double s);
 
+
+    void saveState(H5::H5File &file, int id, const ArrayXXcd &a, 
+		   const ArrayXXcd &v, const int flag);
     ArrayXXcd 
     constETD(const ArrayXXcd &a0, const ArrayXXcd &v0, 
 	     const double h, const int Nt, 
 	     const int skip_rate, const bool onlyOrbit,
-	     const bool doSaveDisk, const std::string folderName);
+	     const bool doSaveDisk, const std::string fileName);
     ArrayXXcd
     adaptETD(const ArrayXXcd &a0, const ArrayXXcd &v0, 
 	     const double h0, const double tend, 
-	     const int skip_rate, const bool onlyOrbit);
+	     const int skip_rate, const bool onlyOrbit,
+	     const bool doSaveDisk, const std::string fileName);
     ArrayXXcd 
     intg(const ArrayXXcd &a0, const double h, const int Nt, const int skip_rate,
-	 const bool doSaveDisk, const std::string folderName);
+	 const bool doSaveDisk, const std::string fileName);
     ArrayXXcd
     aintg(const ArrayXXcd &a0, const double h, const double tend, 
-	  const int skip_rate);
+	  const int skip_rate, const bool doSaveDisk, const std::string fileName);
     ArrayXXcd
     intgv(const ArrayXXcd &a0, const ArrayXXcd &v0, const double h,
 	  const int Nt, const int skip_rate,
-	  const bool doSaveDisk, const std::string folderName);
+	  const bool doSaveDisk, const std::string fileName);
     ArrayXXcd 
     aintgv(const ArrayXXcd &a0, const ArrayXXcd &v0, const double h,
-	   const double tend, const int skip_rate);
+	   const double tend, const int skip_rate,
+	   const bool doSaveDisk, const std::string fileName);
     
     void dealias(const int k, const bool onlyOrbit);
     void NL(const int k, const bool onlyOrbit);

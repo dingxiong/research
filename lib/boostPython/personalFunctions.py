@@ -882,11 +882,27 @@ def getCurveCoor(points):
 ##################################################
 
 
-def CQCGL2dPlotOneState(cgl, folder, sid, save=False, name='out.png'):
-    f1 = folder + '/ar' + str(sid) + '.dat'
-    f2 = folder + '/ai' + str(sid) + '.dat'
-    a = np.loadtxt(f1) + 1j * np.loadtxt(f2)
-    A = cgl.Fourier2Config(a.T.copy())
+def CQCGL2dLoad(fileName, i, flag=1):
+    f = h5py.File(fileName, 'r')
+    ds = '/' + str(i) + '/'
+    if flag == 1 or flag == 0:
+        a = f[ds+'ar'].value + 1j*f[ds+'ai'].value
+    if flag == 2 or flag == 0:
+        v = f[ds+'vr'].value + 1j*f[ds+'vi'].value
+    
+    f.close()
+
+    if flag == 0:
+        return a, v
+    elif flag == 1:
+        return a
+    elif flag == 2:
+        return v
+
+
+def CQCGL2dPlotOneState(cgl, fileName, sid, save=False, name='out.png'):
+    a = CQCGL2dLoad(fileName, sid, flag=1)
+    A = cgl.Fourier2Config(a)
     plotMat(np.abs(A), save=save, name=name)
 
 

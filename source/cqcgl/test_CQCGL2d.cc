@@ -33,10 +33,8 @@ int main(){
 	ArrayXXcd a0 = cgl.Config2Fourier(A0);
 	ArrayXXcd A2 = cgl.Fourier2Config(a0);
 	
-	for(int i = 0; i < 1; i++){
-	    ArrayXXcd aa = cgl.intg(a0, 0.001, 2000, 10, true, "ex");
-	    CE(a0.rows()); CE(a0.cols()); CE(aa.rows()); CE(aa.cols());
-	}
+	ArrayXXcd aa = cgl.intg(a0, 0.001, 10, 1, true, "ex.h5");
+	CE(a0.rows()); CE(a0.cols()); CE(aa.rows()); CE(aa.cols());
 	
 	break;
     }

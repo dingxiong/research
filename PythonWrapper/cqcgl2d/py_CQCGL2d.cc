@@ -51,36 +51,40 @@ public:
     }
 
    /* wrap the integrator */
-    bn::ndarray PYintg(bn::ndarray a0, double h, int Nt, int skip_rate){
+    bn::ndarray PYintg(bn::ndarray a0, double h, int Nt, int skip_rate, 
+		       bool doSaveDisk, string fileName){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
-	return copy2bnc(intg(tmpa, h, Nt, skip_rate));
+	return copy2bnc(intg(tmpa, h, Nt, skip_rate, doSaveDisk, fileName));
     }
     
-    bn::ndarray PYaintg(bn::ndarray a0, double h, double tend, int skip_rate){
+    bn::ndarray PYaintg(bn::ndarray a0, double h, double tend, int skip_rate,
+			bool doSaveDisk, string fileName){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
-	return copy2bnc(aintg(tmpa, h, tend, skip_rate));
+	return copy2bnc(aintg(tmpa, h, tend, skip_rate, doSaveDisk, fileName));
     }
 
-    bn::ndarray PYintgv(bn::ndarray a0, bn::ndarray v0, double h, int Nt, int skip_rate){
+    bn::ndarray PYintgv(bn::ndarray a0, bn::ndarray v0, double h, int Nt, int skip_rate,
+			bool doSaveDisk, string fileName){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
 	getDims(v0, m, n);
 	Map<ArrayXXcd> tmpv((dcp*)v0.get_data(), n, m);
-	return copy2bnc(intgv(tmpa, tmpv, h, Nt, skip_rate));
+	return copy2bnc(intgv(tmpa, tmpv, h, Nt, skip_rate, doSaveDisk, fileName));
     }    
 
-    bn::ndarray PYaintgv(bn::ndarray a0, bn::ndarray v0, double h, double tend, int skip_rate){
+    bn::ndarray PYaintgv(bn::ndarray a0, bn::ndarray v0, double h, double tend, int skip_rate,
+			 doSaveDisk, string fileName){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
 	getDims(v0, m, n);
 	Map<ArrayXXcd> tmpv((dcp*)v0.get_data(), n, m);
-	return copy2bnc(aintgv(tmpa, tmpv, h, tend, skip_rate));
+	return copy2bnc(aintgv(tmpa, tmpv, h, tend, skip_rate, doSaveDisk, fileName));
     }
 
     bn::ndarray PYFourier2Config(bn::ndarray aa){

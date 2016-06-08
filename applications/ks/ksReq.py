@@ -385,7 +385,7 @@ if __name__ == '__main__':
     ksreq = KSReq(N, L, '../../data/ks22Reqx64.h5',
                   '../../data/ks22h001t120x64EV.h5', 1)
 
-    case = 14
+    case = 20
 
     if case == 10:
         """
@@ -683,9 +683,8 @@ if __name__ == '__main__':
         nn = 30
         aas, dom, jumps = ksreq.getMuEq('e', eId=1, vId=0, p=1, nn=nn, T=100)
 
-        poIds = [[], [2]]
-        pos, poDom, poJumps = ksreq.loadPO('../../data/ks22h001t120x64EV.h5',
-                                           poIds, 1)
+        poIds = [[], [1, 12]]
+        pos, poDom, poJumps = ksreq.loadPO(poIds, 1)
         
         ii = [1, 5, 3]
         # ii = [2, 6, 4]

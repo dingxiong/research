@@ -1,4 +1,5 @@
 CC = g++
+CC2 = h5c++
 AR = ar
 
 OPTIM = -O3 -msse2 -msse4 -march=corei7

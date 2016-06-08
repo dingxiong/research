@@ -2,13 +2,12 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>    // std::max
-#include <sys/types.h>
-#include <sys/stat.h> 		/* for create folder */
 
 #define CE(x) (cout << (x) << endl << endl)
 
 using namespace sparseRoutines;
 using namespace denseRoutines;
+using namespace MyH5;
 using namespace Eigen;
 using namespace std;
 using namespace MyFFT;
@@ -27,11 +26,7 @@ using namespace MyFFT;
  *
  * @param[in] N            the number of Fourier modes
  * @param[in] d            the spacial period, size
- * @param[in] h            integration time step
  * @param[in] doEnableTan   false : forbid tangent space integration 
- * @param[in] Njacv        number of tangent vectors. so the number of fft columns
- *                         is Njacv + 1.
- *                         If Njacv <= 0 integrate Jacobian
  * @param[in] threadNum    number of threads for integration
  */
 CQCGLgeneral2d::CQCGLgeneral2d(int N, int M, double dx, double dy,
@@ -133,48 +128,6 @@ void CQCGLgeneral2d::changeOmega(double w){
     L.middleRows(Mplus, Malias) = ArrayXXcd::Zero(Malias, N); 
     L.middleCols(Nplus, Nalias) = ArrayXXcd::Zero(M, Nalias);
 }
-
-#if 0
-/** 
- * @brief calculate the coefficients of ETDRK4 or Krogstad
- */
-void CQCGLgeneral2d::calCoe(const double h){
-    
-    ArrayXXcd hL = h*L;
-    Map<ArrayXcd> hLv(hL.data(), hL.size());
-    ArrayXXcd LR = ZR(hLv);
-    
-    E = hL.exp();
-    E2 = (hL/2).exp();
-    
-    ArrayXXcd LR2 = LR.square();
-    ArrayXXcd LR3 = LR.cube();
-    ArrayXXcd LRe = LR.exp();
-    ArrayXXcd LReh = (LR/2).exp();
-    
-    a21 = h * ( (LReh - 1)/LR ).rowwise().mean(); 
-    b1 = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean();
-    b2 = h * 2 * ( (2.0 + LR + LRe*(-2.0 + LR)) / LR3 ).rowwise().mean();
-    b4 = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean();
-    
-    a21.resize(M, N);
-    b1.resize(M, N);
-    b2.resize(M, N);
-    b4.resize(M, N);
-
-    if (Method == 2) {
-	a31 = h * ( (LReh*(LR - 4) + LR + 4) / LR2 ).rowwise().mean();
-	a32 = h * 2 * ( (2*LReh - LR - 2) / LR2 ).rowwise().mean();
-	a41 = h * ( (LRe*(LR-2) + LR + 2) / LR2 ).rowwise().mean();
-	a43 = h * 2 * ( (LRe - LR - 1)  / LR2 ).rowwise().mean();
-
-	a31.resize(M, N);
-	a32.resize(M, N);
-	a41.resize(M, N);
-	a43.resize(M, N);
-    }
-}
-#endif
 
 /** 
  * @brief calculate the coefficients of ETDRK4 or Krogstad
@@ -327,6 +280,21 @@ CQCGLgeneral2d::adaptTs(bool &doChange, bool &doAccept, const double s){
     return mu;
 }
 
+void CQCGLgeneral2d::saveState(H5File &file, int id, const ArrayXXcd &a, 
+			       const ArrayXXcd &v, const int flag){
+    Group group(file.createGroup("/"+std::to_string(id)));
+    std:: string DS = "/" + std::to_string(id) + "/";
+    
+    if (1 == flag || 0 == flag){
+	writeMatrixXd(file, DS + "ar", a.real());
+	writeMatrixXd(file, DS + "ai", a.imag());
+    }
+    if (2 == flag || 0 == flag) {
+	writeMatrixXd(file, DS + "vr", v.real());
+	writeMatrixXd(file, DS + "vi", v.imag());
+    }
+}
+
 /**
  * @brief Constant time step integrator
  */
@@ -334,24 +302,15 @@ ArrayXXcd
 CQCGLgeneral2d::constETD(const ArrayXXcd &a0, const ArrayXXcd &v0, 
 			 const double h, const int Nt, 
 			 const int skip_rate, const bool onlyOrbit,
-			 const bool doSaveDisk, const string folderName){
+			 const bool doSaveDisk, const string fileName){
     int s = 1;
     if(!onlyOrbit) s = 2;
     
     ArrayXXcd aa;
-    string folder;
+    H5File file;
     if (doSaveDisk){
-	char buf[1000];
-	char* buffer = getcwd(buf, 1000);
-	folder = string(buf) + '/' + folderName;
-	int s = mkdir( folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
-	assert( s == 0);
-	savetxt(folder + "/ar" + std::to_string(0)+".dat", a0.real());
-	savetxt(folder + "/ai" + std::to_string(0)+".dat", a0.imag());
-	if(!onlyOrbit){
-	    savetxt(folder + "/vr" + std::to_string(0)+".dat", v0.real());
-	    savetxt(folder + "/vi" + std::to_string(0)+".dat", v0.imag());
-	}
+	file = H5File(fileName, H5F_ACC_TRUNC); /* openFile fails */
+	saveState(file, 0, a0, v0, onlyOrbit ? 1 : 0);
     }
     else{
 	const int M = (Nt+skip_rate-1)/skip_rate + 1;
@@ -376,14 +335,7 @@ CQCGLgeneral2d::constETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
 	NCallF += 5;
 	if ( (i+1)%skip_rate == 0 || i == Nt-1) {
 	    if(doSaveDisk){
-		ArrayXXcd x = unpad(F[4].v1);
-		savetxt(folder + "/ar" + std::to_string(num+1)+".dat", x.real());
-		savetxt(folder + "/ai" + std::to_string(num+1)+".dat", x.imag());
-		if(!onlyOrbit){
-		    ArrayXXcd y = unpad(JF[4].v1);
-		    savetxt(folder + "/vr" + std::to_string(num+1)+".dat", y.real());
-		    savetxt(folder + "/vi" + std::to_string(num+1)+".dat", y.imag());
-		}
+		saveState(file, num+1, unpad(F[4].v1), unpad(JF[4].v1), onlyOrbit ? 1 : 0);
 	    }
 	    else{
 		aa.middleCols((num+1)*Ne, Ne) = unpad(F[4].v1);
@@ -404,7 +356,8 @@ CQCGLgeneral2d::constETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
 ArrayXXcd
 CQCGLgeneral2d::adaptETD(const ArrayXXcd &a0, const ArrayXXcd &v0, 
 			 const double h0, const double tend, 
-			 const int skip_rate, const bool onlyOrbit){
+			 const int skip_rate, const bool onlyOrbit,
+			 const bool doSaveDisk, const string fileName){
     
     int s = 1;
     if(!onlyOrbit) s = 2;
@@ -416,10 +369,19 @@ CQCGLgeneral2d::adaptETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
     const int M = (Nt+skip_rate-1) /skip_rate + 1;
     F[0].v1 = pad(a0);
     if(!onlyOrbit) JF[0].v1 = pad(v0);
+						
+    ArrayXXcd aa;
+    H5File file;
+    if (doSaveDisk) {
+	file = H5File(fileName, H5F_ACC_TRUNC);
+	saveState(file, 0, a0, v0, onlyOrbit ? 1:0);
+    }
+    else {
+	aa.resize(Me, Ne*M*s);
+	aa.leftCols(Ne) = a0;
+	if(!onlyOrbit) aa.middleCols(Ne, Ne) = v0;
+    }
 
-    ArrayXXcd aa(Me, Ne*M*s);
-    aa.leftCols(Ne) = a0;
-    if(!onlyOrbit) aa.middleCols(Ne, Ne) = v0;
     Ts.resize(M);
     Ts(0) = 0;
 
@@ -459,14 +421,17 @@ CQCGLgeneral2d::adaptETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
 		if (num >= Ts.size()) {
 		    int m = Ts.size();
 		    Ts.conservativeResize(m+cellSize);
-		    aa.conservativeResize(Eigen::NoChange, (m+cellSize)*Ne*s); 
+		    if(!doSaveDisk) aa.conservativeResize(Eigen::NoChange, (m+cellSize)*Ne*s); 
 		    hs.conservativeResize(m-1+cellSize);
 		    lte.conservativeResize(m-1+cellSize);
 		}
 		hs(num-1) = h;
 		lte(num-1) = du;
-		aa.middleCols(num*Ne*s, Ne) = unpad(F[4].v1);
-		if (!onlyOrbit) aa.middleCols(num*Ne*s+1, Ne) = unpad(JF[4].v1);
+		if(doSaveDisk) saveState(file, num, unpad(F[4].v1), unpad(JF[4].v1), onlyOrbit ? 1:0);
+		else {
+		    aa.middleCols(num*Ne*s, Ne) = unpad(F[4].v1);
+		    if (!onlyOrbit) aa.middleCols(num*Ne*s+1, Ne) = unpad(JF[4].v1);
+		}
 		Ts(num) = t;
 		num++;
 	    }
@@ -488,7 +453,8 @@ CQCGLgeneral2d::adaptETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
     lte.conservativeResize(num-1);
     Ts.conservativeResize(num);
     
-    return aa.leftCols(num*Ne*s);
+    if (doSaveDisk) return aa;
+    else return aa.leftCols(num*Ne*s);
 }
 
 
@@ -497,20 +463,20 @@ CQCGLgeneral2d::adaptETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
  */
 ArrayXXcd 
 CQCGLgeneral2d::intg(const ArrayXXcd &a0, const double h, const int Nt, const int skip_rate,
-		     const bool doSaveDisk, const string folderName){
+		     const bool doSaveDisk, const string fileName){
     
     assert(a0.rows() == Me && a0.cols() == Ne);
     ArrayXXcd v0(1, 1);
-    return constETD(a0, v0, h, Nt, skip_rate, true, doSaveDisk, folderName);
+    return constETD(a0, v0, h, Nt, skip_rate, true, doSaveDisk, fileName);
 }
 
 
 ArrayXXcd
 CQCGLgeneral2d::aintg(const ArrayXXcd &a0, const double h, const double tend, 
-		      const int skip_rate){
+		      const int skip_rate, const bool doSaveDisk, const string fileName){
     assert(a0.rows() == Me && a0.cols() == Ne);
     ArrayXXcd v0(1, 1);
-    return adaptETD(a0, v0, h, tend, skip_rate, true);
+    return adaptETD(a0, v0, h, tend, skip_rate, true, doSaveDisk, fileName);
 }
 
 /**
@@ -519,17 +485,18 @@ CQCGLgeneral2d::aintg(const ArrayXXcd &a0, const double h, const double tend,
 ArrayXXcd
 CQCGLgeneral2d::intgv(const ArrayXXcd &a0, const ArrayXXcd &v0, const double h,
 		      const int Nt, const int skip_rate,
-		      const bool doSaveDisk, const string folderName){
+		      const bool doSaveDisk, const string fileName){
     assert(a0.rows() == Me && a0.cols() == Ne && v0.rows() == Me && v0.cols() == Ne);
-    ArrayXXcd aa = constETD(a0, v0, h, Nt, skip_rate, false, doSaveDisk, folderName);
+    ArrayXXcd aa = constETD(a0, v0, h, Nt, skip_rate, false, doSaveDisk, fileName);
     return aa;
 }
 
 ArrayXXcd 
 CQCGLgeneral2d::aintgv(const ArrayXXcd &a0, const ArrayXXcd &v0, const double h,
-		       const double tend, const int skip_rate){
+		       const double tend, const int skip_rate,
+		       const bool doSaveDisk, const string fileName){
     assert(a0.rows() == Me && a0.cols() == Ne && v0.rows() == Me && v0.cols() == Ne);
-    ArrayXXcd aa = adaptETD(a0, v0, h, tend, skip_rate, false);
+    ArrayXXcd aa = adaptETD(a0, v0, h, tend, skip_rate, false, doSaveDisk, fileName);
     return aa;
 }
 
@@ -796,284 +763,6 @@ ArrayXXd CQCGLgeneral::reflect(const Ref<const ArrayXXd> &aa){
 	raa.row(n-i) = tmp;
     }
     return C2R(raa);
-}
-
-/**
- * @ brief calculate (x^2 - y^2) / \sqrt{x^2 + y^2}
- */
-inline ArrayXd CQCGLgeneral::rcos2th(const ArrayXd &x, const ArrayXd &y){
-    ArrayXd x2 = x.square();
-    ArrayXd y2 = y.square();
-    return (x2 - y2) / (x2 + y2).sqrt();
-}
-
-/**
- * @ brief calculate x * y / \sqrt{x^2 + y^2}
- */
-inline ArrayXd CQCGLgeneral::rsin2th(const ArrayXd &x, const ArrayXd &y){
-    return x * y / (x.square() + y.square()).sqrt();
-}
-
-/**
- * @brief calculate the gradient of rcos2th()
- *
- *        partial derivative over x :   (x^3 + 3*x*y^2) / (x^2 + y^2)^{3/2}
- *        partial derivative over y : - (y^3 + 3*y*x^2) / (x^2 + y^2)^{3/2}
- */
-inline double CQCGLgeneral::rcos2thGrad(const double x, const double y){
-    // only return derivative over x. Derivative over y can be obtained
-    // by exchange x and y and flip sign
-    double denorm = sqrt(x*x + y*y);
-    double denorm3 = denorm * denorm * denorm;
-    return x * (x*x + 3*y*y) / denorm3;
-}
-
-/**
- * @brief calculate the gradient of rsin2th()
- *
- *        partial derivative over x :   y^3 / (x^2 + y^2)^{3/2}
- *        partial derivative over y :   x^3 / (x^2 + y^2)^{3/2}
- */
-inline double CQCGLgeneral::rsin2thGrad(const double x, const double y){
-    // only return derivative over x. Derivative over y can be obtained
-    // by exchange x and y
-    double denorm = sqrt(x*x + y*y);
-    double denorm3 = denorm * denorm * denorm;
-    return y*y*y / denorm3;
-}
-
-/**
- * @brief the first step to reduce the discrete symmetry
- *
- * @param[in] aaHat   states after reducing continous symmetries
- */
-ArrayXXd CQCGLgeneral::reduceRef1(const Ref<const ArrayXXd> &aaHat){
-    const int m = aaHat.cols(); 
-    const int n = aaHat.rows(); 
-    assert(n == Ndim);
-    
-    ArrayXXd step1(n, m);
-    step1.topRows<2>() = aaHat.topRows<2>();
-    for(size_t i = 1; i < Nplus; i++){
-	step1.row(2*i) = 0.5*(aaHat.row(2*i) - aaHat.row(n-2*i));
-	step1.row(n-2*i) = 0.5*(aaHat.row(2*i) + aaHat.row(n-2*i));
-	step1.row(2*i+1) = 0.5*(aaHat.row(2*i+1) - aaHat.row(n+1-2*i));
-	step1.row(n+1-2*i) = 0.5*(aaHat.row(2*i+1) + aaHat.row(n+1-2*i));
-    }
-
-    return step1;
-}
-
-ArrayXXd CQCGLgeneral::reduceRef2(const Ref<const ArrayXXd> &step1){
-    ArrayXXd step2(step1);
-    ArrayXd p1s = step1.row(2).square(); 
-    ArrayXd q1s = step1.row(3).square();
-    ArrayXd denorm = (p1s + q1s).sqrt();
-    step2.row(2) = (p1s - q1s) / denorm;
-    step2.row(3) = step1.row(2) * step1.row(3) / denorm.transpose(); 
-    
-    for(size_t i = 4; i < 2*Nplus; i++){
-	ArrayXd denorm = (step1.row(i-1).square() +  step1.row(i).square()).sqrt();
-	step2.row(i) = step1.row(i-1) * step1.row(i) / denorm.transpose() ;
-    }
-
-    return step2;
-}
-
-/**
- * @brief get the indices which reflect sign in the 3rd step of reflection
- *        reduction
- *
- *        1, 4, 6, ...
- */
-std::vector<int> CQCGLgeneral::refIndex3(){
-    std::vector<int> index; // vector storing indices which flip sign
-    index.push_back(1);
-    for(size_t i = 2; i < Nplus; i++) index.push_back(2*i);
-    for(size_t i = Nplus; i < Ne; i++) {
-	if(i%2 != 0){		// the last mode a_{-1} has index Ne-1 even
-	    index.push_back(2*i);
-	    index.push_back(2*i+1);
-	}
-    }
-    return index;
-}
-
-
-/**
- * @brief the 3rd step to reduce the discrete symmetry
- *
- */
-ArrayXXd CQCGLgeneral::reduceRef3(const Ref<const ArrayXXd> &aa){
-
-    ArrayXXd aaTilde(aa);
-    aaTilde.row(0) = rcos2th(aa.row(0), aa.row(1));
-    aaTilde.row(1) = rsin2th(aa.row(0), aa.row(1));
-    
-    std::vector<int> index = refIndex3();
-    for(size_t i = 1; i < index.size(); i++){
-	aaTilde.row(index[i]) = rsin2th(aa.row(index[i-1]), aa.row(index[i]));
-    }
-
-    return aaTilde;
-}
-
-ArrayXXd CQCGLgeneral::reduceReflection(const Ref<const ArrayXXd> &aaHat){
-    return reduceRef3(reduceRef2(reduceRef1(aaHat)));
-}
-
-/**
- * @brief The gradient of the reflection reduction transformation for the
- *        firt step.
- *
- * step 1: ---------------------------------------
- *         | 1					 |
- *         |   1				 |
- *         |     1/2                   -1/2	 |
- *         |         1/2                   -1/2	 |
- *         |                   ...		 |
- *         |             1/2   -1/2		 |
- *         |                1/2    -1/2		 |
- *         |             1/2    1/2		 |
- *         |                1/2     1/2		 |
- *         |                   ...		 |
- *         |     1/2                   1/2 	 |
- *         |         1/2                   1/2   |
- *         ---------------------------------------
- */
-MatrixXd CQCGLgeneral::refGrad1(){
-    MatrixXd Gamma(MatrixXd::Zero(Ndim, Ndim));
-    Gamma(0, 0) = 1;
-    Gamma(1, 1) = 1;
-    for (size_t i = 1; i < Nplus; i++){
-	Gamma(2*i, 2*i) = 0.5;
-	Gamma(2*i+1, 2*i+1) = 0.5;
-	Gamma(2*i, Ndim - 2*i) = -0.5;
-	Gamma(2*i+1, Ndim - 2*i + 1) = -0.5;
-    }
-    for(size_t i = Nplus; i < Ne; i++){
-	Gamma(2*i, 2*i) = 0.5;
-	Gamma(2*i, Ndim - 2*i) = 0.5;
-	Gamma(2*i+1, 2*i+1) = 0.5;
-	Gamma(2*i+1, Ndim - 2*i + 1) = 0.5;
-    }
-    return Gamma;
-}
-
-/**
- * @brief The gradient of the reflection reduction transformation for the
- *        2nd step.
- *        
- * step 2: ------------------------------------
- *         | 1				      |
- *         |   1			      |
- *         |     *  *                         |
- *         |     *  *                         |
- *         |        *  *         	      |
- *         |           *  *      	      |
- *         |               ...  	      |
- *         |                  *  *            |
- *         |                       1          |
- *         |                         1        |
- *         |                           ...    |
- *         |                               1  |
- *         ------------------------------------
- *               
- */
-MatrixXd CQCGLgeneral::refGrad2(const ArrayXd &x){
-    assert (x.size() == Ndim);
-    MatrixXd Gamma(MatrixXd::Zero(Ndim, Ndim));
-    Gamma(0, 0) = 1;
-    Gamma(1, 1) = 1;
-    Gamma(2, 2) = rcos2thGrad(x(2), x(3));
-    Gamma(2, 3) = - rcos2thGrad(x(3), x(2));
-    for (size_t i = 3; i < 2*Nplus; i++){
-	Gamma(i, i) = rsin2thGrad(x(i), x(i-1));
-	Gamma(i, i-1) = rsin2thGrad(x(i-1), x(i));
-    }
-    for (size_t i = 2*Nplus; i < Ndim; i++){
-	Gamma(i, i) = 1;
-    }
-    return Gamma;
-}
-
-/**
- * @brief The gradient of the reflection reduction transformation for the
- *        3rd step.
- */
-MatrixXd CQCGLgeneral::refGrad3(const ArrayXd &x){
-    assert(x.size() == Ndim);
-    MatrixXd Gamma(MatrixXd::Identity(Ndim, Ndim));
-    std::vector<int> index = refIndex3();
-    Gamma(0, 0) = rcos2thGrad(x(0), x(1));
-    Gamma(0, 1) = - rcos2thGrad(x(1), x(0));
-    Gamma(1, 1) = rsin2thGrad(x(1), x(0));
-    Gamma(1, 0) = rsin2thGrad(x(0), x(1));
-    
-    for(size_t i = 1; i < index.size(); i++){
-	Gamma(index[i], index[i]) = rsin2thGrad(x(index[i]), x(index[i-1]));
-	Gamma(index[i], index[i-1]) = rsin2thGrad(x(index[i-1]), x(index[i]));
-    }
-    return Gamma;
-}
-
-/**
- * @brief calculate the tranformation matrix for reflection reduction
- */
-MatrixXd CQCGLgeneral::refGradMat(const ArrayXd &x){
-    ArrayXd step1 = reduceRef1(x); 
-    ArrayXd step2 = reduceRef2(step1);
-    return refGrad3(step2) * refGrad2(step1) * refGrad1();
-}
-
-/**
- * @brief transform covariant vectors after reducing reflection
- *
- * @param[in] veHat    covariant vectors after reducing the continuous symmetries.
- * @param[in] xHat     orbit point after reducing continuous symmetries.
- */
-MatrixXd CQCGLgeneral::reflectVe(const MatrixXd &veHat, const Ref<const ArrayXd> &xHat){
-    MatrixXd Gamma = refGradMat(xHat);
-    return Gamma * veHat;
-}
-
-/** @beief reduce reflection symmetry of all the Floquet vectors along a po
- *
- *  Usaully, aaHat has one more column the the Floquet vectors, so you can
- *  call this function like:
- *  \code
- *      reflectVeAll(veHat, aaHat.leftCols(aa.cols()-1))
- *  \endcode
- *  
- *  @param[in] veHat   Floquet vectors along the orbit in the 1st mode slice.
- *                     Dimension: [N, M*Trunc]
- *  @param[in] aaHat   the orbit in the  slice
- *  @param[in] trunc   the number of vectors at each orbit point.
- *                     trunc = 0 means full set of vectors
- *  @return            transformed to the reflection invariant space.
- *                     Dimension [N, M*Trunc]
- *
- *  @note vectors are not normalized
- */
-MatrixXd CQCGLgeneral::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
-				    const int trunc /* = 0*/){
-    int Trunc = trunc;
-    if(trunc == 0) Trunc = veHat.rows();
-
-    assert(veHat.cols() % Trunc == 0);
-    const int n = veHat.rows();  
-    const int m = veHat.cols()/Trunc;
-    const int n2 = aaHat.rows();
-    const int m2 = aaHat.cols();
-
-    assert(m == m2 && n == n2);
-    MatrixXd veTilde(n, Trunc*m);
-    for(size_t i = 0; i < m; i++){
-	veTilde.middleCols(i*Trunc, Trunc) =
-	    reflectVe(veHat.middleCols(i*Trunc, Trunc), aaHat.col(i));
-    }
-
-    return veTilde;
 }
 
 
@@ -1531,223 +1220,7 @@ CQCGLgeneral::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
     return std::make_tuple(a, wth, wphi, velReq.matrix().norm());
 }
 
-/** @brief find the optimal guess of wth and wphi for a candidate req
- * 
- *  When we find a the inital state of a candidate of req, we also need
- *  to know the appropriate th and phi to start the Newton search.
- *  According to the definition of velocityReq(), this is a residual
- *  minimization problem.
- *
- *  @return    [wth, wphi, err] such that velocityReq(a0, wth, wphi) minimal
- */
-std::vector<double>
-CQCGLgeneral::optThPhi(const ArrayXd &a0){ 
-    VectorXd t1 = transTangent(a0);
-    VectorXd t2 = phaseTangent(a0);
-    double c = t2.dot(t1) / t1.dot(t1);
-    VectorXd t3 = t2 - c * t1;
-
-    VectorXd v = velocity(a0);
-    double a1 = t1.dot(v) / t1.dot(t1);
-    double a2 = t3.dot(v) / t3.dot(t3);
-    
-    double err = (v - a1 * t1 - a2 * t3).norm();
-    
-    std::vector<double> x = {-(a1-a2*c), -a2, err};
-    return x;
-}
-
 
 #endif
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//                                   Abandoned                                                    //
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if 0
-/**
- * @brief pad the input with zeros
- *
- * For example:
- *     if N = 256
- *     0, 1, 2, ..., 127, -127, ..., -1 => insert between 127 and -127
- *     The left half has one mode more than the second half
- */
-ArrayXXd CQCGLgeneral::pad(const Ref<const ArrayXXd> &aa){
-    int n = aa.rows();		
-    int m = aa.cols();
-    assert(Ndim == n);
-    ArrayXXd paa(2*N, m);
-    paa << aa.topRows(2*Nplus), ArrayXXd::Zero(2*Nalias, m), 
-	aa.bottomRows(2*Nminus);
-    return paa;
-}
-
-/**
- * @brief general padding/squeeze an array (arrays).
- *
- * This function is different from pad() that it only requrie n/2
- * is an odd number. It is used to prepare initial conditions for
- * Fourier modes doubled/halfed system. Alos the padding result does not
- * have dimension 2*N, but Ndim.
- *
- * @note It is user's duty to rescale the values since Fourier mode magnitude
- *       changes after doubling/halfing.
- *       For example,
- *       Initially, a_k = \sum_{i=0}^{N} f(x_n)e^{ikx}
- *       After doubling modes, ap_k is a sum of 2*N terms, and
- *       each adjacent pair is also as twice large as the previous
- *       corresponding one term.
- */
-ArrayXXd CQCGLgeneral::generalPadding(const Ref<const ArrayXXd> &aa){
-    int n = aa.rows();
-    int m = aa.cols();
-    assert( n % 4 == 2);
-    ArrayXXd paa(Ndim, m);
-    if (n < Ndim){
-	paa << aa.topRows(n/2 + 1), ArrayXXd::Zero(Ndim - n, m),
-	    aa.bottomRows(n/2 - 1);
-    }
-    else {
-	paa << aa.topRows(Ne + 1), aa.bottomRows(Ne - 1);
-    }
-    return paa;
-}
-
-ArrayXXcd CQCGLgeneral::padcp(const Ref<const ArrayXXcd> &x){
-    int n = x.rows();
-    int m = x.cols();
-    assert(Ne == n);
-    ArrayXXcd px(N, m);
-    px << x.topRows(Nplus), ArrayXXcd::Zero(Nalias, m),
-	x.bottomRows(Nminus);
-
-    return px;
-}
-
-ArrayXXd CQCGLgeneral::unpad(const Ref<const ArrayXXd> &paa){
-    int n = paa.rows();
-    int m = paa.cols();
-    assert(2*N == n);
-    ArrayXXd aa(Ndim, m);
-    aa << paa.topRows(2*Nplus), paa.bottomRows(2*Nminus);
-    return aa;
-}
-
-MatrixXd CQCGLgeneral::rk4(const VectorXd &a0, const double dt, const int nstp, const int nq){
-    VectorXd x(a0);
-    MatrixXd xx(Ndim, nstp/nq+1);
-    xx.col(0) = x;
-
-    for(int i = 0; i < nstp; i++){
-	VectorXd k1 = velocity(x);
-	VectorXd k2 = velocity(x + dt/2 * k1);
-	VectorXd k3 = velocity(x + dt/2 * k2);
-	VectorXd k4 = velocity(x + dt * k3);
-	x += dt/6 * (k1 + 2*k2 + 2*k3 + k4);
-
-	if((i+1)%nq == 0) xx.col((i+1)/nq) = x;
-    }
-
-    return xx;
-}
-
-MatrixXd CQCGLgeneral::velJ(const MatrixXd &xj){
-    MatrixXd vj(Ndim, Ndim+1);
-    vj.col(0) = velocity(xj.col(0));
-    vj.middleCols(1, Ndim) = stab(xj.col(0)) * xj.middleCols(1, Ndim);
-    
-    return vj;
-}
-
-std::pair<MatrixXd, MatrixXd>
-CQCGLgeneral::rk4j(const VectorXd &a0, const double dt, const int nstp, const int nq, const int nqr){
-    MatrixXd x(Ndim, Ndim + 1);
-    x << a0, MatrixXd::Identity(Ndim, Ndim);
-    
-    MatrixXd xx(Ndim, nstp/nq+1);
-    xx.col(0) = a0;
-    MatrixXd JJ(Ndim, Ndim*(nstp/nqr));
-    
-    for(int i = 0; i < nstp; i++){
-	MatrixXd k1 = velJ(x);
-	MatrixXd k2 = velJ(x + dt/2 *k1);
-	MatrixXd k3 = velJ(x + dt/2 *k2);
-	MatrixXd k4 = velJ(x + dt *k3);
-
-	x += dt/6 * (k1 + 2*k2 + 2*k3 + k4);
-
-	if((i+1)%nq == 0) xx.col((i+1)/nq) = x.col(0);
-	if((i+1)%nqr == 0){
-	    int k = (i+1)/nqr - 1;
-	    JJ.middleCols(k*Ndim, Ndim) = x.middleCols(1, Ndim);
-	    x.middleCols(1, Ndim) = MatrixXd::Identity(Ndim, Ndim);
-	}
-    }
-
-    return std::make_pair(xx, JJ);
-}
-
-/* -------------------------------------------------- */
-/* --------         Lyapunov functional   ----------- */
-/* -------------------------------------------------- */
-
-/**
- * @brief calculate the Lyapunov functional
- *
- *  L = \int dx [ -\mu |A|^2 + D |A_x|^2 - 1/2 \beta |A|^4 - 1/3 \gamma |A|^6 ]
- *  Here FFT[ A_{x} ]_k = iq_k a_k, so 
- *          \int dx |A_x|^2 = 1/N \sum (q_k^2 |a_k|^2)
- *  The rest term can be obtained by invere FFT
- *  =>
- *  L = \sum_{k=1}^N [ -\mu |A_k|^2 - 1/2 \beta |A_k|^4 - 1/3 \gamma |A_k|^6]
- *     +\sum_{k=1}^N 1/N D [ q_k^2 |a_k|^2 ]
- *
- *  Note, there are may be pitfalls, but there is indeed asymmetry here:
- *  \sum_n |A_n|^2 = 1/N \sum_k |a_k|^2
- */
-ArrayXcd
-CQCGLgeneral::Lyap(const Ref<const ArrayXXd> &aa){
-    int M = aa.cols();
-    VectorXcd lya(M);
-    for (size_t i = 0; i < M; i++){
-	ArrayXcd a = R2C(aa.col(i));
-	ArrayXcd a2 = a * a.conjugate();
-	F[0].v1 = a;
-	F[0].ifft();
-	ArrayXcd A = F[0].v2;
-	ArrayXcd A2 = A * A.conjugate();
-	lya(i) =  -Mu * A2.sum()
-	    - 1.0/2 * dcp(Br, Bi) * (A2*A2).sum()
-	    - 1.0/3 * dcp(Gr, Gi) * (A2*A2*A2).sum()
-	    + 1.0/N * dcp(Dr, Di) * (QK.square() * a2).sum();
-    }
-    
-    return lya;
-}
-
-/**
- * @brief calculate the time derivative of Lyapunov functional
- *
- * The time derivative of Lyapunov functional is L_t = -2 \int dx |A_t|^2
- * 
- * @see Lyap(), velocity()
- */
-ArrayXd
-CQCGLgeneral::LyapVel(const Ref<const ArrayXXd> &aa){
-    int M = aa.cols();
-    VectorXd lyavel(M);
-    for (size_t i = 0; i < M; i++){
-	ArrayXd vel = velocity(aa.col(i)); // Fourier mode of velocity
-	ArrayXcd cvel = R2C(vel);
-	Fv.v1 = cvel;
-	Fv.ifft();		// Fv.v2 is A_t
-	lyavel(i) = -2 * (Fv.v2 * Fv.v2.conjugate()).sum().real();
-    }
-    return lyavel;
-}
-
-#endif 
 
 #endif

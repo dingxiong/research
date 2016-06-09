@@ -69,6 +69,7 @@ namespace denseRoutines {
     
     /////////////////////////// template or inline function implementation ////////////////////////////////////////////////////////////////////////////////////
 
+    /** @brief save a matrix into a text file  */
     inline void savetxt(const std::string f, const Ref<const MatrixXd> &A){
 	ofstream file(f, ios::trunc);
 	file.precision(16);
@@ -76,7 +77,7 @@ namespace denseRoutines {
 	file.close();
     }
 
-    /** @brief read data from file  */
+    /** @brief read data from text file  */
     template<class T = double>
     Matrix<T, Dynamic, Dynamic>
     loadtxt(const std::string f){
@@ -117,8 +118,14 @@ namespace denseRoutines {
     /* @brief create 2d centerized random variables */
     template<class T = double>
     Matrix<T, Dynamic, Dynamic>
-    centerRand2d(const int M, const int N, const double f1, const double f2){
-	Matrix<T, Dynamic, Dynamic> a(Matrix<T, Dynamic, Dynamic>::Random(M, N)); /* -1 to 1 */
+    center2d(const int M, const int N, const double f1, const double f2, const int flag){
+	Matrix<T, Dynamic, Dynamic> a;
+	if (1 == flag){
+	    a = Matrix<T, Dynamic, Dynamic>::Random(M, N); /* -1 to 1 */
+	}
+	else if(2 == flag){
+	    a = Matrix<T, Dynamic, Dynamic>::Ones(M, N); /* all one */
+	}
 	int M2 = (int) (0.5 * M * (1-f1));
 	int N2 = (int) (0.5 * N * (1-f2));
 	a.topRows(M2) = Matrix<T, Dynamic, Dynamic>::Zero(M2, N);

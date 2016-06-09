@@ -329,6 +329,8 @@ CQCGLgeneral2d::constETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
     double du;
     int num = 0;
     for(int i = 0; i < Nt; i++){
+	if( constETDPrint > 0 && i % constETDPrint == 0) fprintf(stderr, "%d/%d\n", i, Nt);
+	
 	oneStep(du, onlyOrbit);
 	F[0].v1 = F[4].v1;	// update state
 	if(!onlyOrbit) JF[0].v1 = JF[4].v1;

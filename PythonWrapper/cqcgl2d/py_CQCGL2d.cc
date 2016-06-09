@@ -78,7 +78,7 @@ public:
     }    
 
     bn::ndarray PYaintgv(bn::ndarray a0, bn::ndarray v0, double h, double tend, int skip_rate,
-			 doSaveDisk, string fileName){
+			 bool doSaveDisk, string fileName){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
@@ -92,7 +92,7 @@ public:
 	getDims(aa, m, n);
 	Map<ArrayXXcd> tmpaa((dcp*)aa.get_data(), n, m);
 	return copy2bnc( Fourier2Config(tmpaa) );
-    
+    }
 
     bn::ndarray PYConfig2Fourier(bn::ndarray AA){
 	int m, n;
@@ -365,13 +365,14 @@ BOOST_PYTHON_MODULE(py_CQCGL2d) {
 	.def_readwrite("NCallF", &pyCQCGL2d::NCallF)
 	.def_readwrite("NSteps", &pyCQCGL2d::NSteps)
 	.def_readwrite("Method", &pyCQCGL2d::Method)
+	.def_readwrite("constETDPrint", &pyCQCGL2d::constETDPrint)
 	.def("Ts", &pyCQCGL2d::PYTs)
 	.def("hs", &pyCQCGL2d::PYhs)
 	.def("lte", &pyCQCGL2d::PYlte)
 	.def("Kx", &pyCQCGL2d::PYKx)
 	.def("Ky", &pyCQCGL2d::PYKy)
 	.def("L", &pyCQCGL2d::PYL)
-	
+
 	.def("changeOmega", &pyCQCGL2d::changeOmega)
 	.def("intg", &pyCQCGL2d::PYintg)
 	.def("aintg", &pyCQCGL2d::PYaintg)

@@ -26,7 +26,7 @@ lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
 
 python-extension py_ks : py_ks.cc $(RESH)/source/ks/ksint.cc $(RESH)/source/myfft/myfft.cc np fftw3 dense iter
 : <variant>release_assert <optimization>speed 
-: <link>shared <cxxflags>"-std=c++11 -DCLEAN"
+: <link>shared <warnings>off <cxxflags>"-std=c++11 -DCLEAN"
 ;
 
 

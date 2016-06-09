@@ -29,11 +29,11 @@ int main(){
 	double di = 0.3;
 	CQCGL2d cgl(N, L, 4.0, 0.8, 0.05, di, 4);
 	
-	ArrayXXcd A0 = 5*centerRand2d<dcp>(N, N, 0.2, 0.2);
+	ArrayXXcd A0 = 5*center2d<dcp>(N, N, 0.2, 0.2, 2);
 	ArrayXXcd a0 = cgl.Config2Fourier(A0);
 	ArrayXXcd A2 = cgl.Fourier2Config(a0);
 	
-	ArrayXXcd aa = cgl.intg(a0, 0.001, 10, 1, true, "ex.h5");
+	ArrayXXcd aa = cgl.intg(a0, 0.001, 200, 10, true, "ex.h5");
 	CE(a0.rows()); CE(a0.cols()); CE(aa.rows()); CE(aa.cols());
 	
 	break;

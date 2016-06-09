@@ -12,8 +12,16 @@ if case == 10:
     di = 0.05
 
     cgl = pyCQCGL2d(N, d, 4.0, 0.8, 0.01, di, 4)
-    CQCGL2dPlotOneState(cgl, 'ex.h5', 0)
-    CQCGL2dSavePlots(cgl, 'ex.h5', range(11), 'fig')
+    Ns = 8000
+    skip = 10
+    cgl.constETDPrint = 100
+    fileName = 'ex2.h5'
+
+    A0 = 3*centerRand2d(N, N, 0.2, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+    aa = cgl.intg(a0, 0.001, Ns, skip, True, fileName)
+    CQCGL2dPlotOneState(cgl, fileName, 0)
+    CQCGL2dSavePlots(cgl, fileName, range(Ns/skip+1), 'fig')
     
 if case == 20:
     """

@@ -913,7 +913,7 @@ def CQCGL2dSavePlots(cgl, f1, sids, f2):
         os.makedirs(f2)
         for i in sids:
             CQCGL2dPlotOneState(cgl, f1, i, save=True,
-                                name=f2+'/a'+str(i)+'.png')
+                                name=f2+'/a'+format(i, '06d')+'.png')
         
 
 ############################################################

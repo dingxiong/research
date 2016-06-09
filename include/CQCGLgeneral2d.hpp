@@ -79,6 +79,7 @@ public:
     int R = 1;		/* radius for evaluating phi(z) */
 
     int Method = 1;
+    int constETDPrint = 0;
     ////////////////////////////////////////////////////////////
 
 

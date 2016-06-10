@@ -15,6 +15,7 @@ from mpl_toolkits.mplot3d import proj3d
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import os
+import subprocess as sps
 
 ##################################################
 #               Plot related                     #
@@ -39,10 +40,14 @@ class Arrow3D(FancyArrowPatch):
         self._verts3d = x, y, z
 
 
-def pl3d(size=[8, 6], labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
-         xlim=None, ylim=None, zlim=None, isBlack=False):
+def plinit(size=[8, 6]):
     fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111, projection='3d')
+    return fig
+
+
+def ax3dinit(fig, num=111, labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
+             xlim=None, ylim=None, zlim=None, isBlack=False):
+    ax = fig.add_subplot(num, projection='3d')
 
     if labs[0] is not None:
         ax.set_xlabel(labs[0], fontsize=axisLabelSize)
@@ -62,6 +67,14 @@ def pl3d(size=[8, 6], labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
         fig.patch.set_facecolor('black')
         ax.patch.set_facecolor('black')
 
+    return ax
+
+
+def pl3d(size=[8, 6], labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
+         xlim=None, ylim=None, zlim=None, isBlack=False):
+    fig = plinit(size=size)
+    ax = ax3dinit(fig, labs=labs, axisLabelSize=axisLabelSize,
+                  xlim=xlim, ylim=ylim, zlim=zlim, isBlack=isBlack)
     return fig, ax
 
 
@@ -75,7 +88,7 @@ def ax3d(fig, ax, doBlock=False, save=False, name='output.png',
     if title is not None:
         ax.set_title(title)
 
-    ax.legend()
+    ax.legend(loc='best')
     if save:
         plt.savefig(name)
         plt.close()
@@ -109,12 +122,10 @@ def add3d(fig, ax, x, y, z, maxShow=5, c='r', s=70):
         i += 1
     
 
-def pl2d(size=[8, 6], labs=[r'$x$', r'$y$'], axisLabelSize=25,
-         yscale=None,
-         xlim=None, ylim=None, tickSize=None,
-         isBlack=False, ratio='auto'):
-    fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111)
+def ax2dinit(fig, num=111, labs=[r'$x$', r'$y$'], axisLabelSize=25,
+             yscale=None, xlim=None, ylim=None, tickSize=None,
+             isBlack=False, ratio='auto'):
+    ax = fig.add_subplot(num)
     
     if labs[0] is not None:
         ax.set_xlabel(labs[0], fontsize=axisLabelSize)
@@ -138,14 +149,31 @@ def pl2d(size=[8, 6], labs=[r'$x$', r'$y$'], axisLabelSize=25,
 
     ax.set_aspect(ratio)
     
+    return ax
+
+
+def pl2d(size=[8, 6], labs=[r'$x$', r'$y$'], axisLabelSize=25,
+         yscale=None, xlim=None, ylim=None, tickSize=None,
+         isBlack=False, ratio='auto'):
+    fig = plt.figure(figsize=size)
+    ax = ax2dinit(fig, labs=labs, axisLabelSize=axisLabelSize,
+                  yscale=yscale, xlim=xlim, ylim=ylim, tickSize=tickSize,
+                  isBlack=isBlack, ratio=ratio)
     return fig, ax
 
 
-def ax2d(fig, ax, doBlock=False):
+def ax2d(fig, ax, doBlock=False, save=False, name='output.png', title=None):
     fig.tight_layout(pad=0)
+    if title is not None:
+        ax.set_title(title)
+
     ax.legend(loc='best')
-    plt.show(block=doBlock)
-    
+    if save:
+        plt.savefig(name)
+        plt.close()
+    else:
+        plt.show(block=doBlock)
+
 
 def makeMovie(data):
     fig, ax = pl3d()
@@ -882,39 +910,135 @@ def getCurveCoor(points):
 ##################################################
 
 
-def CQCGL2dLoad(fileName, i, flag=1):
-    f = h5py.File(fileName, 'r')
-    ds = '/' + str(i) + '/'
-    if flag == 1 or flag == 0:
-        a = f[ds+'ar'].value + 1j*f[ds+'ai'].value
-    if flag == 2 or flag == 0:
-        v = f[ds+'vr'].value + 1j*f[ds+'vi'].value
-    
-    f.close()
+class CQCGL2dPlot():
 
-    if flag == 0:
-        return a, v
-    elif flag == 1:
-        return a
-    elif flag == 2:
-        return v
+    def __init__(self, dx, dy):
+        self.dx = dx
+        self.dy = dy
 
+    def load(self, fileName, i, flag=1):
+        """
+        Load one state in the original storage order
+        """
+        f = h5py.File(fileName, 'r')
+        ds = '/' + format(i, '06d') + '/'
+        if flag == 1 or flag == 0:
+            a = f[ds+'ar'].value + 1j*f[ds+'ai'].value
+        if flag == 2 or flag == 0:
+            v = f[ds+'vr'].value + 1j*f[ds+'vi'].value
 
-def CQCGL2dPlotOneState(cgl, fileName, sid, save=False, name='out.png'):
-    a = CQCGL2dLoad(fileName, sid, flag=1)
-    A = cgl.Fourier2Config(a)
-    plotMat(np.abs(A), save=save, name=name)
+        f.close()
 
+        if flag == 0:
+            return a, v
+        elif flag == 1:
+            return a
+        elif flag == 2:
+            return v
 
-def CQCGL2dSavePlots(cgl, f1, sids, f2):
-    if os.path.exists(f2):
-        print 'folder already exists'
-    else:
-        os.makedirs(f2)
-        for i in sids:
-            CQCGL2dPlotOneState(cgl, f1, i, save=True,
-                                name=f2+'/a'+format(i, '06d')+'.png')
-        
+    def plotOneState(self, cgl, fileName, sid, save=False, name='out.png',
+                     colortype='jet', percent=0.05, size=[7, 5],
+                     barTicks=None, axisLabelSize=25,
+                     plotType=0):
+        """
+        Parameters
+        ==========
+        isHeat : heat plot or 3d mesh plot
+        """
+        a = self.load(fileName, sid, flag=1)
+        A = cgl.Fourier2Config(a)
+        aA = np.abs(A).T
+
+        if plotType == 0:
+            fig, ax = pl2d(size=size, labs=[None, None],
+                           axisLabelSize=axisLabelSize)
+            ax.grid('on')
+            im = ax.imshow(aA, cmap=plt.get_cmap(colortype), aspect='equal',
+                           origin='lower', extent=[0, self.dx, 0, self.dy])
+            dr = make_axes_locatable(ax)
+            cax = dr.append_axes('right', size=percent, pad=0.05)
+            if barTicks is not None:
+                plt.colorbar(im, cax=cax, ticks=barTicks)
+            else:
+                plt.colorbar(im, cax=cax)
+            ax2d(fig, ax, save=save, name=name)
+            # plotMat(aA, save=save, name=name)
+
+        else:
+            X = np.linspace(0, self.dx, aA.shape[1])
+            Y = np.linspace(0, self.dy, aA.shape[0])
+            X, Y = np.meshgrid(X, Y)
+
+            if plotType == 1:
+                fig, ax = pl3d(size=size, labs=[r'$x$', r'$y$', r'$|A|$'],
+                               axisLabelSize=axisLabelSize)
+                surf = ax.plot_surface(X, Y, aA, rstride=10, cstride=10,
+                                       cmap=plt.get_cmap(colortype),
+                                       linewidth=0, antialiased=False)
+
+                if barTicks is not None:
+                    fig.colorbar(surf, fraction=percent, shrink=0.6, aspect=20,
+                                 ticks=barTicks)
+                else:
+                    fig.colorbar(surf, fraction=percent, shrink=0.6, aspect=20,
+                                 ticks=barTicks)
+
+                ax3d(fig, ax, save=save, name=name)
+
+            else:
+                fig = plinit(size)
+                ax1 = ax3dinit(fig, 121, labs=[r'$x$', r'$y$', r'$|A|$'],
+                               axisLabelSize=axisLabelSize)
+                ax2 = ax2dinit(fig, 122, labs=[None, None])
+                ax2.grid('on')
+                surf = ax1.plot_surface(X, Y, aA, rstride=10, cstride=10,
+                                        cmap=plt.get_cmap(colortype),
+                                        linewidth=0, antialiased=False)
+
+                im = ax2.imshow(aA, cmap=plt.get_cmap(colortype),
+                                aspect='equal', origin='lower',
+                                extent=[0, self.dx, 0, self.dy])
+                dr = make_axes_locatable(ax2)
+                cax = dr.append_axes('right', size=percent, pad=0.05)
+                if barTicks is not None:
+                    plt.colorbar(im, cax=cax, ticks=barTicks)
+                else:
+                    plt.colorbar(im, cax=cax)
+                ax2d(fig, ax2, save=save, name=name)
+
+    def makeMovie(self, folderName, name='out.mp4'):
+        """
+        Parameters
+        ==========
+        folderName : name of the figure folder
+        """
+        files = "'" + folderName + '/*.png' + "'"
+        command = ('ffmpeg -f image2 -r 6 -pattern_type glob -i' +
+                   ' ' + files + ' ' + name)
+        os.system(command)
+
+    def savePlots(self, cgl, f1, sids, f2, plotType=0,
+                  size=[7, 5],
+                  name='out.mp4', onlyMovie=False):
+        """
+        Parameters
+        ==========
+        f1 : h5 data file
+        f2 : save folder name
+        onlyMovie: true => figures are deleted
+        """
+        if os.path.exists(f2):
+            print 'folder already exists'
+        else:
+            os.makedirs(f2)
+            for i in sids:
+                name = f2+'/a'+format(i, '06d')+'.png'
+                self.plotOneState(cgl, f1, i, save=True, size=size,
+                                  name=name, plotType=plotType)
+            self.makeMovie(f2, name=name)
+            if onlyMovie:
+                sps.call(['rm', '-r' + f2])
+
 
 ############################################################
 #                        KS related                        #

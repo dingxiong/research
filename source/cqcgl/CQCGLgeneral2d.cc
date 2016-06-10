@@ -282,8 +282,11 @@ CQCGLgeneral2d::adaptTs(bool &doChange, bool &doAccept, const double s){
 
 void CQCGLgeneral2d::saveState(H5File &file, int id, const ArrayXXcd &a, 
 			       const ArrayXXcd &v, const int flag){
-    Group group(file.createGroup("/"+std::to_string(id)));
-    std:: string DS = "/" + std::to_string(id) + "/";
+    char groupName[10];
+    sprintf (groupName, "%.6d", id);
+    std::string s = "/"+std::string(groupName);
+    Group group(file.createGroup(s));
+    std:: string DS = s + "/";
     
     if (1 == flag || 0 == flag){
 	writeMatrixXd(file, DS + "ar", a.real());

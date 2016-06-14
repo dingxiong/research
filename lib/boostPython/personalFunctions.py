@@ -919,6 +919,10 @@ class CQCGL2dPlot():
     def load(self, fileName, i, flag=1):
         """
         Load one state in the original storage order
+
+        Parameters
+        ==========
+        flag : what to return
         """
         f = h5py.File(fileName, 'r')
         ds = '/' + format(i, '06d') + '/'
@@ -936,6 +940,23 @@ class CQCGL2dPlot():
         elif flag == 2:
             return v
 
+    def loadSeq(self, fileName, x, y, ids):
+        """
+        Avoid using the whole mesh since it is slow.
+
+        Parameters
+        ==========
+        x, y : the x and y location of the mesh
+        """
+        n = len(ids)
+        data = np.zeros(n, dtype=np.complex)
+        f = h5py.File(fileName, 'r')
+        for i in ids:
+            ds = '/' + format(i, '06d') + '/'
+            data[i] = f[ds+'ar'][x, y] + 1j*f[ds+'ai'][x, y]
+        f.close()
+        return data
+
     def plotOneState(self, cgl, fileName, sid, save=False, name='out.png',
                      colortype='jet', percent=0.05, size=[7, 5],
                      barTicks=None, axisLabelSize=25,
@@ -943,7 +964,9 @@ class CQCGL2dPlot():
         """
         Parameters
         ==========
-        isHeat : heat plot or 3d mesh plot
+        plotType : 0 => heat plot
+                   1 => 3d mesh plot
+                   else => both together
         """
         a = self.load(fileName, sid, flag=1)
         A = cgl.Fourier2Config(a)

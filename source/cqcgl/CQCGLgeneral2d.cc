@@ -646,7 +646,7 @@ ArrayXXcd CQCGLgeneral2d::Config2Fourier(const Ref<const ArrayXXcd> &AA){
     return unpad(aa);
 }
 
-#if 0 
+
 
 /* -------------------------------------------------- */
 /* --------            velocity field     ----------- */
@@ -655,12 +655,12 @@ ArrayXXcd CQCGLgeneral2d::Config2Fourier(const Ref<const ArrayXXcd> &AA){
 /**
  * @brief velocity field
  */
-ArrayXd CQCGLgeneral::velocity(const ArrayXd &a0){
-    assert( Ndim == a0.rows() );
-    F[0].v1 = R2C(a0);
+ArrayXXcd CQCGLgeneral::velocity(const ArrayXXcd &a0){
+    assert(a0.rows() == Me && a0.cols() == Ne);
+    F[0].v1 = pad(a0);
     NL(0, true);
-    ArrayXcd vel = L*F[0].v1 + F[0].v3;
-    return C2R(vel);
+    ArrayXXcd vel = L*F[0].v1 + F[0].v3;
+    return unpad(vel);
 }
 
 /**
@@ -673,50 +673,21 @@ ArrayXd CQCGLgeneral::velocityReq(const ArrayXd &a0, const double wth,
     return velocity(a0) + wth*transTangent(a0) + wphi*phaseTangent(a0);    
 }
 
-/**
- * velocity in the slice
- *
- * @param[in]  aH  state in the slice
- */
-VectorXd CQCGLgeneral::velSlice(const Ref<const VectorXd> &aH){
-    VectorXd v = velocity(aH);
-    
-    Vector2d c;
-    c << v(Ndim-1), v(3);
-    
-    Matrix2d Linv;
-    Linv << 0.5/aH(Ndim-2), 0.5/aH(2),
-	-0.5/aH(Ndim-2), 0.5/aH(2); 
-
-    VectorXd tp = phaseTangent(aH);
-    VectorXd tt = transTangent(aH);
-    MatrixXd vs(Ndim, 2);
-    vs << tp, tt;
-
-    return v - vs * (Linv * c);
-}
-
-VectorXd CQCGLgeneral::velPhase(const Ref<const VectorXd> &aH){
-    VectorXd v = velocity(aH);
- 
-    VectorXd tp = phaseTangent(aH);   
-    double c = v(Ndim-1) / aH(Ndim-2);
-
-    return v - c * tp;
-}
 
 /* -------------------------------------------------- */
 /* --------          stability matrix     ----------- */
 /* -------------------------------------------------- */
-MatrixXd CQCGLgeneral::stab(const ArrayXd &a0){
-    ArrayXXd v0(Ndim, Ndim+1); 
-    v0 << a0, MatrixXd::Identity(Ndim, Ndim);
-    JF[0].v1 = R2C(v0);
+/**
+ * @brief calculate the product of stability matrix with a vector
+ */
+MatrixXd CQCGLgeneral::stab(const ArrayXXcd &a0, const ArrayXXcd &v0){
+    assert(a0.rows() == Me && a0.cols() == Ne && v0.rows() == Me && v0.cols() == Ne);
+    F[0].v1 = pad(a0);
+    JF[0].v1 = pad(v0);
+
     NL(0, false);
-    ArrayXXcd j0 = R2C(MatrixXd::Identity(Ndim, Ndim));
-    MatrixXcd Z = j0.colwise() * L + JF[0].v3.rightCols(Ndim);
-  
-    return C2R(Z);
+    ArrayXXcd Ax = L*v0 + JF[1].v3;
+    return unpad(Ax);
 }
 
 /**
@@ -726,29 +697,6 @@ MatrixXd CQCGLgeneral::stabReq(const ArrayXd &a0, double wth, double wphi){
     MatrixXd z = stab(a0);
     return z + wth*transGenerator() + wphi*phaseGenerator();
 }
-
-/**
- * @brief stability exponents of req
- */
-VectorXcd CQCGLgeneral::eReq(const ArrayXd &a0, double wth, double wphi){
-    return eEig(stabReq(a0, wth, wphi));
-}
-
-/**
- * @brief stability vectors of req
- */
-MatrixXcd CQCGLgeneral::vReq(const ArrayXd &a0, double wth, double wphi){
-    return vEig(stabReq(a0, wth, wphi));
-}
-
-/**
- * @brief stability exponents and vectors of req
- */
-std::pair<VectorXcd, MatrixXcd>
-CQCGLgeneral::evReq(const ArrayXd &a0, double wth, double wphi){
-    return evEig(stabReq(a0, wth, wphi));
-}
-
 
 /* -------------------------------------------------- */
 /* ------           symmetry related           ------ */
@@ -774,19 +722,20 @@ ArrayXXd CQCGLgeneral::reflect(const Ref<const ArrayXXd> &aa){
 /** @brief group rotation for spatial translation of set of arrays.
  *  th : rotation angle
  *  */
-ArrayXXd CQCGLgeneral::transRotate(const Ref<const ArrayXXd> &aa, const double th){
-    ArrayXcd R = ( dcp(0,1) * th * K2 ).exp(); // e^{ik\theta}
-    ArrayXXcd raa = r2c(aa); 
-    raa.colwise() *= R;
-  
-    return c2r(raa);
+ArrayXXd CQCGLgeneral::transRotate(const Ref<const ArrayXXcd> &a0, const double thx, 
+				   const double thy){
+    ArrayXXcd th = (thx*Kx2).replicate(1, Me).transpose() + (thy*Ky2).replicate(1, Ne);
+    
+    return a0 * (dcp(0, 1) * th).exp();
 }
 
 /** @brief group tangent in angle unit.
  *
  *  x=(b0, c0, b1, c1, b2, c2 ...) ==> tx=(0, 0, -c1, b1, -2c2, 2b2, ...)
  */
-ArrayXXd CQCGLgeneral::transTangent(const Ref<const ArrayXXd> &aa){
+ArrayXXd CQCGLgeneral::transTangent(const Ref<const ArrayXXcd> &a0, const bool xory){
+    
+    
     ArrayXcd R = dcp(0,1) * K2;
     ArrayXXcd raa = r2c(aa);
     raa.colwise() *= R;
@@ -794,38 +743,19 @@ ArrayXXd CQCGLgeneral::transTangent(const Ref<const ArrayXXd> &aa){
     return c2r(raa);
 }
 
-/** @brief group generator. */
-MatrixXd CQCGLgeneral::transGenerator(){
-    MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
-    for(size_t i = 0; i < Ne; i++){
-	T(2*i, 2*i+1) = -K2(i);
-	T(2*i+1, 2*i) = K2(i);
-    }
-    return T;
-}
-
-
 /** @brief group transform for complex rotation
- * phi: rotation angle
- * */
-ArrayXXd CQCGLgeneral::phaseRotate(const Ref<const ArrayXXd> &aa, const double phi){
-    return c2r( r2c(aa) * exp(dcp(0,1)*phi) ); // a0*e^{i\phi}
+ * 
+ * @parameter[in] phi: rotation angle
+ */
+ArrayXXcd CQCGLgeneral::phaseRotate(const Ref<const ArrayXXcd> &a0, const double phi){
+    return a0 * exp(dcp(0, 1)*phi); // a0*e^{i\phi}
 }
 
 /** @brief group tangent.  */
-ArrayXXd CQCGLgeneral::phaseTangent(const Ref<const ArrayXXd> &aa){
-    return c2r( r2c(aa) * dcp(0,1) );
+ArrayXXcd CQCGLgeneral::phaseTangent(const Ref<const ArrayXXcd> &a0){
+    return a0 * dcp(0, 1);
 }
 
-/** @brief group generator  */
-MatrixXd CQCGLgeneral::phaseGenerator(){
-    MatrixXd T = MatrixXd::Zero(Ndim, Ndim);
-    for(size_t i = 0; i < Ne; i++){
-	T(2*i, 2*i+1) = -1;
-	T(2*i+1, 2*i) = 1;
-    }
-    return T;
-}
 
 /**
  * @brief apply both continous symmetries
@@ -860,6 +790,8 @@ ArrayXXd CQCGLgeneral::rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd 
 
     return aaHat;
 }
+
+#if 0 
 
 /**
  * @brief rotate the state points in the full state space to the slice

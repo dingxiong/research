@@ -655,7 +655,7 @@ ArrayXXcd CQCGLgeneral2d::Config2Fourier(const Ref<const ArrayXXcd> &AA){
 /**
  * @brief velocity field
  */
-ArrayXXcd CQCGLgeneral::velocity(const ArrayXXcd &a0){
+ArrayXXcd CQCGLgeneral2d::velocity(const ArrayXXcd &a0){
     assert(a0.rows() == Me && a0.cols() == Ne);
     F[0].v1 = pad(a0);
     NL(0, true);
@@ -668,9 +668,10 @@ ArrayXXcd CQCGLgeneral::velocity(const ArrayXXcd &a0){
  *
  *   v(x) + \omega_\tau * t_\tau(x) + \omega_\rho * t_\rho(x)
  */
-ArrayXd CQCGLgeneral::velocityReq(const ArrayXd &a0, const double wth,
-				  const double wphi){
-    return velocity(a0) + wth*transTangent(a0) + wphi*phaseTangent(a0);    
+ArrayXXcd CQCGLgeneral2d::velocityReq(const ArrayXXcd &a0, const double wthx,
+				    const double wthy, const double wphi){
+    return velocity(a0) + wthx*tangent(a0, 1) + wthy*tangent(a0, 2) + 
+	wphi*tangent(a0, 3);
 }
 
 
@@ -680,7 +681,7 @@ ArrayXd CQCGLgeneral::velocityReq(const ArrayXd &a0, const double wth,
 /**
  * @brief calculate the product of stability matrix with a vector
  */
-MatrixXd CQCGLgeneral::stab(const ArrayXXcd &a0, const ArrayXXcd &v0){
+ArrayXXcd CQCGLgeneral2d::stab(const ArrayXXcd &a0, const ArrayXXcd &v0){
     assert(a0.rows() == Me && a0.cols() == Ne && v0.rows() == Me && v0.cols() == Ne);
     F[0].v1 = pad(a0);
     JF[0].v1 = pad(v0);
@@ -693,103 +694,89 @@ MatrixXd CQCGLgeneral::stab(const ArrayXXcd &a0, const ArrayXXcd &v0){
 /**
  * @brief stability for relative equilbrium
  */
-MatrixXd CQCGLgeneral::stabReq(const ArrayXd &a0, double wth, double wphi){
-    MatrixXd z = stab(a0);
-    return z + wth*transGenerator() + wphi*phaseGenerator();
+ArrayXXcd CQCGLgeneral2d::stabReq(const ArrayXXcd &a0, const ArrayXXcd &v0,
+				  const double wthx, const double wthy,
+				  const double wphi){
+    ArrayXXcd z = stab(a0, v0);
+    return z + wthx*tangent(v0, 1) + wthy*tangent(v0, 2) + wphi*tangent(v0, 3);
 }
 
 /* -------------------------------------------------- */
 /* ------           symmetry related           ------ */
 /* -------------------------------------------------- */
 
-/**
- * @brief reflect the states
- *
- * Reflection : a_k -> a_{-k}. so a_0 keeps unchanged
- */
-ArrayXXd CQCGLgeneral::reflect(const Ref<const ArrayXXd> &aa){
-    ArrayXXcd raa = R2C(aa);
-    const int n = raa.rows(); // n is an odd number
-    for(size_t i = 1; i < (n+1)/2; i++){
-	ArrayXcd tmp = raa.row(i);
-	raa.row(i) = raa.row(n-i);
-	raa.row(n-i) = tmp;
+ArrayXXcd CQCGLgeneral2d::rotate(const Ref<const ArrayXXcd> &a0, const int mode, const double th1,
+				 const double th2, const double th3){
+    switch(mode) {
+
+    case 1 : {		     /* translation rotation in x direction */
+	double thx = th1;
+	ArrayXXd th = (thx*Kx2).replicate(1, Me).transpose();
+
+	return a0 * (dcp(0, 1) * th).exp();
     }
-    return C2R(raa);
-}
+	
+    case 2: {		     /* translation rotation in y direction */
+	double thy = th1;
+	ArrayXXd th = (thy*Ky2).replicate(1, Ne);
 
-
-/** @brief group rotation for spatial translation of set of arrays.
- *  th : rotation angle
- *  */
-ArrayXXd CQCGLgeneral::transRotate(const Ref<const ArrayXXcd> &a0, const double thx, 
-				   const double thy){
-    ArrayXXcd th = (thx*Kx2).replicate(1, Me).transpose() + (thy*Ky2).replicate(1, Ne);
-    
-    return a0 * (dcp(0, 1) * th).exp();
-}
-
-/** @brief group tangent in angle unit.
- *
- *  x=(b0, c0, b1, c1, b2, c2 ...) ==> tx=(0, 0, -c1, b1, -2c2, 2b2, ...)
- */
-ArrayXXd CQCGLgeneral::transTangent(const Ref<const ArrayXXcd> &a0, const bool xory){
-    
-    
-    ArrayXcd R = dcp(0,1) * K2;
-    ArrayXXcd raa = r2c(aa);
-    raa.colwise() *= R;
-  
-    return c2r(raa);
-}
-
-/** @brief group transform for complex rotation
- * 
- * @parameter[in] phi: rotation angle
- */
-ArrayXXcd CQCGLgeneral::phaseRotate(const Ref<const ArrayXXcd> &a0, const double phi){
-    return a0 * exp(dcp(0, 1)*phi); // a0*e^{i\phi}
-}
-
-/** @brief group tangent.  */
-ArrayXXcd CQCGLgeneral::phaseTangent(const Ref<const ArrayXXcd> &a0){
-    return a0 * dcp(0, 1);
-}
-
-
-/**
- * @brief apply both continous symmetries
- *
- * @note     for performance purpose, this function is not written as the
- *           superposition of 2 functions
- */
-ArrayXXd CQCGLgeneral::Rotate(const Ref<const ArrayXXd> &aa, const double th,
-			      const double phi){
-    ArrayXcd R = ( dcp(0,1) * (th * K2 + phi) ).exp(); // e^{ik\theta + \phi}
-    ArrayXXcd raa = r2c(aa); 
-    raa.colwise() *= R;
-  
-    return c2r(raa);
-}
-
-/**
- * @brief rotate the whole orbit with different phase angles at different point
- */
-ArrayXXd CQCGLgeneral::rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
-				   const ArrayXd &phi){
-    const int m = aa.cols();
-    const int n = aa.rows();
-    const int m2 = th.size();
-    const int m3 = phi.size();
-    assert( m == m2 && m2 == m3);
-
-    ArrayXXd aaHat(n, m);
-    for( size_t i = 0; i < m; i++){
-	aaHat.col(i) = Rotate(aa.col(i), th(i), phi(i));
+	return a0 * (dcp(0, 1) * th).exp();
     }
 
-    return aaHat;
+    case 3 : {			/* phase rotation */
+	double phi = th1;
+	return a0 * exp(dcp(0, 1)*phi); // a0*e^{i\phi}
+    }
+	
+    case 4 : {	  /* translation rotation in both x and y direction */
+	double thx = th1;
+	double thy = th2;
+	ArrayXXd th = (thx*Kx2).replicate(1, Me).transpose() + (thy*Ky2).replicate(1, Ne);
+
+	return a0 * (dcp(0, 1) * th).exp();
+    }
+
+    case 5 : {			/* both rotate */
+	double thx = th1;
+	double thy = th2;
+	double phi = th3;
+	ArrayXXd th = (thx*Kx2).replicate(1, Me).transpose() + (thy*Ky2).replicate(1, Ne) + phi;
+	
+	return a0 * (dcp(0, 1) * th).exp();
+    }
+
+    default :{
+	fprintf(stderr, "indicate a valid rotate mode !\n");
+    }
+	
+    }
+
 }
+
+ArrayXXcd CQCGLgeneral2d::tangent(const Ref<const ArrayXXcd> &a0, const int mode){
+    switch (mode) {
+    
+    case 1 : {		      /* translation tangent in x direction */
+	ArrayXXcd R = dcp(0, 1) * Kx2;
+	return a0 * R.replicate(1, Me).transpose();
+    }
+
+    case 2 : {		      /* translation tangent in y direction */
+	ArrayXXcd R = dcp(0, 1) * Ky2;
+	return a0 * R.replicate(1, Ne);
+    }
+
+    case 3 : {			/* phase rotation tangent  */
+	return a0 * dcp(0, 1);
+    }
+	
+    default :{
+	fprintf(stderr, "indicate a valid tangent mode !\n");
+    }
+	
+    }
+}
+
 
 #if 0 
 
@@ -905,259 +892,5 @@ MatrixXd CQCGLgeneral::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x)
     return vep;
 
 }
-
-/**
- * @brief a wrap function => reduce all symmetries of an orbit
- */
-std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-CQCGLgeneral::reduceAllSymmetries(const Ref<const ArrayXXd> &aa){
-    std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(aa);
-    return std::make_tuple(reduceReflection(std::get<0>(tmp)),
-			   std::get<1>(tmp), std::get<2>(tmp));
-}
-
-/**
- * @brief a wrap function => reduce all the symmetries of covariant vectors
- */
-MatrixXd CQCGLgeneral::reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
-    std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(x);
-    return reflectVe(ve2slice(ve, x), std::get<0>(tmp).col(0));
-}
-
-#if 0
-/* -------------------------------------------------- */
-/* --------          shooting related     ----------- */
-/* -------------------------------------------------- */
-
-/**
- * @brief form the multishooting vector
- *
- *  df  = [ f(x_0, nstp) - x_1,
- *          f(x_1, nstp) - x_2,
- *          ...
- *          g(\theta, \phi) f(x_{M-1}, nstp) - x_0 ]
- * 
- * @param[in] x      a stack of state vectors on a orbit. Each column is one point
- * @param[in] nstp   integration time steps for each point in x
- * @param[in] th     translation rotation angle
- * @param[in] phi    phase change angle
- */
-VectorXd CQCGLgeneral::multiF(const ArrayXXd &x, const int nstp, const double th, const double phi){
-    int m = x.cols();
-    int n = x.rows();
-    assert( Ndim == n );
-    
-    VectorXd F(m*n);
-    for(size_t i = 0; i < m; i++){
-	ArrayXXd aa = intg(x.col(i), nstp, nstp);
-	if(i < m-1) F.segment(i*n, n) = aa.col(1) - x.col(i+1);
-	else F.segment(i*n, n) =  Rotate(aa.col(1), th, phi)  - x.col((i+1)%m);
-    }
-
-    return F;
-}
-
-/**
- * @brief form the multishooting matrix and the difference vector
- *
- *  df  = [ f(x_0, nstp) - x_1,
- *          f(x_1, nstp) - x_2,
- *          ...
- *          g(\theta, \phi) f(x_{M-1}, nstp) - x_0 ]
- *          
- *  A relative periodic orbit has form \f$ x(0) = g_\tau(\theta) g_\rho(\phi) x(T_p) \f$.
- *  Take derivative of the above vector, we obtain
- *             [ J(x_0)   -I                                      v(f(x_0))         
- *                       J(x_1)   -I                              v(f(x_1))
- *  Jacobian =                    ....                             ...
- *               -I                   g(\theta, \phi)J(x_{M-1})   v(f(x_{M-1}))  tx1  tx2 ]
- *  
- */
-pair<CQCGLgeneral::SpMat, VectorXd>
-CQCGLgeneral::multishoot(const ArrayXXd &x, const int nstp, const double th,
-			 const double phi, bool doesPrint /* = false*/){
-    int m = x.cols();		/* number of shooting points */
-    int n = x.rows();
-    assert( Ndim == n );
-  
-    SpMat DF(m*n, m*n+3);
-    VectorXd F(m*n);
-    std::vector<Tri> nz;
-    nz.reserve(2*m*n*n);
-    
-    if(doesPrint) printf("Forming multishooting matrix:");
-
-
-    for(size_t i = 0 ; i < m; i++){
-	if(doesPrint) printf("%zd ", i);
-	std::pair<ArrayXXd, ArrayXXd> aadaa = intgj(x.col(i), nstp, nstp, nstp); 
-	ArrayXXd &aa = aadaa.first;
-	ArrayXXd &J = aadaa.second;
-	
-	if(i < m-1){
-	    // J
-	    std::vector<Tri> triJ = triMat(J, i*n, i*n);
-	    // velocity
-	    std::vector<Tri> triv = triMat(velocity(aa.col(1)), i*n, m*n);
-
-	    {
-		nz.insert(nz.end(), triJ.begin(), triJ.end());
-		nz.insert(nz.end(), triv.begin(), triv.end());
-		// f(x_i) - x_{i+1}
-		F.segment(i*n, n) = aa.col(1) - x.col(i+1);
-	    }
-	    
-	} else {
-	    ArrayXd gfx = Rotate(aa.col(1), th, phi); /* gf(x) */
-	    // g*J
-	    std::vector<Tri> triJ = triMat(Rotate(J, th, phi), i*n, i*n);
-	    // R*velocity
-	    std::vector<Tri> triv = triMat(Rotate(velocity(aa.col(1)), th, phi), i*n, m*n);
-	    // T_\tau * g * f(x_{m-1})
-	    VectorXd tx_trans = transTangent(gfx) ;
-	    std::vector<Tri> tritx_trans = triMat(tx_trans, i*n, m*n+1);	    
-	    // T_\phi * g * f(x_{m-1})
-	    ArrayXd tx_phase = phaseTangent( gfx );
-	    std::vector<Tri> tritx_phase = triMat(tx_phase, i*n, m*n+2);
-	    
-
-	    {
-		nz.insert(nz.end(), triJ.begin(), triJ.end());
-		nz.insert(nz.end(), triv.begin(), triv.end());
-		nz.insert(nz.end(), tritx_trans.begin(), tritx_trans.end());
-		nz.insert(nz.end(), tritx_phase.begin(), tritx_phase.end());
-		// g*f(x_{m-1}) - x_0
-		F.segment(i*n, n) = gfx  - x.col((i+1)%m);
-	    }
-	}
-	
-	std::vector<Tri> triI = triDiag(n, -1, i*n, ((i+1)%m)*n);
-
-	nz.insert(nz.end(), triI.begin(), triI.end());
-    }
-    
-    if(doesPrint) printf("\n");
-    
-    DF.setFromTriplets(nz.begin(), nz.end());
-
-    return make_pair(DF, F);
-}
-
-/**
- * @brief calculate the Jacobian for finding relative equilibria
- * 
- */
-std::pair<MatrixXd, VectorXd>
-CQCGLgeneral::newtonReq(const ArrayXd &a0, const double wth, const double wphi){
-    int n = a0.rows();
-    assert(Ndim == n);
-    
-    MatrixXd DF(n, n+2); 
-    ArrayXd tx_trans = transTangent(a0);
-    ArrayXd tx_phase = phaseTangent(a0);
-    DF.leftCols(n) = stabReq(a0, wth, wphi); 
-    DF.col(n)= tx_trans;
-    DF.col(n+1) = tx_phase;
-
-    VectorXd F(n);
-    F.head(n) = velocity(a0) + wth*tx_trans + wphi*tx_phase;
-
-    return make_pair(DF, F);
-}
-
-/**
- * @brief use Levenberg-Marquardt algorithm to find relative equlibirum
- *
- * To find relative equilibrium, we do not need to integrate the system. We only
- * need to use velocity
- *
- * @param[in] a0          initial guess of relative equilibrium
- * @param[in] wth0        initial guess of the translation angular velocity
- * @param[in] wphi0       initial guess of phase roation velocity
- * @param[in] MaxN        maximal iteration number
- * @param[in] tol         convergence tolerence
- * @return    [a, wth, wphi, err]
- */
-std::tuple<ArrayXd, double, double, double>
-CQCGLgeneral::findReq(const ArrayXd &a0, const double wth0, const double wphi0,
-		      const int MaxN /* = 100 */, const double tol /* = 1e-14 */,
-		      const bool doesUseMyCG /* = true */,
-		      const bool doesPrint /* = true */){ 
-    const int n = a0.rows();
-    assert(n == Ndim);
-    
-    ArrayXd a = a0;
-    double wth = wth0;
-    double wphi = wphi0;
-    double lam = 1;
-
-    ConjugateGradient<MatrixXd> CG;
-    PartialPivLU<MatrixXd> solver; // used in the pre-CG method
-    for(size_t i = 0; i < MaxN; i++){
-	if (lam > 1e10) break;
-	if(doesPrint) printf("\n ********  i = %zd/%d   ******** \n", i, MaxN);	
-	ArrayXd F = velocityReq(a, wth, wphi); 
-	double err = F.matrix().norm(); 
-	if(err < tol){
-	    if(doesPrint) printf("stop at norm(F)=%g\n", err);
-	    break;
-	}
-
-	std::pair<MatrixXd, VectorXd> p = newtonReq(a, wth, wphi); 
-	MatrixXd JJ = p.first.transpose() * p.first;
-	VectorXd JF = p.first.transpose() * p.second;
-	
-
-	for(size_t j = 0; j < 20; j++){ 
-	    // printf("inner iteration j = %zd\n", j);
-	    //MatrixXd H = JJ + lam * JJ.diagonal().asDiagonal(); 
-	    MatrixXd H = JJ;
-	    H.diagonal() *= (1+lam);
-	    VectorXd dF; 
-	    if(doesUseMyCG){
-		std::pair<VectorXd, std::vector<double> > cg = iterMethod::ConjGradSSOR<MatrixXd>
-		    (H, -JF, solver, VectorXd::Zero(H.rows()), H.rows(), 1e-6);
-		dF = cg.first;
-		if(doesPrint) printf("CG error %g after %lu iterations.\n", cg.second.back(), cg.second.size());
-	    }
-	    else{
-		CG.compute(H);     
-		dF = CG.solve(-JF);
-		if(doesPrint) printf("CG error %g, iteration number %d\n", CG.error(), CG.iterations());
-	    }
-	    ArrayXd aNew = a + dF.head(n).array();
-	    double wthNew = wth + dF(n); 
-	    double wphiNew = wphi + dF(n+1);
-	    // printf("wthNew = %g, wphiNew = %g\n", wthNew, wphiNew);
-      
-	    ArrayXd FNew = velocityReq(aNew, wthNew, wphiNew);
-	    double errNew = FNew.matrix().norm();
-	    if(doesPrint) printf("errNew = %g\n", errNew);
-	    if (errNew < err){
-		a = aNew;
-		wth = wthNew;
-		wphi = wphiNew;
-		lam = lam/10;
-		// if(doesPrint) printf("lam = %g\n", lam);
-		break;
-	    }
-	    else {
-		lam *= 10;
-		// if(doesPrint) printf("lam = %g\n", lam);
-		if( lam > 1e10){
-		    if(doesPrint) printf("lam = %f too large.\n", lam);
-		    break;
-		}
-	    }
-      
-	}
-    }
-
-    ArrayXd velReq = velocityReq(a, wth, wphi);
-    return std::make_tuple(a, wth, wphi, velReq.matrix().norm());
-}
-
-
-#endif
 
 #endif

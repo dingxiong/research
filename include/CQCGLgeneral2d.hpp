@@ -17,9 +17,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <vector>
-#include "sparseRoutines.hpp"
 #include "denseRoutines.hpp"
-#include "iterMethod.hpp"
 #include "myH5.hpp"
 #include "myfft.hpp"
 using std::pair; using std::make_pair; 

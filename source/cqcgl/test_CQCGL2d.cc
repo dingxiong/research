@@ -21,7 +21,7 @@ typedef std::complex<double> dcp;
 
 int main(){
 
-    switch(1){
+    switch(2){
 	
     case 1: {			/* test integrator */
 	int N = 1024; 
@@ -38,33 +38,24 @@ int main(){
 	
 	break;
     }
-#if 0
-    case 2:{ 			/* test multishoot */
-	const int N = 256; 
-	const int L = 50;
-	int nstp = 2;
-	int nqr = 1;
-	double h = 0.01; 
-	
-	ArrayXd A0(2*N) ;
-	// prepare Gaussian curve initial condition
-	for(int i = 0; i < N; i++) {
-	    double x = (double)i/N*L - L/2.0; 
-	    A0(2*i) =  exp(-x*x/8.0);
-	}
-	ArrayXXd aa(2*N, 3);
-	aa << A0, A0, A0;
-	Cqcgl1d cgl(N, L, h);
-	pair<Cqcgl1d::SpMat, VectorXd> tmp = cgl.multishoot(aa, nstp, 0.1, 0.2, true);
-	Cqcgl1d::SpMat &AA = tmp.first;
-	
-	cout << AA.rows() << 'x' << AA.cols() << endl << "--------------" << endl;
-	//cout << AA.col(2) << endl;
-	//cout << A0 << endl;
+
+    case 2:{ 			/* test r2c and c2r */
+	int N = 1024; 
+	double L = 30;
+	double di = 0.3;
+	CQCGL2d cgl(N, L, 4.0, 0.8, 0.05, di, 4);
+
+	ArrayXXcd x(ArrayXXcd::Random(3, 4));
+	ArrayXXd y = cgl.c2r(x);
+	ArrayXXcd z = cgl.r2c(y);
+	CE(x);
+	CE(y);
+	CE(z);
+
 	break;
     }
 
-		
+#if 0	
     case 3 :{ 			/* test Fourier2Config */
 	const int N = 256; 
 	const int L = 50;

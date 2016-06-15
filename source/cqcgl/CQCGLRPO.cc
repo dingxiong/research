@@ -459,6 +459,9 @@ CQCGLRPO::findRPOM_hook2(const MatrixXd &x0,
 
 #if 0
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// use LM algorithm to find RPO
+
 std::tuple<SpMat, SpMat, VectorXd> 
 CQCGLRPO::calJJF(const VectorXd &x){
     int N = Ndim + 3;

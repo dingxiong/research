@@ -1,7 +1,6 @@
 #include <iostream>
 #include "CQCGL2d.hpp"
 
-using namespace sparseRoutines;
 using namespace denseRoutines;
 using namespace Eigen;
 using namespace std;

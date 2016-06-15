@@ -5,7 +5,6 @@
 
 #define CE(x) (cout << (x) << endl << endl)
 
-using namespace sparseRoutines;
 using namespace denseRoutines;
 using namespace MyH5;
 using namespace Eigen;

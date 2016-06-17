@@ -101,105 +101,69 @@ public:
 	return copy2bnc( Config2Fourier(tmpAA) );
     }
     
-#if 0
-    
-    /* wrap the velocity */
     bn::ndarray PYvelocity(bn::ndarray a0){
 	int m, n;
 	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	return copy2bn(velocity(tmpa));
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	return copy2bnc(velocity(tmpa));
     }
 
-    /* wrap the velSlice */
-    bn::ndarray PYvelSlice(bn::ndarray aH){
-	int m, n;
-	getDims(aH, m, n);
-	Map<VectorXd> tmpa((double*)aH.get_data(), m*n);
-	return copy2bn(velSlice(tmpa));
-    }
-
-    /* wrap the velPhase */
-    bn::ndarray PYvelPhase(bn::ndarray aH){
-	int m, n;
-	getDims(aH, m, n);
-	Map<VectorXd> tmpa((double*)aH.get_data(), m*n);
-	VectorXd tmpv = velPhase(tmpa);
-	return copy2bn(tmpv);
-    }
-    
-
-    /* wrap velocityReq */
-    bn::ndarray PYvelocityReq(bn::ndarray a0, double th, double phi){
+    bn::ndarray PYvelocityReq(bn::ndarray a0, double wthx, 
+			      double wthy, double wphi){
 	int m, n;
 	getDims(a0, m, n);	
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	ArrayXd tmpv = velocityReq(tmpa, th, phi);
-	return copy2bn(tmpv);
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	return copy2bnc(velocityReq(tmpa, wthx, wthy, wphi));
     }
    
-    /* orbit2slice */
-    bp::tuple PYorbit2slice(const bn::ndarray &aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(tmpaa);
-	return bp::make_tuple(copy2bn(std::get<0>(tmp)), copy2bn(std::get<1>(tmp)),
-			      copy2bn(std::get<2>(tmp)));
-    }
-
-    /* orbit2sliceUnwrap */
-    bp::tuple PYorbit2sliceWrap(const bn::ndarray &aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2sliceWrap(tmpaa);
-	return bp::make_tuple(copy2bn(std::get<0>(tmp)), copy2bn(std::get<1>(tmp)),
-			      copy2bn(std::get<2>(tmp)));
-    }
-
-    /* stability matrix */
-    bn::ndarray PYstab(bn::ndarray a0){
+    bn::ndarray PYstab(bn::ndarray a0, bn::ndarray v0){
 	int m, n;
 	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), n*m);
-	return copy2bn(stab(tmpa));
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	getDims(v0, m, n);
+	Map<ArrayXXcd> tmpv((dcp*)v0.get_data(), n, m);
+
+	return copy2bnc(stab(tmpa, tmpv));
     }
 
-    /* stability matrix for relative equibrium */
-    bn::ndarray PYstabReq(bn::ndarray a0, double th, double phi){
+    bn::ndarray PYstabReq(bn::ndarray a0, bn::ndarray v0, double wthx,
+			  double wthy, double wphi){
 	int m, n;
 	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), n*m);
-	return copy2bn(stabReq(tmpa, th, phi));
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	getDims(v0, m, n);
+	Map<ArrayXXcd> tmpv((dcp*)v0.get_data(), n, m);
+
+	return copy2bnc(stabReq(tmpa, tmpv, wthx, wthy, wphi));
     }
 
-
-    /* reflection */
-    bn::ndarray PYreflect(const bn::ndarray &aa){
+    bn::ndarray PYrotate(bn::ndarray a0, int mode, double th1=0, double th2=0, double th3=0){
 	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( reflect(tmpaa) );
+	getDims(a0, m, n);	
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	return copy2bnc( rotate(tmpa, mode, th1, th2, th3) );
+    }
+    
+    bn::ndarray PYrotate1(bn::ndarray a0, int mode, double th1, double th2){
+	return PYrotate(a0, mode, th1, th2);
     }
 
+    bn::ndarray PYrotate2(bn::ndarray a0, int mode, double th1){
+	return PYrotate(a0, mode, th1);
+    }
 
-    /* reduceReflection */
-    bn::ndarray PYreduceReflection(const bn::ndarray &aa){
+    bn::ndarray PYrotate3(bn::ndarray a0, int mode){
+	return PYrotate(a0, mode);
+    }
+
+    bn::ndarray PYtangent(bn::ndarray a0, int mode){
 	int m, n;
-	getDims(aa, m, n);	
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( reduceReflection(tmpaa) );
+	getDims(a0, m, n);
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	return copy2bnc( tangent(tmpa, mode) );
     }
 
-    /* refGradMat */
-    bn::ndarray PYrefGradMat(bn::ndarray aa){
-	int m, n;
-	getDims(aa, m, n);	
-	Map<ArrayXd> tmpaa((double*)aa.get_data(), n * m);
-	return copy2bn( refGradMat(tmpaa) );
-    }
-
+#if 0
     /* reflectVe */
     bn::ndarray PYreflectVe(const bn::ndarray &veHat, const bn::ndarray &xHat){
 	int m, n;
@@ -259,45 +223,6 @@ public:
 	return copy2bn(reduceVe(tmpve, tmpx));
     }
     
-    /* transRotate */
-    bn::ndarray PYtransRotate(bn::ndarray aa, double th){
-	int m, n;
-	getDims(aa, m, n);	
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( transRotate(tmpaa, th) );
-    }
-
-    /* transTangent */
-    bn::ndarray PYtransTangent(bn::ndarray aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( transTangent(tmpaa) );
-    }
-
-    /* phaseRotate */
-    bn::ndarray PYphaseRotate(bn::ndarray aa, double phi){
-	int m, n;
-	getDims(aa, m, n);	
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( phaseRotate(tmpaa, phi) );
-    }
-    
-    /* phaseTangent */
-    bn::ndarray PYphaseTangent(bn::ndarray aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( phaseTangent(tmpaa) );
-    }
-
-    /* Rotate */
-    bn::ndarray PYRotate(bn::ndarray aa, double th, double phi){
-	int m, n;
-	getDims(aa, m, n);	
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	return copy2bn( Rotate(tmpaa, th, phi) );
-    }
 
     /* rotateOrbit */
     bn::ndarray PYrotateOrbit(bn::ndarray aa, bn::ndarray th, bn::ndarray phi){
@@ -380,6 +305,15 @@ BOOST_PYTHON_MODULE(py_CQCGL2d) {
 	.def("aintgv", &pyCQCGL2d::PYaintgv)
 	.def("Fourier2Config", &pyCQCGL2d::PYFourier2Config)
 	.def("Config2Fourier", &pyCQCGL2d::PYConfig2Fourier)
+	.def("velocity", &pyCQCGL2d::PYvelocity)
+	.def("velocityReq", &pyCQCGL2d::PYvelocityReq)
+	.def("stab", &pyCQCGL2d::PYstab)
+	.def("stabReq", &pyCQCGL2d::PYstabReq)
+	.def("rotate", &pyCQCGL2d::PYrotate)
+	.def("rotate", &pyCQCGL2d::PYrotate1)
+	.def("rotate", &pyCQCGL2d::PYrotate2)
+	.def("rotate", &pyCQCGL2d::PYrotate3)
+	.def("tangent", &pyCQCGL2d::PYtangent)
 #if 0
 	.def("velocity", &pyCQCGL2d::PYvelocity)
 	.def("velSlice", &pyCQCGL2d::PYvelSlice)

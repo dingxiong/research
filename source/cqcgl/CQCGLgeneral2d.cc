@@ -3,7 +3,7 @@
 #include <iostream>
 #include <algorithm>    // std::max
 
-#define CE(x) (cout << (x) << endl << endl)
+#define cee(x) (cout << (x) << endl << endl)
 
 using namespace denseRoutines;
 using namespace MyH5;
@@ -535,8 +535,8 @@ void CQCGLgeneral2d::NL(const int k, const bool onlyOrbit){
 	F[k].ifft();
 	JF[k].ifft(); 
 	
-	ArrayXcd aA2 = (F[k].v2.real().square() + F[k].v2.imag().square()).cast<dcp>();
-	ArrayXcd A2 = F[k].v2.square();
+	ArrayXXcd aA2 = (F[k].v2.real().square() + F[k].v2.imag().square()).cast<dcp>();
+	ArrayXXcd A2 = F[k].v2.square();
 	
 	F[k].v2 = B * F[k].v2 * aA2 + G * F[k].v2 * aA2.square();
 	JF[k].v2 = JF[k].v2.conjugate() * ((B+G*2.0*aA2) * A2) + JF[k].v2 * ((2.0*B+3.0*G*aA2)*aA2);
@@ -683,10 +683,10 @@ ArrayXXcd CQCGLgeneral2d::velocityReq(const ArrayXXcd &a0, const double wthx,
 ArrayXXcd CQCGLgeneral2d::stab(const ArrayXXcd &a0, const ArrayXXcd &v0){
     assert(a0.rows() == Me && a0.cols() == Ne && v0.rows() == Me && v0.cols() == Ne);
     F[0].v1 = pad(a0);
-    JF[0].v1 = pad(v0);
+    JF[0].v1 = pad(v0); 
 
     NL(0, false);
-    ArrayXXcd Ax = L*v0 + JF[1].v3;
+    ArrayXXcd Ax = L*JF[0].v1 + JF[0].v3;
     return unpad(Ax);
 }
 

@@ -10,11 +10,12 @@ public :
     double tol = 1e-10;
     double minRD = 1;
     int maxit = 100;
-    int maxInnIt = 1000;
+    int maxInnIt = 100;
     double GmresRtol = 1e-6;
-    int GmresRestart = 1000;
+    int GmresRestart = 100;
     int GmresMaxit = 10;
-    
+    int hookPrint = 1;
+
     ////////////////////////////////////////////////////////////
     CQCGL2dReq(int N, int M, double dx, double dy,
 	       double b, double c, double dr, double di,
@@ -30,7 +31,7 @@ public :
     VectorXd Fx(const VectorXd &x);
     VectorXd DFx(const VectorXd &x, const VectorXd &dx);
     std::tuple<ArrayXXcd, double, double, double, double>
-    findReq_hook(ArrayXXcd &x0, const double wthx0, 
+    findReq_hook(const ArrayXXcd &x0, const double wthx0, 
 		 const double wthy0, const double wphi0);
     
 };

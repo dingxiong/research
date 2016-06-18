@@ -1,12 +1,14 @@
 from py_CQCGL_threads import *
 from personalFunctions import *
 
-case = 90
+case = 10
 
 if case == 10:
     """
     calculate the stability exponents of req
     of different di.
+    At the same time, compare it with the linear part of
+    the velocity
     """
     N = 1024
     d = 30
@@ -16,6 +18,26 @@ if case == 10:
     cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, 0, 4)
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
     print eigvalues[:10]
+    
+    e = eigvalues
+    L0 = cgl.L()
+    L1 = cgl.C2R(L0)
+    L = cgl.L()[:cgl.Ne/2]
+    scatter2dfig(L.real, L.imag)
+    scatter2dfig(e.real, e.imag)
+
+    def dp(A, L):
+        n = len(L)
+        for i in range(n):
+            if abs(L[i]) > 1:
+                A[:, i] = A[:, i] / L[i]
+        return A
+    
+    A = cgl.stabReq(a0, wth0, wphi0).T
+    Ap = dp(A, L1)
+    e2, v2 = eig(Ap)
+    e2, v2 = sortByReal(e2, v2)
+    
 
 if case == 11:
     """

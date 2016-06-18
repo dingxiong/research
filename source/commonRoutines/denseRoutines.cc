@@ -151,19 +151,7 @@ denseRoutines::subspBound(const MatrixXi subspDim, const MatrixXi ixSp){
     return std::make_pair(bound, boundStrict);
 }
 
-
-/**
- * Generate center localized random initial condition
- */
-VectorXd denseRoutines::centerRand(const int N, const double frac){
-    VectorXd a(VectorXd::Random(N)); /* -1 to 1 */
-    int N2 = (int) (0.5 * N * (1-frac));
-    a.head(N2) = VectorXd::Zero(N2);
-    a.tail(N2) = VectorXd::Zero(N2);
-    
-    return a;
-}
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 /** @brief normalize each column of a matrix  */
@@ -396,19 +384,6 @@ denseRoutines::minDisIndex(const Ref<const VectorXd> &a,
 }
 
 
-MatrixXd 
-denseRoutines::randM(int M, int N){
-    srand(time(NULL));
-    MatrixXd A(M, N);
-
-    for (int i = 0; i < M; i++) 
-	for (int j = 0; j < N; j++) 
-	    A(i,j) = (double)rand() / RAND_MAX - 0.5; 
-
-    return A;
-}
-
-
 MatrixXcd 
 denseRoutines::loadComplex(const std::string f1, const std::string f2){
     MatrixXd re = loadtxt<double>(f1);
@@ -437,3 +412,33 @@ denseRoutines::calPhase(const Ref<const ArrayXXcd> &AA){
 
     return phase;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// special matrix generator
+
+/**
+ * Generate center localized random initial condition
+ */
+VectorXd denseRoutines::centerRand(const int N, const double frac){
+    VectorXd a(VectorXd::Random(N)); /* -1 to 1 */
+    int N2 = (int) (0.5 * N * (1-frac));
+    a.head(N2) = VectorXd::Zero(N2);
+    a.tail(N2) = VectorXd::Zero(N2);
+    
+    return a;
+}
+
+
+MatrixXd 
+denseRoutines::randM(int M, int N){
+    srand(time(NULL));
+    MatrixXd A(M, N);
+
+    for (int i = 0; i < M; i++) 
+	for (int j = 0; j < N; j++) 
+	    A(i,j) = (double)rand() / RAND_MAX - 0.5; 
+
+    return A;
+}
+
+

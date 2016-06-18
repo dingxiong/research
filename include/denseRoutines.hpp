@@ -135,6 +135,15 @@ namespace denseRoutines {
 
 	return a;
     }
+
+    /** create a matrix with designed eigenvalues.
+     *  A V = V E
+     */
+    inline MatrixXd matE(const VectorXd &e){
+	int n = e.size();
+	MatrixXd V(MatrixXd::Random(n, n));
+	return V * e.asDiagonal() * V.inverse();
+    }
     
 }
 

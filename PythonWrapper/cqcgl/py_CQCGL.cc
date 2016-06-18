@@ -339,6 +339,13 @@ public:
 	Map<ArrayXd> tmpphi((double*)phi.get_data(), n4 * m4);
 	return copy2bn( rotateOrbit(tmpaa, tmpth, tmpphi) );
     }
+
+    bn::ndarray PYC2R(bn::ndarray v){
+	int m, n;
+	getDims(v, m, n);
+	Map<ArrayXXcd> tmpv((dcp*)v.get_data(), n, m);
+	return copy2bn( C2R(tmpv) );
+    }
     
 };
 
@@ -427,6 +434,7 @@ BOOST_PYTHON_MODULE(py_CQCGL_threads) {
 	.def("phaseTangent", &pyCQCGL::PYphaseTangent)
 	.def("Rotate", &pyCQCGL::PYRotate)
 	.def("rotateOrbit", &pyCQCGL::PYrotateOrbit)
+	.def("C2R", &pyCQCGL::PYC2R)
 	;
 
 }

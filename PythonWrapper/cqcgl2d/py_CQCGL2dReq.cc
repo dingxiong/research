@@ -172,7 +172,7 @@ BOOST_PYTHON_MODULE(py_CQCGL2dReq) {
 	.def_readwrite("maxit", &pyCQCGL2dReq::maxit)
 	.def_readwrite("maxInnIt", &pyCQCGL2dReq::maxInnIt)
 	.def_readwrite("GmresRtol", &pyCQCGL2dReq::GmresRtol)
-	.def_readwrite("GmresRestart", &pyCQCGL2dReq::GmresRtol)
+	.def_readwrite("GmresRestart", &pyCQCGL2dReq::GmresRestart)
 	.def_readwrite("GmresMaxit", &pyCQCGL2dReq::GmresMaxit)
 
 	.def("Ts", &pyCQCGL2dReq::PYTs)

@@ -22,6 +22,11 @@ if case == 10:
     e = eigvalues
     L0 = cgl.L()
     L1 = cgl.C2R(L0)
+    L2 = L1[::2] + 1j*L1[1::2]
+    L2 = 1 / L2
+    L3 = np.zeros(cgl.Ndim)
+    L3[::2] = L2.real
+    L3[1::2] = L2.imag
     L = cgl.L()[:cgl.Ne/2]
     scatter2dfig(L.real, L.imag)
     scatter2dfig(e.real, e.imag)
@@ -29,12 +34,11 @@ if case == 10:
     def dp(A, L):
         n = len(L)
         for i in range(n):
-            if abs(L[i]) > 1:
-                A[:, i] = A[:, i] / L[i]
+            A[:, i] = A[:, i] * L[i]
         return A
     
     A = cgl.stabReq(a0, wth0, wphi0).T
-    Ap = dp(A, L1)
+    Ap = dp(A, L3)
     e2, v2 = eig(Ap)
     e2, v2 = sortByReal(e2, v2)
     

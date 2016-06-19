@@ -46,7 +46,7 @@ lib dense : : <name>denseRoutines <file>$(RESH)/lib/libdenseRoutines.so ;
 lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
 
 
-choice = 1 ;
+choice = 3 ;
 
 if $(choice) = 1 {		# single thread case
   python-extension py_CQCGL2d : pytmp.cc np sparse dense fftw3 iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(RESH)/source/cqcgl/CQCGLgeneral2d.cc $(RESH)/source/cqcgl/CQCGL2d.cc

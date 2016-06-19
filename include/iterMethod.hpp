@@ -125,12 +125,6 @@ namespace iterMethod {
 	      const int restart,
 	      const int maxit, const double rtol);
 
-    template <class Adotx, class Precondition>
-    std::tuple<VectorXd, VectorXd, VectorXd, ArrayXd, MatrixXd, MatrixXd, std::vector<double>, int>
-    Gmres0SVDPre(Adotx Ax , Precondition Pre, const VectorXd &b, const VectorXd &x0,
-		 const int restart,
-		 const int maxit, const double rtol);
-
     template<class Fx, class Jacv>
     std::tuple<VectorXd, std::vector<double>, int>
     Gmres0Hook( Fx fx, Jacv jacv,
@@ -622,20 +616,9 @@ namespace iterMethod {
 		VectorXd p = rnorm * U.row(0);
 		double err = fabs(p(i+1)) / bnrm2;
 		errVec.push_back(err); 
-		
-		// confirm the residual by QR 
-		HouseholderQR<MatrixXd> qr(H.topLeftCorner(i+2, i+1));
-		MatrixXd Q = qr.householderQ() * MatrixXd::Identity(i+2, i+2);
-		double e2 = Q(0, i+1) * rnorm / bnrm2; 
-		
-		// if (i == M-1) savetxt("v.dat", V);
-		// cout << Q << endl;
-		// cout << H.topLeftCorner(i+2, i+1) << endl;
-		// if(i==M-1) cout << H.topLeftCorner(i+2, i+1) << endl;
-
 
 		if(GMRES_IN_PRINT && i%GMRES_IN_PRINT_FREQUENCE == 0)
-		    fprintf(stderr, "** GMRES : inner loop: i= %zd/%d, r= %g, %g\n", i, M, err, e2);
+		    fprintf(stderr, "** GMRES : inner loop: i= %zd/%d, r= %g\n", i, M, err);
 
 		if (err < rtol){
 		    VectorXd xold = x; 
@@ -651,100 +634,6 @@ namespace iterMethod {
 		    x += V.leftCols(i+1) * y;
 		    if (iter == maxit - 1){ // if the outer loop finished => not converged
 			return std::make_tuple(x, xold, p.head(i+1), D, V2, V.leftCols(i+1), errVec, 1);
-		    }
-		}
-	    }
-	}
-	
-    }
-
-    /**
-     * Preconditioning version of GMRES.
-     *
-     * GMRES will converge in fewer steps if the eigenvalues are clustered. A 
-     * matrix P^{-1} which makes AP^{-1} close to identiy is the goal of right
-     * side preconditioning. See discussions in
-     * ----------------------------------------------------------------------
-     * "How Fast are Nonsymmetric Matrix Iterations?" by
-     * Nachtigal, Noël; Reddy, Satish C.; and Trefethen, Lloyd N.
-     * ----------------------------------------------------------------------
-     *
-     * @parame[in] Pre    the precondition funcion which return product P^{-1}x
-     * @see Gmres0SVD
-     * 
-     */
-    template <class Adotx, class Precondition>
-    std::tuple<VectorXd, VectorXd, VectorXd, ArrayXd, MatrixXd, MatrixXd, std::vector<double>, int>
-    Gmres0SVDPre(Adotx Ax , Precondition Pre, const VectorXd &b, const VectorXd &x0,
-		 const int restart,
-		 const int maxit, const double rtol){
-	
-	/* initial setup */
-	const int N = b.size();
-	int M = restart;
-	VectorXd x = x0;
-	double bnrm2 = b.norm();
-	if ( bnrm2 == 0.0 ) bnrm2 = 1.0;
-	std::vector<double> errVec;	/* error at each iteration */
-
-	/* initialize workspace */
-	MatrixXd V(MatrixXd::Zero(N, M+1)); // orthogonal vectors in Arnoldi iteration
-	MatrixXd H(MatrixXd::Zero(M+1, M)); // Hessenberg matrix in Arnoldi iteration
-    
-	/* outer iteration */
-	for(size_t iter = 0; iter < maxit; iter++){
-	    /* obtain residule */
-	    VectorXd r = b - Ax(x);
-	    double rnorm = r.norm();
-	    double err = rnorm / bnrm2;
-
-	    if(GMRES_OUT_PRINT && iter % GMRES_OUT_PRINT_FREQUENCE == 0)
-		fprintf(stderr, "**** GMRES : out loop: i= %zd/%d, r= %g\n", iter, maxit, err);
-	
-	    V.col(0) = r / rnorm;	// obtain V_1
-	    
-	    /* inner iteration : Arnoldi Iteration */
-	    for(size_t i = 0; i < M; i++){
-		// form the V_{i+1} and H(:, i)
-		V.col(i+1) = Ax( Pre(V.col(i)) );
-		H.col(i).head(i+1) = V.leftCols(i+1).transpose() * V.col(i+1);
-		V.col(i+1) -= V.leftCols(i+1) * H.col(i).head(i+1);
-		H(i+1, i) = V.col(i+1).norm(); 
-		if(H(i+1, i) != 0) V.col(i+1) /= H(i+1, i);
-		else fprintf(stderr, "H(i+i, i) = 0, Boss, what should I do ? \n");
-		
-		// conduct SVD decomposition
-		// Here we must use the full matrix U
-		// the residul is |p(i+1)|
-		JacobiSVD<MatrixXd> svd(H.topLeftCorner(i+2, i+1), ComputeFullU | ComputeThinV);
-	        ArrayXd D ( svd.singularValues() );
-		MatrixXd U ( svd.matrixU() ); 
-		MatrixXd V2 ( svd.matrixV() ); 
-		VectorXd p = rnorm * U.row(0);
-		double err = fabs(p(i+1)) / bnrm2;
-		errVec.push_back(err); 
-
-		if(GMRES_IN_PRINT && i%GMRES_IN_PRINT_FREQUENCE == 0)
-		    fprintf(stderr, "** GMRES : inner loop: i= %zd/%d, r= %g\n", i, M, err);
-
-		if (err < rtol){
- 		    ArrayXd z = p.head(i+1).array() / D;
-		    VectorXd y = V2 * z.matrix();
-		    VectorXd xold = x; 
-		    x += V.leftCols(i+1) * y;
-		    VectorXd pxold = Pre(xold);
-		    VectorXd px = Pre(x);
-		    return std::make_tuple(px, pxold, p.head(i+1), D, V2, V.leftCols(i+1), errVec, 0);
-		}
-		if (i == M -1){ /* last one but has not converged */
-		    ArrayXd z = p.head(i+1).array() / D;
-		    VectorXd y = V2 * z.matrix();
-		    VectorXd xold = x; 
-		    x += V.leftCols(i+1) * y;
-		    VectorXd pxold = Pre(xold);
-		    VectorXd px = Pre(x);
-		    if (iter == maxit - 1){ // if the outer loop finished => not converged
-			return std::make_tuple(px, pxold, p.head(i+1), D, V2, V.leftCols(i+1), errVec, 1);
 		    }
 		}
 	    }
@@ -789,8 +678,8 @@ namespace iterMethod {
 	    if(Fnorm < tol) return std::make_tuple(x, errVec, 0);
 
 	    // use GmresRPO to solve F' dx = -F
-	    auto tmp = Gmres0SVD([&x, &jacv](const VectorXd &t){ return jacv(x, t); },
-				 -F, VectorXd::Zero(N), GmresRestart, GmresMaxit, GmresRtol); 
+	    auto Ax = [&x, &jacv](const VectorXd &t){return jacv(x, t); };
+	    auto tmp = Gmres0SVD(Ax, -F, VectorXd::Zero(N), GmresRestart, GmresMaxit, GmresRtol); 
 	    if(std::get<7>(tmp) != 0) fprintf(stderr, "GMRES SVD not converged !\n");
 	    VectorXd &s = std::get<0>(tmp); // update vector
 	    VectorXd &sold = std::get<1>(tmp); // old update vector just before last change
@@ -833,6 +722,22 @@ namespace iterMethod {
 	    
     }
 
+
+    /**
+     * Preconditioning version of GMRES.
+     *
+     * GMRES will converge in fewer steps if the eigenvalues are clustered. A 
+     * matrix P^{-1} which makes AP^{-1} close to identiy is the goal of right
+     * side preconditioning. See discussions in
+     * ----------------------------------------------------------------------
+     * "How Fast are Nonsymmetric Matrix Iterations?" by
+     * Nachtigal, Noël; Reddy, Satish C.; and Trefethen, Lloyd N.
+     * ----------------------------------------------------------------------
+     *
+     * @parame[in] Pre    the precondition funcion which return product P^{-1}x
+     * @see Gmres0SVD
+     * 
+     */
     template<class Fx, class Jacv, class Precondition>
     std::tuple<VectorXd, std::vector<double>, int>
     Gmres0HookPre( Fx fx, Jacv jacv, Precondition Pre,
@@ -868,16 +773,16 @@ namespace iterMethod {
 	    MatrixXd V, V2;
 	    std::vector<double> e;
 	    int flag;
+	    auto Ax = [&x, &jacv, &Pre](const VectorXd &t){ VectorXd y = Pre(t); VectorXd z = jacv(x, y); return z; };
 	    std::tie(s, sold, p, D, V2, V, e, flag) = 
-		Gmres0SVDPre([&x, &jacv](const VectorXd &t){ return jacv(x, t); }, Pre,
-			     -F, VectorXd::Zero(N), GmresRestart, GmresMaxit, GmresRtol); 
+		Gmres0SVD(Ax, -F, VectorXd::Zero(N), GmresRestart, GmresMaxit, GmresRtol); 
 	    if(flag != 0) fprintf(stderr, "GMRES SVD not converged !\n");
 	    
 	    ArrayXd D2 = D * D;
 	    ArrayXd pd = p.array() * D;
 	    ArrayXd mu = ArrayXd::Ones(p.size()) * 0.1 * D2.minCoeff(); 
 	    for(size_t j = 0; j < maxInnIt; j++){ 
-		VectorXd newx = x + s; 
+		VectorXd newx = x + Pre(s); 
 		double newT = newx(N - Tindex); 
 
 		if(HOOK_PRINT && i % HOOK_PRINT_FREQUENCE == 0)	    
@@ -924,7 +829,8 @@ namespace iterMethod {
 			  x0, tol, minRD, maxit, maxInnIt, GmresRtol,
 			  GmresRestart, GmresMaxit, testT, Tindex);
     }
-    
+
+    /* use inverse of diagonal matrix as preconditioner */
     template<typename Mat>
     std::tuple<VectorXd, std::vector<double>, int>
     GmresHookPre( const Mat &A, const VectorXd &b,
@@ -941,11 +847,13 @@ namespace iterMethod {
 	int n = A.cols();
 	ArrayXd D(n);
 	for(int i = 0; i < n; i++) D(i) = abs(A(i, i)) > 1 ? 1 / A(i,i) : 1;
-	cout << D << endl << endl;
+	//for(int i = 0; i < n; i++) D(i) = 2;
+	// cout << D << endl << endl;
 
-	return Gmres0HookPre([&A, &b](const VectorXd &x){return A * x - b;},
-			     [&A](const VectorXd &x, const VectorXd &t){return A * t;},
-			     [&D](const VectorXd &x){return (x.array() * D).matrix();},
+	auto fx = [&A, &b](const VectorXd &x){return A * x - b;};
+	auto jacv = [&A](const VectorXd &x, const VectorXd &t){return A * t;};
+	auto Pre = [&D](const VectorXd &x){VectorXd t = D*x.array(); return t; };
+	return Gmres0HookPre(fx, jacv, Pre,			     
 			     x0, tol, minRD, maxit, maxInnIt, GmresRtol,
 			     GmresRestart, GmresMaxit, testT, Tindex);
     }

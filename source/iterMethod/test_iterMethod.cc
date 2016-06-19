@@ -277,14 +277,15 @@ int main()
 	    {
 		const int N  = 50;
 
-		// MatrixXd A(MatrixXd::Random(N, N));
-		VectorXd t = VectorXd::Random(N) * 0.5 + 5*VectorXd::Ones(N);
-		t(N-1) = 40;
-		MatrixXd A = matE(t);
+		MatrixXd A = MatrixXd::Random(N, N);
+		A.diagonal() *= 200;
+		//VectorXd t = VectorXd::Random(N) * 0.5 + 5*VectorXd::Ones(N);
+		//t(N-1) = 40;
+		//MatrixXd A = matE(t);
 		VectorXd x(VectorXd::Random(N));
 		VectorXd b = A * x;
 		
-		VectorXcd e = eEig(A); cee(e);
+		VectorXcd e = eEig(A); // cee(e);
 
 		VectorXd bp;
 		std::vector<double> errs;

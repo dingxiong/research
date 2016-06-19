@@ -16,6 +16,9 @@ public :
     int GmresMaxit = 10;
     int hookPrint = 1;
 
+    ArrayXXcd invL; 
+    ArrayXd GmresPre;
+
     ////////////////////////////////////////////////////////////
     CQCGL2dReq(int N, int M, double dx, double dy,
 	       double b, double c, double dr, double di,
@@ -28,6 +31,7 @@ public :
 
     ////////////////////////////////////////////////////////////
     
+    void calPre();
     VectorXd Fx(const VectorXd &x);
     VectorXd DFx(const VectorXd &x, const VectorXd &dx);
     std::tuple<ArrayXXcd, double, double, double, double>

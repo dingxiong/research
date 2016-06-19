@@ -15,7 +15,9 @@ if case == 10:
     cgl = pyCQCGL2dReq(N, d, 4.0, 0.8, 0.01, di, 4)
     c2dp = CQCGL2dPlot(d, d)
     a0 = c2dp.load('ex.h5', 500)
-    x, wthx, wthy, wphi = cgl.findReq_hook(a0, rand(), rand(), rand())
+    cgl.GmresRestart = 300
+    cgl.GmresRtol = 5e-3
+    x, wthx, wthy, wphi = cgl.findReq_hook(a0, 0, 0, rand())
     
 if case == 30:
     """

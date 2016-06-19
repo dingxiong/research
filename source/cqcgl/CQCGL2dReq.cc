@@ -21,13 +21,15 @@ CQCGL2dReq::CQCGL2dReq(int N, int M, double dx, double dy,
 		       int threadNum) 
     : CQCGL2d(N, M, dx, dy, b, c, dr, di, threadNum) 
 {
+    calPre();
 }
 
 CQCGL2dReq::CQCGL2dReq(int N, double dx,
 		       double b, double c, double dr, double di,
 		       int threadNum)
     : CQCGL2d(N, dx, b, c, dr, di, threadNum)
-{				
+{	
+    calPre();
 }
 
 CQCGL2dReq & CQCGL2dReq::operator=(const CQCGL2dReq &x){
@@ -39,6 +41,17 @@ CQCGL2dReq::~CQCGL2dReq(){}
 //////////////////////////////////////////////////////////////////////
 //                      member functions                            //
 //////////////////////////////////////////////////////////////////////
+
+void 
+CQCGL2dReq::calPre(){
+    invL = unpad(L); 
+    invL = 1 / invL;
+
+    invL.resize(Me*Ne, 1);
+    GmresPre.resize(2*Me*Ne+3);
+    GmresPre << c2r(invL), 1, 1, 1; 
+    invL.resize(Me, Ne);
+}
 
 VectorXd
 CQCGL2dReq::Fx(const VectorXd &x){
@@ -104,10 +117,11 @@ CQCGL2dReq::findReq_hook(const ArrayXXcd &x0, const double wthx0,
     VectorXd xnew;
     std::vector<double> errs;
     int flag;
-    std::tie(xnew, errs, flag) = Gmres0Hook(fx, dfx, x, tol, minRD, maxit, maxInnIt, 
-					    GmresRtol, GmresRestart, GmresMaxit,
-					    false, 3);
-    if(flag != 0) fprintf(stderr, "RPO not converged ! \n");
+    auto Pre = [this](const VectorXd x){ VectorXd px = GmresPre * x.array(); return px; };
+    std::tie(xnew, errs, flag) = Gmres0HookPre(fx, dfx, Pre, x, tol, minRD, maxit, maxInnIt, 
+					       GmresRtol, GmresRestart, GmresMaxit,
+					       false, 3);
+    if(flag != 0) fprintf(stderr, "Req not converged ! \n");
     
     Vector3d th = xnew.tail<3>();
     VectorXd y = xnew.head(2*Me*Ne);

@@ -7,17 +7,19 @@ class CQCGL2dReq : public CQCGL2d {
 
 public :
     
-    double tol = 1e-10;
-    double minRD = 1;
-    int maxit = 100;
-    int maxInnIt = 100;
+    double tol = 5e-8;
+    double minRD = 0;
+    int maxit = 10;
+    int maxInnIt = 20;
     double GmresRtol = 1e-6;
     int GmresRestart = 100;
-    int GmresMaxit = 10;
+    int GmresMaxit = 4;
     int hookPrint = 1;
 
-    ArrayXXcd invL; 
-    ArrayXd GmresPre;
+    ArrayXXcd Lu; 
+    ArrayXXcd Tx;
+    ArrayXXcd Ty;
+    ArrayXXcd Tp;
 
     ////////////////////////////////////////////////////////////
     CQCGL2dReq(int N, int M, double dx, double dy,
@@ -37,6 +39,8 @@ public :
     std::tuple<ArrayXXcd, double, double, double, double>
     findReq_hook(const ArrayXXcd &x0, const double wthx0, 
 		 const double wthy0, const double wphi0);
+    Eigen::Vector3d
+    optReqTh(const ArrayXXcd &a0);
     
 };
 

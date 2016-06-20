@@ -596,13 +596,14 @@ ArrayXXcd CQCGLgeneral2d::pad(const ArrayXXcd &v){
     return vp;
 }
 
-ArrayXXd CQCGLgeneral2d::c2r(const ArrayXXcd &v){
-    return Map<ArrayXXd>((double*)&v(0,0), 2*v.rows(), v.cols());
+ArrayXd CQCGLgeneral2d::c2r(const ArrayXXcd &v){
+    assert(v.rows() == Me && v.cols() == Ne);
+    return Map<ArrayXd>((double*)&v(0,0), 2 * v.rows() * v.cols());
 }
 
-ArrayXXcd CQCGLgeneral2d::r2c(const ArrayXXd &v){
-    assert( 0 == v.rows() % 2);
-    return Map<ArrayXXcd>((dcp*)&v(0,0), v.rows()/2, v.cols());
+ArrayXXcd CQCGLgeneral2d::r2c(const ArrayXd &v){
+    assert( v.size() == 2*Me*Ne);
+    return Map<ArrayXXcd>((dcp*)&v(0,0), Me, Ne);
 }
 
 

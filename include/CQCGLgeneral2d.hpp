@@ -137,8 +137,8 @@ public:
     void NL(const int k, const bool onlyOrbit);
     ArrayXXcd unpad(const ArrayXXcd &v);
     ArrayXXcd pad(const ArrayXXcd &v);
-    ArrayXXd c2r(const ArrayXXcd &v);
-    ArrayXXcd r2c(const ArrayXXd &v);
+    ArrayXd c2r(const ArrayXXcd &v);
+    ArrayXXcd r2c(const ArrayXd &v);
     
     //============================================================  
 

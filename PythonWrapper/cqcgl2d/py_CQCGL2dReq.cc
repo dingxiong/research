@@ -101,6 +101,21 @@ public:
 	return copy2bnc( Config2Fourier(tmpAA) );
     }
 
+    bn::ndarray PYvelocity(bn::ndarray a0){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	return copy2bnc(velocity(tmpa));
+    }
+
+    bn::ndarray PYvelocityReq(bn::ndarray a0, double wthx, 
+			      double wthy, double wphi){
+	int m, n;
+	getDims(a0, m, n);	
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	return copy2bnc(velocityReq(tmpa, wthx, wthy, wphi));
+    }
+
     bp::tuple PYfindReq_hook(bn::ndarray x0, double wthx0, double wthy0, double wphi0){
 	int m, n;
 	getDims(x0, m, n);
@@ -115,6 +130,13 @@ public:
 			      );
     }
     
+    bn::ndarray PYoptReqTh(bn::ndarray a0){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXXcd> tmpa((dcp*)a0.get_data(), n, m);
+	
+	return copy2bn(optReqTh(tmpa));
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -189,7 +211,10 @@ BOOST_PYTHON_MODULE(py_CQCGL2dReq) {
 	.def("aintgv", &pyCQCGL2dReq::PYaintgv)
 	.def("Fourier2Config", &pyCQCGL2dReq::PYFourier2Config)
 	.def("Config2Fourier", &pyCQCGL2dReq::PYConfig2Fourier)
+	.def("velocity", &pyCQCGL2dReq::PYvelocity)
+	.def("velocityReq", &pyCQCGL2dReq::PYvelocityReq)
 	.def("findReq_hook", &pyCQCGL2dReq::PYfindReq_hook)
+	.def("optReqTh", &pyCQCGL2dReq::PYoptReqTh) 
 	;
 
 }

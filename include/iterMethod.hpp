@@ -606,6 +606,7 @@ namespace iterMethod {
 		if(H(i+1, i) != 0) V.col(i+1) /= H(i+1, i);
 		else fprintf(stderr, "H(i+i, i) = 0, Boss, what should I do ? \n");
 		
+		//cout << eEig(H.topLeftCorner(i+1, i+1)) << endl;
 		// conduct SVD decomposition
 		// Here we must use the full matrix U
 		// the residul is |p(i+1)|
@@ -773,7 +774,9 @@ namespace iterMethod {
 	    MatrixXd V, V2;
 	    std::vector<double> e;
 	    int flag;
-	    auto Ax = [&x, &jacv, &Pre](const VectorXd &t){ VectorXd y = Pre(t); VectorXd z = jacv(x, y); return z; };
+	    auto Ax = [&x, &jacv, &Pre](const VectorXd &t){ VectorXd y = Pre(x, t); 
+							    VectorXd z = jacv(x, y);
+							    return z; };
 	    std::tie(s, sold, p, D, V2, V, e, flag) = 
 		Gmres0SVD(Ax, -F, VectorXd::Zero(N), GmresRestart, GmresMaxit, GmresRtol); 
 	    if(flag != 0) fprintf(stderr, "GMRES SVD not converged !\n");
@@ -782,14 +785,14 @@ namespace iterMethod {
 	    ArrayXd pd = p.array() * D;
 	    ArrayXd mu = ArrayXd::Ones(p.size()) * 0.1 * D2.minCoeff(); 
 	    for(size_t j = 0; j < maxInnIt; j++){ 
-		VectorXd newx = x + Pre(s); 
+		VectorXd newx = x + Pre(x, s);
 		double newT = newx(N - Tindex); 
 
 		if(HOOK_PRINT && i % HOOK_PRINT_FREQUENCE == 0)	    
 		    fprintf(stderr, " %zd, %g |", j, newT);
 
 		if(!testT || newT > 0){
-		    VectorXd newF = fx(newx);
+		    VectorXd newF = fx(newx); 
 		    if(newF.norm() < (1 - minRD)*Fnorm){
 			x = newx;
 			break;

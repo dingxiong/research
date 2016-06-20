@@ -277,11 +277,11 @@ int main()
 	    {
 		const int N  = 50;
 
-		MatrixXd A = MatrixXd::Random(N, N);
-		A.diagonal() *= 200;
-		//VectorXd t = VectorXd::Random(N) * 0.5 + 5*VectorXd::Ones(N);
-		//t(N-1) = 40;
-		//MatrixXd A = matE(t);
+		//MatrixXd A = MatrixXd::Random(N, N);
+		//A.diagonal() *= 200;
+		VectorXd t = VectorXd::Random(N) * 0.5 + 5*VectorXd::Ones(N);
+		t(N-1) = 1e6;
+		MatrixXd A = matE(t);
 		VectorXd x(VectorXd::Random(N));
 		VectorXd b = A * x;
 		
@@ -290,7 +290,7 @@ int main()
 		VectorXd bp;
 		std::vector<double> errs;
 		int flag;
-		std::tie(bp, errs, flag) = iterMethod::GmresHookPre<MatrixXd>
+		std::tie(bp, errs, flag) = iterMethod::GmresHook<MatrixXd>
 		    (A, b, VectorXd::Zero(N), 1e-12, 1e-3, 20, 20, 1e-8, 100, 20, false, 1); 
 
 		for (int i = 0; i < errs.size(); i++)   cout << errs[i] << endl;		

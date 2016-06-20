@@ -957,7 +957,7 @@ class CQCGL2dPlot():
         f.close()
         return data
 
-    def plotOneState(self, cgl, fileName, sid, save=False, name='out.png',
+    def plotOneState(self, cgl, a, save=False, name='out.png',
                      colortype='jet', percent=0.05, size=[7, 5],
                      barTicks=None, axisLabelSize=25,
                      plotType=0):
@@ -968,7 +968,6 @@ class CQCGL2dPlot():
                    1 => 3d mesh plot
                    else => both together
         """
-        a = self.load(fileName, sid, flag=1)
         A = cgl.Fourier2Config(a)
         aA = np.abs(A).T
 
@@ -1061,6 +1060,21 @@ class CQCGL2dPlot():
             self.makeMovie(f2, name=name)
             if onlyMovie:
                 sps.call(['rm', '-r' + f2])
+
+    def saveReq(self, fileName, groupName, a, wthx, wthy, wphi, err):
+        f = h5py.File(fileName, 'a')
+        req = f.create_group(groupName)
+        req.create_dataset("ar", data=a.real)
+        req.create_dataset("ai", data=a.imag)
+        req.create_dataset("wthx", data=wthx)
+        req.create_dataset("wthy", data=wthy)
+        req.create_dataset('wphi', data=wphi)
+        req.create_dataset('err', data=err)
+        f.close()
+
+    def saveReqdi(self, fileName, di, index, a, wthx, wthy, wphi, err):
+        groupName = format(di, '.6f') + '/' + str(index)
+        return self.saveReq(fileName, groupName, a, wthx, wthy, wphi, err)
 
 
 ############################################################

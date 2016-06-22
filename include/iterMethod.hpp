@@ -606,7 +606,6 @@ namespace iterMethod {
 		if(H(i+1, i) != 0) V.col(i+1) /= H(i+1, i);
 		else fprintf(stderr, "H(i+i, i) = 0, Boss, what should I do ? \n");
 		
-		//cout << eEig(H.topLeftCorner(i+1, i+1)) << endl;
 		// conduct SVD decomposition
 		// Here we must use the full matrix U
 		// the residul is |p(i+1)|
@@ -752,7 +751,7 @@ namespace iterMethod {
 		   const int GmresMaxit,
 		   const bool testT,
 		   const int Tindex){
-
+	
 	const int N = x0.size(); 
 	VectorXd x(x0);
 	std::vector<double> errVec;
@@ -786,6 +785,7 @@ namespace iterMethod {
 	    ArrayXd mu = ArrayXd::Ones(p.size()) * 0.1 * D2.minCoeff(); 
 	    for(size_t j = 0; j < maxInnIt; j++){ 
 		VectorXd newx = x + Pre(x, s);
+
 		double newT = newx(N - Tindex); 
 
 		if(HOOK_PRINT && i % HOOK_PRINT_FREQUENCE == 0)	    

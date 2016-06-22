@@ -24,14 +24,6 @@ public:
     const int N;		/* dimension of FFT */
     int Ndim;			/* dimension of state space */
 
-    double alpha1 = 0.01;	/* strength scale for v constraint */
-    double alpha2 = 0.01;	/* strength scale for t1 constraint */
-    double alpha3 = 0.01;	/* strength scale for t2 constraint */
-
-    double Eps = 1e-4;
-    MatrixXd V;
-    
-
     double h0Trial = 1e-3;
     int skipRateTrial = 1000000;
     double Omega = 0;
@@ -100,6 +92,7 @@ public:
 		  const int GmresRestart = 100,
 		  const int GmresMaxit = 100);
 
+    VectorXd calPre(const VectorXd &x, const VectorXd &dx);
     VectorXd MFx2(const VectorXd &x);
     VectorXd MDFx2(const VectorXd &x, const VectorXd &dx);
     std::tuple<MatrixXd, double>

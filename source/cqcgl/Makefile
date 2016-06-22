@@ -27,6 +27,9 @@ SOURCE = CqcglETD.cc
 else ifeq ($(t), req2d)
 SOURCE = CQCGL2dReq.cc
 
+else ifeq ($(t), ani)
+SOURCE = CQCGL2dDislin.cc
+
 else
 SOURCE = CQCGL.cc CQCGLgeneral.cc 
 

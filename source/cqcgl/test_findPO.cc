@@ -189,7 +189,7 @@ int main(){
 	const int N = 1024;
 	const double d = 30;
 	const double di = 0.06;
-
+	
 	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo2.h5");
 	int nstp;
 	double T, th, phi, err;
@@ -201,9 +201,9 @@ int main(){
 	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
 	CQCGLRPO cglrpo(M, N, d, 4.0, 0.8, 0.01, di, 4);
 	cglrpo.changeOmega(-176.67504941219335);
-	cglrpo.cgl1.rtol = 1e-10;
-	cglrpo.cgl2.rtol = 1e-10;
-	cglrpo.cgl3.rtol = 1e-10;
+	cglrpo.cgl1.rtol = 1e-9;
+	cglrpo.cgl2.rtol = 1e-9;
+	cglrpo.cgl3.rtol = 1e-9;
 	auto result = cglrpo.findRPOM_hook2(x, 1e-12, 1e-3, 10, 20, 3e-1, 300, 1);
 
 	CqcglWriteRPO2("rpo5.h5", "2", 

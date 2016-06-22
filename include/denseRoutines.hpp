@@ -116,26 +116,55 @@ namespace denseRoutines {
     }
     
     /* @brief create 2d centerized random variables */
-    template<class T = double>
-    Matrix<T, Dynamic, Dynamic>
-    center2d(const int M, const int N, const double f1, const double f2, const int flag){
-	Matrix<T, Dynamic, Dynamic> a;
-	if (1 == flag){
-	    a = Matrix<T, Dynamic, Dynamic>::Random(M, N); /* -1 to 1 */
-	}
-	else if(2 == flag){
-	    a = Matrix<T, Dynamic, Dynamic>::Ones(M, N); /* all one */
-	}
+    inline MatrixXcd
+    center2d(const int M, const int N, const double f1, const double f2){
+	MatrixXcd a(M, N);
+	a.real() = MatrixXd::Random(M, N)*0.5+0.5*MatrixXd::Ones(M, N);
+	a.imag() = MatrixXd::Random(M, N)*0.5+0.5*MatrixXd::Ones(M, N);
 	int M2 = (int) (0.5 * M * (1-f1));
 	int N2 = (int) (0.5 * N * (1-f2));
-	a.topRows(M2) = Matrix<T, Dynamic, Dynamic>::Zero(M2, N);
-	a.bottomRows(M2) = Matrix<T, Dynamic, Dynamic>::Zero(M2, N);
-	a.leftCols(N2) = Matrix<T, Dynamic, Dynamic>::Zero(M, N2);
-	a.rightCols(N2) = Matrix<T, Dynamic, Dynamic>::Zero(M, N2);
+	a.topRows(M2) = MatrixXcd::Zero(M2, N);
+	a.bottomRows(M2) = MatrixXcd::Zero(M2, N);
+	a.leftCols(N2) = MatrixXcd::Zero(M, N2);
+	a.rightCols(N2) = MatrixXcd::Zero(M, N2);
 
 	return a;
     }
+    
+    inline MatrixXcd
+    soliton(const int M, const int N, const int x, const int y, const double a, const double b){
+	
+	MatrixXd dx = (VectorXd::LinSpaced(M, 0, M-1)).replicate(1, N) - MatrixXd::Constant(M, N, x);
+	MatrixXd dy = (VectorXd::LinSpaced(N, 0, N-1)).replicate(1, M).transpose() - MatrixXd::Constant(M, N, y);
+	MatrixXd d = (dx.array() / M / a).square() + (dy.array() / N / b).square();
+	
+	return (-d).array().exp().cast<std::complex<double>>();
+    }
 
+    inline MatrixXcd
+    solitons(const int M, const int N, const VectorXd xs, const VectorXd ys,
+	     const VectorXd as, const VectorXd bs){
+	int n = xs.size();
+	MatrixXcd A(MatrixXcd::Zero(M, N));
+	for (int i = 0; i < n; i++){
+	    A += soliton(M, N, xs(i), ys(i), as(i), bs(i));
+	}
+	return A;
+    }
+    
+    inline MatrixXcd
+    solitonMesh(const int M, const int N, const int nx, const int ny, const double a){
+	MatrixXd px = (VectorXd::LinSpaced(nx, M/nx/2, M-1-M/nx/2)).replicate(1, ny);
+	MatrixXd py = (VectorXd::LinSpaced(ny, N/ny/2, N-1-N/ny/2)).replicate(1, nx).transpose();
+	
+	px.resize(nx*ny, 1);
+	py.resize(nx*ny, 1);
+	
+	VectorXd as = VectorXd::Constant(nx*ny, a);
+
+	return solitons(M, N, px, py, as, as);
+    }
+	
     /** create a matrix with designed eigenvalues.
      *  A V = V E
      */

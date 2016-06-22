@@ -110,7 +110,7 @@ CQCGL2dReq::findReq_hook(const ArrayXXcd &x0, const double wthx0,
     VectorXd xnew;
     std::vector<double> errs;
     int flag;
-    auto Pre = [this](const VectorXd x, const VectorXd dx){
+    auto Pre = [this](const VectorXd &x, const VectorXd &dx){
 	Vector3d th = x.tail<3>();
 	Vector3d dth = dx.tail<3>();
 	VectorXd dra = dx.head(2*Me*Ne);

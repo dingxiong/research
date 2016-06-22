@@ -179,8 +179,6 @@ CQCGLgeneral::oneStep(double &du, const bool onlyOrbit){
 
 	f[4].v1 = PROD(E, f[0].v1) + PROD(b1, f[0].v3) + PROD(b2, f[1].v3+f[2].v3) + PROD(b4, f[3].v3);
 	NL(4, onlyOrbit);
-
-	du = PROD(b4, f[4].v3-f[3].v3).matrix().norm() / f[4].v1.matrix().norm(); 
     }
     else {
 	NL(0, onlyOrbit);
@@ -196,9 +194,20 @@ CQCGLgeneral::oneStep(double &du, const bool onlyOrbit){
 	
 	f[4].v1 = PROD(E, f[0].v1) + PROD(b1, f[0].v3) + PROD(b2, f[1].v3+f[2].v3) + PROD(b4, f[3].v3);
 	NL(4, onlyOrbit);
-
-	du = PROD(b4, f[4].v3-f[3].v3).matrix().norm() / f[4].v1.matrix().norm();
     }
+    
+    // infinity norm.
+    if (onlyOrbit){
+	du = (b4 * (f[4].v3-f[3].v3)).abs().maxCoeff() / f[4].v1.abs().maxCoeff();
+    }
+    else {
+	const int M = f[4].v1.cols() - 1;
+	double x = (b4 * (f[4].v3.col(0)-f[3].v3.col(0))).abs().maxCoeff() / f[4].v1.col(0).abs().maxCoeff();
+	double y = PROD(b4, f[4].v3.rightCols(M)-f[3].v3.rightCols(M)).abs().maxCoeff() / 
+	    f[4].v1.rightCols(M).abs().maxCoeff();
+	du = std::max(x, y);
+    }
+    
 }
 
 

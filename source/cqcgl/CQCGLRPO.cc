@@ -89,9 +89,9 @@ VectorXd CQCGLRPO::DFx(const VectorXd &x, const VectorXd &dx){
 	+ cgl2.transTangent(gfx).matrix() * dt(1)
 	+ cgl2.phaseTangent(gfx).matrix() * dt(2),
 	
-	alpha1 * v1.matrix().dot(dx.head(Ndim)), /* strength scale */
-	alpha2 * t1.matrix().dot(dx.head(Ndim)),
-	alpha3 * t2.matrix().dot(dx.head(Ndim))
+	v1.matrix().dot(dx.head(Ndim)),
+	t1.matrix().dot(dx.head(Ndim)),
+	t2.matrix().dot(dx.head(Ndim))
 	;
 
     return DF;
@@ -171,11 +171,6 @@ VectorXd CQCGLRPO::MDFx(const VectorXd &x, const VectorXd &dx){
 		;
 	}
     }
-
-    // scale the strength of constraints
-    DF(M * Ndim) *= alpha1;
-    DF(M * Ndim + 1) *= alpha2;
-    DF(M * Ndim + 2) *= alpha3;
     
     return DF;
     
@@ -414,14 +409,33 @@ VectorXd CQCGLRPO::MDFx2(const VectorXd &x, const VectorXd &dx){
 	VectorXd tgf2 = cgl2.phaseTangent(gfx);
 	
 	DF.segment(i*N, Ndim) = gJx + vgf*dt + tgf1*dth + tgf2*dphi - dxn.head(Ndim);
-	// DF(i*N+Ndim) = v.dot(dxi.head(Ndim));
-	// DF(i*N+Ndim+1) = t1.dot(dxi.head(Ndim));
-	// DF(i*N+Ndim+2) = t2.dot(dxi.head(Ndim));
+	DF(i*N+Ndim) = v.dot(dxi.head(Ndim));
+	DF(i*N+Ndim+1) = t1.dot(dxi.head(Ndim));
+	DF(i*N+Ndim+2) = t2.dot(dxi.head(Ndim));
 	
     }
     
     return DF;
 
+}
+
+VectorXd CQCGLRPO::calPre(const VectorXd &x, const VectorXd &dx){
+    int N = Ndim + 3;
+    VectorXd DF(VectorXd::Zero(N*M));
+    
+    for (int i = 0; i < M; i++) {
+	VectorXd xi = x.segment(i*N, N);
+	VectorXd dxi = dx.segment(i*N, N);
+
+	double th = xi(Ndim+1);
+	double phi = xi(Ndim+2);
+
+	DF.segment(i*N, N) << 
+	    cgl2.Rotate(dxi.head(Ndim), -th, -phi),
+	    dxi.tail(3);
+    }
+
+    return DF;
 }
 
 std::tuple<MatrixXd, double>
@@ -443,17 +457,20 @@ CQCGLRPO::findRPOM_hook2(const MatrixXd &x0,
     MatrixXd x(x0);
     x.resize(M * N, 1);
     
-    auto result = Gmres0Hook(fx, dfx, x, tol, minRD, maxit, maxInnIt,
-			     GmresRtol, GmresRestart, GmresMaxit,
-			     true, 3);
-    if(std::get<2>(result) != 0){
-	fprintf(stderr, "RPO not converged ! \n");
-    }
 
-    MatrixXd tmp2(std::get<0>(result));
+    auto Pre = [this](const VectorXd &x, const VectorXd &dx){VectorXd p = calPre(x, dx); return p; };
+    VectorXd xnew;
+    std::vector<double> errs;
+    int flag;
+    std::tie(xnew, errs, flag) = Gmres0HookPre(fx, dfx, Pre, x, tol, minRD, maxit, maxInnIt,
+					       GmresRtol, GmresRestart, GmresMaxit,
+					       true, 3);
+    if(flag != 0) fprintf(stderr, "RPO not converged ! \n");
+
+    MatrixXd tmp2(xnew);
     tmp2.resize(N, M);
-    return std::make_tuple(tmp2, /* x, th, phi */
-			   std::get<1>(result).back()	  /* err */
+    return std::make_tuple(tmp2,       /* x, th, phi */
+			   errs.back() /* err */
 			   );
 }
 

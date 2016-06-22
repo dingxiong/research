@@ -1297,7 +1297,7 @@ def centerRand2d(M, N, f1, f2, isComplex=True):
     generatate a localized random MxN matrix
     """
     if isComplex:
-        a = rand(M, N) + 1j*rand(M, N)
+        a = rand(M, N) + 1j*rand(M, N) + 0.5
     else:
         a = rand(M, N)
     

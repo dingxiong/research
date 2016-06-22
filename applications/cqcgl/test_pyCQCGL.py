@@ -1,7 +1,7 @@
 from py_CQCGL_threads import *
 from personalFunctions import *
 
-case = 37
+case = 30
 
 if case == 10:
     """

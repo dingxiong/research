@@ -1,0 +1,231 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 10.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      6475,        221]
+NotebookOptionsPosition[      5942,        198]
+NotebookOutlinePosition[      6280,        213]
+CellTagsIndexPosition[      6237,        210]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["The $c_i - c_j$ table for IFRK5(4)", "Text",
+ CellChangeTimes->{{3.676067254434122*^9, 3.676067295401423*^9}, {
+  3.676067338111717*^9, 3.6760673454325113`*^9}, {3.6760676464549*^9, 
+  3.676067647630611*^9}, {3.676067679310741*^9, 3.676067701318973*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"c", " ", "=", " ", 
+   RowBox[{"{", 
+    RowBox[{"0", ",", 
+     RowBox[{"1", "/", "5"}], ",", " ", 
+     RowBox[{"3", "/", "10"}], ",", " ", 
+     RowBox[{"4", "/", "5"}], ",", " ", 
+     RowBox[{"8", "/", "9"}], ",", " ", "1"}], "}"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"a", " ", "=", " ", 
+   RowBox[{"ConstantArray", "[", 
+    RowBox[{"0", ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"6", ",", "6"}], "}"}]}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Do", "[", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"a", "[", 
+      RowBox[{"[", 
+       RowBox[{"i", ",", "j"}], "]"}], "]"}], "=", 
+     RowBox[{
+      RowBox[{"c", "[", 
+       RowBox[{"[", "i", "]"}], "]"}], "-", 
+      RowBox[{"c", "[", 
+       RowBox[{"[", "j", "]"}], "]"}]}]}], ",", " ", 
+    RowBox[{"{", 
+     RowBox[{"i", ",", "1", ",", "6"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"j", ",", "1", ",", "6"}], "}"}]}], "]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{"a", " ", "//", " ", "MatrixForm"}], "\[IndentingNewLine]"}], "Input",\
+
+ CellChangeTimes->{{3.676066708804801*^9, 3.676066804826336*^9}, {
+  3.676066854826569*^9, 3.676066918236334*^9}, {3.676067131596834*^9, 
+  3.6760672063881493`*^9}, {3.6760677606234627`*^9, 3.676067829859208*^9}}],
+
+Cell[BoxData[
+ TagBox[
+  RowBox[{"(", "\[NoBreak]", GridBox[{
+     {"0", 
+      RowBox[{"-", 
+       FractionBox["1", "5"]}], 
+      RowBox[{"-", 
+       FractionBox["3", "10"]}], 
+      RowBox[{"-", 
+       FractionBox["4", "5"]}], 
+      RowBox[{"-", 
+       FractionBox["8", "9"]}], 
+      RowBox[{"-", "1"}]},
+     {
+      FractionBox["1", "5"], "0", 
+      RowBox[{"-", 
+       FractionBox["1", "10"]}], 
+      RowBox[{"-", 
+       FractionBox["3", "5"]}], 
+      RowBox[{"-", 
+       FractionBox["31", "45"]}], 
+      RowBox[{"-", 
+       FractionBox["4", "5"]}]},
+     {
+      FractionBox["3", "10"], 
+      FractionBox["1", "10"], "0", 
+      RowBox[{"-", 
+       FractionBox["1", "2"]}], 
+      RowBox[{"-", 
+       FractionBox["53", "90"]}], 
+      RowBox[{"-", 
+       FractionBox["7", "10"]}]},
+     {
+      FractionBox["4", "5"], 
+      FractionBox["3", "5"], 
+      FractionBox["1", "2"], "0", 
+      RowBox[{"-", 
+       FractionBox["4", "45"]}], 
+      RowBox[{"-", 
+       FractionBox["1", "5"]}]},
+     {
+      FractionBox["8", "9"], 
+      FractionBox["31", "45"], 
+      FractionBox["53", "90"], 
+      FractionBox["4", "45"], "0", 
+      RowBox[{"-", 
+       FractionBox["1", "9"]}]},
+     {"1", 
+      FractionBox["4", "5"], 
+      FractionBox["7", "10"], 
+      FractionBox["1", "5"], 
+      FractionBox["1", "9"], "0"}
+    },
+    GridBoxAlignment->{
+     "Columns" -> {{Center}}, "ColumnsIndexed" -> {}, "Rows" -> {{Baseline}}, 
+      "RowsIndexed" -> {}},
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.7]}, 
+        Offset[0.27999999999999997`]}, "ColumnsIndexed" -> {}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.4]}, 
+        Offset[0.2]}, "RowsIndexed" -> {}}], "\[NoBreak]", ")"}],
+  Function[BoxForm`e$, 
+   MatrixForm[BoxForm`e$]]]], "Output",
+ CellChangeTimes->{
+  3.676067208009347*^9, {3.6760677911275053`*^9, 3.676067830262792*^9}}]
+}, Open  ]],
+
+Cell["The $1-c_i$ array for IFRK5(4)", "Text",
+ CellChangeTimes->{{3.676068285875453*^9, 3.676068307042781*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"b", " ", "=", " ", 
+     RowBox[{"ConstantArray", "[", 
+      RowBox[{"0", ",", " ", 
+       RowBox[{"{", "6", "}"}]}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Do", "[", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"b", "[", 
+        RowBox[{"[", "i", "]"}], "]"}], " ", "=", " ", 
+       RowBox[{"1", " ", "-", 
+        RowBox[{"c", "[", 
+         RowBox[{"[", "i", "]"}], "]"}]}]}], ",", " ", 
+      RowBox[{"{", 
+       RowBox[{"i", ",", " ", "1", ",", " ", "6"}], "}"}]}], "]"}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"b", " ", "//", "MatrixForm"}], "\[IndentingNewLine]"}]}]], "Input",\
+
+ CellChangeTimes->{{3.6760681958017673`*^9, 3.676068240671075*^9}}],
+
+Cell[BoxData[
+ TagBox[
+  RowBox[{"(", "\[NoBreak]", 
+   TagBox[GridBox[{
+      {"1"},
+      {
+       FractionBox["4", "5"]},
+      {
+       FractionBox["7", "10"]},
+      {
+       FractionBox["1", "5"]},
+      {
+       FractionBox["1", "9"]},
+      {"0"}
+     },
+     GridBoxAlignment->{
+      "Columns" -> {{Center}}, "ColumnsIndexed" -> {}, "Rows" -> {{Baseline}},
+        "RowsIndexed" -> {}},
+     GridBoxSpacings->{"Columns" -> {
+         Offset[0.27999999999999997`], {
+          Offset[0.5599999999999999]}, 
+         Offset[0.27999999999999997`]}, "ColumnsIndexed" -> {}, "Rows" -> {
+         Offset[0.2], {
+          Offset[0.4]}, 
+         Offset[0.2]}, "RowsIndexed" -> {}}],
+    Column], "\[NoBreak]", ")"}],
+  Function[BoxForm`e$, 
+   MatrixForm[BoxForm`e$]]]], "Output",
+ CellChangeTimes->{3.676068246294486*^9}]
+}, Open  ]],
+
+Cell[BoxData[""], "Input",
+ CellChangeTimes->{{3.676068188042488*^9, 3.676068189712397*^9}}]
+},
+WindowSize->{808, 580},
+WindowMargins->{{197, Automatic}, {Automatic, 58}},
+FrontEndVersion->"10.0 for Linux x86 (64-bit) (December 4, 2014)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[558, 20, 260, 3, 33, "Text"],
+Cell[CellGroupData[{
+Cell[843, 27, 1302, 37, 112, "Input"],
+Cell[2148, 66, 1926, 66, 194, "Output"]
+}, Open  ]],
+Cell[4089, 135, 112, 1, 33, "Text"],
+Cell[CellGroupData[{
+Cell[4226, 140, 776, 22, 112, "Input"],
+Cell[5005, 164, 826, 28, 170, "Output"]
+}, Open  ]],
+Cell[5846, 195, 92, 1, 31, "Input"]
+}
+]
+*)
+
+(* End of internal cache information *)
+

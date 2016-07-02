@@ -1,6 +1,4 @@
 #include "denseRoutines.hpp"
-#include <iostream>
-#include <fstream>
 #include <vector>
 #include <algorithm>
 #include <time.h>       /* time */
@@ -153,18 +151,7 @@ denseRoutines::subspBound(const MatrixXi subspDim, const MatrixXi ixSp){
     return std::make_pair(bound, boundStrict);
 }
 
-
-/**
- * Generate center localized random initial condition
- */
-VectorXd denseRoutines::centerRand(const int N, const double frac){
-    VectorXd a(VectorXd::Random(N)); /* -1 to 1 */
-    int N2 = (int) 0.5 * N * (1-frac);
-    a.head(N2) = VectorXd::Zero(N2);
-    a.tail(N2) = VectorXd::Zero(N2);
-    
-    return a;
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 /** @brief normalize each column of a matrix  */
@@ -397,6 +384,51 @@ denseRoutines::minDisIndex(const Ref<const VectorXd> &a,
 }
 
 
+MatrixXcd 
+denseRoutines::loadComplex(const std::string f1, const std::string f2){
+    MatrixXd re = loadtxt<double>(f1);
+    MatrixXd im = loadtxt<double>(f2);
+    int n1 = re.rows();
+    int m1 = re.cols();
+    int n2 = im.rows();
+    int m2 = im.cols();
+    assert(n1 == n2 && m1 == m2);
+    
+    MatrixXcd A(n1, m1);
+    A.real() = re;
+    A.imag() = im;
+
+    return A;
+}
+
+ArrayXXd 
+denseRoutines::calPhase(const Ref<const ArrayXXcd> &AA){
+    int m = AA.cols();
+    int n = AA.rows();
+    ArrayXXd phase(n, m);
+    for(size_t i = 0; i < m; i++)
+	for(size_t j =0; j < n; j++)
+	    phase(j, i) = atan2(AA(j, i).imag(), AA(j, i).real());
+
+    return phase;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// special matrix generator
+
+/**
+ * Generate center localized random initial condition
+ */
+VectorXd denseRoutines::centerRand(const int N, const double frac){
+    VectorXd a(VectorXd::Random(N)); /* -1 to 1 */
+    int N2 = (int) (0.5 * N * (1-frac));
+    a.head(N2) = VectorXd::Zero(N2);
+    a.tail(N2) = VectorXd::Zero(N2);
+    
+    return a;
+}
+
+
 MatrixXd 
 denseRoutines::randM(int M, int N){
     srand(time(NULL));
@@ -409,11 +441,4 @@ denseRoutines::randM(int M, int N){
     return A;
 }
 
-void 
-denseRoutines::savetxt(const std::string f, const Ref<const MatrixXd> &A){
-    ofstream file(f, ios::trunc);
-    file.precision(16);
-    file << A << endl;
-    file.close();
-}
 

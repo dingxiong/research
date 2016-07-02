@@ -14,6 +14,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
+#include <fstream>
 
 namespace denseRoutines {
 
@@ -61,9 +62,117 @@ namespace denseRoutines {
     QR(const Ref<const MatrixXd> &A);
     MatrixXd
     randM(int M, int N);
-    void 
-    savetxt(const std::string f, const Ref<const MatrixXd> &A);
-    /////////////////////////// template function implementation /////////////////////////////////////////////////////////////////////////////////////////////
+    MatrixXcd 
+    loadComplex(const std::string f1, const std::string f2);
+    ArrayXXd 
+    calPhase(const Ref<const ArrayXXcd> &AA);
+    
+    /////////////////////////// template or inline function implementation ////////////////////////////////////////////////////////////////////////////////////
+
+    /** @brief save a matrix into a text file  */
+    inline void savetxt(const std::string f, const Ref<const MatrixXd> &A){
+	ofstream file(f, ios::trunc);
+	file.precision(16);
+	file << A << endl;
+	file.close();
+    }
+
+    /** @brief read data from text file  */
+    template<class T = double>
+    Matrix<T, Dynamic, Dynamic>
+    loadtxt(const std::string f){
+	int cols = 0; 
+	int rows = 0;
+	std::vector<T> buff;
+	buff.reserve(1000);
+	
+	ifstream infile(f);
+	assert(!infile.fail());
+	while (! infile.eof()) {
+	    string line;
+	    std::getline(infile, line); 
+	
+	    int temp_cols = 0;
+	    stringstream stream(line); 
+	    while(!stream.eof()){
+		T x;
+		stream >> x; 
+		buff.push_back(x);
+		temp_cols++;
+	    }
+	    if (rows == 0) cols = temp_cols;
+	    else if (temp_cols != cols) break;
+
+	    rows++;
+	}
+	infile.close();
+
+	Matrix<T, Dynamic, Dynamic> result(rows, cols);
+	for (int i = 0; i < rows; i++)
+	    for (int j = 0; j < cols; j++)
+		result(i, j) = buff[ cols*i+j];
+
+	return result;
+    }
+    
+    /* @brief create 2d centerized random variables */
+    inline MatrixXcd
+    center2d(const int M, const int N, const double f1, const double f2){
+	MatrixXcd a(M, N);
+	a.real() = MatrixXd::Random(M, N)*0.5+0.5*MatrixXd::Ones(M, N);
+	a.imag() = MatrixXd::Random(M, N)*0.5+0.5*MatrixXd::Ones(M, N);
+	int M2 = (int) (0.5 * M * (1-f1));
+	int N2 = (int) (0.5 * N * (1-f2));
+	a.topRows(M2) = MatrixXcd::Zero(M2, N);
+	a.bottomRows(M2) = MatrixXcd::Zero(M2, N);
+	a.leftCols(N2) = MatrixXcd::Zero(M, N2);
+	a.rightCols(N2) = MatrixXcd::Zero(M, N2);
+
+	return a;
+    }
+    
+    inline MatrixXcd
+    soliton(const int M, const int N, const int x, const int y, const double a, const double b){
+	
+	MatrixXd dx = (VectorXd::LinSpaced(M, 0, M-1)).replicate(1, N) - MatrixXd::Constant(M, N, x);
+	MatrixXd dy = (VectorXd::LinSpaced(N, 0, N-1)).replicate(1, M).transpose() - MatrixXd::Constant(M, N, y);
+	MatrixXd d = (dx.array() / M / a).square() + (dy.array() / N / b).square();
+	
+	return (-d).array().exp().cast<std::complex<double>>();
+    }
+
+    inline MatrixXcd
+    solitons(const int M, const int N, const VectorXd xs, const VectorXd ys,
+	     const VectorXd as, const VectorXd bs){
+	int n = xs.size();
+	MatrixXcd A(MatrixXcd::Zero(M, N));
+	for (int i = 0; i < n; i++){
+	    A += soliton(M, N, xs(i), ys(i), as(i), bs(i));
+	}
+	return A;
+    }
+    
+    inline MatrixXcd
+    solitonMesh(const int M, const int N, const int nx, const int ny, const double a){
+	MatrixXd px = (VectorXd::LinSpaced(nx, M/nx/2, M-1-M/nx/2)).replicate(1, ny);
+	MatrixXd py = (VectorXd::LinSpaced(ny, N/ny/2, N-1-N/ny/2)).replicate(1, nx).transpose();
+	
+	px.resize(nx*ny, 1);
+	py.resize(nx*ny, 1);
+	
+	VectorXd as = VectorXd::Constant(nx*ny, a);
+
+	return solitons(M, N, px, py, as, as);
+    }
+	
+    /** create a matrix with designed eigenvalues.
+     *  A V = V E
+     */
+    inline MatrixXd matE(const VectorXd &e){
+	int n = e.size();
+	MatrixXd V(MatrixXd::Random(n, n));
+	return V * e.asDiagonal() * V.inverse();
+    }
     
 }
 

@@ -8,7 +8,7 @@ namespace MyFFT {
     long NumOfInstance = 0;
 
     //////////////////////////////////////////////////////////////////////////////////////////
-    //                                     FFT                                              //
+    //                                   1d  FFT                                            //
     //////////////////////////////////////////////////////////////////////////////////////////
 
     FFT::FFT(const int N, const int M, const int threadNum) : 
@@ -88,7 +88,7 @@ namespace MyFFT {
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////
-    //                                    RFFT                                              //
+    //                                 1d RFFT                                              //
     //////////////////////////////////////////////////////////////////////////////////////////
     RFFT::RFFT(const int N, const int M, const int threadNum) : 
 	N(N), M(M), threadNum(threadNum),
@@ -162,5 +162,76 @@ namespace MyFFT {
 	fftw_execute(rp); // cout << vr2 << endl;
 	vr2 /= N;
     }	
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    //                                 2d FFT                                               //
+    //////////////////////////////////////////////////////////////////////////////////////////
     
+    /* @brief 2dFFT for a [N x M] matrix. Note N rows M colums */
+    
+    FFT2d::FFT2d(const int N, const int M, const int threadNum):
+	N(N), M(M), threadNum(threadNum),
+	v1(NULL, 0, 0), v2(NULL, 0, 0), v3(NULL, 0, 0)
+    {
+	// only the first instance do some initialization
+	if(++NumOfInstance == 1){
+#ifdef TFFT  // mutlithread fft.
+	    if(!fftw_init_threads()){
+		fprintf(stderr, "error create MultiFFT.\n");
+		exit(1);
+	    }
+	    // fftw_plan_with_nthreads(omp_get_max_threads());
+	    fftw_plan_with_nthreads(threadNum);    
+#endif	/* TFFT */
+	}
+	
+	c1 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
+	c2 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
+	c3 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
+	//build the maps.
+	new (&v1) Eigen::Map<Eigen::ArrayXXcd>( (dcp*)&(c1[0][0]), N, M );
+	new (&v2) Eigen::Map<Eigen::ArrayXXcd>( (dcp*)&(c2[0][0]), N, M );
+	new (&v3) Eigen::Map<Eigen::ArrayXXcd>( (dcp*)&(c3[0][0]), N, M );
+	
+
+	/* note, FFTW use row-major format, so M, N exchanged */
+	p = fftw_plan_dft_2d(M, N, c2, c3, FFTW_FORWARD, FFTW_MEASURE);
+	rp = fftw_plan_dft_2d(M, N, c1, c2, FFTW_BACKWARD, FFTW_MEASURE);
+
+    }
+    
+    FFT2d::~FFT2d(){
+    
+	fftw_destroy_plan(p);
+	fftw_destroy_plan(rp);
+	fftw_free(c1);
+	fftw_free(c2);
+	fftw_free(c3);
+	/* releae the map */
+	new (&(v1)) Eigen::Map<Eigen::ArrayXXcd>(NULL, 0, 0);
+	new (&(v2)) Eigen::Map<Eigen::ArrayXXcd>(NULL, 0, 0);
+	new (&(v3)) Eigen::Map<Eigen::ArrayXXcd>(NULL, 0, 0);
+    
+    
+	// only the last instance cleans up
+	if(--NumOfInstance == 0){
+#ifdef CLEAN
+	    fftw_cleanup();
+#endif	/* CLEAN */
+#ifdef TFFT
+	    fftw_cleanup_threads();
+#endif	/* TFFT */
+	}
+	
+    }
+
+    void FFT2d::fft() {
+	fftw_execute(p);  
+    }
+
+    void FFT2d::ifft() {
+	fftw_execute(rp);
+	v2 /= (N*M);
+    }
 }

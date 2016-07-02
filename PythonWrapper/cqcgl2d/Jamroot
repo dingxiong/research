@@ -1,0 +1,101 @@
+# some points need to be memorized :
+# 
+#  1) for some reason, the source file must be compiled except the bottom library
+#     For example, fftw3.so can be linked, but myfft.so cannot. because myfft.so
+#     calls fftw3.so, so it is not in the bottom rank. The same goes to cqcgl1d.so
+#     
+#  2) It is better to use lib rather than cxxflags
+#
+#  3) after version 1.47.0 bjam is replace by b2
+#
+#  4) hdf5 linking libs can be found by h5c++ -show. Note use quotation when defining H5FLAGS/H5LIB
+#     since there are spaces in the string
+
+use-project /boost : /usr/local/home/xiong/apps/sources/boost_1_57_0 ;
+
+#define source folder
+constant RESH : /usr/local/home/xiong/00git/research ;
+constant XDAPPS : /usr/local/home/xiong/apps ;
+constant CGL : /usr/local/home/xiong/00git/research/source/cqcgl ;
+
+#define the H5 libs
+constant H5FLAGS : "-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_BSD_SOURCE -D_FORTIFY_SOURCE=2 -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security" ;
+constant H5LIB : "-L/usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu/libhdf5_hl_cpp.so /usr/lib/x86_64-linux-gnu/libhdf5_cpp.so /usr/lib/x86_64-linux-gnu/libhdf5_hl.so /usr/lib/x86_64-linux-gnu/libhdf5.so -Wl,-Bsymbolic-functions -Wl,-z,relro -lpthread -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib/x86_64-linux-gnu" ;
+
+project
+: requirements <library>/boost/python//boost_python 
+<implicit-dependency>/boost//headers 
+<include>$(XDAPPS)/BoostNumpy/include/
+<include>$(RESH)/include
+<include>$(XDAPPS)/eigen/include/eigen3
+: usage-requirements <implicit-dependency>/boost//headers 	 
+;
+
+import python ;
+
+# define a new variant => in order to keep assert() functions 
+variant release_assert : <optimization>speed <inlining>full <debug-symbols>off <runtime-debugging>off ;
+
+lib np : : <name>boost_numpy <file>$(XDAPPS)/BoostNumpy/lib/libboost_numpy.so ;
+# lib fftw3 : : <name>fftw3 <file>/usr/lib/libfftw3.so ;
+lib fftw3 : : <name>fftw3 <file>/usr/lib/x86_64-linux-gnu/libfftw3.so ;
+# lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/libfftw3_threads.so ;
+lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/x86_64-linux-gnu/libfftw3_threads.so ;
+lib sparse : : <name>sparseRoutines <file>$(RESH)/lib/libsparseRoutines.so ;
+lib dense : : <name>denseRoutines <file>$(RESH)/lib/libdenseRoutines.so ;
+lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
+
+
+choice = 3 ;
+
+if $(choice) = 1 {		# single thread case
+  python-extension py_CQCGL2d : pytmp.cc np sparse dense fftw3 iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(RESH)/source/cqcgl/CQCGLgeneral2d.cc $(RESH)/source/cqcgl/CQCGL2d.cc
+  : <variant>release_assert <optimization>speed
+  : <link>shared 
+  <warnings>off
+  <cxxflags>"-std=c++11 -DCLEAN $(H5FLAGS)" 
+  <linkflags>"-std=c++11 -DCLEAN $(H5FLAGS) $(H5LIB)" 
+  ;
+
+  install py_extension : py_CQCGL2d : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
+  
+}
+
+else if $(choice) = 2 {		# multi fftw threads case
+  python-extension py_CQCGL2d_threads : pytmp.cc np sparse dense fftw3 fftw3_threads iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(RESH)/source/cqcgl/CQCGLgeneral2d.cc $(RESH)/source/cqcgl/CQCGL2d.cc
+  : <variant>release_assert <optimization>speed 
+  : <link>shared 
+  <warnings>off
+  <cxxflags>"-std=c++11 -DCLEAN -DTFFT $(H5FLAGS)" 
+  <linkflags>"-std=c++11 -DCLEAN -DTFFT $(H5FLAGS) $(H5LIB)" 
+  ;
+  
+  install py_extension : py_CQCGL2d_threads : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
+}
+
+############################################################
+# for req lib
+
+else if $(choice) = 3 {
+  python-extension py_CQCGL2dReq : pytmp.cc np sparse dense fftw3 iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(CGL)/CQCGL2dReq.cc $(CGL)/CQCGL2d.cc $(CGL)/CQCGLgeneral2d.cc
+  : <variant>release_assert <optimization>speed
+  : <link>shared 
+  <warnings>off
+  <cxxflags>"-std=c++11 -DCLEAN $(H5FLAGS)" 
+  <linkflags>"-std=c++11 -DCLEAN $(H5FLAGS) $(H5LIB)" 
+  ;
+
+  install py_extension : py_CQCGL2dReq : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
+}
+
+else if $(choice) = 4 {		# multi fftw threads case
+  python-extension py_CQCGL2dReq_threads : pytmp.cc np sparse dense fftw3 fftw3_threads iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(RESH)/source/cqcgl/CQCGLgeneral2d.cc $(RESH)/source/cqcgl/CQCGL2d.cc $(RESH)/source/cqcgl/CQCGL2dReq.cc
+  : <variant>release_assert <optimization>speed 
+  : <link>shared 
+  <warnings>off
+  <cxxflags>"-std=c++11 -DCLEAN -DTFFT $(H5FLAGS)" 
+  <linkflags>"-std=c++11 -DCLEAN -DTFFT $(H5FLAGS) $(H5LIB)" 
+  ;
+  
+  install py_extension : py_CQCGL2dReq_threads : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
+}

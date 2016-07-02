@@ -6,6 +6,9 @@
 #include <complex>
 #include <iostream>
 #include <time.h>       /* time */
+
+#define cee(x) (cout << (x) << endl << endl)
+
 using namespace std;
 using namespace Eigen;
 using namespace denseRoutines;
@@ -17,7 +20,7 @@ typedef Eigen::SparseMatrix<double> SpMat;
 int main()
 {
     cout.precision(16);
-    switch (10)
+    switch (9)
 	{
  
 	case 1: // test ConjGrad() with dense matrix
@@ -270,31 +273,28 @@ int main()
 		break;
 	    }
 
-	case 9: // test GmresHook() with dense matrix
+	case 9: // test GmresHook()/GmresHookPre() with dense matrix
 	    {
-		srand (time(NULL));
 		const int N  = 50;
 
-		MatrixXd A(randM(N, N));
-		VectorXd x(randM(N, 1));
+		//MatrixXd A = MatrixXd::Random(N, N);
+		//A.diagonal() *= 200;
+		VectorXd t = VectorXd::Random(N) * 0.5 + 5*VectorXd::Ones(N);
+		t(N-1) = 1e6;
+		MatrixXd A = matE(t);
+		VectorXd x(VectorXd::Random(N));
 		VectorXd b = A * x;
-	
-		//cout << A << endl << endl;
-		cout << x << endl << endl;
-		cout << b << endl << endl;
+		
+		VectorXcd e = eEig(A); // cee(e);
 
-		// compute
-		std::tuple<VectorXd, vector<double>, int> 
-		    tmp = iterMethod::GmresHook<MatrixXd>
+		VectorXd bp;
+		std::vector<double> errs;
+		int flag;
+		std::tie(bp, errs, flag) = iterMethod::GmresHook<MatrixXd>
 		    (A, b, VectorXd::Zero(N), 1e-12, 1e-3, 20, 20, 1e-8, 100, 20, false, 1); 
 
-		cout << std::get<0>(tmp) << endl << endl;
-		for (int i = 0; i < std::get<1>(tmp).size(); i++) {
-		    cout << std::get<1>(tmp)[i] << endl;
-		}
-		cout << std::get<2>(tmp) << endl << endl;;
-		cout << std::get<1>(tmp).size() << endl << endl;
-		cout << (A * std::get<0>(tmp) - b).norm() << endl;
+		for (int i = 0; i < errs.size(); i++)   cout << errs[i] << endl;		
+		cee( (A * bp - b).norm() );
 
 		break;	
 	    }

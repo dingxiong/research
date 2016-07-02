@@ -118,6 +118,7 @@ namespace iterMethod {
 		    const int maxit = 100,
 		    const double mu0 = 0);
 
+    /* -------------------------------------------------- */
     template <class Adotx>
     std::tuple<VectorXd, VectorXd, VectorXd, ArrayXd, MatrixXd, MatrixXd, std::vector<double>, int>
     Gmres0SVD(Adotx Ax , const VectorXd &b, const VectorXd &x0,
@@ -137,6 +138,20 @@ namespace iterMethod {
 		const int GmresMaxit,
 		const bool testT,
 		const int Tindex);
+    
+    template<class Fx, class Jacv, class Precondition>
+    std::tuple<VectorXd, std::vector<double>, int>
+    Gmres0HookPre( Fx fx, Jacv jacv, Precondition Pre,
+		   const VectorXd &x0,
+		   const double tol,
+		   const double minRD,
+		   const int maxit,
+		   const int maxInnIt,
+		   const double GmresRtol,
+		   const int GmresRestart,
+		   const int GmresMaxit,
+		   const bool testT,
+		   const int Tindex);
 
     template<typename Mat>
     std::tuple<VectorXd, std::vector<double>, int>
@@ -152,7 +167,19 @@ namespace iterMethod {
 	       const bool testT,
 	       const int Tindex);
 
-    
+    template<typename Mat>
+    std::tuple<VectorXd, std::vector<double>, int>
+    GmresHookPre( const Mat &A, const VectorXd &b,
+		  const VectorXd &x0,
+		  const double tol,
+		  const double minRD,
+		  const int maxit,
+		  const int maxInnIt,
+		  const double GmresRtol,
+		  const int GmresRestart,
+		  const int GmresMaxit,
+		  const bool testT,
+		  const int Tindex);
     /* -------------------------------------------------- */
     double chooseTheta(const double g0, const double g1, const double gp0,
 		       const double theta_min, const double theta_max);
@@ -344,7 +371,7 @@ namespace iterMethod {
 
 
     //////////////////////////////////////////////////////////////////////
-    //                        GMRES related                             //
+    //                        GMRES                                     //
     //////////////////////////////////////////////////////////////////////
     
 
@@ -496,6 +523,10 @@ namespace iterMethod {
 	return Gmres0([&A](const VectorXd &x){return A * x;}, b, x0, restart, maxit, rtol);
     }
 
+    //////////////////////////////////////////////////////////////////////
+    //                        GMRES Hook                                //
+    //////////////////////////////////////////////////////////////////////
+
     /**
      * @brief GMRES method to solve A*x = b  w. r. t  ||x|| < delta
      *
@@ -585,20 +616,9 @@ namespace iterMethod {
 		VectorXd p = rnorm * U.row(0);
 		double err = fabs(p(i+1)) / bnrm2;
 		errVec.push_back(err); 
-		
-		// confirm the residual by QR 
-		HouseholderQR<MatrixXd> qr(H.topLeftCorner(i+2, i+1));
-		MatrixXd Q = qr.householderQ() * MatrixXd::Identity(i+2, i+2);
-		double e2 = Q(0, i+1) * rnorm / bnrm2; 
-		
-		// if (i == M-1) savetxt("v.dat", V);
-		// cout << Q << endl;
-		// cout << H.topLeftCorner(i+2, i+1) << endl;
-		// if(i==M-1) cout << H.topLeftCorner(i+2, i+1) << endl;
-
 
 		if(GMRES_IN_PRINT && i%GMRES_IN_PRINT_FREQUENCE == 0)
-		    fprintf(stderr, "** GMRES : inner loop: i= %zd/%d, r= %g, %g\n", i, M, err, e2);
+		    fprintf(stderr, "** GMRES : inner loop: i= %zd/%d, r= %g\n", i, M, err);
 
 		if (err < rtol){
 		    VectorXd xold = x; 
@@ -620,7 +640,7 @@ namespace iterMethod {
 	}
 	
     }
-    
+        
     /**
      * @brief use GMRES HOOK method to fin the solution of A x = b
      *
@@ -658,8 +678,8 @@ namespace iterMethod {
 	    if(Fnorm < tol) return std::make_tuple(x, errVec, 0);
 
 	    // use GmresRPO to solve F' dx = -F
-	    auto tmp = Gmres0SVD([&x, &jacv](const VectorXd &t){ return jacv(x, t); },
-				 -F, VectorXd::Zero(N), GmresRestart, GmresMaxit, GmresRtol); 
+	    auto Ax = [&x, &jacv](const VectorXd &t){return jacv(x, t); };
+	    auto tmp = Gmres0SVD(Ax, -F, VectorXd::Zero(N), GmresRestart, GmresMaxit, GmresRtol); 
 	    if(std::get<7>(tmp) != 0) fprintf(stderr, "GMRES SVD not converged !\n");
 	    VectorXd &s = std::get<0>(tmp); // update vector
 	    VectorXd &sold = std::get<1>(tmp); // old update vector just before last change
@@ -702,6 +722,98 @@ namespace iterMethod {
 	    
     }
 
+
+    /**
+     * Preconditioning version of GMRES.
+     *
+     * GMRES will converge in fewer steps if the eigenvalues are clustered. A 
+     * matrix P^{-1} which makes AP^{-1} close to identiy is the goal of right
+     * side preconditioning. See discussions in
+     * ----------------------------------------------------------------------
+     * "How Fast are Nonsymmetric Matrix Iterations?" by
+     * Nachtigal, Noël; Reddy, Satish C.; and Trefethen, Lloyd N.
+     * ----------------------------------------------------------------------
+     *
+     * @parame[in] Pre    the precondition funcion which return product P^{-1}x
+     * @see Gmres0SVD
+     * 
+     */
+    template<class Fx, class Jacv, class Precondition>
+    std::tuple<VectorXd, std::vector<double>, int>
+    Gmres0HookPre( Fx fx, Jacv jacv, Precondition Pre,
+		   const VectorXd &x0,
+		   const double tol,
+		   const double minRD,
+		   const int maxit,
+		   const int maxInnIt,
+		   const double GmresRtol,
+		   const int GmresRestart,
+		   const int GmresMaxit,
+		   const bool testT,
+		   const int Tindex){
+	
+	const int N = x0.size(); 
+	VectorXd x(x0);
+	std::vector<double> errVec;
+
+	bool fail = false;
+	for(size_t i = 0; i < maxit; i++){
+	    VectorXd F = fx(x);
+	    double Fnorm = F.norm();
+	    
+	    if(HOOK_PRINT && i % HOOK_PRINT_FREQUENCE == 0)
+		fprintf(stderr, "\n+++++++++++ GHOOK: i = %zd/%d, r = %g ++++++++++ \n", i, maxit, Fnorm);
+
+	    errVec.push_back(Fnorm);
+	    if(Fnorm < tol) return std::make_tuple(x, errVec, 0);
+
+	    // use GmresRPO to solve F' dx = -F
+	    VectorXd s, sold, p;
+	    ArrayXd D;
+	    MatrixXd V, V2;
+	    std::vector<double> e;
+	    int flag;
+	    auto Ax = [&x, &jacv, &Pre](const VectorXd &t){ VectorXd y = Pre(x, t); 
+							    VectorXd z = jacv(x, y);
+							    return z; };
+	    std::tie(s, sold, p, D, V2, V, e, flag) = 
+		Gmres0SVD(Ax, -F, VectorXd::Zero(N), GmresRestart, GmresMaxit, GmresRtol); 
+	    if(flag != 0) fprintf(stderr, "GMRES SVD not converged !\n");
+	    
+	    ArrayXd D2 = D * D;
+	    ArrayXd pd = p.array() * D;
+	    ArrayXd mu = ArrayXd::Ones(p.size()) * 0.1 * D2.minCoeff(); 
+	    for(size_t j = 0; j < maxInnIt; j++){ 
+		VectorXd newx = x + Pre(x, s);
+
+		double newT = newx(N - Tindex); 
+
+		if(HOOK_PRINT && i % HOOK_PRINT_FREQUENCE == 0)	    
+		    fprintf(stderr, " %zd, %g |", j, newT);
+
+		if(!testT || newT > 0){
+		    VectorXd newF = fx(newx); 
+		    if(newF.norm() < (1 - minRD)*Fnorm){
+			x = newx;
+			break;
+		    }
+		}
+		ArrayXd z = pd / (D2 + mu);
+		VectorXd y = V2 * z.matrix();
+		s = sold + V * y;
+		mu *= 2;
+		
+		if(j == maxInnIt-1) fail = true;
+	    }
+	    
+	    if(fail) break; // if all inner loop finish, it means state not changed
+			    // then no need to iterate more.
+	}
+
+	return std::make_tuple(x, errVec, 0);
+	    
+    }
+
     template<typename Mat>
     std::tuple<VectorXd, std::vector<double>, int>
     GmresHook( const Mat &A, const VectorXd &b,
@@ -719,6 +831,34 @@ namespace iterMethod {
 			  [&A](const VectorXd &x, const VectorXd &t){return A * t;},
 			  x0, tol, minRD, maxit, maxInnIt, GmresRtol,
 			  GmresRestart, GmresMaxit, testT, Tindex);
+    }
+
+    /* use inverse of diagonal matrix as preconditioner */
+    template<typename Mat>
+    std::tuple<VectorXd, std::vector<double>, int>
+    GmresHookPre( const Mat &A, const VectorXd &b,
+		  const VectorXd &x0,
+		  const double tol,
+		  const double minRD,
+		  const int maxit,
+		  const int maxInnIt,
+		  const double GmresRtol,
+		  const int GmresRestart,
+		  const int GmresMaxit,
+		  const bool testT,
+		  const int Tindex){
+	int n = A.cols();
+	ArrayXd D(n);
+	for(int i = 0; i < n; i++) D(i) = abs(A(i, i)) > 1 ? 1 / A(i,i) : 1;
+	//for(int i = 0; i < n; i++) D(i) = 2;
+	// cout << D << endl << endl;
+
+	auto fx = [&A, &b](const VectorXd &x){return A * x - b;};
+	auto jacv = [&A](const VectorXd &x, const VectorXd &t){return A * t;};
+	auto Pre = [&D](const VectorXd &x){VectorXd t = D*x.array(); return t; };
+	return Gmres0HookPre(fx, jacv, Pre,			     
+			     x0, tol, minRD, maxit, maxInnIt, GmresRtol,
+			     GmresRestart, GmresMaxit, testT, Tindex);
     }
     
     //////////////////////////////////////////////////////////////////////

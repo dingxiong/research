@@ -17,5 +17,6 @@
 *.tar.gz
 *.zip
 *.npz
+*.npy
 *.mp4
 *.html

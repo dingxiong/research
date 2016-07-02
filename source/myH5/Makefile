@@ -1,4 +1,5 @@
 CC = h5c++
+GCC = g++
 AR = ar
 
 OPTIM = -O3 -msse2 -msse4 -march=corei7
@@ -7,15 +8,20 @@ EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 
 CFLAGS = -std=c++11
 
-SOURCE = myH5.cc
-SHARED = libmyH5.so
-STATIC = libmyH5.a
+H5FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_BSD_SOURCE -D_FORTIFY_SOURCE=2 -g -O2 -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security
 
-# H5Cpp does not support shared library
-all : $(STATIC)
+H5LIB = -L/usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu/libhdf5_hl_cpp.so /usr/lib/x86_64-linux-gnu/libhdf5_cpp.so /usr/lib/x86_64-linux-gnu/libhdf5_hl.so /usr/lib/x86_64-linux-gnu/libhdf5.so -Wl,-Bsymbolic-functions -Wl,-z,relro -lpthread -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib/x86_64-linux-gnu
+
+SOURCE = myH5.cc
+SHARED = $(addprefix lib, $(addsuffix .so, $(basename $(SOURCE))))
+STATIC = $(addprefix lib, $(addsuffix .a, $(basename $(SOURCE))))
+
+# use flag -show to h5c++ to find out what library it uses
+all : $(STATIC) $(SHARED)
 
 $(SHARED): $(SOURCE)
-	$(CC) -shared -fPIC $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
+	$(GCC) $(H5FLAGS) -c -shared -fPIC $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
+	$(GCC) $(H5FLAGS) $(SOURCE:.cc=.o) -shared -fPIC $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) -o $@ $(H5LIB)
 $(SOURCE:.cc=.o) : $(SOURCE)
 	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
 $(STATIC): $(SOURCE:.cc=.o)

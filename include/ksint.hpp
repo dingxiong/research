@@ -25,8 +25,9 @@ using Eigen::ArrayXXd;
 using Eigen::ArrayXcd;
 using Eigen::ArrayXd;
 using Eigen::MatrixXd; using Eigen::VectorXd;
-using Eigen::VectorXcd;
+using Eigen::VectorXcd; 
 using Eigen::Matrix2d;
+using Eigen::VectorXi;
 using Eigen::Map; using Eigen::Ref;
 
 /*============================================================
@@ -58,11 +59,13 @@ public:
     double mue = 1.25;		/* upper lazy threshold */
     double muc = 0.85;		/* lower lazy threshold */
 
-    int NCalCoe = 0;		/* times to evaluate coefficient */
-    int NReject = 0;		/* times that new state is rejected */
-    int NCallF = 0;	       /* times to call velocity function f */
-    VectorXd hs;	       /* time step sequnce */
-    VectorXd lte;	       /* local relative error estimation */
+    int NCalCoe = 0;	      /* times to evaluate coefficient */
+    int NReject = 0;	      /* times that new state is rejected */
+    int NCallF = 0;	      /* times to call velocity function f */
+    int NSteps = 0;	      /* total number of integrations steps */
+    VectorXd hs;	      /* time step sequnce */
+    VectorXd lte;	      /* local relative error estimation */
+    VectorXd Ts;	      /* time sequnence for adaptive method */
 
     int cellSize = 500;	/* size of cell when resize output container */
     int M = 32;			/* number of sample points */
@@ -91,18 +94,18 @@ public:
     intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);    
     std::pair<ArrayXXd, ArrayXXd>
     intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
-    std::pair<VectorXd, ArrayXXd>
+    ArrayXXd
     aintg(const ArrayXd &a0, const double h, const double tend, 
 	  const int skip_rate);
-    std::tuple<VectorXd, ArrayXXd, ArrayXXd>
+    std::pair<ArrayXXd, ArrayXXd>
     aintgj(const ArrayXd &a0, const double h, const double tend, 
 	   const int skip_rate);
     ArrayXXd 
     constETD(const ArrayXXd a0, const double h, const int Nt, 
-	     const int skip_rate, const bool onlyOrbit);
-    std::pair<VectorXd, ArrayXXd>
+	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
+    ArrayXXd
     adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
-	     const int skip_rate, const bool onlyOrbit);
+	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
     void NL(const int k, const bool onlyOrbit);
 
     /* ------------------------------------------------------------ */
@@ -185,16 +188,21 @@ public:
     f2a(const Ref<const MatrixXcd> &f);
 
     std::pair<MatrixXd, VectorXd>
-    redSO2(const Ref<const MatrixXd> &aa);
+    redSO2(const Ref<const MatrixXd> &aa, const int p, const bool toY);
+    std::pair<MatrixXd, VectorXi>
+    fundDomain(const Ref<const MatrixXd> &aa, const int p);
+    std::tuple<MatrixXd, VectorXi, VectorXd>
+    redO2f(const Ref<const MatrixXd> &aa, const int p);
     MatrixXd redR1(const Ref<const MatrixXd> &aa);
     MatrixXd redR2(const Ref<const MatrixXd> &cc);
     MatrixXd redRef(const Ref<const MatrixXd> &aa);
     std::pair<MatrixXd, VectorXd>
-    redO2(const Ref<const MatrixXd> &aa);
+    redO2(const Ref<const MatrixXd> &aa, const int p, const bool toY);
     MatrixXd Gmat1(const Ref<const VectorXd> &x);
     MatrixXd Gmat2(const Ref<const VectorXd> &x);
-    std::pair<VectorXd, MatrixXd>
-    redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
+    MatrixXd
+    redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a,
+	 const int p, const bool toY);
     MatrixXd redV2(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
 
 };

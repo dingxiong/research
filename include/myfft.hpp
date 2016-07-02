@@ -30,7 +30,7 @@ namespace MyFFT {
     
     protected:
 	fftw_plan p, rp; // plan for fft/ifft.
-	fftw_complex *c1, *c2, *c3; // c1 = v, c2 = ifft(v), c3 = fft(g(ifft(v)))
+	fftw_complex *c1, *c2, *c3; // c1 = v, c2 = ifft(v), c3 = fft(c2)
     
     public:
     
@@ -79,6 +79,34 @@ namespace MyFFT {
 	void ifft();
 
     };
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    //                                     FFT2d                                            //
+    //////////////////////////////////////////////////////////////////////////////////////////
+    class FFT2d {
+    
+    public:
+	typedef std::complex<double> dcp;
+
+	const int N;
+	const int M;
+	const int threadNum;
+
+	fftw_plan p, rp; // plan for fft/ifft.
+	fftw_complex *c1, *c2, *c3; // c1 = v, c2 = ifft(v), c3 = fft(c2)
+    
+	Eigen::Map<Eigen::ArrayXXcd> v1, v2, v3; // mapping for c1, c2, c3 respectively
+
+	//////////////////////////////////////////////////////////////////////
+	// member functions                           
+
+	FFT2d(const int N, const int M, const int threadNum = 4);
+	~FFT2d();    
+	void fft();    
+	void ifft();    
+	
+    };
+    
 
 }
 

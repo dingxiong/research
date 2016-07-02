@@ -36,13 +36,19 @@ public:
 
     //////////////////////////////////////////////////////////////////////
 
-    int Method = 1;		/* 1 => etdrk4; 2 => etdrk4B */
+    enum Scheme {
+	Cox_Matthews,
+	Krogstad,
+	Hochbruck_Ostermann,
+	Luan_Ostermann
+    };
 
-    ArrayXd L, E, E2, a21, a31, a32, a41, a43, b1, b2, b4;
+    Scheme scheme = Cox_Matthews;	
+
+    ArrayXd Ta[9][9], Tb[9], Tc[9];
+    ArrayXd L;
     
-    NL<Ary> nl;
-    
-    int M = 32;			/* number of sample points */
+    int M = 64;			/* number of sample points */
     int R = 1;			/* radius for evaluating phi(z) */
     
     ////////////////////////////////////////////////////////////
@@ -359,6 +365,32 @@ ETDRK4<Ary, Mat, NL>::
 calCoe(double h){
 
     ArrayXd hL = h*L;
+   
+    switch (scheme) 
+	{
+    
+	case Cox_Matthews : {
+	    Tc[1] = (hL/2).exp();
+	    Tc[3] = hL.exp();
+	    a[1][0] = 
+	}
+
+	case Krogstad : {
+
+	}
+	case Hochbruck_Ostermann : {
+
+	}
+	case Luan_Ostermann : {
+
+	}
+	    
+	default : {
+	    fprintf(stderr, "Please indicate the method !\n");
+	}
+	
+    }
+    
     ArrayXXcd LR = ZR(hL);
     
     E = hL.exp();

@@ -1,9 +1,11 @@
 ##################################################
 # Functions used for cqcgl1d system
 ##################################################
+from time import time
 import h5py
 from pylab import *
 import numpy as np
+from scipy.spatial.distance import pdist, cdist, squareform
 import numpy.linalg as LA
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -12,16 +14,40 @@ from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import os
+import subprocess as sps
 
 ##################################################
 #               Plot related                     #
 ##################################################
 
 
-def pl3d(size=[8, 6], labs=['x', 'y', 'z'], axisLabelSize=25,
-         xlim=None, ylim=None, zlim=None, isBlack=False):
+class Arrow3D(FancyArrowPatch):
+    """
+    The 3d arrow class
+    """
+    def __init__(self, xs, ys, zs, *args, **kwargs):
+        FancyArrowPatch.__init__(self, (0, 0), (0, 0), *args, **kwargs)
+        self._verts3d = xs, ys, zs
+
+    def draw(self, renderer):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
+        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
+        FancyArrowPatch.draw(self, renderer)
+
+    def setvalue(self, x, y, z):
+        self._verts3d = x, y, z
+
+
+def plinit(size=[8, 6]):
     fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111, projection='3d')
+    return fig
+
+
+def ax3dinit(fig, num=111, labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
+             xlim=None, ylim=None, zlim=None, isBlack=False):
+    ax = fig.add_subplot(num, projection='3d')
 
     if labs[0] is not None:
         ax.set_xlabel(labs[0], fontsize=axisLabelSize)
@@ -41,25 +67,77 @@ def pl3d(size=[8, 6], labs=['x', 'y', 'z'], axisLabelSize=25,
         fig.patch.set_facecolor('black')
         ax.patch.set_facecolor('black')
 
+    return ax
+
+
+def pl3d(size=[8, 6], labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
+         xlim=None, ylim=None, zlim=None, isBlack=False):
+    fig = plinit(size=size)
+    ax = ax3dinit(fig, labs=labs, axisLabelSize=axisLabelSize,
+                  xlim=xlim, ylim=ylim, zlim=zlim, isBlack=isBlack)
     return fig, ax
 
 
-def ax3d(fig, ax, doBlock=False):
+def ax3d(fig, ax, doBlock=False, save=False, name='output.png',
+         angle=None, title=None):
     fig.tight_layout(pad=0)
-    ax.legend()
-    plt.show(block=doBlock)
+
+    if angle is not None:
+        ax.view_init(angle[0], angle[1])
+    
+    if title is not None:
+        ax.set_title(title)
+
+    ax.legend(loc='best')
+    if save:
+        plt.savefig(name)
+        plt.close()
+    else:
+        plt.show(block=doBlock)
 
 
-def pl2d(size=[8, 6], labs=['x', 'y'], axisLabelSize=25,
-         xlim=None, ylim=None, isBlack=False, ratio='auto'):
-    fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111)
+def add3d(fig, ax, x, y, z, maxShow=5, c='r', s=70):
+    i = 0
+    pts = []
+    while raw_input(i) == '':
+        if i >= len(x):
+            for p in pts:
+                p.remove()
+            break
+        
+        if len(pts) > maxShow:
+            p = pts.pop(0)
+            p.remove()
+           
+        if len(pts) > 0:
+            pts[-1].set_sizes([2*s])
+        if len(pts) > 1:
+            pts[-2].set_sizes([s])
+
+        tmp = ax.scatter(x[i], y[i], z[i], c=c, s=s,
+                         edgecolors='none')
+        pts.append(tmp)
+        fig.canvas.draw()
+        # plt.show(block=False)
+        i += 1
+    
+
+def ax2dinit(fig, num=111, labs=[r'$x$', r'$y$'], axisLabelSize=25,
+             yscale=None, xlim=None, ylim=None, tickSize=None,
+             isBlack=False, ratio='auto'):
+    ax = fig.add_subplot(num)
     
     if labs[0] is not None:
         ax.set_xlabel(labs[0], fontsize=axisLabelSize)
     if labs[1] is not None:
         ax.set_ylabel(labs[1], fontsize=axisLabelSize)
 
+    if yscale is not None:
+        ax.set_yscale(yscale)
+
+    if tickSize is not None:
+        ax.tick_params(axis='both', which='major', labelsize=tickSize)
+        
     if xlim is not None:
         ax.set_xlim(xlim)
     if ylim is not None:
@@ -71,21 +149,31 @@ def pl2d(size=[8, 6], labs=['x', 'y'], axisLabelSize=25,
 
     ax.set_aspect(ratio)
     
+    return ax
+
+
+def pl2d(size=[8, 6], labs=[r'$x$', r'$y$'], axisLabelSize=25,
+         yscale=None, xlim=None, ylim=None, tickSize=None,
+         isBlack=False, ratio='auto'):
+    fig = plt.figure(figsize=size)
+    ax = ax2dinit(fig, labs=labs, axisLabelSize=axisLabelSize,
+                  yscale=yscale, xlim=xlim, ylim=ylim, tickSize=tickSize,
+                  isBlack=isBlack, ratio=ratio)
     return fig, ax
 
 
-def ax2d(fig, ax, doBlock=False):
+def ax2d(fig, ax, doBlock=False, save=False, name='output.png', title=None):
     fig.tight_layout(pad=0)
-    ax.legend()
-    plt.show(block=doBlock)
+    if title is not None:
+        ax.set_title(title)
 
+    ax.legend(loc='best')
+    if save:
+        plt.savefig(name)
+        plt.close()
+    else:
+        plt.show(block=doBlock)
 
-def addRect(ax, verts, fc='b', alpha=0.5, lw=1):
-    ax.add_collection3d(
-        Poly3DCollection(verts, facecolors=fc, zorder=10,
-                         linewidths=lw, alpha=alpha)
-    )
-    
 
 def makeMovie(data):
     fig, ax = pl3d()
@@ -111,7 +199,7 @@ def makeMovie(data):
     plt.show()
 
 
-def plot1dfig(x, c='r', lw=1, ls='-', marker=None, labs=['x', 'y'],
+def plot1dfig(x, c='r', lw=1, ls='-', marker=None, labs=[r'$x$', r'$y$'],
               size=[8, 6], axisLabelSize=25, yscale=None):
     """
     plot 2d figures in genereal
@@ -129,7 +217,7 @@ def plot1dfig(x, c='r', lw=1, ls='-', marker=None, labs=['x', 'y'],
     plt.show(block=False)
 
 
-def plot2dfig(x, y, c='r', lw=1, ls='-', labs=['x', 'y'],
+def plot2dfig(x, y, c='r', lw=1, ls='-', labs=[r'$x$', r'$y$'],
               size=[8, 6], axisLabelSize=25):
     """
     plot 2d figures in genereal
@@ -143,7 +231,8 @@ def plot2dfig(x, y, c='r', lw=1, ls='-', labs=['x', 'y'],
     plt.show(block=False)
 
 
-def scatter2dfig(x, y, s=20, marker='o', fc='r', ec='none', labs=['x', 'y'],
+def scatter2dfig(x, y, s=20, marker='o', fc='r', ec='none',
+                 labs=[r'$x$', r'$y$'],
                  size=[8, 6], axisLabelSize=25, ratio='auto'):
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
@@ -156,22 +245,7 @@ def scatter2dfig(x, y, s=20, marker='o', fc='r', ec='none', labs=['x', 'y'],
     plt.show(block=False)
 
 
-def multiScatter2dfig(x, y, s=[20], marker=['o'], fc=['r'],
-                      ec='none', labs=['x', 'y'],
-                      size=[8, 6], axisLabelSize=25):
-    fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111)
-    M = len(x)
-    for i in range(M):
-        ax.scatter(x[i], y[i], s=s[i], marker=marker[i],
-                   facecolor=fc[i], edgecolors=ec)
-    ax.set_xlabel(labs[0], fontsize=axisLabelSize)
-    ax.set_ylabel(labs[1], fontsize=axisLabelSize)
-    fig.tight_layout(pad=0)
-    plt.show(block=False)
-
-
-def plot3dfig(x, y, z, c='r', lw=1, labs=['x', 'y', 'z'],
+def plot3dfig(x, y, z, c='r', lw=1, labs=[r'$x$', r'$y$', r'$z$'],
               size=[8, 6], axisLabelSize=25):
     """
     plot 3d figures in genereal
@@ -186,63 +260,101 @@ def plot3dfig(x, y, z, c='r', lw=1, labs=['x', 'y', 'z'],
     plt.show(block=False)
 
 
-def plot3dfig2lines(x1, y1, z1, x2, y2, z2, c1='r', lw1=1,
-                    c2='b', lw2=1, labs=['x', 'y', 'z'],
-                    lab1='line 1', lab2='line 2',
-                    size=[8, 6]):
+def plotMat(y, colortype='jet', percent='5%', colorBar=True,
+            save=False, name='out.png'):
     """
-    plot 3d figures in genereal
+    plot a matrix
     """
-    fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(x1, y1, z1, c=c1, lw=lw1, label=lab1)
-    ax.plot(x2, y2, z2, c=c2, lw=lw2, label=lab2)
-    ax.set_xlabel(labs[0])
-    ax.set_ylabel(labs[1])
-    ax.set_zlabel(labs[2])
-    ax.legend(loc='best')
-    fig.tight_layout(pad=0)
-    plt.show(block=False)
-
-
-def plotConfigSpace(AA, ext, barTicks=[0, 3], colortype='jet',
-                    percent='5%', size=[4, 5],
-                    axisLabelSize=20,
-                    save=False, name='out.png'):
-    """
-    plot the color map of the states
-    """
-    Ar = AA[:, 0::2]
-    Ai = AA[:, 1::2]
-    Aamp = abs(Ar + 1j*Ai)
-    fig = plt.figure(figsize=size)
+    fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.set_xlabel('x', fontsize=axisLabelSize)
-    ax.set_ylabel('t', fontsize=axisLabelSize)
-    im = ax.imshow(Aamp, cmap=plt.get_cmap(colortype), extent=ext,
-                   aspect='auto', origin='lower')
+    im = ax.matshow(y, cmap=plt.get_cmap(colortype))
     ax.grid('on')
-    dr = make_axes_locatable(ax)
-    cax = dr.append_axes('right', size=percent, pad=0.05)
-    plt.colorbar(im, cax=cax, ticks=barTicks)
-    fig.tight_layout(pad=0)
+    if colorBar:
+        dr = make_axes_locatable(ax)
+        cax = dr.append_axes('right', size=percent, pad=0.05)
+        plt.colorbar(im, cax=cax)
     if save:
         plt.savefig(name)
+        plt.close()
     else:
         plt.show(block=False)
 
 
-def plotConfigSpaceFromFourier(cgl, aa, ext, barTicks=[0, 3],
+##################################################
+#            1d CQCGL related                    #
+##################################################
+
+
+def plotConfigSpace(AA, ext, tt=None, yls=None,
+                    barTicks=[2, 7], colortype='jet',
+                    percent='5%', size=[4, 5],
+                    axisLabelSize=20, tickSize=None,
+                    save=False, name='out.png'):
+    """
+    plot the color map of the states
+    """
+    Aamp = np.abs(AA)
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111)
+    ax.set_xlabel(r'$x$', fontsize=axisLabelSize)
+    ax.set_ylabel(r'$t$', fontsize=axisLabelSize)
+    im = ax.imshow(Aamp, cmap=plt.get_cmap(colortype), extent=ext,
+                   aspect='auto', origin='lower')
+    if tt is not None:
+        n = len(tt)
+        ids = findTimeSpots(tt, yls)
+        yts = ids / float(n) * ext[3]
+        ax.set_yticks(yts)
+        ax.set_yticklabels(yls)
+
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax = dr.append_axes('right', size=percent, pad=0.05)
+    plt.colorbar(im, cax=cax, ticks=barTicks)
+
+    if tickSize is not None:
+        ax.tick_params(axis='both', which='major', labelsize=tickSize)
+        
+    fig.tight_layout(pad=0)
+    if save:
+        plt.savefig(name)
+        plt.close()
+    else:
+        plt.show(block=False)
+
+        
+def findTimeSpots(tt, spots):
+    n = len(spots)
+    ids = np.zeros(n, dtype=np.int)
+    for i in range(n):
+        t = spots[i]
+        L = 0
+        R = size(tt) - 1
+        while R-L > 1:
+            d = (R-L)/2
+            if tt[L+d] <= t:
+                L += d
+            elif tt[R-d] > t:
+                R -= d
+            else:
+                print "error"
+        ids[i] = L
+    return ids
+
+
+def plotConfigSpaceFromFourier(cgl, aa, ext, tt=None, yls=None,
+                               barTicks=[2, 7],
                                colortype='jet',
                                percent='5%', size=[4, 5],
-                               axisLabelSize=20,
+                               axisLabelSize=20, tickSize=None,
                                save=False, name='out.png'):
     """
     plot the configuration from Fourier mode
     """
-    plotConfigSpace(cgl.Fourier2Config(aa), ext, barTicks,
+    plotConfigSpace(cgl.Fourier2Config(aa), ext, tt, yls,
+                    barTicks,
                     colortype, percent, size,
-                    axisLabelSize, save, name)
+                    axisLabelSize, tickSize, save, name)
 
 
 def plotConfigSurface(AA, ext, barTicks=[2, 4], colortype='jet',
@@ -251,9 +363,7 @@ def plotConfigSurface(AA, ext, barTicks=[2, 4], colortype='jet',
     """
     plot the color map of the states
     """
-    Ar = AA[:, 0::2]
-    Ai = AA[:, 1::2]
-    Aamp = abs(Ar + 1j*Ai)
+    Aamp = np.abs(AA)
     
     X = np.linspace(ext[0], ext[1], Aamp.shape[1])
     Y = np.linspace(ext[2], ext[3], Aamp.shape[0])
@@ -267,8 +377,8 @@ def plotConfigSurface(AA, ext, barTicks=[2, 4], colortype='jet',
 
     fig.colorbar(surf, fraction=0.05, shrink=0.6, aspect=20, ticks=barTicks)
     
-    ax.set_xlabel('x', fontsize=axisLabelSize)
-    ax.set_ylabel('t', fontsize=axisLabelSize)
+    ax.set_xlabel(r'$x$', fontsize=axisLabelSize)
+    ax.set_ylabel(r'$t$', fontsize=axisLabelSize)
     ax.set_zlabel(r'$|A|$', fontsize=axisLabelSize)
 
     # dr = make_axes_locatable(ax)
@@ -277,11 +387,12 @@ def plotConfigSurface(AA, ext, barTicks=[2, 4], colortype='jet',
     fig.tight_layout(pad=0)
     if save:
         plt.savefig(name)
+        plt.close()
     else:
         plt.show(block=False)
 
 
-def plotConfigSurfaceFourier(cgl, aa, ext, barTicks=[2, 4],
+def plotConfigSurfaceFourier(cgl, aa, ext, barTicks=[2, 7],
                              colortype='jet',
                              percent='5%', size=[7, 5],
                              axisLabelSize=25,
@@ -292,16 +403,55 @@ def plotConfigSurfaceFourier(cgl, aa, ext, barTicks=[2, 4],
                       save, name)
 
 
-def plotOneConfig(A, d=50, size=[6, 4], axisLabelSize=20,
+def plotConfigWire(AA, ext, barTicks=[2, 7], size=[7, 6], axisLabelSize=25,
+                   tickSize=15, c='r',
+                   save=False, name='out.png'):
+    """
+    plot the meshframe plot
+    """
+    Aamp = abs(AA)
+    
+    X = np.linspace(ext[0], ext[1], Aamp.shape[1])
+    Y = np.linspace(ext[2], ext[3], Aamp.shape[0])
+    X, Y = np.meshgrid(X, Y)
+    
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111, projection='3d')
+    #ax.plot_wireframe(X, Y, Aamp)
+    for i in range(Aamp.shape[0]):
+        plot(X[i], Y[i], Aamp[i], c=c, alpha=0.4)
+    ax.set_xlabel(r'$x$', fontsize=axisLabelSize)
+    ax.set_ylabel(r'$t$', fontsize=axisLabelSize)
+    ax.set_zlabel(r'$|A|$', fontsize=axisLabelSize)
+
+    if tickSize is not None:
+        ax.tick_params(axis='both', which='major', labelsize=tickSize)
+
+    fig.tight_layout(pad=0)
+    if save:
+        plt.savefig(name)
+        plt.close()
+    else:
+        plt.show(block=False)
+    
+
+def plotConfigWireFourier(cgl, aa, ext, barTicks=[2, 7], size=[7, 6],
+                          axisLabelSize=25, tickSize=15, c='r',
+                          save=False, name='out.png'):
+    plotConfigWire(cgl.Fourier2Config(aa), ext, barTicks, size,
+                   axisLabelSize, tickSize, c, save, name)
+    
+
+def plotOneConfig(A, d=30, size=[6, 5], axisLabelSize=20,
                   save=False, name='out.png'):
     """
     plot the configuration at one point
     """
-    Aamp = abs(A[0::2]+1j*A[1::2])
+    Aamp = np.abs(A)
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
-    ax.plot(np.linspace(0, d, Aamp.size), Aamp)
-    ax.set_xlabel('x', fontsize=axisLabelSize)
+    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp)
+    ax.set_xlabel(r'$x$', fontsize=axisLabelSize)
     ax.set_ylabel(r'$|A|$', fontsize=axisLabelSize)
     fig.tight_layout(pad=0)
     if save:
@@ -310,26 +460,13 @@ def plotOneConfig(A, d=50, size=[6, 4], axisLabelSize=20,
         plt.show(block=False)
 
 
-def plotOneConfigFromFourier(cgl, a0, d=50, size=[6, 4], axisLabelSize=20,
+def plotOneConfigFromFourier(cgl, a0, d=30, size=[6, 5], axisLabelSize=20,
                              save=False, name='out.png'):
     """
     plot the configuration at one point from Fourier mode
     """
     plotOneConfig(cgl.Fourier2Config(a0).squeeze(), d, size,
                   axisLabelSize, save, name)
-
-
-def plotOneFourier(a, color='r', size=[8, 6]):
-    """
-    plot Fourier modes at one point
-    """
-    fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111)
-    ax.plot(a, c=color)
-    ax.set_xlabel('k')
-    ax.set_ylabel('Fourier modes')
-    fig.tight_layout(pad=0)
-    plt.show(block=False)
 
 
 def plotPhase(cgl, aa, ext, barTicks=[-3, 0, 3],
@@ -370,24 +507,6 @@ def plotOnePhase(cgl, a0, d=50, size=[6, 4], axisLabelSize=20,
         plt.savefig(name)
     else:
         plt.show(block=False)
-
-
-class Arrow3D(FancyArrowPatch):
-    """
-    The 3d arrow class
-    """
-    def __init__(self, xs, ys, zs, *args, **kwargs):
-        FancyArrowPatch.__init__(self, (0, 0), (0, 0), *args, **kwargs)
-        self._verts3d = xs, ys, zs
-
-    def draw(self, renderer):
-        xs3d, ys3d, zs3d = self._verts3d
-        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
-        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
-        FancyArrowPatch.draw(self, renderer)
-
-    def setvalue(self, x, y, z):
-        self._verts3d = x, y, z
 
         
 def sortByReal(eigvalue, eigvector=None):
@@ -785,7 +904,179 @@ def getCurveCoor(points):
         dis[i] = np.linalg.norm(points[indices[i]] - points[indices[i-1]])
 
     return dis
-    
+   
+##################################################
+#            2d CQCGL related                    #
+##################################################
+
+
+class CQCGL2dPlot():
+
+    def __init__(self, dx, dy):
+        self.dx = dx
+        self.dy = dy
+
+    def load(self, fileName, i, flag=1):
+        """
+        Load one state in the original storage order
+
+        Parameters
+        ==========
+        flag : what to return
+        """
+        f = h5py.File(fileName, 'r')
+        ds = '/' + format(i, '06d') + '/'
+        if flag == 1 or flag == 0:
+            a = f[ds+'ar'].value + 1j*f[ds+'ai'].value
+        if flag == 2 or flag == 0:
+            v = f[ds+'vr'].value + 1j*f[ds+'vi'].value
+
+        f.close()
+
+        if flag == 0:
+            return a, v
+        elif flag == 1:
+            return a
+        elif flag == 2:
+            return v
+
+    def loadSeq(self, fileName, x, y, ids):
+        """
+        Avoid using the whole mesh since it is slow.
+
+        Parameters
+        ==========
+        x, y : the x and y location of the mesh
+        """
+        n = len(ids)
+        data = np.zeros(n, dtype=np.complex)
+        f = h5py.File(fileName, 'r')
+        for i in ids:
+            ds = '/' + format(i, '06d') + '/'
+            data[i] = f[ds+'ar'][x, y] + 1j*f[ds+'ai'][x, y]
+        f.close()
+        return data
+
+    def plotOneState(self, cgl, a, save=False, name='out.png',
+                     colortype='jet', percent=0.05, size=[7, 5],
+                     barTicks=None, axisLabelSize=25,
+                     plotType=0):
+        """
+        Parameters
+        ==========
+        plotType : 0 => heat plot
+                   1 => 3d mesh plot
+                   else => both together
+        """
+        A = cgl.Fourier2Config(a)
+        aA = np.abs(A).T
+
+        if plotType == 0:
+            fig, ax = pl2d(size=size, labs=[None, None],
+                           axisLabelSize=axisLabelSize)
+            ax.grid('on')
+            im = ax.imshow(aA, cmap=plt.get_cmap(colortype), aspect='equal',
+                           origin='lower', extent=[0, self.dx, 0, self.dy])
+            dr = make_axes_locatable(ax)
+            cax = dr.append_axes('right', size=percent, pad=0.05)
+            if barTicks is not None:
+                plt.colorbar(im, cax=cax, ticks=barTicks)
+            else:
+                plt.colorbar(im, cax=cax)
+            ax2d(fig, ax, save=save, name=name)
+            # plotMat(aA, save=save, name=name)
+
+        else:
+            X = np.linspace(0, self.dx, aA.shape[1])
+            Y = np.linspace(0, self.dy, aA.shape[0])
+            X, Y = np.meshgrid(X, Y)
+
+            if plotType == 1:
+                fig, ax = pl3d(size=size, labs=[r'$x$', r'$y$', r'$|A|$'],
+                               axisLabelSize=axisLabelSize)
+                surf = ax.plot_surface(X, Y, aA, rstride=10, cstride=10,
+                                       cmap=plt.get_cmap(colortype),
+                                       linewidth=0, antialiased=False)
+
+                if barTicks is not None:
+                    fig.colorbar(surf, fraction=percent, shrink=0.6, aspect=20,
+                                 ticks=barTicks)
+                else:
+                    fig.colorbar(surf, fraction=percent, shrink=0.6, aspect=20,
+                                 ticks=barTicks)
+
+                ax3d(fig, ax, save=save, name=name)
+
+            else:
+                fig = plinit(size)
+                ax1 = ax3dinit(fig, 121, labs=[r'$x$', r'$y$', r'$|A|$'],
+                               axisLabelSize=axisLabelSize)
+                ax2 = ax2dinit(fig, 122, labs=[None, None])
+                ax2.grid('on')
+                surf = ax1.plot_surface(X, Y, aA, rstride=10, cstride=10,
+                                        cmap=plt.get_cmap(colortype),
+                                        linewidth=0, antialiased=False)
+
+                im = ax2.imshow(aA, cmap=plt.get_cmap(colortype),
+                                aspect='equal', origin='lower',
+                                extent=[0, self.dx, 0, self.dy])
+                dr = make_axes_locatable(ax2)
+                cax = dr.append_axes('right', size=percent, pad=0.05)
+                if barTicks is not None:
+                    plt.colorbar(im, cax=cax, ticks=barTicks)
+                else:
+                    plt.colorbar(im, cax=cax)
+                ax2d(fig, ax2, save=save, name=name)
+
+    def makeMovie(self, folderName, name='out.mp4'):
+        """
+        Parameters
+        ==========
+        folderName : name of the figure folder
+        """
+        files = "'" + folderName + '/*.png' + "'"
+        command = ('ffmpeg -f image2 -r 6 -pattern_type glob -i' +
+                   ' ' + files + ' ' + name)
+        os.system(command)
+
+    def savePlots(self, cgl, f1, sids, f2, plotType=0,
+                  size=[7, 5],
+                  name='out.mp4', onlyMovie=False):
+        """
+        Parameters
+        ==========
+        f1 : h5 data file
+        f2 : save folder name
+        onlyMovie: true => figures are deleted
+        """
+        if os.path.exists(f2):
+            print 'folder already exists'
+        else:
+            os.makedirs(f2)
+            for i in sids:
+                name = f2+'/a'+format(i, '06d')+'.png'
+                self.plotOneState(cgl, f1, i, save=True, size=size,
+                                  name=name, plotType=plotType)
+            self.makeMovie(f2, name=name)
+            if onlyMovie:
+                sps.call(['rm', '-r' + f2])
+
+    def saveReq(self, fileName, groupName, a, wthx, wthy, wphi, err):
+        f = h5py.File(fileName, 'a')
+        req = f.create_group(groupName)
+        req.create_dataset("ar", data=a.real)
+        req.create_dataset("ai", data=a.imag)
+        req.create_dataset("wthx", data=wthx)
+        req.create_dataset("wthy", data=wthy)
+        req.create_dataset('wphi', data=wphi)
+        req.create_dataset('err', data=err)
+        f.close()
+
+    def saveReqdi(self, fileName, di, index, a, wthx, wthy, wphi, err):
+        groupName = format(di, '.6f') + '/' + str(index)
+        return self.saveReq(fileName, groupName, a, wthx, wthy, wphi, err)
+
+
 ############################################################
 #                        KS related                        #
 ############################################################
@@ -880,7 +1171,7 @@ def KScopyTo(inFile, outFile, poType, r):
     
 
 def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
-                        percent='5%', size=[3, 6],
+                        percent='5%', size=[3, 6], axisLabelSize=20,
                         axisOn=True, barOn=True,
                         save=False, name='out'):
     """
@@ -896,8 +1187,8 @@ def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111)
     if axisOn:
-        ax.set_xlabel('x', fontsize=20)
-        ax.set_ylabel('t', fontsize=20)
+        ax.set_xlabel(r'$x$', fontsize=axisLabelSize)
+        ax.set_ylabel(r'$t$', fontsize=axisLabelSize)
         
     im = ax.imshow(AA, cmap=plt.get_cmap(colortype), extent=ext,
                    aspect='auto', origin='lower')
@@ -913,6 +1204,24 @@ def KSplotColorMapOrbit(aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
         plt.savefig(name+'.eps', format='eps')
     else:
         plt.show(block=False)
+
+
+def KSplotPoHeat(ks, fileName, poType, poId, NT=1, Ts=100, fixT=False):
+    """
+    plot the heat map of ppo/rpo.
+    Sometimes, a few periods make it easy to observe the state space.
+    Also, fixing an integration time makes it easy to see the transition
+    
+    NT : the number of periods need to be ploted
+    """
+    a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
+    h = T / nstp
+    if fixT:
+        aa = ks.intg(a0, h, np.int(Ts/h), 5)
+        KSplotColorMapOrbit(aa, [0, ks.d, 0, Ts])
+    else:
+        aa = ks.intg(a0, h, nstp*NT, 5)
+        KSplotColorMapOrbit(aa, [0, ks.d, 0, T*NT])
 
 
 ############################################################
@@ -967,15 +1276,37 @@ def removeMarginal(e, k):
     return ep
 
 
-def centerRand(N, frac):
+def centerRand(N, frac, isComplex=True):
     """
     generate a localized random vector.
     frac: the fraction of the nonzero center in the totol size
     """
-    a = rand(N)
+    if isComplex:
+        a = rand(N) + 1j*rand(N)
+    else:
+        a = rand(N)
+        
     N2 = np.int((1-frac)*0.5*N)
     a[:N2] = 0
     a[-N2:] = 0
+    return a
+
+
+def centerRand2d(M, N, f1, f2, isComplex=True):
+    """
+    generatate a localized random MxN matrix
+    """
+    if isComplex:
+        a = rand(M, N) + 1j*rand(M, N) + 0.5
+    else:
+        a = rand(M, N)
+    
+    M2 = np.int((1-f1)*0.5*M)
+    N2 = np.int((1-f2)*0.5*N)
+    a[:M2, :] = 0
+    a[-M2:, :] = 0
+    a[:, :N2] = 0
+    a[:, -N2:] = 0
     return a
 
 
@@ -1016,7 +1347,7 @@ def realve(ve):
             rve[:, i+1] = ve[:, i].imag
             i = i+2
         else:
-            rve[:, i] = ve[:, i]
+            rve[:, i] = ve[:, i].real
             i = i+1
 
     return rve
@@ -1073,3 +1404,55 @@ def rotz(x, y, th):
     c = np.cos(th)
     s = np.sin(th)
     return c * x - s * y, s * x + c * y
+
+
+def difMap(x, farSize, size=[6, 6], percent='5%', colortype='jet'):
+    m, n = x.shape
+    y = np.zeros((m, farSize))
+    for i in range(m-farSize):
+        y[i] = norm(x[i]-x[i:i+farSize], axis=1)
+    
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111)
+    # ax.set_xlabel('x', fontsize=axisLabelSize)
+    # ax.set_ylabel('t', fontsize=axisLabelSize)
+    im = ax.imshow(y, cmap=plt.get_cmap(colortype),
+                   aspect='auto', origin='lower')
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax = dr.append_axes('right', size=percent, pad=0.05)
+    plt.colorbar(im, cax=cax)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+
+def difMap2(x1, x2, size=[6, 4], percent='5%', colortype='jet'):
+    """
+    try to locate the possible po
+    """
+    y = cdist(x1, x2)
+    
+    fig = plt.figure(figsize=size)
+    ax = fig.add_subplot(111)
+    # ax.set_xlabel('x', fontsize=axisLabelSize)
+    # ax.set_ylabel('t', fontsize=axisLabelSize)
+    im = ax.imshow(y, cmap=plt.get_cmap(colortype),
+                   aspect='auto', origin='lower')
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax = dr.append_axes('right', size=percent, pad=0.05)
+    plt.colorbar(im, cax=cax)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+    
+def getJumpPts(x):
+    """
+    for a sequence of integers x, try to get the
+    locations when it jumps
+    """
+    n = x.shape[0]
+    d = x[1:] - x[:-1]
+    y = np.arange(n-1)
+    y = y[d != 0]
+    return y

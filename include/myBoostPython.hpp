@@ -10,6 +10,9 @@ using namespace Eigen;
 namespace bp = boost::python;
 namespace bn = boost::numpy;
 
+typedef std::complex<double> dcp;
+
+// ============================================================
 
 /* get the dimension of an array */
 inline void getDims(bn::ndarray x, int &m, int &n){
@@ -27,7 +30,8 @@ inline void getDims(bn::ndarray x, int &m, int &n){
  *
  *  Only work for double array/matrix
  */
-inline bn::ndarray copy2bn(const Ref<const ArrayXXd> &x){
+template<class MyAry = ArrayXXd, class MyType = double>
+bn::ndarray copy2bn(const Ref<const MyAry> &x){
     int m = x.cols();
     int n = x.rows();
 
@@ -42,11 +46,22 @@ inline bn::ndarray copy2bn(const Ref<const ArrayXXd> &x){
 	dims[0] = m;
 	dims[1] = n;
     }
-    bn::ndarray px = bn::empty(ndim, dims, bn::dtype::get_builtin<double>());
-    memcpy((void*)px.get_data(), (void*)x.data(), sizeof(double) * m * n);
+    bn::ndarray px = bn::empty(ndim, dims, bn::dtype::get_builtin<MyType>());
+    memcpy((void*)px.get_data(), (void*)x.data(), sizeof(MyType) * m * n);
 	    
     return px;
 }
+
+/* non-template function overloading for real matrix */
+inline bn::ndarray copy2bn(const Ref<const ArrayXXd> &x) {
+    return copy2bn<ArrayXXd, double>(x);
+}
+
+/* non-template function overloading for imaginary matrix */
+inline bn::ndarray copy2bnc(const Ref<const ArrayXXcd> &x) {
+    return copy2bn<ArrayXXcd, dcp>(x);
+}
+
 
 /**
  * @brief std::vector to bp::list

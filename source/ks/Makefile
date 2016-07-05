@@ -1,69 +1,44 @@
+# usage: make t=***
+
 CC = g++
-H5 = h5c++
 AR = ar
 
 OPTIM = -O3 -msse2 -msse4 -march=corei7
 INCLUDE = ../../include
 EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
+CFLAGS = -std=c++11 
 
-CFLAGS = -lm -lfftw3 -std=c++11 
+ifndef t
+t = int
+endif
 
+ifeq ($(t), int)
+SOURCE = ksint.cc 
 
-SOURCE = ksint.cc # ksintM1.cc 
-SHARED = libksint.so
-STATIC = libksint.a
+else ifeq ($(t), dim)
+SOURCE = ksdim.cc
 
-ETD_SOURCE = KSETD.cc
-ETD_SHARED = libKSETD.so
-ETD_STATIC = libKSETD.a
+else ifeq ($(t), fefv)
+SOURCE = ksFEFV.cc
 
-REFINE_SOURCE = ksrefine.cc
-REFINE_SHARED = libksrefine.so
-REFINE_STATIC = libksrefine.a
+else ifeq ($(t), refine)
+SOURCE = ksrefine.cc
 
-DIM_SOURCE = ksdim.cc
-DIM_STATIC = libksdim.a
+else ifeq ($(t), ei)
+SOURCE = KSEIDr.cc
 
-FEFV_SOURCE = ksFEFV.cc
-FEFV_STATIC = libksFEFV.a
+endif
 
-all : $(SHARED) $(STATIC) $(REFINE_SHARED) $(REFINE_STATIC) $(DIM_STATIC) $(FEFV_STATIC)
-int : $(SHARED) $(STATIC)
-etd : $(ETD_SHARED) $(ETD_STATIC)
-dim : $(DIM_STATIC)
-fefv : $(FEFV_STATIC)
+SHARED = $(addprefix lib, $(addsuffix .so, $(basename $(word 1, $(SOURCE)))))
+STATIC = $(addprefix lib, $(addsuffix .a, $(basename $(word 1, $(SOURCE)))))
+
+all : $(SHARED) $(STATIC) 
 
 $(SHARED): $(SOURCE)
 	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
 $(SOURCE:.cc=.o) : $(SOURCE)
 	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
 $(STATIC): $(SOURCE:.cc=.o)
-	$(AR) crs $@ $^
-
-$(ETD_SHARED): $(ETD_SOURCE)
-	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
-$(ETD_SOURCE:.cc=.o) : $(ETD_SOURCE)
-	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
-$(ETD_STATIC): $(ETD_SOURCE:.cc=.o)
-	$(AR) crs $@ $^
-
-$(REFINE_SHARED)$ : $(REFINE_SOURCE)
-	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) \
-	-L../../lib -lksint $^ -o $@
-$(REFINE_SOURCE:.cc=.o) : $(REFINE_SOURCE)
-	$(CC) -c $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^
-$(REFINE_STATIC) : $(REFINE_SOURCE:.cc=.o)
-	$(AR) crs $@ $^
-
-
-$(DIM_SOURCE:.cc=.o) : $(DIM_SOURCE)
-	$(H5) -c -std=c++11 $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
-$(DIM_STATIC) : $(DIM_SOURCE:.cc=.o)
-	$(AR) crs $@ $^
-
-$(FEFV_SOURCE:.cc=.o) : $(FEFV_SOURCE)
-	$(H5) -c -std=c++11 $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@
-$(FEFV_STATIC) : $(FEFV_SOURCE:.cc=.o)
 	$(AR) crs $@ $^
 
 clean:

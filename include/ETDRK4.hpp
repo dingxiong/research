@@ -23,12 +23,11 @@ using Eigen::ArrayXcd;
 /**
  * @brief ETDRK4 integration class
  *
- * Ary : type of the state varible
- * Mat : type of the collection of state variable
+ * DT   : data type (double/complex)
  * NL   : the nonlinear function type
  */
-template<class Ary, class Mat, template<class> class NL>
-class ETDRK4 {
+template<typename DT, class NL>
+class EID {
     
 public:
 
@@ -45,8 +44,8 @@ public:
 
     Scheme scheme = Cox_Matthews;	
 
-    ArrayXd Ta[9][9], Tb[9], Tc[9];
-    ArrayXd L;
+    Array<DT, Dynamic, 1> Ta[9][9], Tb[9], Tc[9];
+    Array<DT, Dynamic, 1> L;
     
     int M = 64;			/* number of sample points */
     int R = 1;			/* radius for evaluating phi(z) */
@@ -336,7 +335,9 @@ void
 ETDRK4<Ary, Mat, NL>::
 oneStep(double &du, double t, double h){
     
-    if (1 == Method) {
+    switch (scheme) {
+      
+    case  Cox_Matthews : 
 	nl.N1 = nl(t, 1);
     
 	nl.U2 = E2*nl.U1 + a21*nl.N1;
@@ -352,9 +353,40 @@ oneStep(double &du, double t, double h){
 	nl.N5 = nl(t+h, 5);
 
 	du = (b4*(nl.N5-nl.N4)).matrix().norm() / nl.U5.matrix().norm();
+
+	break;
+	
+    case  Krogstad : 
+	break;
+
+    case Hochbruck_Ostermann :
+	break;
+
+    case Luan_Ostermann :
+	break
+
+    default :
+	fprintf(stderr, "Please indicate the method !\n");
+	
     }
 
 }
+
+#endif	/* ETDRK4_H */
+
+
+template<class NL>
+class EIDR : public EID {
+
+public:
+    
+    virtual void
+    calCoe(double h);
+
+    virtual ArrayXXcd
+    ZR(ArrayXd &z);
+}
+
 
 /**
  * @brief Calculate the coefficients of ETDRK4.
@@ -432,5 +464,3 @@ ZR(ArrayXd &z){
     return z.template cast<std::complex<double>>().replicate(1, M) + r.replicate(M1, 1);
 }
 
-
-#endif	/* ETDRK4_H */

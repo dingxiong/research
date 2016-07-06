@@ -119,9 +119,9 @@ namespace MyFFT {
 		rp = fftw_plan_dft_c2r_1d(N, c1, r2, FFTW_MEASURE|FFTW_PRESERVE_INPUT);
 	    } else{
 		int n[]={N};
-		p = fftw_plan_many_dft_r2c(1, n, N-1, r2, n, 1, N, 
+		p = fftw_plan_many_dft_r2c(1, n, M, r2, n, 1, N, 
 					   c3, n, 1, N/2+1, FFTW_MEASURE);
-		rp = fftw_plan_many_dft_c2r(1, n, N-1, c1, n, 1, N/2+1,
+		rp = fftw_plan_many_dft_c2r(1, n, M, c1, n, 1, N/2+1,
 					    r2, n, 1, N, FFTW_MEASURE|FFTW_PRESERVE_INPUT);
 	    }
 	}

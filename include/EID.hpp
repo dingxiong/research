@@ -21,7 +21,7 @@ using namespace Eigen;
  * DT   : data type (double/complex)
  * NL   : the nonlinear function type
  */
-template<typename DT, class NL>
+template<typename DT>
 class EID {
     
 public:
@@ -40,7 +40,6 @@ public:
     Scheme scheme = Cox_Matthews;	
     
     Ary L;
-    NL nl;
     
     Ary a[9][9], b[9], c[9];
     std::vector<Ary*> N, Y;
@@ -66,7 +65,7 @@ public:
     
     ////////////////////////////////////////////////////////////
     // constructor and desctructor
-    EID(Ary L, NL nl) : L(L), nl(nl){}
+    EID(Ary L, std::vector<ArrayXcd*>Y, std::vector<ArrayXcd*>N) : L(L), Y(Y), N(N){}
     ~EID(){}
     
     ////////////////////////////////////////////////////////////
@@ -74,8 +73,9 @@ public:
     /**
      * nonlinear class NL provides container for intermediate steps
      */
+    template<class NL>
     void 
-    oneStep(double t, double h){
+    oneStep(double t, double h, NL nl){
 
 	switch (scheme) {
       
@@ -196,8 +196,9 @@ public:
     }
 #endif
 
+    template<class NL>
     void 
-    intgC(const double t0, const Ary &u0, const double tend, const double h, 
+    intgC(NL nl, const double t0, const Ary &u0, const double tend, const double h, 
 	  const int skip_rate){
 	calCoe(h);
 	const int Nt = (int)round((tend-t0)/h);
@@ -206,7 +207,7 @@ public:
 	*Y[0] = u0;
 	int num = 1;
 	for(int i = 0; i < Nt; i++){
-	    oneStep(t, h);
+	    oneStep(t, h, nl);
 	    NCallF += 5;
 	    t += h;
 	    *Y[0] = *Y[3];

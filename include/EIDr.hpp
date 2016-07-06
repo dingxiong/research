@@ -3,14 +3,13 @@
 
 #include "EID.hpp"
 
-template<class NL>
-class EIDr : public EID<double, NL> {
+class EIDr : public EID<double> {
 
 public :
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // constructor and destructor
-    EIDr(ArrayXd L, NL nl) : EID<double, NL>(L, nl){}
+    EIDr(ArrayXd L, std::vector<ArrayXcd*>Y, std::vector<ArrayXcd*>N) : EID<double>(L, Y, N){}
     ~EIDr(){}
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -18,9 +17,9 @@ public :
 
     void calCoe(double h){
 
-	ArrayXd hL = h * this->L; /* nondependent name */
+	ArrayXd hL = h * L; /* nondependent name */
    
-	switch (this->scheme) {
+	switch (scheme) {
     
 	case Cox_Matthews : {
 	    ArrayXXcd LR = ZR(hL);

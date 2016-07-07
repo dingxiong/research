@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <unordered_map>
 #include <Eigen/Dense>
 #include "denseRoutines.hpp"
 
@@ -31,18 +32,24 @@ public:
 
     //////////////////////////////////////////////////////////////////////
 
+    Ary &L;
+    ArrayXcd *N, *Y;
+
     enum Scheme {
 	Cox_Matthews,
 	Krogstad,
 	Hochbruck_Ostermann,
 	Luan_Ostermann
     };
-    Scheme scheme = Cox_Matthews;	
-    
-    Ary L;
-    
+    Scheme scheme = Cox_Matthews; /* scheme  */
+    std::unordered_map<int, int> nstages = { /* number of stages */
+        {Cox_Matthews,        4},
+        {Krogstad,            4},
+        {Hochbruck_Ostermann, 5},
+	{Luan_Ostermann,      8}
+    };
+
     Ary a[9][9], b[9], c[9];
-    std::vector<ArrayXcd*> N, Y;
     double err;
     
     int M = 64;			/* number of sample points */
@@ -60,16 +67,19 @@ public:
     int NCalCoe = 0;		/* times to evaluate coefficient */
     int NReject = 0;		/* times that new state is rejected */
     int NCallF = 0;	       /* times to call velocity function f */
+    int NSteps = 0;	      /* total number of integrations steps */
+    
     VectorXd hs;	       /* time step sequnce */
-
+    VectorXd lte;	      /* local relative error estimation */
+    VectorXd Ts;	      /* time sequnence for adaptive method */
     
     ////////////////////////////////////////////////////////////
     // constructor and desctructor
-    EID(Ary L, std::vector<ArrayXcd*>Y, std::vector<ArrayXcd*>N) : L(L), Y(Y), N(N){}
+    EID(Ary &L, ArrayXcd *Y, ArrayXcd *N) : L(L), Y(Y), N(N){}
     ~EID(){}
     
     ////////////////////////////////////////////////////////////
-
+ 
     /**
      * nonlinear class NL provides container for intermediate steps
      */
@@ -80,40 +90,40 @@ public:
 	switch (scheme) {
       
 	case  Cox_Matthews : 
-	    nl(*Y[0], *N[0], t);	
-	    *Y[1] = c[1] * (*Y[0]) + a[1][0] * (*N[0]);
-
-	    nl(*Y[1], *N[1], t+h/2);
-	    *Y[2] = c[1] * (*Y[1]) + a[1][0] * (*N[1]);
-
-	    nl(*Y[2], *N[2], t+h/2);
-	    *Y[3] = c[1] * (*Y[0]) + a[1][0] * (2*(*N[2]) - *N[0]);
+	    nl(Y[0], N[0], t);	
+	    Y[1] = c[1] * Y[0] + a[1][0] * N[0];
+	    
+	    nl(Y[1], N[1], t+h/2);	
+	    Y[2] = c[1] * Y[0] + a[1][0] * N[1];
+	    
+	    nl(Y[2], N[2], t+h/2);	
+	    Y[3] = c[1] * Y[0] + a[1][0] * (2*N[2]-N[0]);
 	
-	    nl(*Y[3], *N[3], t+h);
-	    *Y[4] = c[3] * (*Y[0]) + b[0] * (*N[0]) + b[1] * (*N[1] + *N[2]) + b[3] * (*N[3]);
+	    nl(Y[3], N[3], t+h);	
+	    Y[4] = c[3] * Y[0] + b[0] * N[0] + b[1] * (N[1] + N[2]) + b[3] * N[3];
+	    
+	    nl(Y[4], N[4], t+h);
 	
-	    nl(*Y[4], *N[4], t+h);
-	
-	    err = (b[3]*(*N[4] - *N[3])).abs().maxCoeff() / (*N[4]).abs().maxCoeff();
+	    err = (b[3]*(N[4] - N[3])).abs().maxCoeff() / Y[4].abs().maxCoeff();
 
 	    break;
 	
 	case  Krogstad : 
-	    nl(*Y[0], *N[0], t);	
-	    *Y[1] = c[1] * (*Y[0]) + a[1][0] * (*N[0]);
+	    nl(Y[0], N[0], t);	
+	    Y[1] = c[1] * Y[0] + a[1][0] * N[0];
 
-	    nl(*Y[1], *N[1], t+h/2);
-	    *Y[2] = c[1] * (*Y[1]) + a[1][0] * (*N[1]);
+	    nl(Y[1], N[1], t+h/2);
+	    Y[2] = c[1] * Y[0] + a[2][0] * N[0] + a[2][1] * N[1];
 
-	    nl(*Y[2], *N[2], t+h/2);
-	    *Y[3] = c[1] * (*Y[0]) + a[1][0] * (2*(*N[2]) - *N[0]);
+	    nl(Y[2], N[2], t+h/2);
+	    Y[3] = c[3] * Y[0] + a[3][0] * N[0] + a[3][2] * N[2];
 	
-	    nl(*Y[3], *N[3], t+h);
-	    *Y[4] = c[3] * (*Y[0]) + b[0] * (*N[0]) + b[1] * (*N[1] + *N[2]) + b[3] * (*N[3]);
+	    nl(Y[3], N[3], t+h);
+	    Y[4] = c[3]*Y[0] + b[0]*N[0] + b[1]*(N[1] + N[2]) + b[3]*N[3];
 	
-	    nl(*Y[4], *N[4], t+h);
+	    nl(Y[4], N[4], t+h);
 	
-	    err = (b[3]*(*N[4] - *N[3])).abs().maxCoeff() / (*N[4]).abs().maxCoeff();
+	    err = (b[3]*(N[4] - N[3])).abs().maxCoeff() / Y[4].abs().maxCoeff();
 
 	    break;
 
@@ -200,18 +210,19 @@ public:
     void 
     intgC(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h, 
 	  const int skip_rate){
+	int ns = nstages[scheme];
 	calCoe(h);
 	const int Nt = (int)round((tend-t0)/h);
 
 	double t = t0;
-	*Y[0] = u0;
-	saveState(*Y[0], 0);
+	Y[0] = u0;
+	saveState(Y[0], 0);
 	for(int i = 0; i < Nt; i++){
 	    oneStep(t, h, nl);
-	    NCallF += 5;
+	    NCallF += ns+1;
 	    t += h;
-	    *Y[0] = *Y[3];
-	    if((i+1)%skip_rate == 0 || i == Nt-1) saveState(*Y[0], t);
+	    Y[0] = Y[ns]; 
+	    if((i+1)%skip_rate == 0 || i == Nt-1) saveState(Y[0], t);
 	}
     }
 

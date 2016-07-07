@@ -9,7 +9,7 @@ public :
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // constructor and destructor
-    EIDr(ArrayXd L, std::vector<ArrayXcd*>Y, std::vector<ArrayXcd*>N) : EID<double>(L, Y, N){}
+    EIDr(ArrayXd &L, ArrayXcd *Y, ArrayXcd *N) : EID<double>(L, Y, N){}
     ~EIDr(){}
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -18,7 +18,7 @@ public :
     inline 
     void calCoe(double h){
 
-	ArrayXd hL = h * L; /* nondependent name */
+	ArrayXd hL = h * L;
    
 	switch (scheme) {
     

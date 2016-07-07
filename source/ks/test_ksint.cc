@@ -13,7 +13,7 @@ using namespace denseRoutines;
 
 int main(){
     /// -----------------------------------------------------
-    switch (14){
+    switch (1){
 	
     case 1:
 	{
@@ -23,7 +23,7 @@ int main(){
 	    for (int i = 0; i < 1; i++) {
 		aa = ks.intg(a0, 0.01, 20, 1);
 	    }
-	    cout << aa.rightCols(1) << endl << endl;
+	    // cout << aa.rightCols(1) << endl << endl;
 	    break;
 	}
 

@@ -20,11 +20,39 @@ public:
     FFT<double> fft;
     
     
-    KSEIDr(int N, double d);
-    ~KSEIDr();
+    KSEIDr(int N, double d) :  N(N), d(d) {
+	K = ArrayXd::LinSpaced(N/2+1, 0, N/2) * 2 * M_PI / d;
+	K(N/2) = 0;
+	L = K*K - K*K*K*K;
+	G = 0.5 * dcp(0,1) * K * N; 
 
-    Eigen::ArrayXXd C2R(const Eigen::ArrayXXcd &v);
-    Eigen::ArrayXXcd R2C(const Eigen::ArrayXXd &v);
+	fft.SetFlag(fft.HalfSpectrum);
+    }
+    
+    ~KSEIDr(){};
+
+    inline
+    ArrayXXd C2R(const ArrayXXcd &v){
+	int n = v.rows();
+	int m = v.cols();
+	ArrayXXcd vt = v.middleRows(1, n-2);
+	ArrayXXd vp(2*(n-2), m);
+	vp = Map<ArrayXXd>((double*)&vt(0,0), 2*(n-2), m);
+
+	return vp;
+    }
+    
+    inline
+    ArrayXXcd R2C(const ArrayXXd &v){
+	int n = v.rows();
+	int m = v.cols();
+	assert( 0 == n%2);
+	
+	ArrayXXcd vp = ArrayXXcd::Zero(n/2+2, m);
+	vp.middleRows(1, n/2) = Map<ArrayXXcd>((dcp*)&v(0,0), n/2, m);
+	
+	return vp;
+    }
 
     inline 
     ArrayXXd
@@ -50,19 +78,16 @@ public:
 	
 	const int Nt = (int)round(tend/h);
 	const int M = (Nt+skip_rate-1)/skip_rate + 1;
-	ArrayXXd aa(N-2, M);
+	ArrayXXcd aa(N/2+1, M);
 	int ks = 0;
 	auto ss = [this, &ks, &aa](ArrayXcd &x, double t){
-	    Map<ArrayXcd> xv(x.data(), x.size());
-	    aa.col(ks++) = C2R(xv);
+	    aa.col(ks++) = x;
 	};
 	
-	std::vector<ArrayXcd*> Ys = {&Yv[0], &Yv[1], &Yv[2], &Yv[3], &Yv[4]};
-	std::vector<ArrayXcd*> Ns = {&Nv[0], &Nv[1], &Nv[2], &Nv[3], &Nv[4]};
-	EIDr eidr(L, Ys, Ns);
+	EIDr eidr(L, Yv, Nv);
         eidr.intgC(nl, ss, 0, u0, tend, h, skip_rate); 
 	
-	return aa;
+	return C2R(aa);
     }
 
 };

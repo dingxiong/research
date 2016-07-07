@@ -42,7 +42,7 @@ public:
     Ary L;
     
     Ary a[9][9], b[9], c[9];
-    std::vector<Ary*> N, Y;
+    std::vector<ArrayXcd*> N, Y;
     double err;
     
     int M = 64;			/* number of sample points */
@@ -195,22 +195,23 @@ public:
 	return std::make_pair(tt.head(num), uu.leftCols(num));
     }
 #endif
-
-    template<class NL>
+    
+    template<class NL, class SS>
     void 
-    intgC(NL nl, const double t0, const Ary &u0, const double tend, const double h, 
+    intgC(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h, 
 	  const int skip_rate){
 	calCoe(h);
 	const int Nt = (int)round((tend-t0)/h);
 
 	double t = t0;
 	*Y[0] = u0;
-	int num = 1;
+	saveState(*Y[0], 0);
 	for(int i = 0; i < Nt; i++){
 	    oneStep(t, h, nl);
 	    NCallF += 5;
 	    t += h;
 	    *Y[0] = *Y[3];
+	    if((i+1)%skip_rate == 0 || i == Nt-1) saveState(*Y[0], t);
 	}
     }
 
@@ -222,6 +223,7 @@ public:
      * @param[in]  s           estimate damping factor
      * @return     mu          final dampling factor 
      */
+    inline 
     double
     adaptTs(bool &doChange, bool &doAccept, const double s){
 	double mu = 1;
@@ -244,11 +246,13 @@ public:
 	return mu;
     }
     
-    virtual void 
-    calCoe(double h);
+    inline
+    virtual
+    void calCoe(double h){}
 
-    virtual ArrayXXcd
-    ZR(ArrayXd &z);
+    inline
+    virtual 
+    ArrayXXcd ZR(ArrayXd &z){}
     
 };
 

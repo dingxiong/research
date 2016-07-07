@@ -5,13 +5,11 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace MyFFT;
 using namespace denseRoutines;
 
 
 KSEIDr::KSEIDr(int N, double d) : 
-    N(N), d(d), 
-    F{ RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1)} 
+    N(N), d(d)
 {
     K = ArrayXd::LinSpaced(N/2+1, 0, N/2) * 2 * M_PI / d;
     K(N/2) = 0;

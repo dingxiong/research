@@ -14,7 +14,8 @@ public :
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // virtual functions 
-
+    
+    inline 
     void calCoe(double h){
 
 	ArrayXd hL = h * L; /* nondependent name */
@@ -37,6 +38,8 @@ public :
 	    b[0] = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean().real();
 	    b[1] = h * 2 * ( (2.0 + LR + LRe*(-2.0 + LR)) / LR3 ).rowwise().mean().real();
 	    b[3] = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean().real();
+
+	    break;
 	}
 
 	case Krogstad : {
@@ -59,14 +62,16 @@ public :
 	    b[0] = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean().real();
 	    b[1] = h * 2 * ( (2.0 + LR + LRe*(-2.0 + LR)) / LR3 ).rowwise().mean().real();
 	    b[3] = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean().real();
+
+	    break;
 	}
 	    
 	case Hochbruck_Ostermann : {
-	    
+	    break;
 	}
 	    
 	case Luan_Ostermann : {
-	    
+	    break;
 	}
 	    
 	default : 
@@ -79,6 +84,7 @@ public :
     /**
      * @brief calcuate the matrix to do averge of phi(z). 
      */
+    inline
     ArrayXXcd ZR(ArrayXd &z){
     
 	int M1 = z.size();

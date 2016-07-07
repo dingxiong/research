@@ -6,7 +6,7 @@ AR = ar
 OPTIM = -O3 -msse2 -msse4 -march=corei7
 INCLUDE = ../../include
 EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
-CFLAGS = -std=c++11 
+CFLAGS = -std=c++11 # -Wfatal-errors
 
 ifndef t
 t = int

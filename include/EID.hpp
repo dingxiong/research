@@ -47,14 +47,18 @@ public:
         {Cox_Matthews,        4},
         {Krogstad,            4},
         {Hochbruck_Ostermann, 5},
-	{Luan_Ostermann,      8}
+	{Luan_Ostermann,      8},
+	{IFRK43,              4},
+	{IFRK54,              5}
     };
 
     std::unordered_map<int, int> orders = { /* orders of schemes */
         {Cox_Matthews,        4},
         {Krogstad,            4},
         {Hochbruck_Ostermann, 4},
-	{Luan_Ostermann,      8}
+	{Luan_Ostermann,      8},
+	{IFRK43,              4},
+	{IFRK54,              5}
     };
 
 
@@ -301,6 +305,45 @@ public:
 	    
 	    break;
 
+	case IFRK43 :
+	    nl(Y[0], N[0], t);	
+	    Y[1] = c[1]*Y[0] + 0.5 * c[1]*N[0];
+
+	    nl(Y[1], N[1], t+h/2);
+	    Y[2] = c[1]*Y[0] + 0.5 * N[1];
+
+	    nl(Y[2], N[2], t+h/2);
+	    Y[3] = c[3]*Y[0] + c[1]* N[2];
+	
+	    nl(Y[3], N[3], t+h);
+	    Y[4] = c[1]*Y[0] + (1.0/6)*c[3]*N[0] + (1.0/3)*c[1]*(N[1]+N[2]) + (1.0/6)*N[3];
+
+	    nl(Y[4], N[4], t+h);
+
+	    err = (1.0/10)*(N[4] - N[3]).abs().maxCoeff() / Y[4].abs().maxCoeff();
+	    
+	    break;
+	    
+	case IFRK54 :
+	    nl(Y[0], N[0], t);	
+	    Y[1] = c[1]*Y[0] + 1.0/5*c[1]*N[0];
+
+	    nl(Y[1], N[1], t+h/5);
+	    Y[2] = c[2]*Y[0] + 3.0/40*c[2]*N[0] + a[2][1]* N[1];
+
+	    nl(Y[2], N[2], t+3*h/10);
+	    Y[3] = c[3]*Y[0] + 44.0/45*c[3]*N[0] + a[3][1]*N[1] + a[3][2]*N[2];
+	
+	    nl(Y[3], N[3], t+4*h/5);
+	    Y[4] = c[4]*Y[0] + (19372.0/6561)*c[4]*N[0] + a[4][1]*N[1] + a[4][2]*N[2] + a[4][3]*N[3];
+
+	    nl(Y[4], N[4], t+8*h/9);
+	    Y[5] = c[5]*Y[0] + (9017.0/3168)*c[5]*N[0] + a[4][1]*N[1] + a[4][2]*N[2] + a[4][3]*N[3];
+
+	    err = (1.0/10)*(N[4] - N[3]).abs().maxCoeff() / Y[4].abs().maxCoeff();
+	    
+	    break;
+
 	default :
 	    fprintf(stderr, "Please indicate the scheme !\n");
 	    exit(1);
@@ -310,12 +353,13 @@ public:
 
     void 
     calCoe(double h){
-	Ary hL = h * L;
-	ArrayXXcd z = ZR(hL);
 
 	switch (scheme) {
     
 	case Cox_Matthews : {	    
+	    Ary hL = h * L;
+	    ArrayXXcd z = ZR(hL);
+
 	    ArrayXXcd z2 = z.square();
 	    ArrayXXcd z3 = z.cube();
 	    ArrayXXcd ze = z.exp();
@@ -334,6 +378,9 @@ public:
 	}
 
 	case Krogstad : {
+	    Ary hL = h * L;
+	    ArrayXXcd z = ZR(hL);
+
 	    ArrayXXcd z2 = z.square();
 	    ArrayXXcd z3 = z.cube();
 	    ArrayXXcd ze = z.exp();
@@ -354,14 +401,17 @@ public:
 	    a[3][0] = h * mean( (ze*t2 + t1) / z2 );
 	    a[3][2] = h*2*mean( (ze - z - 1)  / z2 );
 	    
-	    b[0] = h * mean( ( (-t4 + ze*(4.0 - 3.0 * z + z2)) / z3 );
-	    b[1] = h*2*mean( ( (t1 + ze*t2) / z3 );
-	    b[3] = h * mean( ( (-4.0 - 3.0*z -z2 - ze*t3 ) / z3 );
-
+	    b[0] = h * mean( (-t4 + ze*(4.0 - 3.0 * z + z2)) / z3 );
+	    b[1] = h*2*mean( (t1 + ze*t2) / z3 );
+	    b[3] = h * mean( (-4.0 - 3.0*z -z2 - ze*t3 ) / z3 );
+	    
 	    break;
 	}
 	    
 	case Hochbruck_Ostermann : {
+	    Ary hL = h * L;
+	    ArrayXXcd z = ZR(hL);
+
 	    ArrayXXcd z2 = z.square();
 	    ArrayXXcd z3 = z.cube();
 	    ArrayXXcd ze = z.exp();
@@ -392,6 +442,9 @@ public:
 	}
 	    
 	case Luan_Ostermann : {
+	    Ary hL = h * L;
+	    ArrayXXcd z = ZR(hL);
+
 	    ArrayXXcd z2 = z.square();
 	    ArrayXXcd z3 = z.cube();
 	    ArrayXXcd z4 = z2.square();
@@ -438,6 +491,37 @@ public:
 	    b[7] =-h * mean( (90 + 64*z + 21*z2 + 4*z3 - 2*ze*(45 - 13*z + z2)) / (4*z4) );
 
 	    break;
+	}
+
+	case IFRK43 : {
+	    Ary hL = h * L;
+
+	    c[1] = (hL/2).exp();
+	    c[3] = hL.exp();
+
+	    break;	
+	}
+
+	case IFRK54 : {
+	    Ary hL = h * L;
+
+	    c[1] = (hL/5).exp();
+	    c[2] = (3*hL/10).exp();
+	    c[3] = (4*hL/5).exp();
+	    c[4] = (8*hL/9).exp();
+	    c[5] = hL.exp();
+	    
+	    a[2][1] = 9.0/40 * (hL/10).exp();
+	    a[3][1] = 56.0/15 * (3*hL/5).exp();
+	    a[3][2] = 32.0/9 * (hL/2).exp();
+	    a[4][1] = 25360.0/2187 * (31*hL/45).exp();
+	    a[4][2] = 64448.0/6561 * (53*hL/90).exp();
+	    a[4][3] = 212.0/729 * (4*hL/45).exp();
+	    a[5][1] = 25360.0/2187 * (31*hL/45).exp();
+	    a[5][2] = 64448.0/6561 * (53*hL/90).exp();
+	    a[5][3] = 212.0/729 * (4*hL/45).exp();
+
+	    break;	
 	}
 	    
 	default : fprintf(stderr, "Please indicate the scheme !\n");

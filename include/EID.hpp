@@ -58,15 +58,15 @@ public:
     ////////////////////////////////////////////////////////////
     // time adaptive method related parameters
     double rtol = 1e-8;
-    double nu = 0.9;		/* safe factor */
-    double mumax = 2.5;		/* maximal time step increase factor */
-    double mumin = 0.4;		/* minimal time step decrease factor */
-    double mue = 1.25;		/* upper lazy threshold */
-    double muc = 0.85;		/* lower lazy threshold */
+    double nu = 0.9;	       /* safe factor */
+    double mumax = 2.5;	       /* maximal time step increase factor */
+    double mumin = 0.4;	       /* minimal time step decrease factor */
+    double mue = 1.25;	       /* upper lazy threshold */
+    double muc = 0.85;	       /* lower lazy threshold */
 
-    int NCalCoe = 0;		/* times to evaluate coefficient */
-    int NReject = 0;		/* times that new state is rejected */
-    int NCallF = 0;	       /* times to call velocity function f */
+    int NCalCoe = 0;	      /* times to evaluate coefficient */
+    int NReject = 0;	      /* times that new state is rejected */
+    int NCallF = 0;	      /* times to call velocity function f */
     int NSteps = 0;	      /* total number of integrations steps */
     
     VectorXd hs;	       /* time step sequnce */
@@ -140,28 +140,25 @@ public:
 
     }
 
-#if 0
-    std::pair<VectorXd, Mat>
-    intg(const double t0, const Ary &u0, const double tend, const double h0, 
+    template<class NL, class SS>
+    void 
+    intg(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h0, 
 	 const int skip_rate){
-	
+	int ns = nstages[scheme];
 	double h = h0;
 	calCoe(h);
-
+	
+	NCalCoe = 0;
+	NReject = 0;
+	NCallF = 0;    
+	NSteps = 0;
+	
 	const int N = u0.size();    
 	const int Nt = (int)round((tend-t0)/h);
 	const int M = Nt /skip_rate + 1;
 
-	Mat uu(N, M);
-	VectorXd tt(M);
-	uu.col(0) = u0;
-	tt(0) = t0;
-	initState(M);
-
-	Ary unext;
-	double du;
 	double t = t0;
-	Ary u = u0;
+	Y[0] = u0;
 	int num = 1;
 	bool doChange, doAccept;
 
@@ -204,7 +201,6 @@ public:
 	duu.conservativeResize(num);
 	return std::make_pair(tt.head(num), uu.leftCols(num));
     }
-#endif
     
     template<class NL, class SS>
     void 
@@ -220,6 +216,7 @@ public:
 	for(int i = 0; i < Nt; i++){
 	    oneStep(t, h, nl);
 	    NCallF += ns+1;
+	    NSteps++;
 	    t += h;
 	    Y[0] = Y[ns]; 
 	    if((i+1)%skip_rate == 0 || i == Nt-1) saveState(Y[0], t);

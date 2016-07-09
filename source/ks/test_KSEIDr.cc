@@ -1,4 +1,4 @@
-/* h5c++ test_KSEIDr.cc -std=c++11 -lksint -lmyH5 -ldenseRoutines -literMethod -lfftw3 -lKSEIDr -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3 -O3 && ./a.out 
+/* h5c++ test_KSEIDr.cc -std=c++11 -lksint -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -lKSEIDr -I ../../include/ -L ../../lib/ -I $XDAPPS/eigen/include/eigen3 -DEIGEN_FFTW_DEFAULT -O3 && ./a.out 
  */
 #include <iostream>
 #include <ctime>
@@ -26,22 +26,25 @@ int main(){
 	double T, r, s;
 	int nstp;
 	std::tie(a0, T, nstp, r, s) = KSreadRPO(file, poType, 1);
-	
+
+#if 1	
 	KSEIDr ks(64, 22);
 	clock_t t = clock();
 	ArrayXXd aa;
-	for(int i = 0; i < 10; i++) aa = ks.intgC(a0, 2*T, T/nstp, 1, 2, true);
+	for(int i = 0; i < 500; i++) aa = ks.intgC(a0, 2*T, T/nstp, 1, 2, true);
 	t = clock() - t;
 	cee((double)t / CLOCKS_PER_SEC);
+#endif
 
+#if 1
 	KS ks2(64, 22);
 	t = clock();
 	ArrayXXd aa2;
-	for(int i = 0; i < 10; i++) aa2 = ks2.intg(a0, T/nstp, 2*nstp, 1);
+	for(int i = 0; i < 500; i++) aa2 = ks2.intg(a0, T/nstp, 2*nstp, 1);
 	t = clock() - t;
 	cee((double)t / CLOCKS_PER_SEC);
-
-	// savetxt("f.dat", aa);
+#endif
+	//savetxt("f.dat", aa);
 	break;
     }
 	

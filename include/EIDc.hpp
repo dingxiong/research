@@ -10,7 +10,7 @@ class EIDc : public EID<std::complex<double>> {
     EIDc(ArrayXcd &L, ArrayXcd *Y, ArrayXcd *N) : EID<std::complex<double>>(L, Y, N){}
     ~EIDc(){}
 
-    inline ArrayXcd mean(ArrayXXcd &x){
+    inline ArrayXcd mean(const Ref<const ArrayXXcd> &x){
 	return x.rowwise().mean();
     }
     

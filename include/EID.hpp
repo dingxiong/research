@@ -39,7 +39,9 @@ public:
 	Cox_Matthews,
 	Krogstad,
 	Hochbruck_Ostermann,
-	Luan_Ostermann
+	Luan_Ostermann,
+	IFRK43,
+	IFRK54
     };
     Scheme scheme = Cox_Matthews; /* scheme  */
     
@@ -80,11 +82,7 @@ public:
     int NReject = 0;	      /* times that new state is rejected */
     int NCallF = 0;	      /* times to call velocity function f */
     int NSteps = 0;	      /* total number of integrations steps */
-    
-    VectorXd hs;	       /* time step sequnce */
-    VectorXd lte;	      /* local relative error estimation */
-    VectorXd Ts;	      /* time sequnence for adaptive method */
-    
+        
     double err = 0;	 /* LTE : local truncation error estimation */
 
     ////////////////////////////////////////////////////////////
@@ -129,7 +127,7 @@ public:
 
 	    oneStep(t, h, nl);
 	    NCallF += ns+1;		
-	    double s = nu * std::pow(rtol/du, 1.0/od);
+	    double s = nu * std::pow(rtol/err, 1.0/od);
 	    double mu = adaptTs(doChange, doAccept, s);
 	
 	    if (doAccept){
@@ -165,7 +163,6 @@ public:
 
 	double t = t0;
 	Y[0] = u0;
-	saveState(Y[0], 0);
 	for(int i = 0; i < Nt; i++){
 	    oneStep(t, h, nl);
 	    NCallF += ns+1;
@@ -546,7 +543,7 @@ public:
     
     inline 
     virtual
-    Ary mean(ArrayXcd &x){}
+    Ary mean(const Ref<const ArrayXXcd> &x){}
 
 };
 

@@ -17,7 +17,7 @@ public :
 
     inline
     ArrayXd
-    mean(ArrayXXcd &x){ 
+    mean(const Ref<const ArrayXXcd> &x){ 
 	return x.rowwise().mean().real();
     }
 

@@ -7,6 +7,7 @@ class EIDc : public EID<std::complex<double>> {
     
  public:
     
+    EIDc(){}
     EIDc(ArrayXcd &L, ArrayXcd *Y, ArrayXcd *N) : EID<std::complex<double>>(L, Y, N){}
     ~EIDc(){}
 

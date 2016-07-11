@@ -29,18 +29,18 @@ int main(){
 
 #if 1	
 	KSEIDr ks(64, 22);
-	clock_t t = clock();
 	ArrayXXd aa;
-	for(int i = 0; i < 500; i++) aa = ks.intgC(a0, 2*T, T/nstp, 1, 2, true);
+	clock_t t = clock();
+	for(int i = 0; i < 50; i++) aa = ks.intgC(a0, 2*T, T/nstp, 10000, 2, true);
 	t = clock() - t;
 	cee((double)t / CLOCKS_PER_SEC);
 #endif
 
-#if 1
+#if 0
 	KS ks2(64, 22);
-	t = clock();
 	ArrayXXd aa2;
-	for(int i = 0; i < 500; i++) aa2 = ks2.intg(a0, T/nstp, 2*nstp, 1);
+	t = clock();
+	for(int i = 0; i < 100; i++) aa2 = ks2.intg(a0, T/nstp, 2*nstp, 10000);
 	t = clock() - t;
 	cee((double)t / CLOCKS_PER_SEC);
 #endif

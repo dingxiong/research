@@ -19,13 +19,14 @@ public:
     
     FFT<double> fft;
 
-    VectorXd hs;	       /* time step sequnce */
+    VectorXd hs;	      /* time step sequnce */
     VectorXd lte;	      /* local relative error estimation */
     VectorXd Ts;	      /* time sequnence for adaptive method */
     
     struct NL {
 	FFT<double> *fft;
 	ArrayXcd *G;
+
 	NL(){}
 	NL(FFT<double> &fft, ArrayXcd &G) : fft(&fft), G(&G) {}
 	~NL(){}
@@ -47,7 +48,10 @@ public:
     };
     
     NL nl;
-
+    
+    ArrayXcd Yv[10], Nv[10];
+    EIDr eidr;
+    
     /* ============================================================ */
     KSEIDr(int N, double d) :  N(N), d(d) {
 	K = ArrayXd::LinSpaced(N/2+1, 0, N/2) * 2 * M_PI / d;
@@ -57,6 +61,13 @@ public:
 
 	fft.SetFlag(fft.HalfSpectrum);
 	nl.init(fft, G);
+	
+	for(int i = 0; i < 5; i++){
+	    Yv[i].resize(N/2+1);
+	    Nv[i].resize(N/2+1);
+	}
+	eidr.init(&L, Yv, Nv);
+	
     }
     
     ~KSEIDr(){};
@@ -66,11 +77,6 @@ public:
     intgC(const Eigen::ArrayXd &a0, const double tend, const double h, const int skip_rate,
 	  int method, bool adapt){
 	assert( N-2 == a0.size());
-	ArrayXcd Yv[5], Nv[5];
-	for (int i = 0; i < 5; i++) {
-	    Yv[i].resize(N/2+1);
-	    Nv[i].resize(N/2+1);
-	}
 
 	ArrayXcd u0 = R2C(a0); 
 	const int Nt = (int)round(tend/h);
@@ -83,7 +89,6 @@ public:
 	    lte(ks++) = err;
 	};
 	
-	EIDr eidr(L, Yv, Nv);
         eidr.intgC(nl, ss, 0, u0, tend, h, skip_rate); 
 	
 	return C2R(aa);

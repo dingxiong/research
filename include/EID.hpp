@@ -32,7 +32,7 @@ public:
 
     //////////////////////////////////////////////////////////////////////
 
-    Ary &L;
+    Ary *L;
     ArrayXcd *N, *Y;
 
     enum Scheme {
@@ -87,9 +87,16 @@ public:
 
     ////////////////////////////////////////////////////////////
     // constructor and desctructor
-    EID(Ary &L, ArrayXcd *Y, ArrayXcd *N) : L(L), Y(Y), N(N){}
+    
+    EID(){}
+    EID(Ary *L, ArrayXcd *Y, ArrayXcd *N) : L(L), Y(Y), N(N){}
     ~EID(){}
     
+    void init(Ary *L, ArrayXcd *Y, ArrayXcd *N){
+	this->L = L;
+	this->Y = Y;
+	this->N = N;
+    }
     ////////////////////////////////////////////////////////////
  
     template<class NL, class SS>
@@ -356,10 +363,11 @@ public:
     void 
     calCoe(double h){
 
+	Ary hL = h * (*L);
+
 	switch (scheme) {
     
 	case Cox_Matthews : {	    
-	    Ary hL = h * L;
 	    ArrayXXcd z = ZR(hL);
 
 	    ArrayXXcd z2 = z.square();
@@ -380,7 +388,6 @@ public:
 	}
 
 	case Krogstad : {
-	    Ary hL = h * L;
 	    ArrayXXcd z = ZR(hL);
 
 	    ArrayXXcd z2 = z.square();
@@ -411,7 +418,6 @@ public:
 	}
 	    
 	case Hochbruck_Ostermann : {
-	    Ary hL = h * L;
 	    ArrayXXcd z = ZR(hL);
 
 	    ArrayXXcd z2 = z.square();
@@ -444,7 +450,6 @@ public:
 	}
 	    
 	case Luan_Ostermann : {
-	    Ary hL = h * L;
 	    ArrayXXcd z = ZR(hL);
 
 	    ArrayXXcd z2 = z.square();
@@ -496,8 +501,6 @@ public:
 	}
 
 	case IFRK43 : {
-	    Ary hL = h * L;
-
 	    c[1] = (hL/2).exp();
 	    c[3] = hL.exp();
 
@@ -505,8 +508,6 @@ public:
 	}
 
 	case IFRK54 : {
-	    Ary hL = h * L;
-
 	    c[1] = (hL/5).exp();
 	    c[2] = (3*hL/10).exp();
 	    c[3] = (4*hL/5).exp();

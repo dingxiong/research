@@ -167,7 +167,7 @@ def ax2d(fig, ax, doBlock=False, save=False, name='output.png', title=None):
     if title is not None:
         ax.set_title(title)
 
-    ax.legend(loc='best')
+    ax.legend(loc='best', framealpha=0.2)
     if save:
         plt.savefig(name)
         plt.close()

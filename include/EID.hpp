@@ -44,6 +44,15 @@ public:
 	IFRK54
     };
     Scheme scheme = Cox_Matthews; /* scheme  */
+
+    std::unordered_map<std::string, Scheme> names = {
+        {"Cox_Matthews",        Cox_Matthews},
+        {"Krogstad",            Krogstad},
+        {"Hochbruck_Ostermann", Hochbruck_Ostermann},
+	{"Luan_Ostermann",      Luan_Ostermann},
+	{"IFRK43",              IFRK43},
+	{"IFRK54",              IFRK54}
+    };
     
     std::unordered_map<int, int> nstages = { /* number of stages */
         {Cox_Matthews,        4},
@@ -51,7 +60,17 @@ public:
         {Hochbruck_Ostermann, 5},
 	{Luan_Ostermann,      8},
 	{IFRK43,              4},
-	{IFRK54,              5}
+	{IFRK54,              6}
+    };
+    
+    std::unordered_map<int, int> nnls = { /* number of nonlinear evaluations */
+	{Cox_Matthews,        5},
+        {Krogstad,            5},
+        {Hochbruck_Ostermann, 5},
+	{Luan_Ostermann,      9},
+	{IFRK43,              5},
+	{IFRK54,              7}
+
     };
 
     std::unordered_map<int, int> orders = { /* orders of schemes */
@@ -98,7 +117,14 @@ public:
 	this->N = N;
     }
     ////////////////////////////////////////////////////////////
- 
+
+    /*
+      inline void 
+      setScheme(std::string x){
+      scheme = names[x];
+      }
+    */
+
     template<class NL, class SS>
     void 
     intg(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h0, 
@@ -164,7 +190,7 @@ public:
 	calCoe(h);
 	NCalCoe++;
 	NCallF = 0;
-	NSteps = 0;
+	NSteps = 0; 
 
 	const int Nt = (int)round((tend-t0)/h);
 
@@ -301,7 +327,7 @@ public:
 	    Y[7] = c[7]*Y[0] + a[7][0]*N[0] + a[7][4]*N[4] + a[7][5]*N[5] + a[7][6]*N[6];
 	    
 	    nl(Y[7], N[7], t+h);
-	    Y[8] = c[8]*Y[0] + b[0]*N[0] + b[5]*N[5] + b[6]*N[6] + b[7]*N[7];
+	    Y[8] = c[7]*Y[0] + b[0]*N[0] + b[5]*N[5] + b[6]*N[6] + b[7]*N[7];
 
 	    nl(Y[8], N[8], t+h);
 	    
@@ -311,45 +337,45 @@ public:
 
 	case IFRK43 :
 	    nl(Y[0], N[0], t);	
-	    Y[1] = c[1]*Y[0] + 0.5 * c[1]*N[0];
+	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
 
 	    nl(Y[1], N[1], t+h/2);
-	    Y[2] = c[1]*Y[0] + 0.5 * N[1];
+	    Y[2] = c[1]*Y[0] + (h*0.5)*N[1];
 
 	    nl(Y[2], N[2], t+h/2);
-	    Y[3] = c[3]*Y[0] + c[1]* N[2];
+	    Y[3] = c[3]*Y[0] + a[3][2]* N[2];
 	
 	    nl(Y[3], N[3], t+h);
-	    Y[4] = c[1]*Y[0] + (1.0/6)*c[3]*N[0] + (1.0/3)*c[1]*(N[1]+N[2]) + (1.0/6)*N[3];
+	    Y[4] = c[3]*Y[0] + b[0]*N[0] + b[1]*(N[1]+N[2]) + (h/6)*N[3];
 
 	    nl(Y[4], N[4], t+h);
 
-	    err = (1.0/10)*(N[4] - N[3]).abs().maxCoeff() / Y[4].abs().maxCoeff();
+	    err = h*(1.0/10)*(N[4] - N[3]).abs().maxCoeff() / Y[4].abs().maxCoeff();
 	    
 	    break;
 	    
 	case IFRK54 :
 	    nl(Y[0], N[0], t);	
-	    Y[1] = c[1]*Y[0] + 1.0/5*c[1]*N[0];
+	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
 
 	    nl(Y[1], N[1], t+h/5);
-	    Y[2] = c[2]*Y[0] + 3.0/40*c[2]*N[0] + a[2][1]* N[1];
+	    Y[2] = c[2]*Y[0] + a[2][0]*N[0] + a[2][1]* N[1];
 
 	    nl(Y[2], N[2], t+3*h/10);
-	    Y[3] = c[3]*Y[0] + 44.0/45*c[3]*N[0] + a[3][1]*N[1] + a[3][2]*N[2];
+	    Y[3] = c[3]*Y[0] + a[3][0]*N[0] + a[3][1]*N[1] + a[3][2]*N[2];
 	
 	    nl(Y[3], N[3], t+4*h/5);
-	    Y[4] = c[4]*Y[0] + (19372.0/6561)*c[4]*N[0] + a[4][1]*N[1] + a[4][2]*N[2] + a[4][3]*N[3];
+	    Y[4] = c[4]*Y[0] + a[4][0]*N[0] + a[4][1]*N[1] + a[4][2]*N[2] + a[4][3]*N[3];
 
 	    nl(Y[4], N[4], t+8*h/9);
-	    Y[5] = c[5]*Y[0] + (9017.0/3168)*c[5]*N[0] + a[5][1]*N[1] + a[5][2]*N[2] + a[5][3]*N[3] + a[5][4]*N[4];
+	    Y[5] = c[5]*Y[0] + a[5][0]*N[0] + a[5][1]*N[1] + a[5][2]*N[2] + a[5][3]*N[3] + a[5][4]*N[4];
 
 	    nl(Y[5], N[5], t+h);
-	    Y[6] = c[5]*Y[0] + (35.0/384)*c[5]*N[0] + b[2]*N[2] + b[3]*N[3] + b[4]*N[4] + 11./84*N[5];
+	    Y[6] = c[5]*Y[0] + b[0]*N[0] + b[2]*N[2] + b[3]*N[3] + b[4]*N[4] + (h*11./84)*N[5];
 
 	    nl(Y[6], N[6], t+h);	    
-	    err = (-71./57600*N[0] + 71./16695*N[2] - 71./1920*N[3] + 17253./339200*N[4]
-		   -22./525*N[5] + 1./40*N[6]).abs().maxCoeff() / Y[4].abs().maxCoeff();
+	    err = h*(-71./57600*N[0] + 71./16695*N[2] - 71./1920*N[3] + 17253./339200*N[4]
+		     -22./525*N[5] + 1./40*N[6]).abs().maxCoeff() / Y[4].abs().maxCoeff();
 	    
 	    break;
 
@@ -440,7 +466,7 @@ public:
 	    a[3][1] = h * mean( (ze - z - 1)  / z2 );
 	    a[4][0] =-h * mean( (t3 - z + z2 - 4*zeh*(4-3*z+z2))  / t2 );
 	    a[4][1] = h * mean( (t3 + 3*z - z2 + 8*zeh*(-2-z))  / t2 );
-	    a[4][2] =-h * mean( (t3 + 7*z + z2 + 4*zeh*t1)  / t2 );
+	    a[4][3] =-h * mean( (t3 + 7*z + z2 + 4*zeh*t1)  / t2 );
 
 	    b[0] = h * mean( (-t4 + ze*(4 - 3*z + z2)) / z3 );
 	    b[3] =-h * mean( (4 + 3*z + z2 + ze*t1) / z3 );
@@ -462,7 +488,10 @@ public:
 	    ArrayXXcd ze3 = (2*z/3).exp();
 
 	    c[1] = (hL/2).exp();
-	    c[3] = hL.exp();
+	    c[3] = (hL/4).exp();
+	    c[5] = (hL/5).exp();
+	    c[6] = (2*hL/3).exp();
+	    c[7] = hL.exp();
 
 	    ArrayXXcd t1 = -4 + z;	   
 	    ArrayXXcd t2 = 2*z2;
@@ -503,7 +532,13 @@ public:
 	case IFRK43 : {
 	    c[1] = (hL/2).exp();
 	    c[3] = hL.exp();
+	    
+	    a[1][0] = h/2 * c[1];
+	    a[3][2] = h * c[1];
 
+	    b[0] = h * (1.0/6) * c[3];
+	    b[1] = h * (1.0/3) * c[1];
+	    
 	    break;	
 	}
 
@@ -514,20 +549,26 @@ public:
 	    c[4] = (8*hL/9).exp();
 	    c[5] = hL.exp();
 	    
-	    a[2][1] = 9.0/40 * (hL/10).exp();
-	    a[3][1] = 56.0/15 * (3*hL/5).exp();
-	    a[3][2] = 32.0/9 * (hL/2).exp();
-	    a[4][1] = 25360.0/2187 * (31*hL/45).exp();
-	    a[4][2] = 64448.0/6561 * (53*hL/90).exp();
-	    a[4][3] = 212.0/729 * (4*hL/45).exp();
-	    a[5][1] = 355.0/33 * (4*hL/5).exp();
-	    a[5][2] = 46732.0/5247 * (7*hL/10).exp();
-	    a[5][3] = 49.0/176 * c[1];
-	    a[5][4] = 5103.0/18656 * (hL/9).exp();
+	    a[1][0] = (h/5) * c[1];
+	    a[2][0] = (h*3/40) * c[2];
+	    a[2][1] = (h*9/40) * (hL/10).exp();
+	    a[3][0] = (h*44/45) * c[3];
+	    a[3][1] = (-h*56.0/15) * (3*hL/5).exp();
+	    a[3][2] = (h*32.0/9) * (hL/2).exp();
+	    a[4][0] = (h*19372.0/6561) * c[4];
+	    a[4][1] = (-h*25360.0/2187) * (31*hL/45).exp();
+	    a[4][2] = (h*64448.0/6561) * (53*hL/90).exp();
+	    a[4][3] = (-h*212.0/729) * (4*hL/45).exp();
+	    a[5][0] = (h*9017.0/3168) * c[5];
+	    a[5][1] = (-h*355.0/33) * (4*hL/5).exp();
+	    a[5][2] = (h*46732.0/5247) * (7*hL/10).exp();
+	    a[5][3] = (h*49.0/176) * c[1];
+	    a[5][4] = (-h*5103.0/18656) * (hL/9).exp();
 
-	    b[2] = 500./1113 * (7*hL/10).exp();
-	    b[3] = 125./192 * c[1];
-	    b[4] = 2187./6784 * (hL/9).exp();
+	    b[0] = (h*35.0/384) * c[5];
+	    b[2] = (h*500./1113) * (7*hL/10).exp();
+	    b[3] = (h*125./192) * c[1];
+	    b[4] = (-h*2187./6784) * (hL/9).exp();
 
 	    break;	
 	}

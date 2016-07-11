@@ -62,7 +62,8 @@ public:
 	fft.SetFlag(fft.HalfSpectrum);
 	nl.init(fft, G);
 	
-	for(int i = 0; i < 5; i++){
+	int nnl0 = eidr.nnls[eidr.scheme];
+	for(int i = 0; i < nnl0; i++){
 	    Yv[i].resize(N/2+1);
 	    Nv[i].resize(N/2+1);
 	}
@@ -72,12 +73,24 @@ public:
     
     ~KSEIDr(){};
 
+    /* ============================================================ */
+    inline void 
+    setScheme(std::string x){
+	int nnl0 = eidr.nnls[eidr.scheme];	
+	eidr.scheme = eidr.names[x];
+	int nnl1 = eidr.nnls[eidr.scheme];
+	for (int i = nnl0; i < nnl1; i++) {
+	    Yv[i].resize(N/2+1);
+	    Nv[i].resize(N/2+1);
+	}
+    }
+
     inline 
     ArrayXXd
     intgC(const Eigen::ArrayXd &a0, const double tend, const double h, const int skip_rate,
-	  int method, bool adapt){
+	  bool adapt=true){
 	assert( N-2 == a0.size());
-
+	
 	ArrayXcd u0 = R2C(a0); 
 	const int Nt = (int)round(tend/h);
 	const int M = (Nt+skip_rate-1)/skip_rate;

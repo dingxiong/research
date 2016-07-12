@@ -133,19 +133,15 @@ public:
 	int od = orders[scheme];
 	int nnl = nnls[scheme];
 	
-	double h = h0;
-	calCoe(h);
-	NCalCoe++;
-	
 	NCalCoe = 0;
 	NReject = 0;
 	NCallF = 0;    
 	NSteps = 0;
-	
-	const int N = u0.size();    
-	const int Nt = (int)round((tend-t0)/h);
-	const int M = Nt /skip_rate + 1;
 
+	double h = h0;
+	calCoe(h);
+	NCalCoe++;
+	
 	double t = t0;
 	Y[0] = u0;
 	bool doChange, doAccept;
@@ -303,7 +299,7 @@ public:
 	    nl(Y[4], N[4], t+h/2);
 	    Y[5] = c[3]*Y[0] + b[0]*N[0] + b[3]*N[3] + b[4]*N[4];
 
-	    err = (b[4]*(N[4] - N[2])).abs().maxCoeff() / Y[5].abs().maxCoeff();
+	    err = (b[4]*(N[4] - 0.5*N[2]- 0.5*N[1])).abs().maxCoeff() / Y[5].abs().maxCoeff();
 
 	    break;
 

@@ -123,6 +123,7 @@ def add3d(fig, ax, x, y, z, maxShow=5, c='r', s=70):
     
 
 def ax2dinit(fig, num=111, labs=[r'$x$', r'$y$'], axisLabelSize=25,
+             xscale=None,
              yscale=None, xlim=None, ylim=None, tickSize=None,
              isBlack=False, ratio='auto'):
     ax = fig.add_subplot(num)
@@ -131,6 +132,9 @@ def ax2dinit(fig, num=111, labs=[r'$x$', r'$y$'], axisLabelSize=25,
         ax.set_xlabel(labs[0], fontsize=axisLabelSize)
     if labs[1] is not None:
         ax.set_ylabel(labs[1], fontsize=axisLabelSize)
+
+    if xscale is not None:
+        ax.set_xscale(xscale)
 
     if yscale is not None:
         ax.set_yscale(yscale)
@@ -153,10 +157,10 @@ def ax2dinit(fig, num=111, labs=[r'$x$', r'$y$'], axisLabelSize=25,
 
 
 def pl2d(size=[8, 6], labs=[r'$x$', r'$y$'], axisLabelSize=25,
-         yscale=None, xlim=None, ylim=None, tickSize=None,
+         xscale=None, yscale=None, xlim=None, ylim=None, tickSize=None,
          isBlack=False, ratio='auto'):
     fig = plt.figure(figsize=size)
-    ax = ax2dinit(fig, labs=labs, axisLabelSize=axisLabelSize,
+    ax = ax2dinit(fig, labs=labs, axisLabelSize=axisLabelSize, xscale=xscale,
                   yscale=yscale, xlim=xlim, ylim=ylim, tickSize=tickSize,
                   isBlack=isBlack, ratio=ratio)
     return fig, ax

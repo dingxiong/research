@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N30
+#define N20
 
 using namespace MyH5;
 using namespace std;
@@ -47,26 +47,25 @@ int main(){
 #endif
 #ifdef N10
     //====================================================================================================
-    // test whether the implementations are correct by using one ppo
+    // test whether the implementations are correct by using ppo1.
+    // Criteria : after one period and reflection, the orbit should be closed
     KSEIDr ks(64, 22);
+    KS ks2(64, 22);
     ArrayXXd aa;
-    MatrixXd lte(nstp*2, scheme.size());
     for(int i = 0; i < scheme.size(); i++) {
 	ks.setScheme(scheme[i]);
-	aa = ks.intgC(a0, 2*T, T/nstp, 1, true);
-	savetxt("N10_aa" + to_string(i) + ".dat", aa.topRows(3));
-	lte.col(i) = ks.lte;
+	aa = ks.intgC(a0, T/nstp, T, 1);
+	VectorXd a1 = ks2.Reflection(aa.rightCols(1));
+	cout << (a1 - a0).norm() << endl;
     }
-    savetxt("N10_lte.dat", lte);
-#endif
-    
-#if 0
-    KS ks2(64, 22);
-    ArrayXXd aa2;
-    t = clock();
-    for(int i = 0; i < 100; i++) aa2 = ks2.intg(a0, T/nstp, 2*nstp, 1);
-    t = clock() - t;
-    cee((double)t / CLOCKS_PER_SEC);
+    // Output:
+    // 4.08788e-14
+    // 2.10358e-13
+    // 3.26765e-13
+    // 3.67868e-13
+    // 7.0766e-11
+    // 3.80098e-13
+
 #endif
 #ifdef N20
     //====================================================================================================
@@ -74,10 +73,10 @@ int main(){
     // By constant stepping, the estimated LTEs are saved
     KSEIDr ks(64, 22);
     for(int k = 1; k < 1000; k*=10){
-	MatrixXd lte(nstp*2/k, scheme.size());
+	MatrixXd lte(nstp/k, scheme.size());
 	for(int i = 0; i < scheme.size(); i++) {
 	    ks.setScheme(scheme[i]);
-	    ArrayXXd aa = ks.intgC(a0, 2*T, T/nstp*k, 1, true);
+	    ArrayXXd aa = ks.intgC(a0, T/nstp*k,  T, 1);
 	    lte.col(i) = ks.lte;
 	}
 	savetxt("N20_lte" + to_string(k) + ".dat", lte);
@@ -86,21 +85,81 @@ int main(){
 #endif
 #ifdef N30
     //====================================================================================================
-    // by choosing a 
+    // Test the accuracy of constant stepping shemes.
+    // Choose Luan-Ostermann method with a small time step as the base, then integrate the
+    // system for one period of ppo1.
     KSEIDr ks(64, 22);
+    ks.setScheme("Luan_Ostermann");
+
+    double h0 = T/131072;	// 2^17
+    ArrayXd x0 = ks.intgC(a0, T, h0, 1, true).rightCols(1);
+
+    int n = 10;
+
+    MatrixXd erros(n, scheme.size()+1);
     for(int i = 0; i < scheme.size(); i++) {
-	ks.setScheme(scheme[i]);
-	ArrayXd x0;
-	for(int k = 1; k < 10000; k*=10){
-	    ArrayXXd aa = ks.intgC(a0, T, k*T/nstp/100, 1, true);
-	    // cout << aa.cols() << '\t';
-	    if (k == 1) x0 = aa.rightCols(1);
+	ks.setScheme(scheme[i]);	
+	for(int j = 0, k=8; j < n; j++, k*=2){
+	    double h = k*h0;
+	    if(i == 0) erros(j, 0) = h;
+	    ArrayXXd aa = ks.intgC(a0, T, h, 1, true);
 	    double err = (aa.rightCols(1) - x0).abs().maxCoeff() / x0.abs().maxCoeff();
+	    erros(j, i+1) = err; 
 	    cout << err << '\t';
 	}
 	cout << endl;
     }
-#endif
+    savetxt("N30_err.dat", erros);
 
+#endif
+#ifdef N40
+    //====================================================================================================
+    // time adaptive stepping
+    // test the implemenation of Cox-Matthews is consistent with previous implementation by
+    // verifying the accuarycy of ppo1
+    KSEIDr ks(64, 22);
+    ArrayXXd aa = ks.intg(a0, T/nstp, T, 1);
+    KS ks2(64, 22);
+    VectorXd a1 = ks2.Reflection(aa.rightCols(1));
+    ArrayXXd aa2 = ks2.intg(a0, T/nstp, nstp, 1);
+    VectorXd a2 = ks2.Reflection(aa2.rightCols(1));
+    double err1 = (a1-a0).norm();
+    double err2 = (a2-a0).norm();
+    cout << err1 << '\t' << err2 << endl;
+    cout << aa.cols() << '\t' << ks.lte.maxCoeff() << '\t' << ks.hs.maxCoeff() << endl;
+    cout << ks.eidr.NCalCoe << ' ' << ks.eidr.NReject << ' ' << ks.eidr.NCallF << ' ' << ks.eidr.NSteps << endl;
+
+    // Output:
+    // 1.19741e-08	3.92468e-14
+    // 699	6.53879e-09	0.0152952
+    // 8 2 3505 699
+
+#endif
+#ifdef N50
+    //====================================================================================================
+    // same as N40, but test all shemes
+    KSEIDr ks(64, 22);
+    KS ks2(64, 22);
+    for(int i = 0; i < scheme.size(); i++) {
+	ks.setScheme(scheme[i]);
+	ArrayXXd aa = ks.intg(a0, T/nstp, T, 1);
+	VectorXd a1 = ks2.Reflection(aa.rightCols(1));
+	cout << (a1-a0).norm() << ' ' << ks.lte.maxCoeff() << ' ' << ks.hs.maxCoeff() << ' ';
+	cout << ks.eidr.NCalCoe << ' ' << ks.eidr.NReject << ' ' << ks.eidr.NCallF << ' ' << ks.eidr.NSteps << endl;
+    }
+    
+    // Output:
+    // 
+    // 1.19741e-08 6.53879e-09 0.0152952 8 2 3505 699
+    // 1.45044e-08 6.51859e-09 0.0251392 9 2 2600 518
+    // 7.36104e-09 6.53008e-09 0.0251002 10 2 2600 518
+    // 2.12496e-09 2.44513e-09 0.082695 8 0 1215 135
+    // 2.50557e-08 6.54958e-09 0.00559735 8 2 11695 2337
+    // 1.90432e-08 5.89591e-09 0.0132776 8 1 6202 885
+    
+
+
+#endif
+    
     return 0;
 }

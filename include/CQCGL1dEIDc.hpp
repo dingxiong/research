@@ -18,16 +18,53 @@ public :
     
     double Br, Bi, Gr, Gi, Dr, Di, Mu;
     double Omega = 0;
-    ArrayXd K, K2, QK;
+    ArrayXd K, QK;
 
     ArrayXcd L;
 	
+    FFT<double> fft;
 
+    VectorXd hs;	      /* time step sequnce */
+    VectorXd lte;	      /* local relative error estimation */
+    VectorXd Ts;	      /* time sequnence for adaptive method */
+    
+    struct NL {
+	FFT<double> *fft;
+	dcp B, G;
+
+	NL(){}
+	NL(FFT<double> &fft, dcp B, dcp G) : fft(&fft), B(B), G(G) {}
+	~NL(){}
+
+	void init(FFT<double> &fft, dcp B, dcp G){
+	    this->G = &G;
+	    this->B = B;
+	    this->G = G;	    
+	}
+
+	VectorXcd A;
+	void operator()(ArrayXcd &x, ArrayXcd &dxdt, double t){
+	    Map<VectorXcd> xv(x.data(), x.size());
+	    Map<VectorXcd> dxdtv(dxdt.data(), dxdt.size());
+	    fft->inv(A, xv);
+	    ArrayXcd A2 = u * u.transpose();
+	    A = B * A * A2 + G * A * A2.square();
+	    fft->fwd(dxdtv, A);
+	    dxdtv.segment(Nplus, Nalias).setZero(); /* dealias */
+	}
+    };
+    
+    NL nl;
+
+    ArrayXcd Yv[10], Nv[10];
+    EIDc eidc;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
     CQCGL1dEIDc(int N, double d, double W, double B, double C, double DR, double DI):
 	N(N), d(d),
 	Mu(Mu), Br(Br), Bi(Bi),
 	Dr(Dr), Di(Di), Gr(Gr),
-	Gi(Gi),
+	Gi(Gi) 
     {
 	Ne = (N/3) * 2 - 1;
 	Ndim = 2 * Ne;
@@ -35,64 +72,90 @@ public :
 	Nminus = (Ne - 1) / 2;
 	Nalias = N - Ne;
 
-	ArrayXd Kindex(N);
-	Kindex << ArrayXd::LinSpaced(N/2, 0, N/2-1), 0, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);
-      
-	K = 2*M_PI/d * Kindex;
-	L = dcp(1, W) - dcp(1, B) * K.square();
+	// calculate the Linear part
+	K.resize(N,1);
+	K << ArrayXd::LinSpaced(N/2, 0, N/2-1), N/2, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1);       
+	QK = 2*M_PI/d * K; 
+	L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square(); 
+	L.segment(Nplus, Nalias) = ArrayXcd::Zero(Nalias); 
 
-	CqcglNL<ArrayXcd> nl(N, C, DR, DI);
-	etdrk4 = std::make_shared<ETDRK4c<ArrayXcd, ArrayXXcd, CqcglNL>>(L, nl);
+	nl.init(fft, dcp(Br, Bi), dcp(Gr, Gi));
+	
+	int nnl0 = eidc.nnls[eidc.scheme];
+	for(int i = 0; i < nnl0; i++){
+	    Yv[i].resize(N/2+1);
+	    Nv[i].resize(N/2+1);
+	}
+	eidc.init(&L, Yv, Nv);
     }
     
    ~CQCGL1dEIDc(){}
 
 
-    ArrayXXd CQCGL1dEIDc::C2R(const ArrayXXcd &v){
-	// allocate memory for new array, so it will not change the original array.
-	return Map<ArrayXXd>((double*)&v(0,0), 2*v.rows(), v.cols());
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    inline void 
+    setScheme(std::string x){
+	int nnl0 = eidr.nnls[eidr.scheme];	
+	eidr.scheme = eidr.names[x];
+	int nnl1 = eidr.nnls[eidr.scheme];
+	for (int i = nnl0; i < nnl1; i++) {
+	    Yv[i].resize(N/2+1);
+	    Nv[i].resize(N/2+1);
+	}
     }
 
-    ArrayXXcd CQCGL1dEIDc::R2C(const ArrayXXd &v){
-	assert( 0 == v.rows() % 2);
-	return Map<ArrayXXcd>((dcp*)&v(0,0), v.rows()/2, v.cols());
+    inline void 
+    changeOmega(double w){
+	Omega = w;
+	L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square();
+	L.segment(Nplus, Nalias) = ArrayXcd::Zero(Nalias);
     }
 
-    ArrayXXd CQCGL1dEIDc::pad(const Ref<const ArrayXXd> &aa){
-	int n = aa.rows();		
-	int m = aa.cols();
-	assert(Ndim == n);
-	ArrayXXd paa(2*N, m);
-	paa << aa.topRows(2*Nplus), ArrayXXd::Zero(2*Nalias, m), 
-	    aa.bottomRows(2*Nminus);
-	return paa;
-    }
-
-    ArrayXXd CQCGL1dEIDc::unpad(const Ref<const ArrayXXd> &paa){
-	int n = paa.rows();
-	int m = paa.cols();
-	assert(2*N == n);
-	ArrayXXd aa(Ndim, m);
-	aa << paa.topRows(2*Nplus), paa.bottomRows(2*Nminus);
-	return aa;
-    }
-
-
-    std::pair<VectorXd, ArrayXXd>
-    CQCGL1dEIDc::etd(const ArrayXd &a0, const double tend, const double h, const int skip_rate, 
-		  int method, bool adapt){
+    inline 
+    ArrayXXd
+    intg(const ArrayXd &a0, const double tend, const double h, const int skip_rate,
+	 bool adapt=true){
+	assert( Ndim == a0.size());
 	
-	assert( Ndim == a0.size() );
-	ArrayXcd u0 = R2C(pad(a0)); 
-    
-	etdrk4->Method = method;
-    
-	std::pair<VectorXd, ArrayXXcd> tmp;
-	if (adapt) tmp = etdrk4->intg(0, u0, tend, h, skip_rate); 
-	else tmp = etdrk4->intgC(0, u0, tend, h, skip_rate); 
-    
-	return std::make_pair(tmp.first, unpad(C2R(tmp.second)));
+	ArrayXcd u0 = R2C(a0); 
+	const int Nt = (int)round(tend/h);
+	const int M = (Nt+skip_rate-1)/skip_rate;
+	ArrayXXcd aa(N, M);
+	lte.resize(M);
+	int ks = 0;
+	auto ss = [this, &ks, &aa](ArrayXcd &x, double t, double h, double err){
+	    aa.col(ks) = x;
+	    lte(ks++) = err;
+	};
+	
+        eidr.intgC(nl, ss, 0, u0, tend, h, skip_rate); 
+	
+	return C2R(aa);
     }
+
+    /** @brief transform conjugate matrix to its real form */
+    ArrayXXd C2R(const ArrayXXcd &v){
+	int n = v.rows();
+	int m = v.cols();
+	assert(N == n);
+	ArrayXXcd vt(Ne, m);
+	vt << v.topRows(Nplus), v.bottomRows(Nminus);
+
+	return Map<ArrayXXd>((double*)(vt.data()), 2*vt.rows(), vt.cols());
+    }
+
+    ArrayXXcd R2C(const ArrayXXd &v){
+	int n = v.rows();
+	int m = v.cols();
+	assert( n == Ndim);
+    
+	Map<ArrayXXcd> vp((dcp*)&v(0,0), Ne, m);
+	ArrayXXcd vpp(N, m);
+	vpp << vp.topRows(Nplus), ArrayXXcd::Zero(Nalias, m), vp.bottomRows(Nminus);
+
+	return vpp;
+    }
+
 
 };
 

@@ -36,8 +36,8 @@ public:
 	    this->fft = &fft;
 	}
 
+	VectorXd u;
 	void operator()(ArrayXcd &x, ArrayXcd &dxdt, double t){
-	    VectorXd u;
 	    Map<VectorXcd> xv(x.data(), x.size());
 	    Map<VectorXcd> dxdtv(dxdt.data(), dxdt.size());
 	    fft->inv(u, xv);
@@ -87,7 +87,7 @@ public:
 
     inline 
     ArrayXXd
-    intgC(const Eigen::ArrayXd &a0, const double tend, const double h, const int skip_rate,
+    intgC(const ArrayXd &a0, const double tend, const double h, const int skip_rate,
 	  bool adapt=true){
 	assert( N-2 == a0.size());
 	

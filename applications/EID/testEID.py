@@ -1,6 +1,6 @@
 from personalFunctions import *
 
-case = 10
+case = 20
 
 if case == 10:
     aas = []
@@ -23,3 +23,16 @@ if case == 10:
         ax.plot(np.linspace(0, 2*T, n), ltes[i], lw=2, label=labels[i])
     ax2d(fig, ax)
         
+if case == 20:
+    ltes = []
+    for i in range(3):
+        k = 10**i
+        lte = np.loadtxt('N20_lte' + str(k) + '.dat')
+        ltes.append(lte)
+    T = 10.25
+    fig, ax = pl2d(labs=[r'$t$', r'$LTE$'], yscale='log', xlim=[0, 2*T])
+    k = 5
+    for i in range(3):
+        n = len(ltes[i][:, k])
+        ax.plot(np.linspace(0, 2*T, n), ltes[i][:, k], lw=2)
+    ax2d(fig, ax)

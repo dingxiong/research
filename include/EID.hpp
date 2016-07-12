@@ -131,6 +131,8 @@ public:
 	 const int skip_rate){
 	int ns = nstages[scheme];
 	int od = orders[scheme];
+	int nnl = nnls[scheme];
+	
 	double h = h0;
 	calCoe(h);
 	NCalCoe++;
@@ -159,7 +161,7 @@ public:
 	    }
 
 	    oneStep(t, h, nl);
-	    NCallF += ns+1;		
+	    NCallF += nnl;		
 	    double s = nu * std::pow(rtol/err, 1.0/od);
 	    double mu = adaptTs(doChange, doAccept, s);
 	
@@ -187,6 +189,7 @@ public:
     intgC(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h, 
 	  const int skip_rate){
 	int ns = nstages[scheme];
+	int nnl = nnls[scheme];
 	calCoe(h);
 	NCalCoe++;
 	NCallF = 0;
@@ -198,7 +201,7 @@ public:
 	Y[0] = u0;
 	for(int i = 0; i < Nt; i++){
 	    oneStep(t, h, nl);
-	    NCallF += ns+1;
+	    NCallF += nnl;
 	    NSteps++;
 	    t += h;
 	    Y[0] = Y[ns]; 
@@ -254,7 +257,7 @@ public:
 	    Y[2] = c[1]*Y[0] + a[1][0]*N[1];
 	    
 	    nl(Y[2], N[2], t+h/2);	
-	    Y[3] = c[1]*Y[0] + a[1][0]*(2*N[2]-N[0]);
+	    Y[3] = c[1]*Y[1] + a[1][0]*(2*N[2]-N[0]);
 	
 	    nl(Y[3], N[3], t+h);	
 	    Y[4] = c[3]*Y[0] + b[0]*N[0] + b[1]*(N[1] + N[2]) + b[3]*N[3];
@@ -458,19 +461,21 @@ public:
 	    ArrayXXcd t2 = 4*z3;
 	    ArrayXXcd t3 = 20 + ze*t1;
 	    ArrayXXcd t4 = 4 + z;
+	    ArrayXXcd t5 = -2 + z;
+	    ArrayXXcd t6 = 2 + z;
 
 	    a[1][0] = h * mean( (zeh - 1)/z );
 	    a[2][0] = h * mean( (zeh*t1 + t4) / z2 );
-	    a[2][1] = h*2*mean( (2*zeh - z - 2) / z2 );
-	    a[3][0] = h * mean( (ze*(z-2) + z + 2) / z2 );
+	    a[2][1] = h*2*mean( (2*zeh - t6) / z2 );
+	    a[3][0] = h * mean( (ze*t5 + t6) / z2 );
 	    a[3][1] = h * mean( (ze - z - 1)  / z2 );
 	    a[4][0] =-h * mean( (t3 - z + z2 - 4*zeh*(4-3*z+z2))  / t2 );
-	    a[4][1] = h * mean( (t3 + 3*z - z2 + 8*zeh*(-2-z))  / t2 );
+	    a[4][1] = h * mean( (t3 + 3*z - z2 + 8*zeh*t5)  / t2 );
 	    a[4][3] =-h * mean( (t3 + 7*z + z2 + 4*zeh*t1)  / t2 );
 
 	    b[0] = h * mean( (-t4 + ze*(4 - 3*z + z2)) / z3 );
 	    b[3] =-h * mean( (4 + 3*z + z2 + ze*t1) / z3 );
-	    b[4] = h*4*mean( (2 + z + ze*(-2 + z) ) / z3 );
+	    b[4] = h*4*mean( (t6 + ze*t5 ) / z3 );
 
 	    break;
 	}
@@ -499,20 +504,22 @@ public:
 	    ArrayXXcd t4 = 4 + z;
 	    ArrayXXcd t5 = 60-14*z+z2;
 	    ArrayXXcd t6 = -375*ze5*t5 - 486*ze3*t5;
+	    ArrayXXcd t7 = 16-6*z+z2;
+	    ArrayXXcd t8 = 100-5*z-3*z2;
 	    
 	    a[1][0] = h * mean( (zeh - 1)/z );
 	    a[2][0] = h * mean( (zeh*(-2+z) + 2) / z2 );
 	    a[2][1] = h * mean( (2*zeh - z - 2) / z2 );
-	    a[3][0] = h * mean( (4 + 2*ze4*(-2+z)-z) / t2 );
+	    a[3][0] = h * mean( (2*ze4*(-2+z)- t1) / t2 );
 	    a[3][2] = h * mean( (4*ze4 - t4)  / t2 );	    
-	    a[4][0] = h * mean( (zeh*(16-6*z+z2) - 2*(8+z))  / z3 );
+	    a[4][0] = h * mean( (zeh*t7 - 2*(8+z))  / z3 );
 	    a[4][2] =-h * mean( (2*zeh*(-8+z) + 16 + 6*z + z2)  / z3 );
-	    a[4][3] = h*8*mean( (zeh*t1 + t4)  / t2 );
-	    a[5][0] = h * mean( (-400 + 70*z - 3*z2 + 25*ze5*(16-6*z+z2)) / t3 );
-	    a[5][3] = h*8*mean( (100 + 25*ze5*t1 - 5*z - 3*z2) / t3 );
+	    a[4][3] = h*8*mean( (zeh*t1 + t4)  / z3 );
+	    a[5][0] = h * mean( (-400 + 70*z - 3*z2 + 25*ze5*t7) / t3 );
+	    a[5][3] = h*8*mean( (t8 + 25*ze5*t1) / t3 );
 	    a[5][4] = h*2*mean( (-200 - 25*ze5*(-8+z) - 15*z + z2) / t3 );
-	    a[6][0] =-h * mean( (3740 + 125*ze5*t1 + 1001*z + 111*z2 - 162*ze3*(20-7+z2)) / (162*z3) );
-	    a[6][3] =h*20*mean( (-100 - 25*ze5*t1 + 5*z + 3*z2) / (81*t3) );
+	    a[6][0] =-h * mean( (3740 + 125*ze5*t1 + 1001*z + 111*z2 - 162*ze3*(20-7*z+z2)) / (162*z3) );
+	    a[6][3] =h*20*mean( (-t8 - 25*ze5*t1) / (81*z3) );
 	    a[6][4] =-h * mean( (2740 + 324*ze3*(-10+z) - 125*ze5*t1 + 1861*z + 519*z2) / (243*z3) );
 	    a[6][5] =h*25*mean( (125*ze5*t1 + 162*ze3*t1 + 7*(164+35*z+3*z2)) / (486*z3) );
 	    a[7][0] = h * mean( (t6 + 35*ze*(-180+82*z-17*z2+2*z3) + 28*(2070+547*z+110*z2+14*z3)) / (70*z4) );

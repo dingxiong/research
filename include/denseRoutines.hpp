@@ -131,6 +131,17 @@ namespace denseRoutines {
 	return a;
     }
     
+    /** @brief Gaussian profile
+     *
+     *  $f(x) = a exp(\frac{-(x-b)^2}{2 c^2})$
+     */
+    inline VectorXcd
+    Gaussian(const int N, const int b, const double c, const double a = 1){
+	ArrayXd dx = ArrayXd::LinSpaced(N, 0, N-1) - b;
+	VectorXd f = (- dx.square() / (2*c*c)).exp() * a;
+	return f.cast<std::complex<double>>();	
+    }
+
     inline MatrixXcd
     soliton(const int M, const int N, const int x, const int y, const double a, const double b){
 	

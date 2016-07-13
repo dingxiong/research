@@ -1,6 +1,7 @@
 from personalFunctions import *
+from py_CQCGL_threads import *
 
-case = 20
+case = 40
 
 labels = ["Cox-Matthews", "Krogstad", "Hochbruck-Ostermann",
           "Luan-Ostermann", "IFRK43", "IFRK54"]
@@ -50,3 +51,17 @@ if case == 30:
     # ax.grid(True, which='both')
     ax.locator_params(axis='y', numticks=4)
     ax2d(fig, ax)
+
+if case == 40:
+    """
+    plot 1d cqcgl
+    """
+    N = 1024
+    d = 30
+    di = 0.06
+
+    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, -1, 4)
+    aa = np.loadtxt('aa.dat')
+    aa2 = np.loadtxt('aa2.dat')
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 4])
+    plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, 4])

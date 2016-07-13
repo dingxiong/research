@@ -37,9 +37,7 @@ CQCGLgeneral::CQCGLgeneral(int N, double d,
 			   double Gi,  
 			   int dimTan, int threadNum)
     : N(N), d(d),
-      Mu(Mu), Br(Br), Bi(Bi),
-      Dr(Dr), Di(Di), Gr(Gr),
-      Gi(Gi),
+      Mu(Mu), Dr(Dr), Di(Di), Br(Br), Bi(Bi), Gr(Gr), Gi(Gi),
       DimTan(calDimTan(dimTan)),
       
       F{ FFT(N, 1, threadNum), 

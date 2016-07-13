@@ -114,7 +114,7 @@ public:
 
 	ArrayXcd u0 = R2C(a0); 
 	const int Nt = (int)round(tend/h);
-	const int M = Nt /skip_rate + 1;
+	const int M = (Nt+skip_rate-1)/skip_rate;
 	ArrayXXcd aa(N/2+1, M);
 	Ts.resize(M);
 	hs.resize(M);

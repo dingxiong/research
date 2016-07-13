@@ -52,6 +52,23 @@ int main(){
 	FFT<double> fft;
 	fft.SetFlag(fft.HalfSpectrum);
 	int N = 16;
+	VectorXcd A(N);
+	VectorXcd B(N);
+	A.setRandom();
+	
+	fft.fwd(B, A);
+	cee(A); cee(B);
+	
+	break;
+
+    }
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+#ifdef N20
+    case 20: {			/* does not work */
+	FFT<double> fft;
+	fft.SetFlag(fft.HalfSpectrum);
+	int N = 16;
 	MatrixXd A(16, 2);
 	MatrixXcd B(16, 2);
 	
@@ -62,6 +79,7 @@ int main(){
 	break;
 
     }
+#endif
 
     case 2: {			/* simple test 2d */
 	FFT<double> fft;

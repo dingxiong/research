@@ -79,7 +79,8 @@ def pl3d(size=[8, 6], labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
 
 
 def ax3d(fig, ax, doBlock=False, save=False, name='output.png',
-         angle=None, title=None):
+         angle=None, title=None,
+         loc='best', alpha=0.2):
     fig.tight_layout(pad=0)
 
     if angle is not None:
@@ -88,7 +89,7 @@ def ax3d(fig, ax, doBlock=False, save=False, name='output.png',
     if title is not None:
         ax.set_title(title)
 
-    ax.legend(loc='best')
+    ax.legend(loc=loc, framealpha=alpha)
     if save:
         plt.savefig(name)
         plt.close()
@@ -166,12 +167,13 @@ def pl2d(size=[8, 6], labs=[r'$x$', r'$y$'], axisLabelSize=25,
     return fig, ax
 
 
-def ax2d(fig, ax, doBlock=False, save=False, name='output.png', title=None):
+def ax2d(fig, ax, doBlock=False, save=False, name='output.png',
+         title=None, loc='best', alpha=0.2):
     fig.tight_layout(pad=0)
     if title is not None:
         ax.set_title(title)
 
-    ax.legend(loc='best', framealpha=0.2)
+    ax.legend(loc=loc, framealpha=alpha)
     if save:
         plt.savefig(name)
         plt.close()

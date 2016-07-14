@@ -34,8 +34,8 @@ CQCGLgeneral2d::CQCGLgeneral2d(int N, int M, double dx, double dy,
 			       double Gi,  
 			       int threadNum)
     : N(N), M(M), dx(dx), dy(dy),
-      Mu(Mu), Br(Br), Bi(Bi),
-      Dr(Dr), Di(Di), Gr(Gr), Gi(Gi),
+      Mu(Mu), Dr(Dr), Di(Di), Br(Br), Bi(Bi),
+      Gr(Gr), Gi(Gi),
       
       F{ FFT2d(M, N, threadNum), 
 	FFT2d(M, N, threadNum), 
@@ -308,6 +308,9 @@ CQCGLgeneral2d::constETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
     int s = 1;
     if(!onlyOrbit) s = 2;
     
+    const int m = (Nt+skip_rate-1)/skip_rate + 1;
+    lte.resize(m-1);
+
     ArrayXXcd aa;
     H5File file;
     if (doSaveDisk){
@@ -315,9 +318,7 @@ CQCGLgeneral2d::constETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
 	saveState(file, 0, a0, v0, onlyOrbit ? 1 : 0);
     }
     else{
-	const int m = (Nt+skip_rate-1)/skip_rate + 1;
 	aa.resize(Me, Ne*m*s);
-	lte.resize(m-1);
 	aa.leftCols(Ne) = a0;
 	if(!onlyOrbit) aa.middleCols(Ne, Ne) = v0;
     }
@@ -338,6 +339,7 @@ CQCGLgeneral2d::constETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
 	if(!onlyOrbit) JF[0].v1 = JF[4].v1;
 	NCallF += 5;
 	if ( (i+1)%skip_rate == 0 || i == Nt-1) {
+	    lte(num) = du;
 	    if(doSaveDisk){
 		saveState(file, num+1, unpad(F[4].v1), unpad(JF[4].v1), onlyOrbit ? 1 : 0);
 	    }
@@ -345,7 +347,7 @@ CQCGLgeneral2d::constETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
 		aa.middleCols((num+1)*Ne, Ne) = unpad(F[4].v1);
 		if(!onlyOrbit) aa.middleCols((M+num+1)*Ne, Ne) = unpad(JF[4].v1);
 	    }
-	    lte(num++) = du;
+	    num++;
 	}
     }	
     
@@ -370,7 +372,7 @@ CQCGLgeneral2d::adaptETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
     calCoe(h);
 
     const int Nt = (int)round(tend/h);
-    const int M = (Nt+skip_rate-1) /skip_rate + 1;
+    const int m = (Nt+skip_rate-1) /skip_rate + 1;
     F[0].v1 = pad(a0);
     if(!onlyOrbit) JF[0].v1 = pad(v0);
 						
@@ -381,20 +383,20 @@ CQCGLgeneral2d::adaptETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
 	saveState(file, 0, a0, v0, onlyOrbit ? 1:0);
     }
     else {
-	aa.resize(Me, Ne*M*s);
+	aa.resize(Me, Ne*m*s);
 	aa.leftCols(Ne) = a0;
 	if(!onlyOrbit) aa.middleCols(Ne, Ne) = v0;
     }
 
-    Ts.resize(M);
+    Ts.resize(m);
     Ts(0) = 0;
 
     NCalCoe = 0;
     NReject = 0;
     NCallF = 0;    
     NSteps = 0;
-    hs.resize(M-1);
-    lte.resize(M-1);
+    hs.resize(m-1);
+    lte.resize(m-1);
 
     double t = 0;
     double du = 0;
@@ -775,6 +777,26 @@ ArrayXXcd CQCGLgeneral2d::tangent(const Ref<const ArrayXXcd> &a0, const int mode
     }
 	
     }
+}
+
+//====================================================================================================
+// H5 related
+//
+
+std::tuple<ArrayXXcd, double, double, double, double>
+CQCGLgeneral2d::readReq(const string fileName, const string groupName){
+    H5File file(fileName, H5F_ACC_RDONLY);
+    string DS = "/" + groupName + "/";
+	
+    ArrayXXcd a(Me, Ne);
+    a.real() = readMatrixXd(file, DS + "ar");
+    a.imag() = readMatrixXd(file, DS + "ai");
+    return make_tuple(a,
+		      readScalar<double>(file, DS + "wthx"),
+		      readScalar<double>(file, DS + "wthy"),
+		      readScalar<double>(file, DS + "wphi"),
+		      readScalar<double>(file, DS + "err")
+		      );
 }
 
 

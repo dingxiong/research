@@ -1,14 +1,14 @@
-/* h5c++ test_CQCGL1dEIDc.cc -std=c++11 -lCQCGL -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I $RESH/include/ -L $RESH/lib/ -I $XDAPPS/eigen/include/eigen3 -DEIGEN_FFTW_DEFAULT -O3 && ./a.out 
+/* h5c++ test_CQCGL2dEIDc.cc -std=c++11 -lCQCGL2d -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I $RESH/include/ -L $RESH/lib/ -I $XDAPPS/eigen/include/eigen3 -DEIGEN_FFTW_DEFAULT -O3 && ./a.out 
  */
 #include <iostream>
 #include <ctime>
-#include "CQCGL1dEIDc.hpp"
+#include "CQCGL2dEIDc.hpp"
 #include "myH5.hpp"
-#include "CQCGL.hpp"
+#include "CQCGL2d.hpp"
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N30
+#define N10
 
 using namespace MyH5;
 using namespace std;
@@ -28,17 +28,17 @@ int main(){
     // asymmetric explosions.
     const int N = 1024; 
     const double d = 30;
-    const double di = 0.06;
-    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+    const double di = 0.05;
+    CQCGL2dEIDc cgl(N, d, 4, 0.8, 0.01, di);
+    CQCGL2d cgl2(N, d, 4, 0.8, 0.01, di, 4);
 
-    std::string file = "/usr/local/home/xiong/00git/research/data/cgl/reqDi.h5";
+    std::string file = "/usr/local/home/xiong/00git/research/data/cgl/cgl2dReqDi.h5";
     std::string groupName = to_string(di) + "/1";
-    VectorXd a0;
-    double wth, wphi, err;
-    std::tie(a0, wth, wphi, err) = CqcglReadReq(file, groupName);
+    ArrayXXcd a0;
+    double wthx, wthy, wphi, err;
+    std::tie(a0, wthx, wthy, wphi, err) = cgl2.readReq(file, groupName);
 
-    if (true) {
+    if (false) {
 	VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
 	a0 = cgl2.Config2Fourier(A0);
     }
@@ -46,21 +46,15 @@ int main(){
     double T = 4;
 
     time_t t = clock();
-    ArrayXXd aa = cgl.intgC(a0, 0.001, T, 10);
+    // ArrayXXcd aa = cgl.intgC(a0, 0.001, T, 10, true, "aa.h5");
     t = clock()-t;
     cout << static_cast<double>(t) / CLOCKS_PER_SEC << endl;
 
     t = clock();
-    ArrayXXd aa2 = cgl2.intg(a0, 0.001, static_cast<int>(T/0.001), 10);
+    ArrayXXcd aa2 = cgl2.intg(a0, 0.001, static_cast<int>(T/0.001), 10, true, "aa2.h5");
     t = clock()-t;
     cout << static_cast<double>(t) / CLOCKS_PER_SEC << endl;
 
-    cout << aa.cols() << ' ' << aa2.cols() << ' '	 
-	 << (aa-aa2.rightCols(aa.cols())).abs().maxCoeff() << ' '
-	 << aa.abs().maxCoeff() << ' ' << cgl.lte.maxCoeff() << endl;
-
-    savetxt("aa.dat", aa.transpose()); savetxt("aa2.dat", aa2.transpose()); 
-    
     // Output:
     // 0.871511
     // 0.738813

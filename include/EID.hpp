@@ -87,7 +87,12 @@ public:
     
     int M = 64;			/* number of sample points */
     int R = 1;			/* radius for evaluating phi(z) */
-    
+    int CN = 0;			/* counter number. When L has large dimension, we should split
+				   L into pieces and then do counter average. The purpose is
+				   to save memory. Name, L -> L[0:CN], L[CN+1, 2*CN], ...
+				   If CN <= 0, then not split.
+				*/
+
     ////////////////////////////////////////////////////////////
     // time adaptive method related parameters
     double rtol = 1e-8;
@@ -385,30 +390,50 @@ public:
 
     }
 
+    
+
     void 
     calCoe(double h){
 
+	int sL = (*L).size();	// size of L
+	int p = 1;
+	int n = sL;
+	
+	if (CN > 0){
+	    p = (*L).size() / CN;
+	    n = CN;
+	} 
+	
 	Ary hL = h * (*L);
 
 	switch (scheme) {
     
-	case Cox_Matthews : {	    
-	    ArrayXXcd z = ZR(hL);
-
-	    ArrayXXcd z2 = z.square();
-	    ArrayXXcd z3 = z.cube();
-	    ArrayXXcd ze = z.exp();
-	    ArrayXXcd zeh = (z/2).exp();
-
+	case Cox_Matthews : {	  	    
 	    c[1] = (hL/2).exp();
 	    c[3] = hL.exp();
 
-	    a[1][0] = h * mean( (zeh - 1)/z );
-	    
-	    b[0] = h * mean( (-4.0 - z + ze*(4.0 - 3.0 * z + z2)) / z3 );
-	    b[1] = h*2*mean( (2.0 + z + ze*(-2.0 + z)) / z3 );
-	    b[3] = h * mean( (-4.0 - 3.0*z -z2 + ze*(4.0 - z) ) / z3 );
+	    a[1][0].resize(sL);
+	    b[0].resize(sL);
+	    b[1].resize(sL);
+	    b[3].resize(sL);
 
+	    for (int i = 0; i < p; i++){
+		int s = i != p-1 ? n : sL-(p-1)*n;
+		Ary hLs = h * (*L).segment(i*n, s);
+		ArrayXXcd z = ZR(hLs);
+		
+		ArrayXXcd z2 = z.square();
+		ArrayXXcd z3 = z.cube();
+		ArrayXXcd ze = z.exp();
+		ArrayXXcd zeh = (z/2).exp();
+		
+		a[1][0].segment(i*n, s) = h * mean( (zeh - 1)/z );
+		
+		b[0].segment(i*n, s) = h * mean( (-4.0 - z + ze*(4.0 - 3.0 * z + z2)) / z3 );
+		b[1].segment(i*n, s) = h*2*mean( (2.0 + z + ze*(-2.0 + z)) / z3 );
+		b[3].segment(i*n, s) = h * mean( (-4.0 - 3.0*z -z2 + ze*(4.0 - z) ) / z3 );
+
+	    }
 	    break;
 	}
 

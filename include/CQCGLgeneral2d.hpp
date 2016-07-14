@@ -165,6 +165,11 @@ public:
     ArrayXXcd rotate(const Ref<const ArrayXXcd> &a0, const int mode, const double th1 = 0,
 		     const double th2 = 0, const double th3 = 0);
     ArrayXXcd tangent(const Ref<const ArrayXXcd> &a0, const int mode);
+
+
+    std::tuple<ArrayXXcd, double, double, double, double>
+    readReq(const std::string fileName, const std::string groupName);
+    
     
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
     orbit2sliceWrap(const Ref<const ArrayXXd> &aa);

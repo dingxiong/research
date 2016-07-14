@@ -315,15 +315,15 @@ CQCGLgeneral2d::constETD(const ArrayXXcd &a0, const ArrayXXcd &v0,
 	saveState(file, 0, a0, v0, onlyOrbit ? 1 : 0);
     }
     else{
-	const int M = (Nt+skip_rate-1)/skip_rate + 1;
-	aa.resize(Me, Ne*M*s);
+	const int m = (Nt+skip_rate-1)/skip_rate + 1;
+	aa.resize(Me, Ne*m*s);
+	lte.resize(m-1);
 	aa.leftCols(Ne) = a0;
 	if(!onlyOrbit) aa.middleCols(Ne, Ne) = v0;
     }
     
     F[0].v1 = pad(a0);
     if(!onlyOrbit) JF[0].v1 = pad(v0);
-    lte.resize(M-1);
     NCallF = 0;
 
     calCoe(h);

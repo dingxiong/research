@@ -30,8 +30,17 @@ using Eigen::PartialPivLU;
 using Eigen::Map; using Eigen::Ref;
 
 //////////////////////////////////////////////////////////////////////
-//                       class CQCGLgeneral                              //
+//                       class CQCGLgeneral                         //
 //////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief two dimensional cubic quintic complex Ginzburg-Landau equation
+ *
+ * The dimension of the mesh is [M x N] corresponding to actual simulation
+ * domain [dy x dx]. Therefore, the x direction is discretized to N points,
+ * and y direction is divided to M points. Memory is contiguous in the
+ * y direction.
+ */
 class CQCGLgeneral2d {
   
 public:

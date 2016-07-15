@@ -383,6 +383,17 @@ public:
 	    
 	    break;
 
+	case SSPP43:
+	    dcp a1(0.201639688260407656, 0.105972321241365172);
+	    dcp a2(0.410612900985895537, 0.206043441934939727);
+	    dcp a3(0.387747410753696807, 0.100071120693574555);
+	    
+	    Y[1] = (a1*h*(*L)).exp() * Y[0];
+	    nl(Y[1], N[1], t);	    
+	    Y[2] = (a3*h*(*L)).exp() * N[1];
+	    nl(Y[2], N[2], t);
+	    
+
 	default :
 	    fprintf(stderr, "Please indicate the scheme !\n");
 	    exit(1);

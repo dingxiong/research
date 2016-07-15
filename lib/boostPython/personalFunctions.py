@@ -1045,9 +1045,7 @@ class CQCGL2dPlot():
                    ' ' + files + ' ' + name)
         os.system(command)
 
-    def savePlots(self, cgl, f1, sids, f2, plotType=0,
-                  size=[7, 5],
-                  name='out.mp4', onlyMovie=False):
+    def savePlots(self, cgl, f1, sids, f2, plotType=0, size=[7, 5]):
         """
         Parameters
         ==========
@@ -1061,11 +1059,9 @@ class CQCGL2dPlot():
             os.makedirs(f2)
             for i in sids:
                 name = f2+'/a'+format(i, '06d')+'.png'
-                self.plotOneState(cgl, f1, i, save=True, size=size,
+                a = self.load(f1, i)
+                self.plotOneState(cgl, a, save=True, size=size,
                                   name=name, plotType=plotType)
-            self.makeMovie(f2, name=name)
-            if onlyMovie:
-                sps.call(['rm', '-r' + f2])
 
     def saveReq(self, fileName, groupName, a, wthx, wthy, wphi, err):
         f = h5py.File(fileName, 'a')

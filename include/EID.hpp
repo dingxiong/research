@@ -41,7 +41,8 @@ public:
 	Hochbruck_Ostermann,
 	Luan_Ostermann,
 	IFRK43,
-	IFRK54
+	IFRK54,
+	SSPP43
     };
     Scheme scheme = Cox_Matthews; /* scheme  */
 
@@ -51,26 +52,39 @@ public:
         {"Hochbruck_Ostermann", Hochbruck_Ostermann},
 	{"Luan_Ostermann",      Luan_Ostermann},
 	{"IFRK43",              IFRK43},
-	{"IFRK54",              IFRK54}
+	{"IFRK54",              IFRK54},
+	{"SSPP43",              SSPP43}               
     };
     
-    std::unordered_map<int, int> nstages = { /* number of stages */
+    std::unordered_map<int, int> nstages = { /* number of stages, which is used to indicate
+						which Y[?]  store the update */
         {Cox_Matthews,        4},
         {Krogstad,            4},
         {Hochbruck_Ostermann, 5},
 	{Luan_Ostermann,      8},
 	{IFRK43,              4},
-	{IFRK54,              6}
+	{IFRK54,              6},
+	{SSPP43,              3}
     };
     
-    std::unordered_map<int, int> nnls = { /* number of nonlinear evaluations */
+    std::unordered_map<int, int> nYNs = { /* number of Y[], N[] needed in the internal stage */
 	{Cox_Matthews,        5},
         {Krogstad,            5},
         {Hochbruck_Ostermann, 5},
 	{Luan_Ostermann,      9},
 	{IFRK43,              5},
-	{IFRK54,              7}
+	{IFRK54,              7},
+	{SSPP43,              4}
+    };
 
+    std::unordered_map<int, int> nnls = { /* number of nonlinear evaluations per step */
+	{Cox_Matthews,        5},
+        {Krogstad,            5},
+        {Hochbruck_Ostermann, 5},
+	{Luan_Ostermann,      9},
+	{IFRK43,              5},
+	{IFRK54,              7},
+	{SSPP43,              24}
     };
 
     std::unordered_map<int, int> orders = { /* orders of schemes */
@@ -79,7 +93,8 @@ public:
         {Hochbruck_Ostermann, 4},
 	{Luan_Ostermann,      8},
 	{IFRK43,              4},
-	{IFRK54,              5}
+	{IFRK54,              5},
+	{SSPP43,              4}
     };
 
 
@@ -92,6 +107,8 @@ public:
 				   to save memory. Name, L -> L[0:CN], L[CN+1, 2*CN], ...
 				   If CN <= 0, then not split.
 				*/
+
+    double a1, a2, a3;
 
     ////////////////////////////////////////////////////////////
     // time adaptive method related parameters
@@ -137,7 +154,7 @@ public:
 	int ns = nstages[scheme];
 	int od = orders[scheme];
 	int nnl = nnls[scheme];
-	
+
 	NCalCoe = 0;
 	NReject = 0;
 	NCallF = 0;    
@@ -383,17 +400,37 @@ public:
 	    
 	    break;
 
-	case SSPP43:
-	    dcp a1(0.201639688260407656, 0.105972321241365172);
-	    dcp a2(0.410612900985895537, 0.206043441934939727);
-	    dcp a3(0.387747410753696807, 0.100071120693574555);
+	case SSPP43 : {     
+	    ArrayXcd y0 = Y[0];
 	    
-	    Y[1] = (a1*h*(*L)).exp() * Y[0];
-	    nl(Y[1], N[1], t);	    
-	    Y[2] = (a3*h*(*L)).exp() * N[1];
-	    nl(Y[2], N[2], t);
-	    
+	    Y[0] = c[0] * Y[0];
+	    Y[0] = rk4(t+a1*h, a3*h, nl);
 
+	    Y[0] = c[1] * Y[0];
+	    Y[0] = rk4(t+(a1+a2+a3)*h, a2*h, nl);
+
+	    Y[0] = c[2] * Y[0];
+	    ArrayXcd t1 = rk4(t+(a1+2*a3+2*a2)*h, a1*h, nl);
+
+	    Y[0] = y0;	    	    
+
+	    Y[0] = rk4(t, a1*h, nl);
+	    Y[0] = c[2] * Y[0];
+
+	    Y[0] = rk4(t+(a1+a3)*h, a2*h, nl);
+	    Y[0] = c[1] * Y[0];
+
+	    Y[0] = rk4(t+(a1+a3+2*a2)*h, a3*h, nl);
+	    ArrayXcd t2 = c[0] * Y[0];
+	    
+	    Y[3] = 0.5*(t1 + t2);
+	    err = 0.5*(t1 - t2).abs().maxCoeff() / Y[3].abs().maxCoeff();
+	    
+	    Y[0] = y0;		// reset previous state
+
+	    break; 
+	}
+	    
 	default :
 	    fprintf(stderr, "Please indicate the scheme !\n");
 	    exit(1);
@@ -401,7 +438,21 @@ public:
 
     }
 
-    
+    template<class NL>
+    ArrayXcd rk4(double t, double h, NL nl){
+	nl(Y[0], N[0], t);
+	Y[1] = Y[0] + h/2 * N[0];
+	
+	nl(Y[1], N[1], t+h/2);
+	Y[2] = Y[0] + h/2 * N[1];
+	
+	nl(Y[2], N[2], t+h/2);
+	Y[3] = Y[0] + h * N[2];
+	
+	nl(Y[3], N[3], t+h);
+	
+	return Y[0] + h/6* (N[0] + 2*(N[1]+N[2]) + N[3]);
+    }
 
     void 
     calCoe(double h){
@@ -610,6 +661,18 @@ public:
 	    b[4] = (-h*2187./6784) * (hL/9).exp();
 
 	    break;	
+	}
+
+	case SSPP43 : {
+	    a1 = 0.268330095781759925;
+	    a2 = -0.187991618799159782;
+	    a3 = 0.919661523017399857;
+	
+	    c[0] = (a1*hL).exp();
+	    c[1] = (a2*hL).exp();
+	    c[2] = (a3*hL).exp();
+	    
+	    break;
 	}
 	    
 	default : fprintf(stderr, "Please indicate the scheme !\n");

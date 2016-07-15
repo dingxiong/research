@@ -63,8 +63,8 @@ public:
 	fft.SetFlag(fft.HalfSpectrum);
 	nl.init(fft, G);
 	
-	int nnl0 = eidr.nnls[eidr.scheme];
-	for(int i = 0; i < nnl0; i++){
+	int nYN0 = eidr.nYNs[eidr.scheme];
+	for(int i = 0; i < nYN0; i++){
 	    Yv[i].resize(N/2+1);
 	    Nv[i].resize(N/2+1);
 	}
@@ -77,10 +77,10 @@ public:
     /* ============================================================ */
     inline void 
     setScheme(std::string x){
-	int nnl0 = eidr.nnls[eidr.scheme];	
+	int nYN0 = eidr.nYNs[eidr.scheme];	
 	eidr.scheme = eidr.names[x];
-	int nnl1 = eidr.nnls[eidr.scheme];
-	for (int i = nnl0; i < nnl1; i++) {
+	int nYN1 = eidr.nYNs[eidr.scheme];
+	for (int i = nYN0; i < nYN1; i++) {
 	    Yv[i].resize(N/2+1);
 	    Nv[i].resize(N/2+1);
 	}

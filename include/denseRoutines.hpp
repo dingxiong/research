@@ -142,6 +142,22 @@ namespace denseRoutines {
 	return f.cast<std::complex<double>>();	
     }
 
+    /** @brief 2d Gaussian profile
+     *
+     *  $f(x, y) = a exp(\frac{-(x-b_1)^2}{2 c_1^2} + \frac{-(y-b_2)^2}{2 c_2^2})$
+     *  The rectangle size is [M x N] corresponding to y and x direction.
+     */
+    inline MatrixXcd
+    Gaussian2d(const int M, const int N, const int b1, const int b2, const double c1, 
+	       const double c2, const double a = 1){
+	MatrixXd dx = (VectorXd::LinSpaced(N, 0, N-1)).replicate(1, M).transpose() - MatrixXd::Constant(M, N, b1);
+	MatrixXd dy = (VectorXd::LinSpaced(M, 0, M-1)).replicate(1, N) - MatrixXd::Constant(M, N, b2);
+	
+	MatrixXd d = dx.array() / (2*c1*c1) + dy.array() / (2*c2*c2);
+	MatrixXd f = (-d).array().exp() * a;
+	return f.cast<std::complex<double>>();	
+    }
+
     inline MatrixXcd
     soliton(const int M, const int N, const int x, const int y, const double a, const double b){
 	

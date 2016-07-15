@@ -1,10 +1,13 @@
 from personalFunctions import *
 from py_CQCGL_threads import *
+from py_CQCGL2d import *
 
-case = 60
+case = 70
 
 labels = ["Cox-Matthews", "Krogstad", "Hochbruck-Ostermann",
-          "Luan-Ostermann", "IFRK43", "IFRK54"]
+          "Luan-Ostermann", "IFRK43", "IFRK54", "SSPP43"]
+mks = ['o', 's', '+', '^', 'x', 'v', 'p']
+Nscheme = len(labels)
 
 if case == 10:
     lte = np.loadtxt('data/N10_lte.dat')
@@ -19,33 +22,34 @@ if case == 20:
     ltes = []
     for i in range(3):
         k = 10**i
-        lte = np.loadtxt('data/N20_lte' + str(k) + '.dat')
+        lte = np.loadtxt('data/KS_N20_lte' + str(k) + '.dat')
         ltes.append(lte)
     T = 10.25
     
-    fig, ax = pl2d(labs=[r'$t$', r'$LTE$'], yscale='log', xlim=[0, 2*T])
+    fig, ax = pl2d(labs=[r'$t$', r'$LTE$'], yscale='log', xlim=[0, T])
     k = 5
     for i in range(3):
         n = len(ltes[i][:, k])
-        ax.plot(np.linspace(0, 2*T, n), ltes[i][:, k], lw=2)
+        ax.plot(np.linspace(0, T, n), ltes[i][:, k], lw=2)
     ax2d(fig, ax)
 
     fig, ax = pl2d(labs=[r'$t$', r'$LTE$'], yscale='log', xlim=[0, 2*T])
-    k = 0
-    for i in range(6):
+    k = 1
+    for i in range(Nscheme):
         n = len(ltes[k][:, i])
         ax.plot(np.linspace(0, 2*T, n), ltes[k][:, i], lw=2, label=labels[i])
     ax2d(fig, ax)
 
 if case == 30:
-    err = np.loadtxt('data/N30_err.dat')
-    mks = ['o', 's', '+', '^', 'x', 'v']
+    err = np.loadtxt('data/KS_N30_err.dat')
     h = err[:, 0]
     fig, ax = pl2d(size=[6, 5], labs=[r'$h$', 'relative error'],
-                   axisLabelSize=15, xlim=[2e-4, 4e-1],
+                   axisLabelSize=20, tickSize=15,
+                   xlim=[5e-5, 4e-1],
                    xscale='log', yscale='log')
-    for i in range(6):
-        ax.plot(h, err[:, i+1], lw=1.5, marker=mks[i], label=labels[i])
+    for i in range(Nscheme):
+        ax.plot(h, err[:, i+1], lw=1.5, marker=mks[i], mfc='none',
+                ms=8, label=labels[i])
     ax.plot([1e-2, 1e-1], [1e-10, 1e-6], lw=2, c='k', ls='--')
     ax.plot([4e-2, 4e-1], [1e-11, 1e-6], lw=2, c='k', ls='--')
     # ax.grid(True, which='both')
@@ -72,10 +76,9 @@ if case == 50:
     plot the relative errors of 1d cgcgl by constant schemes
     """
     err = np.loadtxt('data/cqcgl1d_N20_err.dat')
-    mks = ['o', 's', '+', '^', 'x', 'v']
     h = err[:, 0]
     fig, ax = pl2d(size=[6, 5], labs=[r'$h$', 'relative error'],
-                   axisLabelSize=15, tickSize=15,
+                   axisLabelSize=20, tickSize=15,
                    xlim=[1e-8, 5e-3],
                    ylim=[1e-9, 1e1],
                    xscale='log', yscale='log')
@@ -98,7 +101,7 @@ if case == 60:
     T = 4.0
     x = np.arange(1, n+1) * T/n
     fig, ax = pl2d(size=[6, 5], labs=[r'$t$', 'estimated local error'],
-                   axisLabelSize=15, tickSize=15,
+                   axisLabelSize=20, tickSize=15,
                    # xlim=[1e-8, 5e-3],
                    # ylim=[1e-9, 1e1],
                    yscale='log')
@@ -108,3 +111,21 @@ if case == 60:
     ax.locator_params(axis='x', nbins=5)
     ax2d(fig, ax, loc='lower right')
 
+###############################################################################
+# 2d cqcgl
+if case == 70:
+    """
+    check the integration process is correct.
+    Save the figure and compare
+    """
+    N = 1024
+    d = 30
+    di = 0.05
+    cgl = pyCQCGL2d(N, d, 4.0, 0.8, 0.01, di, 4)
+    c2dp = CQCGL2dPlot(d, d)
+
+    a1 = c2dp.load('aa.h5', 399)
+    a2 = c2dp.load('aa2.h5', 400)
+    print np.max(np.abs(a1-a2))
+    c2dp.savePlots(cgl, "aa.h5", range(400), 'fig1')
+    c2dp.savePlots(cgl, "aa2.h5", range(401), 'fig2')

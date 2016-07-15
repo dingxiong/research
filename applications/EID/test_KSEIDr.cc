@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N20
+#define N50
 
 using namespace MyH5;
 using namespace std;
@@ -17,8 +17,13 @@ using namespace denseRoutines;
 
 int main(){
 
-    std::vector<std::string> scheme = {"Cox_Matthews", "Krogstad", "Hochbruck_Ostermann", 
-				       "Luan_Ostermann", "IFRK43", "IFRK54"};
+    std::vector<std::string> scheme = {"Cox_Matthews", 
+				       "Krogstad",
+				       "Hochbruck_Ostermann", 
+				       "Luan_Ostermann", 
+				       "IFRK43",
+				       "IFRK54", 
+				       "SSPP43"};
     std::string file = "/usr/local/home/xiong/00git/research/data/ks22h001t120x64.h5";
     std::string poType = "ppo";
 
@@ -27,12 +32,23 @@ int main(){
     int nstp;
     std::tie(a0, T, nstp, r, s) = KSreadRPO(file, poType, 1);
 
+#ifdef N3
+    //====================================================================================================
+    // save the state of 2T of ppo1 by one scheme to check whether the orbit is closed or not
+    KSEIDr ks(64, 22);
+    ks.setScheme(scheme[6]);
+    ArrayXXd aa = ks.intgC(a0, T/nstp, 2*T, 1);
+    
+    savetxt("aa.dat", aa.topRows(3));
+
+
+#endif
 #ifdef N5
     //====================================================================================================
     // test the implemenation of Cox-Matthews is consistent with previous implementation by
     // verifying the accuarycy of ppo1
     KSEIDr ks(64, 22);
-    ArrayXXd aa = ks.intgC(a0, T, T/nstp, 1, true);
+    ArrayXXd aa = ks.intgC(a0, T/nstp, T, 1);
     KS ks2(64, 22);
     VectorXd a1 = ks2.Reflection(aa.rightCols(1));
     ArrayXXd aa2 = ks2.intg(a0, T/nstp, nstp, 1);
@@ -65,6 +81,8 @@ int main(){
     // 3.67868e-13
     // 7.0766e-11
     // 3.80098e-13
+    // 3.1632e-11
+
 
 #endif
 #ifdef N20
@@ -79,7 +97,7 @@ int main(){
 	    ArrayXXd aa = ks.intgC(a0, T/nstp*k,  T, 1);
 	    lte.col(i) = ks.lte;
 	}
-	savetxt("N20_lte" + to_string(k) + ".dat", lte);
+	savetxt("KS_N20_lte" + to_string(k) + ".dat", lte);
     }
 
 #endif
@@ -92,7 +110,7 @@ int main(){
     ks.setScheme("Luan_Ostermann");
 
     double h0 = T/131072;	// 2^17
-    ArrayXd x0 = ks.intgC(a0, T, h0, 1, true).rightCols(1);
+    ArrayXd x0 = ks.intgC(a0, h0, T, 10000).rightCols(1);
 
     int n = 10;
 
@@ -102,14 +120,14 @@ int main(){
 	for(int j = 0, k=8; j < n; j++, k*=2){
 	    double h = k*h0;
 	    if(i == 0) erros(j, 0) = h;
-	    ArrayXXd aa = ks.intgC(a0, T, h, 1, true);
+	    ArrayXXd aa = ks.intgC(a0, h, T, 1);
 	    double err = (aa.rightCols(1) - x0).abs().maxCoeff() / x0.abs().maxCoeff();
 	    erros(j, i+1) = err; 
-	    cout << err << '\t';
+	    cout << err << ' ';
 	}
 	cout << endl;
     }
-    savetxt("N30_err.dat", erros);
+    savetxt("KS_N30_err.dat", erros);
 
 #endif
 #ifdef N40
@@ -156,6 +174,7 @@ int main(){
     // 2.12496e-09 2.44513e-09 0.082695 8 0 1215 135
     // 2.50557e-08 6.54958e-09 0.00559735 8 2 11695 2337
     // 1.90432e-08 5.89591e-09 0.0132776 8 1 6202 885
+    // 1.94839e-10 6.55866e-09 0.00202678 7 2 154752 6446
     
 
 

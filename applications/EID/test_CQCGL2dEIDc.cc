@@ -38,15 +38,16 @@ int main(){
     double wthx, wthy, wphi, err;
     std::tie(a0, wthx, wthy, wphi, err) = cgl2.readReq(file, groupName);
 
-    if (false) {
-	VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
+    if (true) {
+	MatrixXcd A0 = Gaussian2d(N, N, N/2, N/2, N/10, N/10, 3) 
+	    + Gaussian2d(N, N, N/2, N/4, N/10, N/10, 0.5);
 	a0 = cgl2.Config2Fourier(A0);
     }
     
     double T = 4;
 
     time_t t = clock();
-    // ArrayXXcd aa = cgl.intgC(a0, 0.001, T, 10, true, "aa.h5");
+    ArrayXXcd aa = cgl.intgC(a0, 0.001, T, 10, true, "aa.h5");
     t = clock()-t;
     cout << static_cast<double>(t) / CLOCKS_PER_SEC << endl;
 

@@ -93,8 +93,8 @@ public :
 	L.middleCols(Nplus, Nalias).setZero();
 	Lv = Map<VectorXcd>(L.data(), M*N);
 	
-	int nnl0 = eidc.nnls[eidc.scheme];
-	for(int i = 0; i < nnl0; i++){
+	int nYN0 = eidc.nYNs[eidc.scheme];
+	for(int i = 0; i < nYN0; i++){
 	    Yv[i].resize(M*N);
 	    Nv[i].resize(M*N);
 	}
@@ -118,10 +118,10 @@ public :
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     inline void 
     setScheme(std::string x){
-	int nnl0 = eidc.nnls[eidc.scheme];	
+	int nYN0 = eidc.nYNs[eidc.scheme];	
 	eidc.scheme = eidc.names[x];
-	int nnl1 = eidc.nnls[eidc.scheme];
-	for (int i = nnl0; i < nnl1; i++) {
+	int nYN1 = eidc.nYNs[eidc.scheme];
+	for (int i = nYN0; i < nYN1; i++) {
 	    Yv[i].resize(M*N);
 	    Nv[i].resize(M*N);
 	}

@@ -156,7 +156,7 @@ public :
 
 	int ks = 0;
 	auto ss = [this, &ks, &aa, &file, &doSaveDisk](ArrayXcd &x, double t, double h, double err){
-	    fprintf(stderr, "%d ", ks);
+	    // fprintf(stderr, "%d ", ks);
 	    Map<ArrayXXcd> xv(x.data(), M, N);
 	    ArrayXXcd uxv = unpad(xv);
 
@@ -205,7 +205,7 @@ public :
 	
 	int ks = 0;
 	auto ss = [this, &ks, &aa, &file, &doSaveDisk](ArrayXcd &x, double t, double h, double err){
-	    fprintf(stderr, "%d ", ks);
+	    // fprintf(stderr, "%d ", ks);
 	    Map<ArrayXXcd> xv(x.data(), M, N);
 	    ArrayXXcd uxv = unpad(xv);
 

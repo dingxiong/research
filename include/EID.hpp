@@ -500,122 +500,190 @@ public:
 	}
 
 	case Krogstad : {
-	    ArrayXXcd z = ZR(hL);
-
-	    ArrayXXcd z2 = z.square();
-	    ArrayXXcd z3 = z.cube();
-	    ArrayXXcd ze = z.exp();
-	    ArrayXXcd zeh = (z/2).exp();
-
-	    ArrayXXcd t1 = z + 2;
-	    ArrayXXcd t2 = z - 2;
-	    ArrayXXcd t3 = z - 4;
-	    ArrayXXcd t4 = z + 4;
-
 	    c[1] = (hL/2).exp();
 	    c[3] = hL.exp();
 	    
-
-	    a[1][0] = h * mean( (zeh - 1)/z );
-	    a[2][0] = h * mean( (zeh*t3 + t4) / z2 );
-	    a[2][1] = h*2*mean( (2*zeh - t1) / z2 );
-	    a[3][0] = h * mean( (ze*t2 + t1) / z2 );
-	    a[3][2] = h*2*mean( (ze - z - 1)  / z2 );
+	    a[1][0].resize(sL);
+	    a[2][0].resize(sL);
+	    a[2][1].resize(sL);
+	    a[3][0].resize(sL);
+	    a[3][2].resize(sL);
+	    b[0].resize(sL);
+	    b[1].resize(sL);
+	    b[3].resize(sL);
 	    
-	    b[0] = h * mean( (-t4 + ze*(4.0 - 3.0 * z + z2)) / z3 );
-	    b[1] = h*2*mean( (t1 + ze*t2) / z3 );
-	    b[3] = h * mean( (-4.0 - 3.0*z -z2 - ze*t3 ) / z3 );
+	    for(int i = 0; i < p; i++){
+		int s = i != p-1 ? n : sL-(p-1)*n;
+		Ary hLs = h * (*L).segment(i*n, s);
+		ArrayXXcd z = ZR(hLs);
+		
+		ArrayXXcd z2 = z.square();
+		ArrayXXcd z3 = z.cube();
+		ArrayXXcd ze = z.exp();
+		ArrayXXcd zeh = (z/2).exp();
+
+		ArrayXXcd t1 = z + 2;
+		ArrayXXcd t2 = z - 2;
+		ArrayXXcd t3 = z - 4;
+		ArrayXXcd t4 = z + 4;
+		
+	    
+
+		a[1][0].segment(i*n, s) = h * mean( (zeh - 1)/z );
+		a[2][0].segment(i*n, s) = h * mean( (zeh*t3 + t4) / z2 );
+		a[2][1].segment(i*n, s) = h*2*mean( (2*zeh - t1) / z2 );
+		a[3][0].segment(i*n, s) = h * mean( (ze*t2 + t1) / z2 );
+		a[3][2].segment(i*n, s) = h*2*mean( (ze - z - 1)  / z2 );
+	    
+		b[0].segment(i*n, s) = h * mean( (-t4 + ze*(4.0 - 3.0 * z + z2)) / z3 );
+		b[1].segment(i*n, s) = h*2*mean( (t1 + ze*t2) / z3 );
+		b[3].segment(i*n, s) = h * mean( (-4.0 - 3.0*z -z2 - ze*t3 ) / z3 );
+	    }
 	    
 	    break;
 	}
 	    
 	case Hochbruck_Ostermann : {
-	    ArrayXXcd z = ZR(hL);
-
-	    ArrayXXcd z2 = z.square();
-	    ArrayXXcd z3 = z.cube();
-	    ArrayXXcd ze = z.exp();
-	    ArrayXXcd zeh = (z/2).exp();
-
 	    c[1] = (hL/2).exp();
 	    c[3] = hL.exp();
 
-	    ArrayXXcd t1 = -4 + z;	   
-	    ArrayXXcd t2 = 4*z3;
-	    ArrayXXcd t3 = 20 + ze*t1;
-	    ArrayXXcd t4 = 4 + z;
-	    ArrayXXcd t5 = -2 + z;
-	    ArrayXXcd t6 = 2 + z;
+	    a[1][0].resize(sL);
+	    a[2][0].resize(sL);
+	    a[2][1].resize(sL);
+	    a[3][0].resize(sL);
+	    a[3][1].resize(sL);
+	    a[4][0].resize(sL);
+	    a[4][1].resize(sL);
+	    a[4][3].resize(sL);
+	    b[0].resize(sL);
+	    b[3].resize(sL);
+	    b[4].resize(sL);
+	    
+	    for (int i = 0; i < p; i++){
+		int s = i != p-1 ? n : sL-(p-1)*n;
+		Ary hLs = h * (*L).segment(i*n, s);
+		ArrayXXcd z = ZR(hLs);
 
-	    a[1][0] = h * mean( (zeh - 1)/z );
-	    a[2][0] = h * mean( (zeh*t1 + t4) / z2 );
-	    a[2][1] = h*2*mean( (2*zeh - t6) / z2 );
-	    a[3][0] = h * mean( (ze*t5 + t6) / z2 );
-	    a[3][1] = h * mean( (ze - z - 1)  / z2 );
-	    a[4][0] =-h * mean( (t3 - z + z2 - 4*zeh*(4-3*z+z2))  / t2 );
-	    a[4][1] = h * mean( (t3 + 3*z - z2 + 8*zeh*t5)  / t2 );
-	    a[4][3] =-h * mean( (t3 + 7*z + z2 + 4*zeh*t1)  / t2 );
+		ArrayXXcd z2 = z.square();
+		ArrayXXcd z3 = z.cube();
+		ArrayXXcd ze = z.exp();
+		ArrayXXcd zeh = (z/2).exp();
 
-	    b[0] = h * mean( (-t4 + ze*(4 - 3*z + z2)) / z3 );
-	    b[3] =-h * mean( (4 + 3*z + z2 + ze*t1) / z3 );
-	    b[4] = h*4*mean( (t6 + ze*t5 ) / z3 );
+
+
+		ArrayXXcd t1 = -4 + z;	   
+		ArrayXXcd t2 = 4*z3;
+		ArrayXXcd t3 = 20 + ze*t1;
+		ArrayXXcd t4 = 4 + z;
+		ArrayXXcd t5 = -2 + z;
+		ArrayXXcd t6 = 2 + z;
+
+		a[1][0].segment(i*n, s) = h * mean( (zeh - 1)/z );
+		a[2][0].segment(i*n, s) = h * mean( (zeh*t1 + t4) / z2 );
+		a[2][1].segment(i*n, s) = h*2*mean( (2*zeh - t6) / z2 );
+		a[3][0].segment(i*n, s) = h * mean( (ze*t5 + t6) / z2 );
+		a[3][1].segment(i*n, s) = h * mean( (ze - z - 1)  / z2 );
+		a[4][0].segment(i*n, s) =-h * mean( (t3 - z + z2 - 4*zeh*(4-3*z+z2))  / t2 );
+		a[4][1].segment(i*n, s) = h * mean( (t3 + 3*z - z2 + 8*zeh*t5)  / t2 );
+		a[4][3].segment(i*n, s) =-h * mean( (t3 + 7*z + z2 + 4*zeh*t1)  / t2 );
+
+		b[0].segment(i*n, s) = h * mean( (-t4 + ze*(4 - 3*z + z2)) / z3 );
+		b[3].segment(i*n, s) =-h * mean( (4 + 3*z + z2 + ze*t1) / z3 );
+		b[4].segment(i*n, s) = h*4*mean( (t6 + ze*t5 ) / z3 );
+
+	    }
 
 	    break;
 	}
 	    
 	case Luan_Ostermann : {
-	    ArrayXXcd z = ZR(hL);
-
-	    ArrayXXcd z2 = z.square();
-	    ArrayXXcd z3 = z.cube();
-	    ArrayXXcd z4 = z2.square();
-	    ArrayXXcd ze = z.exp();
-	    ArrayXXcd zeh = (z/2).exp();
-	    ArrayXXcd ze4 = (z/4).exp();
-	    ArrayXXcd ze5 = (z/5).exp();
-	    ArrayXXcd ze3 = (2*z/3).exp();
-
 	    c[1] = (hL/2).exp();
 	    c[3] = (hL/4).exp();
 	    c[5] = (hL/5).exp();
 	    c[6] = (2*hL/3).exp();
 	    c[7] = hL.exp();
 
-	    ArrayXXcd t1 = -4 + z;	   
-	    ArrayXXcd t2 = 2*z2;
-	    ArrayXXcd t3 = 25*z3;
-	    ArrayXXcd t4 = 4 + z;
-	    ArrayXXcd t5 = 60-14*z+z2;
-	    ArrayXXcd t6 = -375*ze5*t5 - 486*ze3*t5;
-	    ArrayXXcd t7 = 16-6*z+z2;
-	    ArrayXXcd t8 = 100-5*z-3*z2;
+	    a[1][0].resize(sL);
+	    a[2][0].resize(sL);
+	    a[2][1].resize(sL);
+	    a[3][0].resize(sL);
+	    a[3][2].resize(sL);
+	    a[4][0].resize(sL);
+	    a[4][2].resize(sL);
+	    a[4][3].resize(sL);
+	    a[5][0].resize(sL);
+	    a[5][3].resize(sL);
+	    a[5][4].resize(sL);
+	    a[6][0].resize(sL);
+	    a[6][3].resize(sL);
+	    a[6][4].resize(sL);
+	    a[6][5].resize(sL);
+	    a[7][0].resize(sL);
+	    a[7][4].resize(sL);
+	    a[7][5].resize(sL);
+	    a[7][6].resize(sL);
+	    b[0].resize(sL);
+	    b[5].resize(sL);
+	    b[6].resize(sL);
+	    b[7].resize(sL);
 	    
-	    a[1][0] = h * mean( (zeh - 1)/z );
-	    a[2][0] = h * mean( (zeh*(-2+z) + 2) / z2 );
-	    a[2][1] = h * mean( (2*zeh - z - 2) / z2 );
-	    a[3][0] = h * mean( (2*ze4*(-2+z)- t1) / t2 );
-	    a[3][2] = h * mean( (4*ze4 - t4)  / t2 );	    
-	    a[4][0] = h * mean( (zeh*t7 - 2*(8+z))  / z3 );
-	    a[4][2] =-h * mean( (2*zeh*(-8+z) + 16 + 6*z + z2)  / z3 );
-	    a[4][3] = h*8*mean( (zeh*t1 + t4)  / z3 );
-	    a[5][0] = h * mean( (-400 + 70*z - 3*z2 + 25*ze5*t7) / t3 );
-	    a[5][3] = h*8*mean( (t8 + 25*ze5*t1) / t3 );
-	    a[5][4] = h*2*mean( (-200 - 25*ze5*(-8+z) - 15*z + z2) / t3 );
-	    a[6][0] =-h * mean( (3740 + 125*ze5*t1 + 1001*z + 111*z2 - 162*ze3*(20-7*z+z2)) / (162*z3) );
-	    a[6][3] =h*20*mean( (-t8 - 25*ze5*t1) / (81*z3) );
-	    a[6][4] =-h * mean( (2740 + 324*ze3*(-10+z) - 125*ze5*t1 + 1861*z + 519*z2) / (243*z3) );
-	    a[6][5] =h*25*mean( (125*ze5*t1 + 162*ze3*t1 + 7*(164+35*z+3*z2)) / (486*z3) );
-	    a[7][0] = h * mean( (t6 + 35*ze*(-180+82*z-17*z2+2*z3) + 28*(2070+547*z+110*z2+14*z3)) / (70*z4) );
-	    a[7][4] = h*4*mean( (t6 - 140*ze*(45-13*z+z2) + 7*(8280+2338*z+525*z2+76*z3)) / (105*z4) );
-	    a[7][5] = h*5*mean( (-t6 + 350*ze*(18-7*z+z2) - 7*(8280+2248*z+465*z2+61*z3)) / (147*z4) );
-	    a[7][6] =h*27*mean( (125*ze5*t5 + 162*ze3*t5 + 35*ze*t5 - 14*(1380+398*z+95*z2+16*z3)) / (490*z4) );
+	    for (int i = 0; i < p; i++){
+		int s = i != p-1 ? n : sL-(p-1)*n;
+		Ary hLs = h * (*L).segment(i*n, s);
+		ArrayXXcd z = ZR(hLs);
+
+		ArrayXXcd z2 = z.square();
+		ArrayXXcd z3 = z.cube();
+		ArrayXXcd z4 = z2.square();
+		ArrayXXcd ze = z.exp();
+		ArrayXXcd zeh = (z/2).exp();
+		ArrayXXcd ze4 = (z/4).exp();
+		ArrayXXcd ze5 = (z/5).exp();
+		ArrayXXcd ze3 = (2*z/3).exp();
+
+
+
+		ArrayXXcd t1 = -4 + z;	   
+		ArrayXXcd t2 = 2*z2;
+		ArrayXXcd t3 = 25*z3;
+		ArrayXXcd t4 = 4 + z;
+		ArrayXXcd t5 = 60-14*z+z2;
+		ArrayXXcd t6 = -375*ze5*t5 - 486*ze3*t5;
+		ArrayXXcd t7 = 16-6*z+z2;
+		ArrayXXcd t8 = 100-5*z-3*z2;
+	    
+		a[1][0].segment(i*n, s) = h * mean( (zeh - 1)/z );
+		a[2][0].segment(i*n, s) = h * mean( (zeh*(-2+z) + 2) / z2 );
+		a[2][1].segment(i*n, s) = h * mean( (2*zeh - z - 2) / z2 );
+		a[3][0].segment(i*n, s) = h * mean( (2*ze4*(-2+z)- t1) / t2 );
+		a[3][2].segment(i*n, s) = h * mean( (4*ze4 - t4)  / t2 );	    
+		a[4][0].segment(i*n, s) = h * mean( (zeh*t7 - 2*(8+z))  / z3 );
+		a[4][2].segment(i*n, s) =-h * mean( (2*zeh*(-8+z) + 16 + 6*z + z2)  / z3 );
+		a[4][3].segment(i*n, s) = h*8*mean( (zeh*t1 + t4)  / z3 );
+		a[5][0].segment(i*n, s) = h * mean( (-400 + 70*z - 3*z2 + 25*ze5*t7) / t3 );
+		a[5][3].segment(i*n, s) = h*8*mean( (t8 + 25*ze5*t1) / t3 );
+		a[5][4].segment(i*n, s) = h*2*mean( (-200 - 25*ze5*(-8+z) - 15*z + z2) / t3 );
+		a[6][0].segment(i*n, s) =-h * mean( (3740 + 125*ze5*t1 + 1001*z + 111*z2 - 162*ze3*(20-7*z+z2))
+						    / (162*z3) );
+		a[6][3].segment(i*n, s) =h*20*mean( (-t8 - 25*ze5*t1) / (81*z3) );
+		a[6][4].segment(i*n, s) =-h * mean( (2740 + 324*ze3*(-10+z) - 125*ze5*t1 + 1861*z + 519*z2) / (243*z3) );
+		a[6][5].segment(i*n, s) =h*25*mean( (125*ze5*t1 + 162*ze3*t1 + 7*(164+35*z+3*z2)) / (486*z3) );
+		a[7][0].segment(i*n, s) = h * mean( (t6 + 35*ze*(-180+82*z-17*z2+2*z3) + 28*(2070+547*z+110*z2+14*z3))
+						    / (70*z4) );
+		a[7][4].segment(i*n, s) = h*4*mean( (t6 - 140*ze*(45-13*z+z2) + 7*(8280+2338*z+525*z2+76*z3))
+						    / (105*z4) );
+		a[7][5].segment(i*n, s) = h*5*mean( (-t6 + 350*ze*(18-7*z+z2) - 7*(8280+2248*z+465*z2+61*z3))
+						    / (147*z4) );
+		a[7][6].segment(i*n, s) =h*27*mean( (125*ze5*t5 + 162*ze3*t5 + 35*ze*t5 - 14*(1380+398*z+95*z2+16*z3))
+						    / (490*z4) );
 	    
 
-	    b[0] = h * mean( (90 + 34*z + 4*z2 + ze*(-90 + 56*z -15*z2 + 2*z3)) / (2*z4) );
-	    b[5]=h*125*mean( (-18 - 8*z - z2 + 2*ze*(9 - 5*z + z2)) / (28*z4) );
-	    b[6]=-h*27*mean( (ze*(30 - 12*z + z2) - 2*(15 + 9*z + 2*z2)) / (14*z4) );
-	    b[7] =-h * mean( (90 + 64*z + 21*z2 + 4*z3 - 2*ze*(45 - 13*z + z2)) / (4*z4) );
+		b[0].segment(i*n, s) = h * mean( (90 + 34*z + 4*z2 + ze*(-90 + 56*z -15*z2 + 2*z3)) / (2*z4) );
+		b[5].segment(i*n, s)=h*125*mean( (-18 - 8*z - z2 + 2*ze*(9 - 5*z + z2)) / (28*z4) );
+		b[6].segment(i*n, s)=-h*27*mean( (ze*(30 - 12*z + z2) - 2*(15 + 9*z + 2*z2)) / (14*z4) );
+		b[7].segment(i*n, s) =-h * mean( (90 + 64*z + 21*z2 + 4*z3 - 2*ze*(45 - 13*z + z2)) / (4*z4) );
 
+	    }
 	    break;
 	}
 

@@ -2,7 +2,7 @@ from personalFunctions import *
 from py_CQCGL_threads import *
 from py_CQCGL2d import *
 
-case = 70
+case = 65
 
 labels = ["Cox-Matthews", "Krogstad", "Hochbruck-Ostermann",
           "Luan-Ostermann", "IFRK43", "IFRK54", "SSPP43"]
@@ -56,6 +56,8 @@ if case == 30:
     ax.locator_params(axis='y', numticks=4)
     ax2d(fig, ax)
 
+###############################################################################
+# 1d cqcgl
 if case == 40:
     """
     plot 1d cqcgl
@@ -82,7 +84,7 @@ if case == 50:
                    xlim=[1e-8, 5e-3],
                    ylim=[1e-9, 1e1],
                    xscale='log', yscale='log')
-    for i in range(6):
+    for i in range(Nscheme):
         ax.plot(h, err[:, i+1], lw=1.5, marker=mks[i], mfc='none',
                 label=labels[i])
     ax.plot([1e-5, 1e-3], [1e-6, 1e2], lw=2, c='k', ls='--')
@@ -96,20 +98,45 @@ if case == 60:
     plot the estimated local error of 1d cgcgl by constant schemes
     """
     err = np.loadtxt('data/cqcgl1d_N30_lte.dat')
-    lss = ['--', '-.', ':', '-', '-', '-']
+    lss = ['--', '-.', ':', '-', '-', '-', '-']
     n = err.shape[0]
     T = 4.0
     x = np.arange(1, n+1) * T/n
-    fig, ax = pl2d(size=[6, 5], labs=[r'$t$', 'estimated local error'],
+    fig, ax = pl2d(size=[6, 5], labs=[r'$t$', r'estimated local error'],
                    axisLabelSize=20, tickSize=15,
                    # xlim=[1e-8, 5e-3],
-                   # ylim=[1e-9, 1e1],
+                   ylim=[1e-22, 1e-8],
                    yscale='log')
-    for i in range(6):
+    for i in range(Nscheme):
         ax.plot(x, err[:, i], lw=1.5, ls=lss[i], label=labels[i])
     ax.locator_params(axis='y', numticks=4)
     ax.locator_params(axis='x', nbins=5)
     ax2d(fig, ax, loc='lower right')
+
+if case == 65:
+    """
+    plot the time steps used in the process
+    """
+    hs = []
+    for i in range(Nscheme):
+        x = np.loadtxt('data/cqcgl1d_N50_hs_' + str(i) + '.dat')
+        hs.append(x)
+    
+    T = 4.0
+    lss = ['--', '-.', ':', '-', '-', '-', '-']
+    fig, ax = pl2d(size=[6, 5], labs=[r'$t$', r'$h$'],
+                   axisLabelSize=20, tickSize=15,
+                   # xlim=[1e-8, 5e-3],
+                   ylim=[5e-6, 1e-2],
+                   yscale='log')
+    for i in range(Nscheme):
+        n = len(hs[i])
+        x = np.arange(1, n+1) * T/n
+        ax.plot(x, hs[i], lw=1.5, ls=lss[i], label=labels[i])
+    ax.locator_params(axis='y', numticks=4)
+    ax.locator_params(axis='x', nbins=5)
+    ax2d(fig, ax, loc='upper left')
+    
 
 ###############################################################################
 # 2d cqcgl

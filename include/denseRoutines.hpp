@@ -153,7 +153,7 @@ namespace denseRoutines {
 	MatrixXd dx = (VectorXd::LinSpaced(N, 0, N-1)).replicate(1, M).transpose() - MatrixXd::Constant(M, N, b1);
 	MatrixXd dy = (VectorXd::LinSpaced(M, 0, M-1)).replicate(1, N) - MatrixXd::Constant(M, N, b2);
 	
-	MatrixXd d = dx.array() / (2*c1*c1) + dy.array() / (2*c2*c2);
+	MatrixXd d = dx.array().square() / (2*c1*c1) + dy.array().square() / (2*c2*c2);
 	MatrixXd f = (-d).array().exp() * a;
 	return f.cast<std::complex<double>>();	
     }

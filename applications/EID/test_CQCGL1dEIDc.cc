@@ -1,4 +1,4 @@
-/* h5c++ test_CQCGL1dEIDc.cc -std=c++11 -lCQCGL -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I $RESH/include/ -L $RESH/lib/ -I $XDAPPS/eigen/include/eigen3 -DEIGEN_FFTW_DEFAULT -O3 && ./a.out 
+/* h5c++ test_CQCGL1dEIDc.cc -std=c++11 -lCQCGL -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I $RESH/include/ -L $RESH/lib/ -I $XDAPPS/eigen/include/eigen3 -DEIGEN_FFTW_DEFAULT -O3 -o cgl1d.out && time ./cgl1d.out 
  */
 #include <iostream>
 #include <ctime>
@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N30
+#define N50
 
 using namespace MyH5;
 using namespace std;
@@ -18,7 +18,7 @@ using namespace denseRoutines;
 int main(){
 
     std::vector<std::string> scheme = {"Cox_Matthews", "Krogstad", "Hochbruck_Ostermann", 
-				       "Luan_Ostermann", "IFRK43", "IFRK54"};
+				       "Luan_Ostermann", "IFRK43", "IFRK54", "SSPP43"};
 
 #ifdef N10
     //====================================================================================================
@@ -67,6 +67,25 @@ int main(){
     // 4000 4001 3197.97 3297.8 0.000316152
     
     // the performance are almost the same.
+
+#endif
+#ifdef N15
+    //====================================================================================================
+    // test a single method to see whether there is a bug
+    const int N = 1024; 
+    const double d = 30;
+    const double di = 0.06;
+    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
+    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+    
+    VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
+    VectorXd a0 = cgl2.Config2Fourier(A0);
+    
+    double T = 4;
+
+    cgl.setScheme(scheme[6]);	
+    ArrayXXd aa = cgl.intgC(a0, 0.001, T, 10);
+
 
 #endif
 #ifdef N20
@@ -135,26 +154,69 @@ int main(){
 #endif
 #ifdef N50
     //====================================================================================================
-    // same as N40, but test all shemes
-    KSEIDr ks(64, 22);
-    KS ks2(64, 22);
+    // static frame integration
+    // set the rtol = 1e-10 and output some statics
+    const int N = 1024; 
+    const double d = 30;
+    const double di = 0.06;
+    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
+    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+
+    cgl.eidc.rtol = 1e-10;
+
+    VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
+    VectorXd a0 = cgl2.Config2Fourier(A0);
+    double T = 4;
+    double h0 = T / (1<<12);	// T / 2^12
+    
     for(int i = 0; i < scheme.size(); i++) {
-	ks.setScheme(scheme[i]);
-	ArrayXXd aa = ks.intg(a0, T/nstp, T, 1);
-	VectorXd a1 = ks2.Reflection(aa.rightCols(1));
-	cout << (a1-a0).norm() << ' ' << ks.lte.maxCoeff() << ' ' << ks.hs.maxCoeff() << ' ';
-	cout << ks.eidr.NCalCoe << ' ' << ks.eidr.NReject << ' ' << ks.eidr.NCallF << ' ' << ks.eidr.NSteps << endl;
+	cgl.setScheme(scheme[i]);
+	ArrayXXd aa = cgl.intg(a0, h0, T, 1<<5);
+	savetxt("cqcgl1d_N50_hs_"+to_string(i)+".dat", cgl.hs);
+	// cout << cgl.hs << endl;
     }
     
-    // Output:
-    // 
-    // 1.19741e-08 6.53879e-09 0.0152952 8 2 3505 699
-    // 1.45044e-08 6.51859e-09 0.0251392 9 2 2600 518
-    // 7.36104e-09 6.53008e-09 0.0251002 10 2 2600 518
-    // 2.12496e-09 2.44513e-09 0.082695 8 0 1215 135
-    // 2.50557e-08 6.54958e-09 0.00559735 8 2 11695 2337
-    // 1.90432e-08 5.89591e-09 0.0132776 8 1 6202 885
+#endif
+#ifdef N70
+    //====================================================================================================
+    // comoving frame integration.
+    // choose different rtol to obtain
+    //      rtol vs global relative error
+    //      rtol vs integration steps, N(x) evaluation times
+    //      
+    const int N = 1024; 
+    const double d = 30;
+    const double di = 0.06;
+    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
+    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+ 
+    VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
+    VectorXd a0 = cgl2.Config2Fourier(A0);
+    double T = 4;
+    double h0 = T / (1<<20);	// T / 2^20
     
+    cgl.setScheme("Luan_Ostermann");
+    ArrayXd x0 = cgl.intgC(a0, h0, T, 1000000).rightCols(1);
+
+    int n = 10;
+
+    
+    MatrixXd erros(n, scheme.size()+1);
+    for(int i = 0; i < scheme.size(); i++) {
+	cgl.setScheme(scheme[i]);	
+	for(int j = 0, k=2; j < n; j++, k*=2){
+	    double h = k*h0;
+	    if(i == 0) {
+		erros(j, 0) = h; 
+	    }
+	    ArrayXXd aa = cgl.intgC(a0, h, T, 1000000);
+	    double err = (aa.rightCols(1) - x0).abs().maxCoeff() / x0.abs().maxCoeff();
+	    erros(j, i+1) = err; 
+	    cout << err << ' ';
+	}
+	cout << endl;
+    }
+    savetxt("cqcgl1d_N60_err.dat", erros);
 
 
 #endif

@@ -1,4 +1,4 @@
-/* h5c++ test_CQCGL2dEIDc.cc -std=c++11 -lCQCGL2d -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I $RESH/include/ -L $RESH/lib/ -I $XDAPPS/eigen/include/eigen3 -DEIGEN_FFTW_DEFAULT -O3 && ./a.out 
+/* time h5c++ test_CQCGL2dEIDc.cc -std=c++11 -lCQCGL2d -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I $RESH/include/ -L $RESH/lib/ -I $XDAPPS/eigen/include/eigen3 -DEIGEN_FFTW_DEFAULT -O3  -o cgl2d.out && ./cgl2d.out 
  */
 #include <iostream>
 #include <ctime>
@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N10
+#define N20
 
 using namespace MyH5;
 using namespace std;
@@ -18,7 +18,7 @@ using namespace denseRoutines;
 int main(){
 
     std::vector<std::string> scheme = {"Cox_Matthews", "Krogstad", "Hochbruck_Ostermann", 
-				       "Luan_Ostermann", "IFRK43", "IFRK54"};
+				       "Luan_Ostermann", "IFRK43", "IFRK54", "SSPP43"};
 
 #ifdef N10
     //====================================================================================================
@@ -67,40 +67,41 @@ int main(){
 #ifdef N20
     //====================================================================================================
     // Test the accuracy of constant stepping shemes.
-    // Choose Luan-Ostermann method with a small time step as the base, then integrate the
-    // system for one period of ppo1.
+    // Choose Luan-Ostermann method with a small time step as the base.
     const int N = 1024; 
     const double d = 30;
-    const double di = 0.06;
-    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+    const double di = 0.05;
+    CQCGL2dEIDc cgl(N, d, 4, 0.8, 0.01, di);
+    CQCGL2d cgl2(N, d, 4, 0.8, 0.01, di, 4);
  
-    VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
-    VectorXd a0 = cgl2.Config2Fourier(A0);
+    MatrixXcd A0 = Gaussian2d(N, N, N/2, N/2, N/10, N/10, 3) 
+	+ Gaussian2d(N, N, N/2, N/4, N/10, N/10, 0.5);
+    ArrayXXcd a0 = cgl2.Config2Fourier(A0);
+
     double T = 4;
-    double h0 = T / (1<<20);	// T / 2^20
+    double h0 = T / (1<<18);	// T / 2^20
     
     cgl.setScheme("Luan_Ostermann");
-    ArrayXd x0 = cgl.intgC(a0, h0, T, 1000000).rightCols(1);
+    ArrayXXcd x0 = cgl.intgC(a0, h0, T, 1000000, false, "aa.h5").rightCols(cgl.Ne);
 
     int n = 10;
 
     MatrixXd erros(n, scheme.size()+1);
     for(int i = 0; i < scheme.size(); i++) {
 	cgl.setScheme(scheme[i]);	
-	for(int j = 0, k=2; j < n; j++, k*=2){
+	for(int j = 0, k=1; j < n; j++, k*=2){
 	    double h = k*h0;
 	    if(i == 0) {
 		erros(j, 0) = h; 
 	    }
-	    ArrayXXd aa = cgl.intgC(a0, h, T, 1000000);
-	    double err = (aa.rightCols(1) - x0).abs().maxCoeff() / x0.abs().maxCoeff();
+	    ArrayXXcd aa = cgl.intgC(a0, h, T, 1000000, false, "aa.h5").rightCols(cgl.Ne);
+	    double err = (aa - x0).abs().maxCoeff() / x0.abs().maxCoeff();
 	    erros(j, i+1) = err; 
 	    cout << err << ' ';
 	}
 	cout << endl;
     }
-    savetxt("cqcgl1d_N20_err.dat", erros);
+    savetxt("cqcgl2d_N20_err.dat", erros);
 
 #endif
 #ifdef N30

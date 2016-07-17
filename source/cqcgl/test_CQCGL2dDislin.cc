@@ -12,6 +12,9 @@
 
 #define cee(x) (cout << (x) << endl << endl)
 
+#define CASE10
+
+
 using namespace std;
 using namespace Eigen;
 using namespace MyH5;
@@ -21,7 +24,7 @@ typedef std::complex<double> dcp;
 
 int main(){
 
-    switch(3){
+    switch(0){
 	
     case 1 : {			/* test integrator */
 	int N = 1024; 
@@ -71,10 +74,30 @@ int main(){
 	break;
     }
 
+    case 4 : {
+
+
+    }
+
     default: {
 	fprintf(stderr, "please indicate a valid case number \n");
 	}
     }
     
+#ifdef CASE10
+    // ====================================================================================================
+    int N = 1024; 
+    double L = 30;
+    double di = 0.05;
+    CQCGL2dDislin cgl(N, L, 4.0, 0.8, 0.01, di, 4);
+	
+    ArrayXXcd A0 = Gaussian2d(N, N, N/2, N/2, N/10, N/10, 3) 
+	    + Gaussian2d(N, N, N/2, N/4, N/10, N/10, 0.5);
+    ArrayXXcd a0 = cgl.Config2Fourier(A0);
+	
+    cgl.constAnim(a0, 0.001, 10);
+    
+#endif
+
     return 0;
 }

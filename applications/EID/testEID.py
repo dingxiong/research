@@ -2,7 +2,7 @@ from personalFunctions import *
 from py_CQCGL_threads import *
 from py_CQCGL2d import *
 
-case = 65
+case = 66
 
 labels = ["Cox-Matthews", "Krogstad", "Hochbruck-Ostermann",
           "Luan-Ostermann", "IFRK43", "IFRK54", "SSPP43"]
@@ -137,6 +137,30 @@ if case == 65:
     ax.locator_params(axis='x', nbins=5)
     ax2d(fig, ax, loc='upper left')
     
+if case == 66:
+    """
+    same as case 65 but in comoving frame
+    plot the time steps used in the process
+    """
+    hs = []
+    for i in range(Nscheme):
+        x = np.loadtxt('data/cqcgl1d_N60_comoving_hs_' + str(i) + '.dat')
+        hs.append(x)
+    
+    T = 4.0
+    lss = ['--', '-.', ':', '-', '-', '-', '-']
+    fig, ax = pl2d(size=[6, 5], labs=[r'$t$', r'$h$'],
+                   axisLabelSize=20, tickSize=15,
+                   # xlim=[1e-8, 5e-3],
+                   ylim=[5e-6, 2e-1],
+                   yscale='log')
+    for i in range(Nscheme):
+        n = len(hs[i])
+        x = np.arange(1, n+1) * T/n
+        ax.plot(x, hs[i], lw=1.5, ls=lss[i], label=labels[i])
+    ax.locator_params(axis='y', numticks=5)
+    ax.locator_params(axis='x', nbins=5)
+    ax2d(fig, ax, loc='upper left')
 
 ###############################################################################
 # 2d cqcgl

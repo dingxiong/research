@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N50
+#define N60
 
 using namespace MyH5;
 using namespace std;
@@ -176,6 +176,32 @@ int main(){
 	// cout << cgl.hs << endl;
     }
     
+#endif
+#ifdef N60
+    //====================================================================================================
+    // Comoving frame integration
+    // set the rtol = 1e-10 and output time steps
+    const int N = 1024; 
+    const double d = 30;
+    const double di = 0.06;
+    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
+    cgl.changeOmega(-176.67504941219335);
+    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+
+    cgl.eidc.rtol = 1e-10;
+
+    VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
+    VectorXd a0 = cgl2.Config2Fourier(A0);
+    double T = 4;
+    double h0 = T / (1<<12);	// T / 2^12
+    
+    for(int i = 0; i < scheme.size(); i++) {
+	cgl.setScheme(scheme[i]);
+	ArrayXXd aa = cgl.intg(a0, h0, T, 1<<5);
+	savetxt("cqcgl1d_N60_comoving_hs_"+to_string(i)+".dat", cgl.hs);
+	// cout << cgl.hs << endl;
+    }
+
 #endif
 #ifdef N70
     //====================================================================================================

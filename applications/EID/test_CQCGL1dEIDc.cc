@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N60
+#define N80
 
 using namespace MyH5;
 using namespace std;
@@ -214,6 +214,7 @@ int main(){
     const double d = 30;
     const double di = 0.06;
     CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
+    cgl.changeOmega(-176.67504941219335);
     CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
  
     VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
@@ -225,25 +226,59 @@ int main(){
     ArrayXd x0 = cgl.intgC(a0, h0, T, 1000000).rightCols(1);
 
     int n = 10;
-
+    time_t t; 
     
-    MatrixXd erros(n, scheme.size()+1);
+    MatrixXd erros(n, 4*scheme.size()+1);
     for(int i = 0; i < scheme.size(); i++) {
 	cgl.setScheme(scheme[i]);	
-	for(int j = 0, k=2; j < n; j++, k*=2){
-	    double h = k*h0;
+	for(int j = 0, k=1; j < n; j++, k*=5){
+	    double rtol = k*1e-14;
+	    cgl.eidc.rtol = rtol;
 	    if(i == 0) {
-		erros(j, 0) = h; 
+		erros(j, 0) = rtol; 
 	    }
-	    ArrayXXd aa = cgl.intgC(a0, h, T, 1000000);
+	    t = clock();
+	    ArrayXXd aa = cgl.intg(a0, T/(1<<12), T, 1000000);
+	    t = clock() - t;
 	    double err = (aa.rightCols(1) - x0).abs().maxCoeff() / x0.abs().maxCoeff();
-	    erros(j, i+1) = err; 
+	    erros(j, 4*i+1) = err; 
+	    erros(j, 4*i+2) = cgl.eidc.NCalCoe;
+	    erros(j, 4*i+3) = cgl.eidc.NCallF;
+	    erros(j, 4*i+4) = static_cast<double>(t) / CLOCKS_PER_SEC;
 	    cout << err << ' ';
 	}
 	cout << endl;
     }
-    savetxt("cqcgl1d_N60_err.dat", erros);
-
+    savetxt("cqcgl1d_N70_stat.dat", erros);
+#endif
+#ifdef N80
+    //====================================================================================================
+    // test the accuracy of calculating coefficient
+    // there is no problem with coefficients
+    const int N = 1024; 
+    const double d = 30;
+    const double di = 0.06;
+    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
+    cgl.changeOmega(-176.67504941219335);
+    
+    int n = 3;
+    ArrayXXcd c(N, n);
+    for (int i = 0; i < n; i++){
+	cgl.eidc.M = 64 * (1<<i);
+	cout << cgl.eidc.M << endl;
+	cgl.eidc.calCoe(1e-3);
+	c.col(i) = cgl.eidc.b[3];
+	
+    }
+    
+    MatrixXd err(n, n);
+    for( int i = 0; i < n; i++) {
+	for (int j = 0; j < n; j++){
+	    err(i, j) = (c.col(i) - c.col(j)).abs().maxCoeff();
+	}
+    }
+    
+    cout << err << endl;
 
 #endif
     

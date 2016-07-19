@@ -87,6 +87,17 @@ public:
 	{SSPP43,              24}
     };
 
+    std::unordered_map<int, int> nabs = { /* number of calculation of a, b whenever change step */
+	{Cox_Matthews,        4},
+        {Krogstad,            8},
+        {Hochbruck_Ostermann, 11},
+	{Luan_Ostermann,      23},
+	{IFRK43,              0},
+	{IFRK54,              0},
+	{SSPP43,              0}
+    };
+
+
     std::unordered_map<int, int> orders = { /* orders of schemes */
         {Cox_Matthews,        4},
         {Krogstad,            4},
@@ -154,6 +165,7 @@ public:
 	int ns = nstages[scheme];
 	int od = orders[scheme];
 	int nnl = nnls[scheme];
+	int nab = nabs[scheme];
 
 	NCalCoe = 0;
 	NReject = 0;
@@ -162,7 +174,7 @@ public:
 
 	double h = h0;
 	calCoe(h);
-	NCalCoe++;
+	NCalCoe += nab;
 	
 	double t = t0;
 	Y[0] = u0;
@@ -174,7 +186,7 @@ public:
 	    if ( t + h > tend){
 		h = tend - t;
 		calCoe(h);
-		NCalCoe++;
+		NCalCoe += nab;
 		TimeEnds = true;
 	    }
 
@@ -197,7 +209,7 @@ public:
 	    if (doChange) {
 		h *= mu;
 		calCoe(h);
-		NCalCoe++;
+		NCalCoe += nab;
 	    }
 	}
     }
@@ -208,10 +220,14 @@ public:
 	  const int skip_rate){
 	int ns = nstages[scheme];
 	int nnl = nnls[scheme];
-	calCoe(h);
-	NCalCoe++;
+	int nab = nabs[scheme];
+
 	NCallF = 0;
 	NSteps = 0; 
+	NCalCoe = 0;
+
+	calCoe(h);
+	NCalCoe += nab;
 
 	const int Nt = (int)round((tend-t0)/h);
 

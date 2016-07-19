@@ -2,12 +2,13 @@ from personalFunctions import *
 from py_CQCGL_threads import *
 from py_CQCGL2d import *
 
-case = 66
+case = 67
 
 labels = ["Cox-Matthews", "Krogstad", "Hochbruck-Ostermann",
           "Luan-Ostermann", "IFRK43", "IFRK54", "SSPP43"]
 mks = ['o', 's', '+', '^', 'x', 'v', 'p']
 Nscheme = len(labels)
+lss = ['--', '-.', ':', '-', '-', '-', '-']
 
 if case == 10:
     lte = np.loadtxt('data/N10_lte.dat')
@@ -161,6 +162,54 @@ if case == 66:
     ax.locator_params(axis='y', numticks=5)
     ax.locator_params(axis='x', nbins=5)
     ax2d(fig, ax, loc='upper left')
+
+if case == 67:
+    """
+    plot the relative error, Nab, Nn vs rtol
+    """
+    err = np.loadtxt('data/cqcgl1d_N70_stat.dat')
+    rtol = err[:, 0]
+    
+    # plot relative error
+    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', 'relative error'],
+                   axisLabelSize=20, tickSize=15,
+                   # xlim=[1e-8, 5e-3],
+                   # ylim=[5e-6, 2e-1],
+                   xscale='log',
+                   yscale='log')
+    for i in range(Nscheme):
+        ax.plot(rtol, err[:, 4*i+1], lw=1.5, marker=mks[i], mfc='none',
+                ms=8, label=labels[i])
+    ax.locator_params(axis='y', numticks=5)
+    ax.locator_params(axis='x', numticks=5)
+    ax2d(fig, ax, loc='bottem right')
+    
+    # plot Nab
+    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Nab$'],
+                   axisLabelSize=20, tickSize=15,
+                   xscale='log')
+    for i in range(4):
+        ax.plot(rtol, err[:, 4*i+2], lw=1.5, marker=mks[i], mfc='none',
+                ms=8, label=labels[i])
+    ax2d(fig, ax, loc='upper left')
+
+    # plot Nn
+    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Nn$'],
+                   axisLabelSize=20, tickSize=15,
+                   xscale='log')
+    for i in range(Nscheme):
+        ax.plot(rtol, err[:, 4*i+3], lw=1.5, marker=mks[i], mfc='none',
+                ms=8, label=labels[i])
+    ax2d(fig, ax, loc='upper right')
+
+    # plot Wt
+    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Wt$'],
+                   axisLabelSize=20, tickSize=15,
+                   xscale='log')
+    for i in range(Nscheme):
+        ax.plot(rtol, err[:, 4*i+4], lw=1.5, marker=mks[i], mfc='none',
+                ms=8, label=labels[i])
+    ax2d(fig, ax, loc='upper right')
 
 ###############################################################################
 # 2d cqcgl

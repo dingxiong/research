@@ -16,10 +16,11 @@ class KSReq():
     vectors.
     """
     
-    def __init__(self, N, L, fileName, poFile, p):
+    def __init__(self, N, L, reqFile, poFile, p):
         """
         N : number of Fourier modes in KS
         L : domain size of KS
+        reqFile : the file storing reqs
         poFile: the file storing ppo/rpo and Floquet vectors
         p : mode used to reduce SO(2)
         -------
@@ -35,12 +36,12 @@ class KSReq():
         """
         self.N = N
         self.L = L
-        self.fileName = fileName
+        self.reqFile = reqFile
         self.poFile = poFile
         self.p = p
         self.ks = pyKS(N, L)
         
-        self.req, self.ws, self.reqr, self.eq, self.eqr = self.loadRE(fileName, p)
+        self.req, self.ws, self.reqr, self.eq, self.eqr = self.loadRE(reqFile, p)
         self.Eq = {'e': self.eq, 'tw': self.req}
         self.Eqr = {'e': self.eqr, 'tw': self.reqr}
 
@@ -50,13 +51,13 @@ class KSReq():
         self.EqrP = {'e': np.zeros([3, 3]), 'tw': np.zeros([2, 3])}
         self.EgP = None
 
-    def loadRE(self, fileName, p):
+    def loadRE(self, reqFile, p):
         """
         load all req and eq and their corresponding
         symmetry reduced states in the fundamental
         domain.
 
-        fileName : path to the req data file
+        reqFile : path to the req data file
         p : the fourier mode used to reduce symmetry
         """
         N = self.N
@@ -66,7 +67,7 @@ class KSReq():
         ws = np.zeros(2)
         reqr = np.zeros((2, N-2))
         for i in range(2):
-            a0, w, err = KSreadReq(fileName, i+1)
+            a0, w, err = KSreadReq(reqFile, i+1)
             req[i] = a0
             ws[i] = w
             tmp = ks.redO2f(a0, p)
@@ -75,7 +76,7 @@ class KSReq():
         eq = np.zeros((3, N-2))
         eqr = np.zeros((3, N-2))
         for i in range(3):
-            a0, err = KSreadEq(fileName, i+1)
+            a0, err = KSreadEq(reqFile, i+1)
             eq[i] = a0
             tmp = ks.redO2f(a0, p)
             eqr[i] = tmp[0]
@@ -357,24 +358,24 @@ class KSReq():
         raa : orbit in the fundamental domain
         dids : indices of regions
         jumps : indices when orbit crosses Poincare section
-        """
-        x = dids[jumps]
-        y = dids[jumps+1]
-        x1 = jumps[x == 2]
-        y1 = jumps[y == 1]
-        assert np.array_equal(x1, y1)
-        x2 = jumps[x == 1]
-        y2 = jumps[y == 2]
-        assert np.array_equal(x2, y2)
-
-        pcN = len(x1)           # positive crossing number
-        ncN = len(x2)
-        assert pcN + ncN == len(jumps)
         
-        borderIds = np.append(x1+1, x2+1)
+        Return
+        borderIds : indices of intersection points which are in the 1st region
+        borderPts : the corresponding points
+        start : starting index from negative to positive
+        """
+        borderIds = jumps
+        d1 = dids[jumps[0]]
+        if d1 == 1:      # first crossing is from positive to negative
+            borderIds[1::2] += 1
+            start = 1
+        else:            # first crossing is from negative to positive
+            borderIds[::2] += 1
+            start = 0
+
         borderPts = raa[borderIds]
         
-        return borderIds, borderPts, pcN, ncN
+        return borderIds, borderPts, start
 
 ###############################################################################
 
@@ -385,7 +386,7 @@ if __name__ == '__main__':
     ksreq = KSReq(N, L, '../../data/ks22Reqx64.h5',
                   '../../data/ks22h001t120x64EV.h5', 1)
 
-    case = 20
+    case = 14
 
     if case == 10:
         """
@@ -421,8 +422,7 @@ if __name__ == '__main__':
         """
         data = np.load('PoPoincare.npz')
         borderPtsP = data['borderPtsP']
-        pcN = data['pcN']
-        ncN = data['ncN']
+        starts = data['starts']
         M = len(borderPtsP)
 
         ii = [0, 1, 2]
@@ -436,8 +436,10 @@ if __name__ == '__main__':
                            edgecolors='none')
             x, y, z = [borderPtsP[k][:, ii[0]], borderPtsP[k][:, ii[1]],
                        borderPtsP[k][:, ii[2]]]
-            for i in range(pcN[k]+ncN[k]):
-                ax.scatter(x[i], y[i], z[i], c='r' if i < pcN[k] else 'b',
+            si = starts[k]
+            for i in range(len(borderPtsP[k])):
+                t = (i + si) % 2 == 0
+                ax.scatter(x[i], y[i], z[i], c='r' if t else 'b',
                            marker='o', s=70, edgecolors='none')
                 ax.text(x[i], y[i], z[i], str(i+1), fontsize=20, color='g')
             s = 'ppo'+str(k+1-100)
@@ -616,21 +618,19 @@ if __name__ == '__main__':
         M = len(pos)
         borderIds = []
         borderPts = []
-        pcN = []
-        ncN = []
+        starts = []
         borderNum = 0
         for i in range(M):
-            ids, pts, pcn, ncn = ksreq.getPoinc(pos[i], poDom[i], poJumps[i])
+            ids, pts, st = ksreq.getPoinc(pos[i], poDom[i], poJumps[i])
             borderIds.append(ids)
             borderPts.append(pts)
-            pcN.append(pcn)
-            ncN.append(ncn)
+            starts.append(st)
             borderNum += len(ids)
 
-        ptsId = borderIds[0][1]
+        ptsId = borderIds[0][0]
         fe, fv, rfv, bases = ksreq.poFvPoinc('rpo', 1, ptsId, 1, [0, 3, 4],
-                                             reflect=True)
-        Ori = borderPts[0][1]
+                                             reflect=False)
+        Ori = borderPts[0][0]
         borderPtsP = []
         for i in range(M):
             p = (borderPts[i]-Ori).dot(bases.T)
@@ -662,9 +662,9 @@ if __name__ == '__main__':
                                          mt='circle' if i < 50 else 'square'))
                 ptly3d(trace, 'PoPoincare', labs=['$v_1$', '$v_2$', '$v_3$'])
 
-        # np.savez_compressed('bases', Ori=Ori, bases=bases)
-        # np.savez_compressed('PoPoincare', borderPtsP=borderPtsP,
-        #                     pcN=pcN, ncN=ncN)
+        np.savez_compressed('bases', Ori=Ori, bases=bases)
+        np.savez_compressed('PoPoincare', borderPtsP=borderPtsP,
+                            starts=starts)
         if False:
             ii = [2, 6, 4]
             # ii = [1, 5, 3]

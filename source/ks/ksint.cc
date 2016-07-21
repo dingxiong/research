@@ -1218,6 +1218,12 @@ KS::fundDomain(const Ref<const MatrixXd> &aa, const int p){
     return std::make_pair(faa, DomainIds);
 }
     
+/** @brief reduce O2 symmetry to fundamental domain
+ *
+ *
+ * @param[in] aa    states in the full state space
+ * @param[in] p     index of Fourier mode used to reduce SO2
+ **/
 std::tuple<MatrixXd, VectorXi, VectorXd>
 KS::redO2f(const Ref<const MatrixXd> &aa, const int p){
     auto tmp = redSO2(aa, p, true);

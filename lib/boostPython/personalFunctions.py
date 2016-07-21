@@ -171,6 +171,7 @@ def ax2d(fig, ax, doBlock=False, save=False, name='output.png',
          title=None, loc='best', alpha=0.2):
     fig.tight_layout(pad=0)
     if title is not None:
+        print "aaa"
         ax.set_title(title)
 
     ax.legend(loc=loc, framealpha=alpha)

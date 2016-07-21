@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N80
+#define N30
 
 using namespace MyH5;
 using namespace std;
@@ -141,15 +141,18 @@ int main(){
     double T = 4;
     int n0 = 17, n1 = 6;
     double h0 = T / (1<<n0);	// T / 2^17
+    double w[] = {0, -176.67504941219335};
 
-    MatrixXd ltes(1<<(n0-n1), scheme.size());
-    for(int i = 0; i < scheme.size(); i++) {
-	cgl.setScheme(scheme[i]);	
-	ArrayXXd aa = cgl.intgC(a0, h0, T, 1<<n1);
-	ltes.col(i) = cgl.lte;
+    MatrixXd ltes(1<<(n0-n1), 2*scheme.size());
+    for(int k = 0; k < 2; k++){
+	cgl.changeOmega(w[k]);
+	for(int i = 0; i < scheme.size(); i++) {
+	    cgl.setScheme(scheme[i]);	
+	    ArrayXXd aa = cgl.intgC(a0, h0, T, 1<<n1);
+	    ltes.col(k*scheme.size() + i) = cgl.lte;
+	}
     }
     savetxt("cqcgl1d_N30_lte.dat", ltes);
-
 
 #endif
 #ifdef N50
@@ -214,7 +217,7 @@ int main(){
     const double d = 30;
     const double di = 0.06;
     CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    cgl.changeOmega(-176.67504941219335);
+    // cgl.changeOmega(-176.67504941219335);
     CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
  
     VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
@@ -279,6 +282,43 @@ int main(){
     }
     
     cout << err << endl;
+
+#endif
+#ifdef N90
+    //====================================================================================================
+    // test the norm of b for estimating the local error
+    const int N = 1024; 
+    const double d = 30;
+    const double di = 0.06;
+    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
+    
+    int bindex[] = {3, 3, 4, 7};
+
+    ArrayXXcd bs1(N, 4);
+    for (int i = 0; i < 4; i++){
+	cgl.setScheme(scheme[i]);
+	cgl.eidc.calCoe(1e-4);
+	bs1.col(i) = cgl.eidc.b[bindex[i]];
+    }
+    savetxt("l1r.dat", cgl.L.real()); savetxt("l1c.dat", cgl.L.imag());
+    
+    cgl.changeOmega(-176.67504941219335);
+    
+    ArrayXXcd bs2(N, 4);
+    for (int i = 0; i < 4; i++){
+	cgl.setScheme(scheme[i]);
+	cgl.eidc.calCoe(1e-4);
+	bs2.col(i) = cgl.eidc.b[bindex[i]];
+    }
+    savetxt("l2r.dat", cgl.L.real()); savetxt("l2c.dat", cgl.L.imag());
+
+    for(int i = 0; i < 4; i++) cout << bs1.col(i).abs().maxCoeff() << ' ';
+    cout << endl;
+    for(int i = 0; i < 4; i++) cout << bs2.col(i).abs().maxCoeff() << ' ';
+    cout << endl;
+
+    savetxt("bs1r.dat", bs1.real()); savetxt("bs1c.dat", bs1.imag());
+    savetxt("bs2r.dat", bs2.real()); savetxt("bs2c.dat", bs2.imag());
 
 #endif
     

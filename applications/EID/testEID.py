@@ -2,7 +2,7 @@ from personalFunctions import *
 from py_CQCGL_threads import *
 from py_CQCGL2d import *
 
-case = 67
+case = 60
 
 labels = ["Cox-Matthews", "Krogstad", "Hochbruck-Ostermann",
           "Luan-Ostermann", "IFRK43", "IFRK54", "SSPP43"]
@@ -103,6 +103,7 @@ if case == 60:
     n = err.shape[0]
     T = 4.0
     x = np.arange(1, n+1) * T/n
+    
     fig, ax = pl2d(size=[6, 5], labs=[r'$t$', r'estimated local error'],
                    axisLabelSize=20, tickSize=15,
                    # xlim=[1e-8, 5e-3],
@@ -110,6 +111,17 @@ if case == 60:
                    yscale='log')
     for i in range(Nscheme):
         ax.plot(x, err[:, i], lw=1.5, ls=lss[i], label=labels[i])
+    ax.locator_params(axis='y', numticks=5)
+    ax.locator_params(axis='x', nbins=5)
+    ax2d(fig, ax, loc='lower right')
+
+    fig, ax = pl2d(size=[6, 5], labs=[r'$t$', r'estimated local error'],
+                   axisLabelSize=20, tickSize=15,
+                   # xlim=[1e-8, 5e-3],
+                   ylim=[1e-30, 1e-8],
+                   yscale='log')
+    for i in range(Nscheme):
+        ax.plot(x, err[:, Nscheme+i], lw=1.5, ls=lss[i], label=labels[i])
     ax.locator_params(axis='y', numticks=4)
     ax.locator_params(axis='x', nbins=5)
     ax2d(fig, ax, loc='lower right')
@@ -165,6 +177,7 @@ if case == 66:
 
 if case == 67:
     """
+    static frame
     plot the relative error, Nab, Nn vs rtol
     """
     err = np.loadtxt('data/cqcgl1d_N70_stat.dat')
@@ -174,7 +187,7 @@ if case == 67:
     fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', 'relative error'],
                    axisLabelSize=20, tickSize=15,
                    # xlim=[1e-8, 5e-3],
-                   # ylim=[5e-6, 2e-1],
+                   ylim=[1e-9, 3e-2],
                    xscale='log',
                    yscale='log')
     for i in range(Nscheme):
@@ -187,29 +200,124 @@ if case == 67:
     # plot Nab
     fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Nab$'],
                    axisLabelSize=20, tickSize=15,
+                   ylim=[4e2, 2400],
+                   # yscale='log',
                    xscale='log')
     for i in range(4):
         ax.plot(rtol, err[:, 4*i+2], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
+    ax.locator_params(axis='y', nbins=5)
+    ax.locator_params(axis='x', numticks=5)
     ax2d(fig, ax, loc='upper left')
 
     # plot Nn
     fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Nn$'],
                    axisLabelSize=20, tickSize=15,
-                   xscale='log')
+                   ylim=[5e4, 1e9],
+                   xscale='log', yscale='log')
     for i in range(Nscheme):
         ax.plot(rtol, err[:, 4*i+3], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
+    ax.locator_params(axis='y', numticks=5)
+    ax.locator_params(axis='x', numticks=5)
     ax2d(fig, ax, loc='upper right')
 
     # plot Wt
     fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Wt$'],
                    axisLabelSize=20, tickSize=15,
-                   xscale='log')
+                   ylim=[2e0, 1e4],
+                   xscale='log', yscale='log')
     for i in range(Nscheme):
         ax.plot(rtol, err[:, 4*i+4], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
+    ax.locator_params(axis='y', numticks=5)
+    ax.locator_params(axis='x', numticks=5)
     ax2d(fig, ax, loc='upper right')
+
+if case == 68:
+    """
+    comoving frame
+    plot the relative error, Nab, Nn vs rtol
+    """
+    err = np.loadtxt('data/cqcgl1d_N70_comoving.dat')
+    rtol = err[:, 0]
+    
+    # plot relative error
+    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', 'relative error'],
+                   axisLabelSize=20, tickSize=15,
+                   # xlim=[1e-8, 5e-3],
+                   ylim=[1e-9, 4e-0],
+                   xscale='log',
+                   yscale='log')
+    for i in range(Nscheme):
+        ax.plot(rtol, err[:, 4*i+1], lw=1.5, marker=mks[i], mfc='none',
+                ms=8, label=labels[i])
+    ax.locator_params(axis='y', numticks=5)
+    ax.locator_params(axis='x', numticks=5)
+    ax2d(fig, ax, loc='lower right')
+    
+    # plot Nab
+    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Nab$'],
+                   axisLabelSize=20, tickSize=15,
+                   ylim=[500, 4000],
+                   # yscale='log',
+                   xscale='log')
+    for i in range(4):
+        ax.plot(rtol, err[:, 4*i+2], lw=1.5, marker=mks[i], mfc='none',
+                ms=8, label=labels[i])
+    ax.locator_params(axis='y', nbins=5)
+    ax.locator_params(axis='x', numticks=5)
+    ax2d(fig, ax, loc='upper left')
+
+    # plot Nn
+    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Nn$'],
+                   axisLabelSize=20, tickSize=15,
+                   ylim=[4e4, 1e9],
+                   xscale='log', yscale='log')
+    for i in range(Nscheme):
+        ax.plot(rtol, err[:, 4*i+3], lw=1.5, marker=mks[i], mfc='none',
+                ms=8, label=labels[i])
+    ax.locator_params(axis='y', numticks=5)
+    ax.locator_params(axis='x', numticks=5)
+    ax2d(fig, ax, loc='upper right')
+
+    # plot Wt
+    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Wt$'],
+                   axisLabelSize=20, tickSize=15,
+                   ylim=[2e0, 1e4],
+                   xscale='log', yscale='log')
+    for i in range(Nscheme):
+        ax.plot(rtol, err[:, 4*i+4], lw=1.5, marker=mks[i], mfc='none',
+                ms=8, label=labels[i])
+    ax.locator_params(axis='y', numticks=5)
+    ax.locator_params(axis='x', numticks=5)
+    ax2d(fig, ax, loc='upper right')
+
+if case == 69:
+    """
+    Compare the accuracy of static and comoving frames
+    """
+    err = np.loadtxt('data/cqcgl1d_N70_stat.dat')
+    err2 = np.loadtxt('data/cqcgl1d_N70_comoving.dat')
+    rtol = err[:, 0]
+
+    for i in range(4):
+        fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', 'relative error'],
+                       axisLabelSize=20, tickSize=15,
+                       # xlim=[1e-8, 5e-3],
+                       ylim=[1e-9, 4e-0],
+                       xscale='log',
+                       yscale='log')
+        ax.plot(rtol, err[:, 4*i+1], lw=1.5, marker=mks[0], mfc='none',
+                ms=8, label='static')
+        ax.plot(rtol, err2[:, 4*i+1], lw=1.5, marker=mks[1], mfc='none',
+                ms=8, label='comoving')
+        ax.locator_params(axis='y', numticks=5)
+        ax.locator_params(axis='x', numticks=5)
+        ax.text(0.3, 0.9, labels[i], fontsize=15, horizontalalignment='center',
+                verticalalignment='center',  bbox=dict(ec='black', fc='none'),
+                transform=ax.transAxes)
+        ax2d(fig, ax, loc='upper right')
 
 ###############################################################################
 # 2d cqcgl

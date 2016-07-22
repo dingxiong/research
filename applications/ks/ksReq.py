@@ -5,6 +5,24 @@ from sklearn.grid_search import GridSearchCV
 from personalPlotly import *
 
 
+class Po():
+    def __init__(self, a0, T, nstp, r, s, fo=None, so=None, fdo=None, po=None,
+                 dids=None, jumps=None):
+        self.a0 = a0
+        self.T = T
+        self.nstp = nstp
+        self.r = r
+        self.s = s
+
+        self.fo = fo            # full state space orbit
+        self.so = so            # slice orbit
+        self.fdo = fdo          # fundamental domain orbit
+        self.po = po            # projected orbit
+
+        self.dids = dids        # domain ids
+        self.jumps = jumps      # domain jump index
+        
+
 class KSReq():
     """
     This class is designed to study the structure of KS
@@ -33,6 +51,8 @@ class KSReq():
         Evr : eigvenctor projected onto slice
         EqrP : projected Eqr
         EgP : projected Eg
+        ppos : a list of ppo
+        rpos : a list of rpo
         """
         self.N = N
         self.L = L
@@ -50,6 +70,9 @@ class KSReq():
 
         self.EqrP = {'e': np.zeros([3, 3]), 'tw': np.zeros([2, 3])}
         self.EgP = None
+
+        self.ppos = []
+        self.rpos = []
 
     def loadRE(self, reqFile, p):
         """
@@ -141,7 +164,7 @@ class KSReq():
         Evr = {'e': EqVr, 'tw': ReqVr}
         return Es, Ev, Evr
         
-    def loadPO(self, poIds, p, bases=None, x0=None):
+    def loadPO(self, p, ppoIds=None, rpoIds=None, bases=None, x0=None):
         """
         Load rpo and ppo and reduce the symmetry.
         If bases and orgin x0 are given, then also return the
@@ -152,33 +175,32 @@ class KSReq():
         p : the mode used to reduce symmetry
         ----------
         Return :
-        aars : symmetry reduced state space
+        aars : SO2 reduced state space
         aaps : projected state space
         dom  : domain info
         jumps : jumps times
         """
-        aars = []
-        aaps = []
-        dom = []
-        jumps = []
-        types = ['rpo', 'ppo']
+        types = ['ppo', 'rpo']
+        poIds = [ppoIds, rpoIds]
         for i in range(2):
-            poType = types[i]
             for poId in poIds[i]:
-                a0, T, nstp, r, s = KSreadPO(self.poFile, poType, poId)
+                a0, T, nstp, r, s = KSreadPO(self.poFile, types[i], poId)
                 h = T / nstp
                 aa = self.ks.intg(a0, h, nstp, 5)
-                aar, dids, ths = self.ks.redO2f(aa, p)
-                aars.append(aar)
-                dom.append(dids)
-                jumps.append(getJumpPts(dids))
+                aar, ths = self.ks.redO2(aa, p, True)
+                dids = np.sign(aar[:, 2])
+                jumps = getJumpPts(dids)
+                borderIds, borderPts, start = getPoinc(aar, dids, jumps)
+                
+                po = Po(a0, T, nstp, r, s, so=aar, dids=dids,
+                        jumps=jumps)
                 if bases is not None:
-                    aaps.append(aar.dot(bases.T) - x0)
-
-        if bases is not None:
-            return aars, aaps, dom, jumps
-        else:
-            return aars, dom, jumps
+                    po.po = aar.dot(bases.T) - x0
+                
+                if i == 0:
+                    self.ppos.append(po)
+                else:
+                    self.rpos.append(po)
 
     def poFvPoinc(self, poType, poId, ptsId, p, ii, reflect=False):
         """
@@ -386,7 +408,7 @@ if __name__ == '__main__':
     ksreq = KSReq(N, L, '../../data/ks22Reqx64.h5',
                   '../../data/ks22h001t120x64EV.h5', 1)
 
-    case = 14
+    case = 19
 
     if case == 10:
         """
@@ -613,9 +635,8 @@ if __name__ == '__main__':
         """
         use the poincare section b2=0 and b2 from negative to positive
         """
-        poIds = [range(1, 101), range(1, 101)]
-        pos, poDom, poJumps = ksreq.loadPO(poIds, 1)
-        M = len(pos)
+        ksreq.loadPO(1, ppoIds=range(1, 101), rpoIds=range(1, 101))
+        M = len()
         borderIds = []
         borderPts = []
         starts = []

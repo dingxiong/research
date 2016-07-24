@@ -2,12 +2,13 @@ from personalFunctions import *
 from py_ks import *
 from sklearn.svm import SVR
 from sklearn.grid_search import GridSearchCV
+from scipy.interpolate import interp1d
 from personalPlotly import *
 
 
 class Po():
     def __init__(self, a0, T, nstp, r, s, fo=None, so=None, fdo=None, po=None,
-                 dids=None, jumps=None):
+                 dids=None, jumps=None, pp=None, ppp=None):
         self.a0 = a0
         self.T = T
         self.nstp = nstp
@@ -19,9 +20,17 @@ class Po():
         self.fdo = fdo          # fundamental domain orbit
         self.po = po            # projected orbit
 
+        self.pp = pp            # Poincare point
+        self.ppp = ppp          # Projected Poincare point
+
         self.dids = dids        # domain ids
         self.jumps = jumps      # domain jump index
         
+
+class Eq():
+    def __init__(self):
+        pass
+
 
 class KSReq():
     """
@@ -164,7 +173,7 @@ class KSReq():
         Evr = {'e': EqVr, 'tw': ReqVr}
         return Es, Ev, Evr
         
-    def loadPO(self, p, ppoIds=None, rpoIds=None, bases=None, x0=None):
+    def loadPO(self, p, ppoIds=[], rpoIds=[], bases=None, x0=None):
         """
         Load rpo and ppo and reduce the symmetry.
         If bases and orgin x0 are given, then also return the
@@ -187,13 +196,17 @@ class KSReq():
                 a0, T, nstp, r, s = KSreadPO(self.poFile, types[i], poId)
                 h = T / nstp
                 aa = self.ks.intg(a0, h, nstp, 5)
-                aar, ths = self.ks.redO2(aa, p, True)
+                aar, ths = self.ks.redSO2(aa, p, True)
                 dids = np.sign(aar[:, 2])
                 jumps = getJumpPts(dids)
-                borderIds, borderPts, start = getPoinc(aar, dids, jumps)
+                if dids[jumps[0]] == -1:
+                    first = 1
+                else:
+                    first = 0
+                borderPts = self.getPoinc(aar, jumps, first)
                 
                 po = Po(a0, T, nstp, r, s, so=aar, dids=dids,
-                        jumps=jumps)
+                        jumps=jumps, pp=borderPts)
                 if bases is not None:
                     po.po = aar.dot(bases.T) - x0
                 
@@ -201,6 +214,21 @@ class KSReq():
                     self.ppos.append(po)
                 else:
                     self.rpos.append(po)
+
+    def poPoincProject(self, bases, x0):
+        for i in range(len(self.ppos)):
+            self.ppos[i].ppp = (self.ppos[i].pp - x0).dot(bases.T)
+        for i in range(len(self.rpos)):
+            self.rpos[i].ppp = (self.rpos[i].pp - x0).dot(bases.T)
+
+    def savePoPoincProject(self):
+        ppo = []
+        rpo = []
+        for i in range(len(self.ppos)):
+            ppo.append(self.ppos[i].ppp)
+        for i in range(len(self.rpos)):
+            rpo.append(self.rpos[i].ppp)
+        np.savez_compressed('PoPoincare', ppo=ppo, rpo=rpo)
 
     def poFvPoinc(self, poType, poId, ptsId, p, ii, reflect=False):
         """
@@ -368,7 +396,7 @@ class KSReq():
 
         return x0, bases
 
-    def getPoinc(self, raa, dids, jumps):
+    def getPoinc(self, raa, jumps, first):
         """
         get the poincare intersection points. Poincare section is
         b_2 = 0 from negative to positive. Note it is very important to
@@ -386,18 +414,22 @@ class KSReq():
         borderPts : the corresponding points
         start : starting index from negative to positive
         """
-        borderIds = jumps
-        d1 = dids[jumps[0]]
-        if d1 == 1:      # first crossing is from positive to negative
-            borderIds[1::2] += 1
-            start = 1
-        else:            # first crossing is from negative to positive
-            borderIds[::2] += 1
-            start = 0
-
-        borderPts = raa[borderIds]
+        n = len(jumps)
+        borderPts = np.zeros((n, raa.shape[1]))
+        for i in range(n):
+            j = jumps[i]
+            if j < 0:
+                # interp1d works for every row
+                f = interp1d(raa[j-1:j+2, 2], raa[j-1:j+2].T, kind='quadratic')
+            else:
+                f = interp1d(raa[j:j+2, 2], raa[j:j+2].T, kind='linear')
+            borderPts[i] = f(0)
         
-        return borderIds, borderPts, start
+        for i in range(first, n, 2):
+            borderPts[i] = self.ks.Reflection(borderPts[i])
+
+        return borderPts
+
 
 ###############################################################################
 
@@ -408,7 +440,7 @@ if __name__ == '__main__':
     ksreq = KSReq(N, L, '../../data/ks22Reqx64.h5',
                   '../../data/ks22h001t120x64EV.h5', 1)
 
-    case = 19
+    case = 14
 
     if case == 10:
         """
@@ -443,30 +475,35 @@ if __name__ == '__main__':
         save the symbolic dynamcis
         """
         data = np.load('PoPoincare.npz')
-        borderPtsP = data['borderPtsP']
-        starts = data['starts']
-        M = len(borderPtsP)
+        ppo = data['ppo']
+        rpo = data['rpo']
 
-        ii = [0, 1, 2]
-        for k in range(100, 150):
+        po = rpo
+        poName = 'rpo'
+
+        for i in range(len(po)):
+            x, y, z = po[i][:, 0], po[i][:, 1], po[i][:, 2]
             fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
             ax.scatter(0, 0, 0, c='m', edgecolors='none', s=100, marker='^')
-            for i in range(M):
-                x, y, z = [borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
-                           borderPtsP[i][:, ii[2]]]
-                ax.scatter(x, y, z, c=[0, 0, 0, 0.2], marker='o', s=10,
-                           edgecolors='none')
-            x, y, z = [borderPtsP[k][:, ii[0]], borderPtsP[k][:, ii[1]],
-                       borderPtsP[k][:, ii[2]]]
-            si = starts[k]
-            for i in range(len(borderPtsP[k])):
-                t = (i + si) % 2 == 0
-                ax.scatter(x[i], y[i], z[i], c='r' if t else 'b',
-                           marker='o', s=70, edgecolors='none')
-                ax.text(x[i], y[i], z[i], str(i+1), fontsize=20, color='g')
-            s = 'ppo'+str(k+1-100)
-            ax3d(fig, ax, angle=[40, -120], save=True, name=s+'.png', title=s)
-        
+            for j in range(len(ppo)):
+                p = ppo[j]
+                ax.scatter(p[:, 0], p[:, 1], p[:, 2], c=[0, 0, 0, 0.2],
+                           marker='o', s=10, edgecolors='none')
+            for j in range(len(rpo)):
+                p = rpo[j]
+                ax.scatter(p[:, 0], p[:, 1], p[:, 2], c=[0, 0, 0, 0.2],
+                           marker='o',
+                           s=10, edgecolors='none')
+            ax.scatter(x[::2], y[::2], z[::2], c='r', marker='o', s=40,
+                       edgecolors='none')
+            ax.scatter(x[1::2], y[1::2], z[1::2], c='b', marker='o', s=40,
+                       edgecolors='none')
+            for j in range(po[i].shape[0]):
+                ax.text(x[j], y[j], z[j], str(j+1), fontsize=20, color='g')
+                s = poName + str(i+1)
+            # ax3d(fig, ax, angle=[20, -120], save=True, name=s+'.png', title=s)
+            ax3d(fig, ax, angle=[30, 180], save=True, name=s+'.png', title=s)
+            
     if case == 15:
         """
         visulaize the symmbolic dynamcis
@@ -636,41 +673,30 @@ if __name__ == '__main__':
         use the poincare section b2=0 and b2 from negative to positive
         """
         ksreq.loadPO(1, ppoIds=range(1, 101), rpoIds=range(1, 101))
-        M = len()
-        borderIds = []
-        borderPts = []
-        starts = []
-        borderNum = 0
-        for i in range(M):
-            ids, pts, st = ksreq.getPoinc(pos[i], poDom[i], poJumps[i])
-            borderIds.append(ids)
-            borderPts.append(pts)
-            starts.append(st)
-            borderNum += len(ids)
-
-        ptsId = borderIds[0][0]
-        fe, fv, rfv, bases = ksreq.poFvPoinc('rpo', 1, ptsId, 1, [0, 3, 4],
+       
+        # ptsId = ksreq.rpos[0].jumps[0]
+        # Ori = ksreq.rpos[0].pp[0]
+        # fe, fv, rfv, bases = ksreq.poFvPoinc('rpo', 1, ptsId, 1, [0, 3, 4],
+        #                                      reflect=True)
+        
+        ptsId = ksreq.rpos[1].jumps[1]
+        Ori = ksreq.rpos[1].pp[1]
+        fe, fv, rfv, bases = ksreq.poFvPoinc('rpo', 2, ptsId, 1, [0, 1, 4],
                                              reflect=False)
-        Ori = borderPts[0][0]
-        borderPtsP = []
-        for i in range(M):
-            p = (borderPts[i]-Ori).dot(bases.T)
-            borderPtsP.append(p)
 
-        ii = [0, 1, 2]
+        ksreq.poPoincProject(bases, Ori)
+
         fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
         ax.scatter(0, 0, 0, c='k', s=70, edgecolors='none')
-        for i in range(M):
-            x, y, z = [borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
-                       borderPtsP[i][:, ii[2]]]
-            ax.scatter(x, y, z, c='y' if i < 50 else 'y',
-                       marker='o' if i < 50 else 's',
+        for i in range(len(ksreq.ppos)):
+            p = ksreq.ppos[i].ppp
+            ax.scatter(p[:, 0], p[:, 1], p[:, 2], c='y', marker='o',
+                       s=20, edgecolors='none')
+        for i in range(len(ksreq.rpos)):
+            p = ksreq.rpos[i].ppp
+            ax.scatter(p[:, 0], p[:, 1], p[:, 2], c='y', marker='o',
                        s=20, edgecolors='none')
         ax3d(fig, ax)
-        i = 1
-        x, y, z = [borderPtsP[i][:, ii[0]], borderPtsP[i][:, ii[1]],
-                   borderPtsP[i][:, ii[2]]]
-        add3d(fig, ax, x, y, z)
         
         if False:
             trace = []
@@ -683,9 +709,6 @@ if __name__ == '__main__':
                                          mt='circle' if i < 50 else 'square'))
                 ptly3d(trace, 'PoPoincare', labs=['$v_1$', '$v_2$', '$v_3$'])
 
-        np.savez_compressed('bases', Ori=Ori, bases=bases)
-        np.savez_compressed('PoPoincare', borderPtsP=borderPtsP,
-                            starts=starts)
         if False:
             ii = [2, 6, 4]
             # ii = [1, 5, 3]
@@ -695,6 +718,9 @@ if __name__ == '__main__':
                 ax.scatter(borderPts[i][:, ii[0]], borderPts[i][:, ii[1]],
                            borderPts[i][:, ii[2]], c='k')
             ax3d(fig, ax)
+
+        np.savez_compressed('bases', Ori=Ori, bases=bases)
+        ksreq.savePoPoincProject()
 
     if case == 20:
         """

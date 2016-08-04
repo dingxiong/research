@@ -103,6 +103,8 @@ public:
     inline int calDimTan(int dimTan);
     void CGLInit();
     void changeOmega(double w);
+    void opticParam(const double delta, const double beta, const double D, 
+		    const double epsilon, const double mu, const double nu);
     void calCoe(const double h);
     void oneStep(double &du, const bool onlyOrbit);
     ArrayXXcd ZR(ArrayXcd &z);

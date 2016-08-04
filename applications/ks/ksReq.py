@@ -196,16 +196,15 @@ class KSReq():
                 a0, T, nstp, r, s = KSreadPO(self.poFile, types[i], poId)
                 h = T / nstp
                 aa = self.ks.intg(a0, h, nstp, 5)
-                aar, ths = self.ks.redSO2(aa, p, True)
-                dids = np.sign(aar[:, 2])
+                aar, dids, ths = self.ks.redO2f(aa, p)
                 jumps = getJumpPts(dids)
-                if dids[jumps[0]] == -1:
+                if dids[jumps[0]] == 1:
                     first = 1
                 else:
                     first = 0
                 borderPts = self.getPoinc(aar, jumps, first)
                 
-                po = Po(a0, T, nstp, r, s, so=aar, dids=dids,
+                po = Po(a0, T, nstp, r, s, fdo=aar, dids=dids,
                         jumps=jumps, pp=borderPts)
                 if bases is not None:
                     po.po = aar.dot(bases.T) - x0
@@ -414,20 +413,40 @@ class KSReq():
         borderPts : the corresponding points
         start : starting index from negative to positive
         """
-        n = len(jumps)
-        borderPts = np.zeros((n, raa.shape[1]))
-        for i in range(n):
-            j = jumps[i]
-            if j < 0:
-                # interp1d works for every row
-                f = interp1d(raa[j-1:j+2, 2], raa[j-1:j+2].T, kind='quadratic')
-            else:
-                f = interp1d(raa[j:j+2, 2], raa[j:j+2].T, kind='linear')
-            borderPts[i] = f(0)
-        
-        for i in range(first, n, 2):
-            borderPts[i] = self.ks.Reflection(borderPts[i])
+        case = 1
+        if case == 1:
+            """
+            Poincare section is the reflection border
+            """
+            n = len(jumps)
+            borderPts = np.zeros((n, raa.shape[1]))
+            # for i in range(n):
+            #     j = jumps[i]
+            #     if j < 0:
+            #         # interp1d works for every row
+            #         f = interp1d(raa[j-1:j+2, 2], raa[j-1:j+2].T, kind='quadratic')
+            #     else:
+            #         f = interp1d(raa[j:j+2, 2], raa[j:j+2].T, kind='linear')
+            #     borderPts[i] = f(0)
+            
+            for i in range(n):
+                j = jumps[i]
+                x1, x2 = raa[j], raa[j+1]
+                x1 = self.ks.Reflection(x1)
+                p = np.vstack((x1, x2))
+                f = interp1d(p[:, 2], p.T, kind='linear')
+                borderPts[i] = f(0)
 
+        if case == 2:
+            """
+            c_1 = 0.3 is the Poincare section
+            """
+            n = raa.shape[0]
+            borderPts = np.zeros((0, raa.shape[1]))
+            for i in range(n-1):
+                if raa[i, 6] < 0 and raa[i+1, 6] > 0:
+                    borderPts = np.vstack((borderPts, raa[i]))
+            
         return borderPts
 
 
@@ -440,7 +459,7 @@ if __name__ == '__main__':
     ksreq = KSReq(N, L, '../../data/ks22Reqx64.h5',
                   '../../data/ks22h001t120x64EV.h5', 1)
 
-    case = 14
+    case = 19
 
     if case == 10:
         """
@@ -698,16 +717,21 @@ if __name__ == '__main__':
                        s=20, edgecolors='none')
         ax3d(fig, ax)
         
-        if False:
+        if True:
             trace = []
-            trace.append(ptlyTrace3d(0, 0, 0, plotType=1, ms=7, mc='black'))
-            for i in range(M):
-                trace.append(ptlyTrace3d(borderPtsP[i][:, ii[0]],
-                                         borderPtsP[i][:, ii[1]],
-                                         borderPtsP[i][:, ii[2]],
+            trace.append(ptlyTrace3d([0], [0], [0], plotType=1, ms=7,
+                                     mc='black'))
+            for i in range(len(ksreq.ppos)):
+                p = ksreq.ppos[i].ppp
+                trace.append(ptlyTrace3d(p[:, 0], p[:, 1], p[:, 2],
                                          plotType=1, ms=2, mc='red',
-                                         mt='circle' if i < 50 else 'square'))
-                ptly3d(trace, 'PoPoincare', labs=['$v_1$', '$v_2$', '$v_3$'])
+                                         mt='circle'))
+            for i in range(len(ksreq.rpos)):
+                p = ksreq.rpos[i].ppp
+                trace.append(ptlyTrace3d(p[:, 0], p[:, 1], p[:, 2],
+                                         plotType=1, ms=2, mc='red',
+                                         mt='circle'))
+            ptly3d(trace, 'PoPoincare', labs=['$v_1$', '$v_2$', '$v_3$'])
 
         if False:
             ii = [2, 6, 4]
@@ -729,14 +753,12 @@ if __name__ == '__main__':
         """
         nn = 30
         aas, dom, jumps = ksreq.getMuEq('e', eId=1, vId=0, p=1, nn=nn, T=100)
-
-        poIds = [[], [1, 12]]
-        pos, poDom, poJumps = ksreq.loadPO(poIds, 1)
+        ksreq.loadPO(1, rpoIds=[1, 12])
         
         ii = [1, 5, 3]
         # ii = [2, 6, 4]
         spt = aas
-        sptPo = pos
+        sptPo = ksreq.rpos
         E2, E3 = ksreq.Eg['E2'], ksreq.Eg['E3']
 
         doProj = False
@@ -759,7 +781,7 @@ if __name__ == '__main__':
             ksreq.plotFundOrbit(ax, spt[i], jumps[i], ii)
         cs = ['r', 'b']
         for i in range(len(sptPo)):
-            ksreq.plotFundOrbit(ax, sptPo[i], poJumps[i], ii,
+            ksreq.plotFundOrbit(ax, sptPo[i].fdo, sptPo[i].jumps, ii,
                                 c='k' if i > 1 else cs[i],
                                 alpha=1, lw=1.5)
         #ax.plot(E2[:, ii[0]], E2[:, ii[1]], E2[:, ii[2]], c='c')

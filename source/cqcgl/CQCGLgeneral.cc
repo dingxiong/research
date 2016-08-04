@@ -129,6 +129,24 @@ void CQCGLgeneral::changeOmega(double w){
 }
 
 /**
+ * use the form of CQCGL in the optical form
+ */
+void CQCGLgeneral::opticParam(const double delta, const double beta, const double D, 
+			      const double epsilon, const double mu, const double nu){
+    Mu = delta;
+    Dr = beta;
+    Di = D/2;
+    Br = epsilon;
+    Bi = 1;
+    Gr = mu;
+    Gi = nu;
+
+    L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square(); 
+    L.segment(Nplus, Nalias).setZero();
+}
+
+
+/**
  * @brief calculate the coefficients of ETDRK4 or Krogstad
  */
 void CQCGLgeneral::calCoe(const double h){

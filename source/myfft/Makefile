@@ -7,11 +7,6 @@ EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 
 CFLAGS = -std=c++0x 
 
-FFTW_THREADS = no
-ifeq ($(FFTW_THREADS), yes)
-CFLAGS += -DTFFT
-endif
-
 CLEANUP = no
 ifeq ($(CLEANUP), yes)
 CFLAGS += -DCLEAN

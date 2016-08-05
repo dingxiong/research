@@ -32,9 +32,9 @@ using Eigen::PartialPivLU;
 using Eigen::Map; using Eigen::Ref;
 
 //////////////////////////////////////////////////////////////////////
-//                       class CQCGLgeneral                              //
+//                       class CQCGL1d                              //
 //////////////////////////////////////////////////////////////////////
-class CQCGLgeneral {
+class CQCGL1d {
   
 public:
     typedef std::complex<double> dcp;
@@ -86,22 +86,24 @@ public:
     ////////////////////////////////////////////////////////////
     //         constructor, destructor, copy assignment.      //
     ////////////////////////////////////////////////////////////
-    CQCGLgeneral(int N, double d,
-	    double Mu, double Dr, double Di,
-	    double Br, double Bi, double Gr,
-	    double Gi,  
-	    int dimTan, int threadNum);
-    ~CQCGLgeneral();
-    CQCGLgeneral & operator=(const CQCGLgeneral &x);
+    CQCGL1d(int N, double d,
+	    double Mu, double Dr, double Di, double Br, double Bi, 
+	    double Gr, double Gi, int dimTan);
+    CQCGL1d(int N, double d, 
+	    double b, double c, double dr, double di, 
+	    int dimTan);
+    CQCGL1d(int N, double d,
+	    double delta, double beta, double D, double epsilon,
+	    double mu, double nu, int dimTan);
+    ~CQCGL1d();
+    CQCGL1d & operator=(const CQCGL1d &x);
 
     ////////////////////////////////////////////////////////////
     //                    member functions.                   //
     ////////////////////////////////////////////////////////////
 
     //============================================================    
-    inline int calNe();
-    inline int calDimTan(int dimTan);
-    void CGLInit();
+    void CGLInit(int dimTan);
     void changeOmega(double w);
     void opticParam(const double delta, const double beta, const double D, 
 		    const double epsilon, const double mu, const double nu);
@@ -220,7 +222,12 @@ public:
 	    const bool doesUseMyCG = true, const bool doesPrint = true);
     std::vector<double>
     optThPhi(const ArrayXd &a0);
-
+    
+    std::tuple<ArrayXd, double, double>
+    planeWave(int k, bool isPositve);
+    VectorXcd planeWaveStabE(int k, bool isPositve);
+    std::pair<VectorXcd, MatrixXcd>
+    planeWaveStabEV(int k, bool isPositve);
 };
 
 

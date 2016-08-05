@@ -13,7 +13,7 @@ t = int
 endif
 
 ifeq ($(t), int)		# for 1d integration
-SOURCE = CQCGL.cc CQCGLgeneral.cc 
+SOURCE = CQCGL1d.cc 
 
 else ifeq ($(t), rpo)		# for RPO code
 SOURCE = CQCGLRPO.cc 

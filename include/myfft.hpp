@@ -35,23 +35,25 @@ namespace MyFFT {
     public:
     
 	typedef std::complex<double> dcp;
-    
-	const int N;
-	const int M;
-	const int threadNum;
-    
+	
+	int N;
+	int M;
+	bool hasInit = false;
+	
 	Eigen::Map<Eigen::ArrayXXcd> v1, v2, v3; // mapping for c1, c2, c3 respectively
-
+	
 	//////////////////////////////////////////////////////////////////////
-	// member functions                           
+	// member functions	
+	FFT(const int N, const int M);
+	FFT();
+	~FFT();
+	void init(const int N, const int M);
 
-	FFT(const int N, const int M, const int threadNum = 4);
-	~FFT();    
-	void fft();    
-	void ifft();    
-    
+	void fft();
+	void ifft();
+	
     };
-
+    
     //////////////////////////////////////////////////////////////////////////////////////////
     //                                    RFFT                                              //
     //////////////////////////////////////////////////////////////////////////////////////////

@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 #include <cstdio>
 
-#include "CQCGL.hpp"
+#include "CQCGL1d.hpp"
 #include "myBoostPython.hpp"
 
 using namespace std;
@@ -14,14 +14,24 @@ namespace bn = boost::numpy;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class pyCQCGL : public CQCGL {
+class pyCQCGL1d : public CQCGL1d {
   
 public:
 
-    pyCQCGL(int N, double d,
-	    double b, double c, double dr, double di,
-	    int dimTan, int threadNum) :
-	CQCGL(N, d, b, c, dr, di, dimTan, threadNum) {}
+    pyCQCGL1d(int N, double d,
+	      double Mu, double Dr, double Di, double Br, double Bi, 
+	      double Gr, double Gi, int dimTan):
+	CQCGL1d(N, d, Mu, Dr, Di, Br, Bi, Gr, Gi, dimTan) {}
+    
+    pyCQCGL1d(int N, double d,
+	      double b, double c, double dr, double di,
+	      int dimTan) :
+	CQCGL1d(N, d, b, c, dr, di, dimTan) {}
+
+    pyCQCGL1d(int N, double d,
+	      double delta, double beta, double D, double epsilon,
+	      double mu, double nu, int dimTan):
+	CQCGL1d(N, d, delta, beta, D, epsilon, mu, nu, dimTan) {}
 
     bn::ndarray PYTs(){
 	return copy2bn(Ts);
@@ -353,88 +363,88 @@ public:
 
 
 
-BOOST_PYTHON_MODULE(py_CQCGL_threads) {
+BOOST_PYTHON_MODULE(py_CQCGL1d) {
     bn::initialize();
 
     // must provide the constructor
-    bp::class_<CQCGL>("CQCGL", bp::init<
-		      int, double, 
-		      double, double, double, double, 
-		      int, int>())
+    bp::class_<CQCGL1d>("CQCGL1d", bp::init<
+			int, double, 
+			double, double, double, double, 
+			int>())
 	;
     
     
-    bp::class_<pyCQCGL, bp::bases<CQCGL> >("pyCQCGL", bp::init<
-					   int, double, 
-					   double, double, double, double,
-					   int, int >())
-	.def_readonly("N", &pyCQCGL::N)
-	.def_readonly("d", &pyCQCGL::d)
-	.def_readonly("Mu", &pyCQCGL::Mu)
-	.def_readonly("Br", &pyCQCGL::Br)
-	.def_readonly("Bi", &pyCQCGL::Bi)
-	.def_readonly("Dr", &pyCQCGL::Dr)
-	.def_readonly("Di", &pyCQCGL::Di)
-	.def_readonly("Gr", &pyCQCGL::Gr)
-	.def_readonly("Gi", &pyCQCGL::Gi)
-	.def_readonly("Ndim", &pyCQCGL::Ndim)
-	.def_readonly("Ne", &pyCQCGL::Ne)
-	.def_readonly("b", &pyCQCGL::b)
-	.def_readonly("c", &pyCQCGL::c)
-	.def_readonly("dr", &pyCQCGL::dr)
-	.def_readonly("di", &pyCQCGL::di)
-	.def_readonly("Omega", &pyCQCGL::Omega)
-	.def_readwrite("rtol", &pyCQCGL::rtol)
-	.def_readwrite("nu", &pyCQCGL::nu)
-	.def_readwrite("mumax", &pyCQCGL::mumax)
-	.def_readwrite("mumin", &pyCQCGL::mumin)
-	.def_readwrite("mue", &pyCQCGL::mue)
-	.def_readwrite("muc", &pyCQCGL::muc)
-	.def_readwrite("NCalCoe", &pyCQCGL::NCalCoe)
-	.def_readwrite("NReject", &pyCQCGL::NReject)
-	.def_readwrite("NCallF", &pyCQCGL::NCallF)
-	.def_readwrite("NSteps", &pyCQCGL::NSteps)
-	.def_readwrite("Method", &pyCQCGL::Method)
-	.def("Ts", &pyCQCGL::PYTs)
-	.def("hs", &pyCQCGL::PYhs)
-	.def("lte", &pyCQCGL::PYlte)
-	.def("K", &pyCQCGL::PYK)
-	.def("L", &pyCQCGL::PYL)
+    bp::class_<pyCQCGL1d, bp::bases<CQCGL1d> >("pyCQCGL1d", bp::init<
+					       int, double, 
+					       double, double, double, double,
+					       int >())
+	.def(bp::init<int, double, double, double, double, double, double, 
+	     double, double, int>())
+	.def(bp::init<int, double, double, double, double, double,
+	     double, double, int>())
+	.def_readonly("N", &pyCQCGL1d::N)
+	.def_readonly("d", &pyCQCGL1d::d)
+	.def_readonly("Mu", &pyCQCGL1d::Mu)
+	.def_readonly("Br", &pyCQCGL1d::Br)
+	.def_readonly("Bi", &pyCQCGL1d::Bi)
+	.def_readonly("Dr", &pyCQCGL1d::Dr)
+	.def_readonly("Di", &pyCQCGL1d::Di)
+	.def_readonly("Gr", &pyCQCGL1d::Gr)
+	.def_readonly("Gi", &pyCQCGL1d::Gi)
+	.def_readonly("Ndim", &pyCQCGL1d::Ndim)
+	.def_readonly("Ne", &pyCQCGL1d::Ne)
+	.def_readonly("Omega", &pyCQCGL1d::Omega)
+	.def_readwrite("rtol", &pyCQCGL1d::rtol)
+	.def_readwrite("nu", &pyCQCGL1d::nu)
+	.def_readwrite("mumax", &pyCQCGL1d::mumax)
+	.def_readwrite("mumin", &pyCQCGL1d::mumin)
+	.def_readwrite("mue", &pyCQCGL1d::mue)
+	.def_readwrite("muc", &pyCQCGL1d::muc)
+	.def_readwrite("NCalCoe", &pyCQCGL1d::NCalCoe)
+	.def_readwrite("NReject", &pyCQCGL1d::NReject)
+	.def_readwrite("NCallF", &pyCQCGL1d::NCallF)
+	.def_readwrite("NSteps", &pyCQCGL1d::NSteps)
+	.def_readwrite("Method", &pyCQCGL1d::Method)
+	.def("Ts", &pyCQCGL1d::PYTs)
+	.def("hs", &pyCQCGL1d::PYhs)
+	.def("lte", &pyCQCGL1d::PYlte)
+	.def("K", &pyCQCGL1d::PYK)
+	.def("L", &pyCQCGL1d::PYL)
 	
-	.def("changeOmega", &pyCQCGL::changeOmega)
-	.def("intg", &pyCQCGL::PYintg)
-	.def("intgj", &pyCQCGL::PYintgj)
-	.def("aintg", &pyCQCGL::PYaintg)
-	.def("aintgj", &pyCQCGL::PYaintgj)
-	.def("intgv", &pyCQCGL::PYintgv)
-	.def("aintgv", &pyCQCGL::PYaintgv)
-	.def("velocity", &pyCQCGL::PYvelocity)
-	.def("velSlice", &pyCQCGL::PYvelSlice)
-	.def("velPhase", &pyCQCGL::PYvelPhase)
-	.def("velocityReq", &pyCQCGL::PYvelocityReq)
-	.def("Fourier2Config", &pyCQCGL::PYFourier2Config)
-	.def("Config2Fourier", &pyCQCGL::PYConfig2Fourier)
-	.def("Fourier2ConfigMag", &pyCQCGL::PYFourier2ConfigMag)
-	.def("Fourier2Phase", &pyCQCGL::PYFourier2Phase)
-	.def("orbit2sliceWrap", &pyCQCGL::PYorbit2sliceWrap)
-	.def("orbit2slice", &pyCQCGL::PYorbit2slice)
-	.def("stab", &pyCQCGL::PYstab)
-	.def("stabReq", &pyCQCGL::PYstabReq)
-	.def("reflect", &pyCQCGL::PYreflect)
-	.def("reduceReflection", &pyCQCGL::PYreduceReflection)
-	.def("refGradMat", &pyCQCGL::PYrefGradMat)
-	.def("reflectVe", &pyCQCGL::PYreflectVe)
-	.def("reflectVeAll", &pyCQCGL::PYreflectVeAll)
-	.def("ve2slice", &pyCQCGL::PYve2slice)
-	.def("reduceAllSymmetries", &pyCQCGL::PYreduceAllSymmetries)
-	.def("reduceVe", &pyCQCGL::PYreduceVe)
-	.def("transRotate", &pyCQCGL::PYtransRotate) 
-	.def("transTangent", &pyCQCGL::PYtransTangent)
-	.def("phaseRotate", &pyCQCGL::PYphaseRotate)
-	.def("phaseTangent", &pyCQCGL::PYphaseTangent)
-	.def("Rotate", &pyCQCGL::PYRotate)
-	.def("rotateOrbit", &pyCQCGL::PYrotateOrbit)
-	.def("C2R", &pyCQCGL::PYC2R)
+	.def("changeOmega", &pyCQCGL1d::changeOmega)
+	.def("intg", &pyCQCGL1d::PYintg)
+	.def("intgj", &pyCQCGL1d::PYintgj)
+	.def("aintg", &pyCQCGL1d::PYaintg)
+	.def("aintgj", &pyCQCGL1d::PYaintgj)
+	.def("intgv", &pyCQCGL1d::PYintgv)
+	.def("aintgv", &pyCQCGL1d::PYaintgv)
+	.def("velocity", &pyCQCGL1d::PYvelocity)
+	.def("velSlice", &pyCQCGL1d::PYvelSlice)
+	.def("velPhase", &pyCQCGL1d::PYvelPhase)
+	.def("velocityReq", &pyCQCGL1d::PYvelocityReq)
+	.def("Fourier2Config", &pyCQCGL1d::PYFourier2Config)
+	.def("Config2Fourier", &pyCQCGL1d::PYConfig2Fourier)
+	.def("Fourier2ConfigMag", &pyCQCGL1d::PYFourier2ConfigMag)
+	.def("Fourier2Phase", &pyCQCGL1d::PYFourier2Phase)
+	.def("orbit2sliceWrap", &pyCQCGL1d::PYorbit2sliceWrap)
+	.def("orbit2slice", &pyCQCGL1d::PYorbit2slice)
+	.def("stab", &pyCQCGL1d::PYstab)
+	.def("stabReq", &pyCQCGL1d::PYstabReq)
+	.def("reflect", &pyCQCGL1d::PYreflect)
+	.def("reduceReflection", &pyCQCGL1d::PYreduceReflection)
+	.def("refGradMat", &pyCQCGL1d::PYrefGradMat)
+	.def("reflectVe", &pyCQCGL1d::PYreflectVe)
+	.def("reflectVeAll", &pyCQCGL1d::PYreflectVeAll)
+	.def("ve2slice", &pyCQCGL1d::PYve2slice)
+	.def("reduceAllSymmetries", &pyCQCGL1d::PYreduceAllSymmetries)
+	.def("reduceVe", &pyCQCGL1d::PYreduceVe)
+	.def("transRotate", &pyCQCGL1d::PYtransRotate) 
+	.def("transTangent", &pyCQCGL1d::PYtransTangent)
+	.def("phaseRotate", &pyCQCGL1d::PYphaseRotate)
+	.def("phaseTangent", &pyCQCGL1d::PYphaseTangent)
+	.def("Rotate", &pyCQCGL1d::PYRotate)
+	.def("rotateOrbit", &pyCQCGL1d::PYrotateOrbit)
+	.def("C2R", &pyCQCGL1d::PYC2R)
 	;
 
 }

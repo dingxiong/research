@@ -41,26 +41,11 @@ lib dense : : <name>denseRoutines <file>$(RESH)/lib/libdenseRoutines.so ;
 lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
 lib ped : : <name>iterMethod <file>$(RESH)/lib/libped.so ;
 lib myfft : : <name>myfft_clean <file>$(RESH)/lib/libmyfft_clean.so ;
-lib myfft_threads : : <name>myfft_clean_threads <file>$(RESH)/lib/libmyfft_clean_threads.so ;
 
 
-choice = 2 ;
-
-if $(choice) = 1 {		# single thread case
-  python-extension py_CQCGL : py_CQCGL.cc np sparse dense fftw3 iter ped $(RESH)/source/myfft/myfft.cc $(RESH)/source/cqcgl/CQCGLgeneral.cc $(RESH)/source/cqcgl/CQCGL.cc
+python-extension py_CQCGL1d : py_CQCGL1d.cc np sparse dense fftw3 iter ped $(RESH)/source/myfft/myfft.cc $(RESH)/source/cqcgl/CQCGL1d.cc 
   : <variant>release_assert <optimization>speed
   : <link>shared <warnings>off <cxxflags>"-std=c++11 -DCLEAN" 
   ;
 
-  install py_extension : py_CQCGL : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
- 
-}
-
-else if $(choice) = 2 {		# multi fftw threads case
-  python-extension py_CQCGL_threads : py_CQCGL.cc np sparse dense fftw3 fftw3_threads iter ped $(RESH)/source/myfft/myfft.cc $(RESH)/source/cqcgl/CQCGLgeneral.cc $(RESH)/source/cqcgl/CQCGL.cc
-  : <variant>release_assert <optimization>speed 
-  : <link>shared <warnings>off <cxxflags>"-std=c++11 -DCLEAN -DTFFT" 
-  ;
-  
-  install py_extension : py_CQCGL_threads : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;
-}
+  install py_extension : py_CQCGL1d : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;

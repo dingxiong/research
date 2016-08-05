@@ -10,22 +10,10 @@ namespace MyFFT {
     //////////////////////////////////////////////////////////////////////////////////////////
     //                                   1d  FFT                                            //
     //////////////////////////////////////////////////////////////////////////////////////////
-
-    FFT::FFT(const int N, const int M, const int threadNum) : 
-	N(N), M(M), threadNum(threadNum),
-	v1(NULL, 0, 0), v2(NULL, 0, 0), v3(NULL, 0, 0)
-    {
-	// only the first instance do some initialization
-	if(++NumOfInstance == 1){
-#ifdef TFFT  // mutlithread fft.
-	    if(!fftw_init_threads()){
-		fprintf(stderr, "error create MultiFFT.\n");
-		exit(1);
-	    }
-	    // fftw_plan_with_nthreads(omp_get_max_threads());
-	    fftw_plan_with_nthreads(threadNum);    
-#endif	/* TFFT */
-	}
+    
+    void FFT::init(const int N, const int M){
+	this-> N = N;
+	this-> M = M;
 
 	if(M > 0){
 	    // initialize fft/ifft plan
@@ -36,7 +24,7 @@ namespace MyFFT {
 	    new (&v1) Eigen::Map<Eigen::ArrayXXcd>( (dcp*)&(c1[0][0]), N, M );
 	    new (&v2) Eigen::Map<Eigen::ArrayXXcd>( (dcp*)&(c2[0][0]), N, M );
 	    new (&v3) Eigen::Map<Eigen::ArrayXXcd>( (dcp*)&(c3[0][0]), N, M );
-
+		
 	    if (1 == M){
 		p = fftw_plan_dft_1d(N, c2, c3, FFTW_FORWARD, FFTW_MEASURE);
 		rp = fftw_plan_dft_1d(N, c1, c2, FFTW_BACKWARD, FFTW_MEASURE);
@@ -47,13 +35,20 @@ namespace MyFFT {
 		rp = fftw_plan_many_dft(1, n, M, c1, n, 1, N,
 					c2, n, 1, N, FFTW_BACKWARD, FFTW_MEASURE);
 	    }
+
+	    hasInit = true;
+	    NumOfInstance++;
 	}
-	
     }
+    
+    FFT::FFT(const int N, const int M) : N(N), M(M), v1(NULL, 0, 0), v2(NULL, 0, 0), v3(NULL, 0, 0){
+	init(N, M);
+    }
+    
+    FFT::FFT() : v1(NULL, 0, 0), v2(NULL, 0, 0), v3(NULL, 0, 0){}
 
     FFT::~FFT(){
-
-	if(M > 0){
+	if (hasInit && M > 0){
 	    fftw_destroy_plan(p);
 	    fftw_destroy_plan(rp);
 	    fftw_free(c1);
@@ -70,12 +65,8 @@ namespace MyFFT {
 #ifdef CLEAN
 	    fftw_cleanup();
 #endif	/* CLEAN */
-#ifdef TFFT
-	    fftw_cleanup_threads();
-#endif	/* TFFT */
 	}
 	
-
     }
 
     void FFT::fft() {

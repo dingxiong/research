@@ -1,4 +1,4 @@
-from py_CQCGL_threads import *
+from py_CQCGL1d import *
 from personalFunctions import *
 
 case = 20
@@ -30,7 +30,7 @@ if case == 20:
     d = 30
     di = 0.06
 
-    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, 1, 4)
+    cgl = pyCQCGL1d(N, d, 4.0, 0.8, 0.01, di, -1)
     # cgl.changeOmega(-176.67504941219335)
 
     Ndim = cgl.Ndim

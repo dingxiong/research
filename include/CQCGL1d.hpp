@@ -105,6 +105,7 @@ public:
     //============================================================    
     void CGLInit(int dimTan);
     void changeOmega(double w);
+    void changeMu(double Mu);
     void opticParam(const double delta, const double beta, const double D, 
 		    const double epsilon, const double mu, const double nu);
     void calCoe(const double h);

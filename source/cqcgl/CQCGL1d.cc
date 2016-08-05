@@ -102,7 +102,7 @@ void CQCGL1d::CGLInit(int dimTan){
       
     QK = 2*M_PI/d * K; 
     L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square(); 
-    L.segment(Nplus, Nalias) = ArrayXcd::Zero(Nalias); 
+    L.segment(Nplus, Nalias).setZero();
 
     for (int i = 0; i < 5; i++) {
 	F[i].init(N, 1);
@@ -113,8 +113,15 @@ void CQCGL1d::CGLInit(int dimTan){
 void CQCGL1d::changeOmega(double w){
     Omega = w;
     L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square();
-    L.segment(Nplus, Nalias) = ArrayXcd::Zero(Nalias);
+    L.segment(Nplus, Nalias).setZero();
 }
+
+void CQCGL1d::changeMu(double Mu){
+    this->Mu = Mu;
+    L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square();
+    L.segment(Nplus, Nalias).setZero();
+}
+
 
 /**
  * use the form of CQCGL in the optical form
@@ -495,10 +502,10 @@ CQCGL1d::aintgv(const ArrayXXd &a0, const ArrayXXd &v, const double h,
  */
 void CQCGL1d::dealias(const int k, const bool onlyOrbit){
     if (onlyOrbit) {
-	F[k].v3.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, F[k].v3.cols());
+	F[k].v3.middleRows(Nplus, Nalias).setZero();
     }
     else {
-	JF[k].v3.middleRows(Nplus, Nalias) = ArrayXXcd::Zero(Nalias, JF[k].v3.cols());
+	JF[k].v3.middleRows(Nplus, Nalias).setZero();
     }
 }
 

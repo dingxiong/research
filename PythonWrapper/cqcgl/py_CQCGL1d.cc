@@ -412,6 +412,7 @@ BOOST_PYTHON_MODULE(py_CQCGL1d) {
 	.def("L", &pyCQCGL1d::PYL)
 	
 	.def("changeOmega", &pyCQCGL1d::changeOmega)
+	.def("changeMu", &pyCQCGL1d::changeMu)
 	.def("intg", &pyCQCGL1d::PYintg)
 	.def("intgj", &pyCQCGL1d::PYintgj)
 	.def("aintg", &pyCQCGL1d::PYaintg)

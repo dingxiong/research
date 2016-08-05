@@ -29,21 +29,21 @@ if case == 20:
     N = 1024
     d = 30
     di = 0.06
-
+    
     cgl = pyCQCGL1d(N, d, 4.0, 0.8, 0.01, di, -1)
     # cgl.changeOmega(-176.67504941219335)
-
+    
     Ndim = cgl.Ndim
     A0 = 3*centerRand(N, 0.2, True)
     a0 = cgl.Config2Fourier(A0)
-
+    
     t = time()
     # aa, daa = cgl.intgj(a0, 0.0001, 100, 100)
     aa = cgl.intg(a0, 0.0001, 40000, 1)
     # x = cgl.intgv(a0, rand(Ndim), 0.001, 100)
-    # plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
     print time() - t
-
+    
 if case == 30:
     """
     test time step adaptive integration routines

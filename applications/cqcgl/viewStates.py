@@ -1,9 +1,7 @@
-from py_CQCGL_threads import *
+from py_CQCGL1d import *
 from personalFunctions import *
 
-
-case = 2
-
+case = 70
 
 if case == 1:
     """
@@ -50,8 +48,9 @@ if case == 1:
     aaTilde5 = cgl.reduceReflection(aaHat5)
     plotConfigSpace(cgl.Fourier2Config(aaTilde5), [0, d, 0, nstp*h])
 
-# view relative equlibria
+
 if case == 2:
+    # view relative equlibria
     N = 1024
     d = 30
     di = 0.06
@@ -170,4 +169,48 @@ if case == 5:
         # plot1dfig(aa[:, 0])
         x.append(aa)
 
+###############################################################################
+if case == 60:
+    """
+    Try to reproduce the result of  Descalzi.
+    =======
+    O. Descalzi and H. R. Brand, “Transition from modulated to exploding
+    dissipative solitons: Hysteresis, dynamics, and analytic aspects”, Phys.
+    Rev. E 82, 026203 (2010)
+    ======
+    But I failed to get the f1 and f1-f2 region and their hysteretic
+    transition.
+    """
+    N = 1024
+    d = 30
+    h = 1e-4
 
+    Mu = -1
+    cgl = pyCQCGL1d(N, d, Mu, 0.125, 0.5, 1, 1, -0.1, -0.6, -1)
+
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+    a0 = cgl.intg(a0, h, np.int(50/h), np.int(50/h))[-1]
+
+    # stable soliton
+    T = 50
+    aa = cgl.intg(a0, h, np.int(T/h), 10)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+
+    # oscillating soltion with one frequency
+    cgl.changeMu(-0.21)
+    T = 50
+    aa = cgl.intg(aa[-1], h, np.int(5/h), np.int(5/h))
+    aa = cgl.intg(aa[-1], h, np.int(T/h), 10)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+
+    # oscillating soltion with two frequency
+    cgl.changeMu(-0.19)
+    T = 100
+    aa = cgl.intg(aa[-1], h, np.int(5/h), np.int(5/h))
+    aa = cgl.intg(aa[-1], h, np.int(T/h), 100)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+
+    # aa = cgl.intg(a0, 0.01, np.int(50/0.01), 10)
+    # plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])

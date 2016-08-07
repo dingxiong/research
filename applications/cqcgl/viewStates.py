@@ -174,8 +174,8 @@ if case == 60:
     """
     Try to reproduce the result of  Descalzi.
     =======
-    O. Descalzi and H. R. Brand, “Transition from modulated to exploding
-    dissipative solitons: Hysteresis, dynamics, and analytic aspects”, Phys.
+    O. Descalzi and H. R. Brand, "Transition from modulated to exploding
+    dissipative solitons: Hysteresis, dynamics, and analytic aspects", Phys.
     Rev. E 82, 026203 (2010)
     ======
     But I failed to get the f1 and f1-f2 region and their hysteretic
@@ -214,3 +214,53 @@ if case == 60:
 
     # aa = cgl.intg(a0, 0.01, np.int(50/0.01), 10)
     # plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+
+if case == 70:
+    """
+    Try to reproduce AKhmediev's paper
+    ======
+    Strongly asymmetric soliton explosions
+    N Akhmediev, JM Soto-Crespo - Physical Review E, 2004 - APS
+    =====
+    """
+    N = 1024
+    d = 30
+    h = 1e-4
+
+    nu = -0.4
+    cgl = pyCQCGL1d(N, d, -0.8, 0.15, 1, 1.4, -0.1, nu, -1)
+      
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+    a0 = cgl.intg(a0, h, np.int(50/h), np.int(50/h))[-1]
+
+    T = 500
+    aa = cgl.intg(a0, h, np.int(T/h), 100)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+
+if case == 80:
+    """
+    Try to reproduce results of Deissler and Brand
+    ======
+    "Periodic, quasiperiodic, and chaotic localized solutions of the quintic
+    complex Ginzburg-Landau equation"
+    RJ Deissler, HR Brand - Physical review letters, 1994 - APS
+    ======
+    """
+    N = 1024
+    d = 120
+    h = 1e-3
+
+    Dr = 0.9
+    
+    cgl = pyCQCGL1d(N, d, -0.1, Dr, -1.1, 3, 1, -2.75, 1, -1)
+
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.1, True)
+    a0 = cgl.Config2Fourier(A0)
+    a0 = cgl.intg(a0, h, np.int(100/h), np.int(100/h))[-1]
+
+    T = 250
+    aa = cgl.intg(a0, h, np.int(T/h), 20)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])

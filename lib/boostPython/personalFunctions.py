@@ -5,6 +5,7 @@ from time import time
 import h5py
 from pylab import *
 import numpy as np
+from numpy.random import rand
 from scipy.spatial.distance import pdist, cdist, squareform
 import numpy.linalg as LA
 import matplotlib.pyplot as plt
@@ -353,7 +354,7 @@ def plotConfigSpaceFromFourier(cgl, aa, ext, tt=None, yls=None,
                                barTicks=[2, 7],
                                colortype='jet',
                                percent='5%', size=[4, 5],
-                               axisLabelSize=20, tickSize=None,
+                               axisLabelSize=25, tickSize=15,
                                save=False, name='out.png'):
     """
     plot the configuration from Fourier mode

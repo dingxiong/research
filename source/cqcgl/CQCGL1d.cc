@@ -636,6 +636,40 @@ ArrayXXd CQCGL1d::Fourier2Phase(const Ref<const ArrayXXd> &aa){
     return calPhase(Fourier2Config(aa));
 }
 
+/**
+ * @brief calculate the mean energy density
+ * \frac{\int |A|^2  dx}{\int dx} = 1/N \sum |A_i|^2 = 1/N^2 \sum |a_i|^2
+ * = 1/N^2 \sum (a_r^2 + a_i^2)
+ */
+VectorXd 
+CQCGL1d::calQ(const Ref<const ArrayXXd> &aa){
+    const int n = aa.cols();
+    VectorXd Q(n);
+    for (int i = 0; i < n; i++){
+	Q(i) = aa.col(i).matrix().squaredNorm() / (N*N);
+    }
+
+    return Q;
+}
+
+VectorXd
+CQCGL1d::calMoment(const Ref<const ArrayXXd> &aa, const int p){
+    const int n = aa.cols();
+    VectorXd mom(n);
+    
+    ArrayXd x = ArrayXd::LinSpaced(N, 0, N-1) * d / N;
+    ArrayXd xp = x;
+    for(int i = 0; i < p-1; i++) xp *= x;
+
+    ArrayXXcd AA = Fourier2Config(aa);
+    for (int i = 0; i < n; i++){
+	ArrayXd A2 = (AA.col(i) * AA.col(i).conjugate()).real();
+	mom(i) = (A2 * xp).sum() / A2.sum();
+    }
+
+    return mom;
+}
+
 
 /* -------------------------------------------------- */
 /* --------            velocity field     ----------- */

@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 70
+case = 90
 
 if case == 1:
     """
@@ -264,3 +264,47 @@ if case == 80:
     T = 250
     aa = cgl.intg(a0, h, np.int(T/h), 20)
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+
+if case == 90:
+    """
+    Try to reproduce results in
+    ======
+    Creeping solitons in dissipative systems and their bifurcations
+    Wonkeun Chang, Adrian Ankiewicz, Nail Akhmediev, and J. M. Soto-Crespo
+    Phys. Rev. E 76, 016607 - Published 26 July 2007
+    ======
+    """
+    N = 1024
+    d = 60
+    h = 1e-3
+
+    epsilon = 0.835
+    cgl = pyCQCGL1d(N, d, -0.1, 0.08, 1, epsilon, -0.11, -0.08, -1)
+      
+    if False:
+        Ndim = cgl.Ndim
+        A0 = 3*centerRand(N, 0.2, True)
+        a0 = cgl.Config2Fourier(A0)
+        a0 = cgl.intg(a0, h, np.int(50/h), np.int(50/h))[-1]
+
+        T = 300
+        aa = cgl.intg(a0, h, np.int(T/h), 100)
+        Q = cgl.calQ(aa)
+        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+        plot1dfig(Q)
+        np.save('a0', aa[-1])
+
+    cgl.Br = 0.844
+    a0 = load('a0.npy')
+    a0 = cgl.intg(a0, h, np.int(100/h), np.int(100/h))[-1]
+    T = 500
+    aa = cgl.intg(a0, h, np.int(T/h), 100)
+    Q = cgl.calQ(aa)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+    plot1dfig(Q)
+    
+    
+    
+    
+    
+    

@@ -175,6 +175,24 @@ public:
 	return copy2bn( Fourier2Phase(tmpaa) );
     }
     
+    bn::ndarray PYcalQ(const bn::ndarray &aa){
+	int m, n;
+	getDims(aa, m, n);
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	return copy2bn(calQ(tmpaa));
+    }
+    
+    bn::ndarray PYcalMoment(const bn::ndarray &aa, const int p){
+	int m, n;
+	getDims(aa, m, n);
+	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
+	return copy2bn(calMoment(tmpaa, p));
+    }
+    
+    bn::ndarray PYcalMoment2(const bn::ndarray &aa){
+	return PYcalMoment(aa, 1);
+    }
+    
     /* orbit2slice */
     bp::tuple PYorbit2slice(const bn::ndarray &aa){
 	int m, n;
@@ -385,12 +403,12 @@ BOOST_PYTHON_MODULE(py_CQCGL1d) {
 	.def_readonly("N", &pyCQCGL1d::N)
 	.def_readonly("d", &pyCQCGL1d::d)
 	.def_readonly("Mu", &pyCQCGL1d::Mu)
-	.def_readonly("Br", &pyCQCGL1d::Br)
-	.def_readonly("Bi", &pyCQCGL1d::Bi)
+	.def_readwrite("Br", &pyCQCGL1d::Br)
+	.def_readwrite("Bi", &pyCQCGL1d::Bi)
 	.def_readonly("Dr", &pyCQCGL1d::Dr)
 	.def_readonly("Di", &pyCQCGL1d::Di)
-	.def_readonly("Gr", &pyCQCGL1d::Gr)
-	.def_readonly("Gi", &pyCQCGL1d::Gi)
+	.def_readwrite("Gr", &pyCQCGL1d::Gr)
+	.def_readwrite("Gi", &pyCQCGL1d::Gi)
 	.def_readonly("Ndim", &pyCQCGL1d::Ndim)
 	.def_readonly("Ne", &pyCQCGL1d::Ne)
 	.def_readonly("Omega", &pyCQCGL1d::Omega)
@@ -427,6 +445,9 @@ BOOST_PYTHON_MODULE(py_CQCGL1d) {
 	.def("Config2Fourier", &pyCQCGL1d::PYConfig2Fourier)
 	.def("Fourier2ConfigMag", &pyCQCGL1d::PYFourier2ConfigMag)
 	.def("Fourier2Phase", &pyCQCGL1d::PYFourier2Phase)
+	.def("calQ", &pyCQCGL1d::PYcalQ)
+	.def("calMoment", &pyCQCGL1d::PYcalMoment)
+	.def("calMoment", &pyCQCGL1d::PYcalMoment2)
 	.def("orbit2sliceWrap", &pyCQCGL1d::PYorbit2sliceWrap)
 	.def("orbit2slice", &pyCQCGL1d::PYorbit2slice)
 	.def("stab", &pyCQCGL1d::PYstab)

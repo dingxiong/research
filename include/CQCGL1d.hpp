@@ -86,12 +86,18 @@ public:
     ////////////////////////////////////////////////////////////
     //         constructor, destructor, copy assignment.      //
     ////////////////////////////////////////////////////////////
+
+    // A_t = Mu A + (Dr + Di*i) A_{xx} + (Br + Bi*i) |A|^2 A + (Gr + Gi*i) |A|^4 A
     CQCGL1d(int N, double d,
 	    double Mu, double Dr, double Di, double Br, double Bi, 
 	    double Gr, double Gi, int dimTan);
+    
+    // A_t = -A + (1 + b*i) A_{xx} + (1 + c*i) |A|^2 A - (dr + di*i) |A|^4 A
     CQCGL1d(int N, double d, 
 	    double b, double c, double dr, double di, 
 	    int dimTan);
+    
+    // iA_z + D A_{tt} + |A|^2 A + \nu |A|^4 A = i \delta A + i \beta A_{tt} + i |A|^2 A + i \mu |A|^4 A
     CQCGL1d(int N, double d,
 	    double delta, double beta, double D, double epsilon,
 	    double mu, double nu, int dimTan);
@@ -150,6 +156,8 @@ public:
     ArrayXXd Fourier2ConfigMag(const Ref<const ArrayXXd> &aa);
     ArrayXXd calPhase(const Ref<const ArrayXXcd> &AA);
     ArrayXXd Fourier2Phase(const Ref<const ArrayXXd> &aa);
+    VectorXd calQ(const Ref<const ArrayXXd> &aa);
+    VectorXd calMoment(const Ref<const ArrayXXd> &aa, const int p = 1);
     
     ArrayXd velocity(const ArrayXd &a0);
     ArrayXd velocityReq(const ArrayXd &a0, const double th,

@@ -1,7 +1,7 @@
-from py_CQCGL_threads import *
+from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 10
+case = 12
 
 if case == 10:
     """
@@ -71,18 +71,56 @@ if case == 12:
     """
     N = 1024
     d = 30
-    h = 0.0002
-    di = 0.4226
-    a0, wth0, wphi0, err = cqcglReadReqdi('../../data/cgl/reqDi.h5',
-                                          di, 2)
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
+    h = 1e-4
+    di = 0.96
+
+    a0, wth0, wphi0, err0 = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                           di, 2)
+    cgl = pyCQCGL1d(N, d, 4.0, 0.8, 0.01, di, -1)
 
     nstp = 10000
     for i in range(3):
-        aa = cgl.intg(a0, nstp, 1)
+        aa = cgl.intg(a0, h, nstp, 10)
         a0 = aa[-1]
         plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
 
+
+if case == 13:
+    N = 1024
+    d = 50
+    h = 1e-4
+    di = 0.96
+
+    a0, wth0, wphi0, err0 = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                           di, 1)
+    a1, wth1, wphi1, err1 = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                           di, 2)
+    cgl = pyCQCGL1d(N, d, 4.0, 0.8, 0.01, di, -1)
+    plotOneConfigFromFourier(cgl, a0)
+    plotOneConfigFromFourier(cgl, a1)
+    
+if case == 14:
+    N = 1024
+    d = 30
+    h = 1e-4
+
+    Q0 = []
+    Q1 = []
+    dis = np.arange(0.08, 0.57, 0.01)
+    for i in range(len(dis)):
+        di = dis[i]
+        cgl = pyCQCGL1d(N, d, 4.0, 0.8, 0.01, di, -1)
+        a0, wth0, wphi0, err0 = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                               di, 1)
+        a1, wth1, wphi1, err1 = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                               di, 2)
+        Q0.append(cgl.calQ(a0)[0])
+        Q1.append(cgl.calQ(a1)[0])
+    
+    fig, ax = pl2d(labs=[r'$d_i$', r'$Q$'], axisLabelSize=25, tickSize=15)
+    ax.plot(dis, Q0, lw=2, c='r', ls='-')
+    ax.plot(dis, Q1, lw=2, c='b', ls='--')
+    ax2d(fig, ax)
 
 if case == 20:
     """

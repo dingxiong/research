@@ -291,6 +291,14 @@ def plotMat(y, colortype='jet', percent='5%', colorBar=True,
 ##################################################
 #            1d CQCGL related                    #
 ##################################################
+class CQCGLplot():
+    def __init__(self):
+        pass
+
+
+class CQCGLreq():
+    def __init__(self):
+        pass
 
 
 def plotConfigSpace(AA, ext, tt=None, yls=None,

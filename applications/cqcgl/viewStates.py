@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 90
+case = 50
 
 if case == 1:
     """
@@ -142,25 +142,23 @@ if case == 4:
     veRefTilde = cgl.reflectVe(veRefHat, a0RefHat)
     # why the hell is veHat the same as veRefHat ?
 
-if case == 5:
+if case == 50:
     """
     use the new form of cqcgl
     test the transition with respect to di
     """
     N = 1024
     d = 30
-    h = 0.0002
+    h = 1e-4
+    di = 0.05
 
-    # cgl = pyCqcgl1d(N, d, h, True, 0,
-    #                 -0.1, 1.0, 0.8, 0.125, 0.5, -0.1, -0.6,
-    #                 4)
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, 0.39, 4)
-    A0 = 3*centerRand(2*N, 0.2)
+    cgl = pyCQCGL1d(N, d, 4.0, 0.8, 0.01, di, -1)
+    A0 = 3*centerRand(N, 0.2, True)
     a0 = cgl.Config2Fourier(A0)
     nstp = 20000
     x = []
     for i in range(3):
-        aa = cgl.intg(a0, nstp, 1)
+        aa = cgl.intg(a0, h, nstp, 10)
         a0 = aa[-1]
         plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
         # plotPhase(cgl, aa, [0, d, 0, nstp*h])
@@ -275,17 +273,17 @@ if case == 90:
     ======
     """
     N = 1024
-    d = 60
+    d = 30
     h = 1e-3
 
     epsilon = 0.835
     cgl = pyCQCGL1d(N, d, -0.1, 0.08, 1, epsilon, -0.11, -0.08, -1)
       
-    if False:
+    if True:
         Ndim = cgl.Ndim
         A0 = 3*centerRand(N, 0.2, True)
         a0 = cgl.Config2Fourier(A0)
-        a0 = cgl.intg(a0, h, np.int(50/h), np.int(50/h))[-1]
+        a0 = cgl.intg(a0, h, np.int(100/h), np.int(100/h))[-1]
 
         T = 300
         aa = cgl.intg(a0, h, np.int(T/h), 100)
@@ -294,7 +292,16 @@ if case == 90:
         plot1dfig(Q)
         np.save('a0', aa[-1])
 
-    cgl.Br = 0.844
+    if True:
+        cgl.Br = 0.839
+        a0 = load('a0.npy')
+        a0 = cgl.intg(a0, h, np.int(100/h), np.int(100/h))[-1]
+        T = 300
+        aa = cgl.intg(a0, h, np.int(T/h), 100)
+        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+        np.save('a1', aa[-1])
+
+    cgl.Br = 0.828
     a0 = load('a0.npy')
     a0 = cgl.intg(a0, h, np.int(100/h), np.int(100/h))[-1]
     T = 500

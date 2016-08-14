@@ -1,5 +1,5 @@
 from time import time
-from py_cqcgl1d_threads import pyCqcgl1d, pyCqcglRPO
+from py_cqcgl1d import pyCqcgl1d, pyCqcglRPO
 from personalFunctions import *
 
 

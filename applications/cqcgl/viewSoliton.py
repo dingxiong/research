@@ -1,7 +1,7 @@
 from py_CQCGL_threads import pyCQCGL
 from personalFunctions import *
 
-case = 60
+case = 65
 
 if case == 1:
     """

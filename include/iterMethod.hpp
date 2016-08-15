@@ -1068,7 +1068,7 @@ namespace iterMethod {
 	}
 	
 	// run out of loop, which means it does not converge
-	return std::make_tuple(x, res, 0);
+	return std::make_tuple(x, res, 1);
     }
 
     /**

@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 12
+case = 15
 
 if case == 10:
     """
@@ -122,6 +122,44 @@ if case == 14:
     ax.plot(dis, Q1, lw=2, c='b', ls='--')
     ax2d(fig, ax)
 
+if case == 15:
+    """
+    to see different profiles
+    """
+    N = 1024
+    d = 30
+    h = 1e-3
+    di = 0.10
+    c = -4.1158
+
+    cgl = pyCQCGL1d(N, d, 4.0, c, 0.01, di, -1)
+
+    a0, wth0, wphi0, err0 = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                           di, 1)
+    nstp = 10000
+    for i in range(3):
+        aa = cgl.intg(a0, h, nstp, 10)
+        a0 = aa[-1]
+        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+
+if case == 16:
+    N = 1024
+    d = 50
+    h = 2e-3
+    di = 0.4
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, 3, -0.1, -3.9, -1)
+
+    a0, wth0, wphi0, err0 = cqcglReadReqdi('../../data/cgl/reqDi.h5',
+                                           di, 1)
+    a0 = a0 * (0.1**0.5)
+    nstp = 20000
+    for i in range(5):
+        aa = cgl.intg(a0, h, nstp, 10)
+        a0 = aa[-1]
+        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+
+    
 if case == 20:
     """
     Try to locate the Hopf bifurcation limit cycle.

@@ -15,6 +15,9 @@ endif
 ifeq ($(t), int)		# for 1d integration
 SOURCE = CQCGL1d.cc 
 
+else ifeq ($(t), req1d)
+SOURCE = CQCGL1dReq.cc
+
 else ifeq ($(t), rpo)		# for RPO code
 SOURCE = CQCGLRPO.cc 
 
@@ -31,7 +34,7 @@ else ifeq ($(t), ani)
 SOURCE = CQCGL2dDislin.cc
 
 else
-SOURCE = CQCGL.cc CQCGLgeneral.cc 
+SOURCE = CQCGL1d.cc 
 
 endif
 

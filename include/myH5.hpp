@@ -29,7 +29,7 @@ namespace MyH5 {
     void writeVectorXd(H5File &file, string DSitem, const VectorXd &vec);
     MatrixXd readMatrixXd(H5File &file, string DSitem);
     VectorXd readVectorXd(H5File &file, string DSitem);
-    
+    void checkGroup(H5File &file, const std::string groupName);
     //////////////////////////////////////////////////////////////////////
     /* KS related */
     MatrixXi
@@ -133,16 +133,6 @@ namespace MyH5 {
 		  const MatrixXd &x, const double T, const int nstp,
 		  const double th, const double phi, double err);
     
-    std::tuple<VectorXd, double, double ,double>
-    CqcglReadReq(const string fileName, const string groupName);
-    void 
-    CqcglReadReq(const string fileName, const string groupName, 
-		 VectorXd &a, double &wth, double &wphi, 
-		 double &err);
-    void 
-    CqcglWriteReq(const string fileName, const string groupName,
-		  const MatrixXd &a, const double wth, 
-		  const double wphi, const double err);
     void CqcglWriteRPO2(const std::string fileName, const string groupName, 
 			const MatrixXd &x, const int nstp, double err);
     void CqcglWriteRPO2(const string fileName, double di, int index,

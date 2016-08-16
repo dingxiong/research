@@ -31,27 +31,36 @@ public :
     readReq(const std::string fileName, const std::string groupName); 
     
     static
+    std::tuple<VectorXd, double, double ,double>
+    readReq(const std::string fileName, 
+	    const double Bi, const double Gi, int id);
+
+    static
     void 
     writeReq(const std::string fileName, const std::string groupName,
 	     const ArrayXd &a, const double wth, 
 	     const double wphi, const double err);
     static
     void 
-    writeReq(const std::string fileName, const double Bi, const double Gi,
+    writeReq(const std::string fileName, 
+	     const double Bi, const double Gi, int id,
 	     const ArrayXd &a, const double wth, const double wphi,
 	     const double err);
-
+    
     ////////////////////////////////////////////////////////////
     VectorXd Fx(const VectorXd &x);
     std::tuple<MatrixXd, MatrixXd, VectorXd>
     calJJF(const VectorXd &x);
-    std::tuple<VectorXd, double, double, double>
+    std::tuple<VectorXd, double, double, double, int>
     findReq_LM(const ArrayXd &a0, const double wth0, const double wphi0, 
 	       const double tol,
 	       const int maxit,
 	       const int innerMaxit);
     std::vector<double>
     optThPhi(const ArrayXd &a0);
+    void 
+    findReqParaSeq(const std::string file, int id, double step, int Ns, bool isBi);
+
     
 };
 

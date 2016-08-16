@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 15
+case = 18
 
 if case == 10:
     """
@@ -159,7 +159,47 @@ if case == 16:
         a0 = aa[-1]
         plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
 
+if case == 17:
+    """
+    view the req with new L
+    """
+    N = 1024
+    d = 50
+    h = 2e-3
+    di = 0.4
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, 0.8, -0.1, -0.6, 0)
+
+    a0, wth0, wphi0, err0 = cqcglReadReq('../../data/cgl/reqBiGi.h5',
+                                         '000000.900000/-00000.580000/1')
+    plotOneConfigFromFourier(cgl, a0)
+    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
+    print eigvalues[:10]
     
+if case == 18:
+    """
+    Plot the solitons in the Bi-Gi plan to see the transition.
+    """
+    N = 1024
+    d = 50
+    h = 2e-3
+    
+    index = 1
+    for i in range(21):
+        Bi = 0.8 + i * 0.1
+        fig, ax = pl2d(size=[8, 6], labs=[r'$x$', r'$|A|$'], axisLabelSize=25)
+        name = (format(Bi, '013.6f') + '_' + str(index)) + '.png'
+        for j in range(51):
+            Gi = -0.6 - 0.1*j
+            cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+            req = CQCGLreq()
+            a0, wth0, wphi0, err0 = req.readReqBiGi(
+                '../../data/cgl/reqBiGi.h5', Bi, Gi, index)
+            Aamp = np.abs(cgl.Fourier2Config(a0))
+            ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp)
+        ax2d(fig, ax, save=True, name='ex/'+name)
+        
+
 if case == 20:
     """
     Try to locate the Hopf bifurcation limit cycle.

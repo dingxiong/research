@@ -49,11 +49,8 @@ CQCGL1dReq & CQCGL1dReq::operator=(const CQCGL1dReq &x){
 
 
 /**
- * @brief read req (relative equibrium) info from hdf5 file for cqcgl
+ * @brief read req (relative equibrium) info from hdf5 file
  *
- * Note, the return a is a vector not a matrix.
- * 
- * @see the short version
  */
 std::tuple<VectorXd, double, double ,double>
 CQCGL1dReq::readReq(const std::string fileName, const std::string groupName){
@@ -67,6 +64,18 @@ CQCGL1dReq::readReq(const std::string fileName, const std::string groupName){
 		      );
 }
 
+std::tuple<VectorXd, double, double ,double>
+CQCGL1dReq::readReq(const std::string fileName, 
+		    const double Bi, const double Gi, int id){
+    char g1[20], g2[20];
+    sprintf(g1, "%013.6f", Bi);
+    sprintf(g2, "%013.6f", Gi);
+    
+    string s1(g1);
+    string s2(g2);
+    string s = s1 + '/' + s2 + '/' + to_string(id);
+    return readReq(fileName, s);
+}
 
 /**
  * @brief write [a, wth, wphi, err] of Req of cqcgl into a group
@@ -90,16 +99,18 @@ CQCGL1dReq::writeReq(const std::string fileName, const std::string groupName,
 }
 
 void 
-CQCGL1dReq::writeReq(const std::string fileName, const double Bi, const double Gi,
+CQCGL1dReq::writeReq(const std::string fileName, 
+		     const double Bi, const double Gi, int id,
 		     const ArrayXd &a, const double wth, const double wphi,
 		     const double err){
     char g1[20], g2[20];
-    sprintf(g1, "013.6%f", Bi);
-    sprintf(g2, "013.6%f", Gi);
+    sprintf(g1, "%013.6f", Bi);
+    sprintf(g2, "%013.6f", Gi);
     
-    string s(g1);
-    s += '/' + g2;
-    return writeReq(fileName, s, a, wth, wphi, err);
+    string s1(g1);
+    string s2(g2);
+    string s = s1 + '/' + s2 + '/' + to_string(id);
+    writeReq(fileName, s, a, wth, wphi, err);
 }
 
 
@@ -146,7 +157,8 @@ CQCGL1dReq::calJJF(const VectorXd &x){
     return std::make_tuple(JJ, D, df);
 }
 
-std::tuple<VectorXd, double, double, double>
+
+std::tuple<VectorXd, double, double, double, int>
 CQCGL1dReq::findReq_LM(const ArrayXd &a0, const double wth0, const double wphi0, 
 		       const double tol,
 		       const int maxit,
@@ -168,7 +180,7 @@ CQCGL1dReq::findReq_LM(const ArrayXd &a0, const double wth0, const double wphi0,
     VectorXd a = xe.head(2*Ne);
     double wth = xe(2*Ne);
     double wphi = xe(2*Ne+1);
-    return std::make_tuple( a, wth, wphi, res.back() );
+    return std::make_tuple( a, wth, wphi, res.back(), flag );
 }
 
 
@@ -198,6 +210,39 @@ CQCGL1dReq::optThPhi(const ArrayXd &a0){
     return x;
 }
 
+/**
+ * @brief find req with a sequence of Bi or Gi
+ */ 
+void 
+CQCGL1dReq::findReqParaSeq(const std::string file, int id, double step, int Ns, bool isBi){
+    double Bi0 = Bi;
+    double Gi0 = Gi;
+    
+    ArrayXd a0;
+    double wth0, wphi0, err0;
+    std::tie(a0, wth0, wphi0, err0) = CQCGL1dReq::readReq(file, Bi, Gi, id);
+    
+    ArrayXd a;
+    double wth, wphi, err;
+    int flag;
+    
+    for (int i = 0; i < Ns; i++){
+	if (isBi) Bi += step;
+	else Gi += step;
+
+	std::tie(a, wth, wphi, err, flag) = findReq_LM(a0, wth0, wphi0, 1e-10, 100, 1000);
+	if (flag == 0){
+	    writeReq(file, Bi, Gi, id, a, wth, wphi, err);
+	    a0 = a;
+	    wth0 = wth;
+	    wphi0 = wphi;
+	}
+	else exit(1);
+    }
+    
+    Bi = Bi0; 			// restore Bi, Gi
+    Gi = Gi0;
+}
 
 #if 0
 //====================================================================================================

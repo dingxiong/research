@@ -299,6 +299,27 @@ class CQCGLplot():
 class CQCGLreq():
     def __init__(self):
         pass
+    
+    def readReq(self, fileName, groupName):
+        f = h5py.File(fileName, 'r')
+        req = '/' + groupName + '/'
+        a = f[req+'a'].value
+        wth = f[req+'wth'].value
+        wphi = f[req+'wphi'].value
+        err = f[req+'err'].value
+        f.close()
+        return a, wth, wphi, err
+
+    def readReqdi(self, fileName, di, index):
+        groupName = format(di, '.6f') + '/' + str(index)
+        return cqcglReadReq(fileName, groupName)
+
+    def readReqBiGi(self, fileName, Bi, Gi, index):
+        groupName = (format(Bi, '013.6f') + '/' + format(Gi, '013.6f') +
+                     '/' + str(index))
+        return cqcglReadReq(fileName, groupName)
+    
+#===================================================
 
 
 def plotConfigSpace(AA, ext, tt=None, yls=None,
@@ -472,6 +493,7 @@ def plotOneConfig(A, d=30, size=[6, 5], axisLabelSize=20,
     fig.tight_layout(pad=0)
     if save:
         plt.savefig(name)
+        plt.close()
     else:
         plt.show(block=False)
 
@@ -506,6 +528,7 @@ def plotPhase(cgl, aa, ext, barTicks=[-3, 0, 3],
     fig.tight_layout(pad=0)
     if save:
         plt.savefig(name)
+        plt.close()
     else:
         plt.show(block=False)
     
@@ -589,7 +612,6 @@ def cqcglReadReq(fileName, groupName):
 def cqcglReadReqdi(fileName, di, index):
     groupName = format(di, '.6f') + '/' + str(index)
     return cqcglReadReq(fileName, groupName)
-
 
 def cqcglReadReqAll(fileName, index, hasEV):
     f = h5py.File(fileName, 'r')

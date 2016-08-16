@@ -103,15 +103,15 @@ int main(){
     double Gi = -0.6;
 
     int ids[] = {1, 2};
-    for (int i = 1; i < 2; i++){
+    for (int i = 0; i < 2; i++){
 	int id = ids[i];
 	CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
 
 	string file = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGi.h5";
-	double stepB = 0.1;
-	int NsB = 20;
+	double stepB = -0.1;
+	int NsB = 40;
 	cgl.findReqParaSeq(file, id, stepB, NsB, true);
-	for (int i = 0; i < NsB+1; i++){
+	for (int i = 1; i < NsB+1; i++){
 	    cgl.Bi = Bi+i*stepB;
 	    cgl.findReqParaSeq(file, id, -0.1, 50, false);
 	}

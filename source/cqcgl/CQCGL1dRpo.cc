@@ -8,22 +8,28 @@ using namespace iterMethod;
 using namespace Eigen;
 using namespace std;
 
+
 //////////////////////////////////////////////////////////////////////
 //                      constructor                                 //
 //////////////////////////////////////////////////////////////////////
 
-CQCGL1dRpo::CQCGL1dRpo(int M, int N, double d,
-		   double b, double c, double dr, double di,
-		   int threadNum)
-    : N(N),
-      M(M),
-      cgl1(N, d, b, c, dr, di, -1, threadNum),
-      cgl2(N, d, b, c, dr, di,  1, threadNum),
-      cgl3(N, d, b, c, dr, di,  0, threadNum)
-{
-    Ndim = cgl1.Ndim;
-}
+// A_t = Mu A + (Dr + Di*i) A_{xx} + (Br + Bi*i) |A|^2 A + (Gr + Gi*i) |A|^4 A
+CQCGL1dRpo::CQCGL1dRpo(int N, double d,
+		       double Mu, double Dr, double Di, double Br, double Bi, 
+		       double Gr, double Gi, int dimTan):
+    CQCGL1d(N, d, Mu, Dr, Di, Br, Bi, Gr, Gi, dimTan) {}
 
+// A_t = -A + (1 + b*i) A_{xx} + (1 + c*i) |A|^2 A - (dr + di*i) |A|^4 A
+CQCGL1dRpo::CQCGL1dRpo(int N, double d, 
+		       double b, double c, double dr, double di, 
+		       int dimTan):
+    CQCGL1d(N, d, b, c, dr, di, dimTan){}
+    
+// iA_z + D A_{tt} + |A|^2 A + \nu |A|^4 A = i \delta A + i \beta A_{tt} + i |A|^2 A + i \mu |A|^4 A
+CQCGL1dRpo::CQCGL1dRpo(int N, double d,
+		       double delta, double beta, double D, double epsilon,
+		       double mu, double nu, int dimTan) :
+    CQCGL1d(N, d, delta, beta, D, epsilon, mu, nu, dimTan) {}
 
 CQCGL1dRpo::~CQCGL1dRpo(){}
 
@@ -34,13 +40,6 @@ CQCGL1dRpo & CQCGL1dRpo::operator=(const CQCGL1dRpo &x){
 //////////////////////////////////////////////////////////////////////
 //                      member functions                            //
 //////////////////////////////////////////////////////////////////////
-
-void CQCGL1dRpo::changeOmega(double w){
-    Omega = w;
-    cgl1.changeOmega(w);
-    cgl2.changeOmega(w);
-    cgl3.changeOmega(w);
-}
 
 #if 0
 
@@ -56,8 +55,7 @@ void CQCGL1dRpo::changeOmega(double w){
 VectorXd CQCGL1dRpo::Fx(const VectorXd & x){
     Vector3d t = x.tail<3>();
     assert(t(0) > 0); 		/* make sure T > 0 */
-    cgl1.changeh(t(0)/nstp);
-    VectorXd fx = cgl1.aintg(x.head(Ndim), h0Trial, t(0), skipRateTrial).rightCols<1>();
+    VectorXd fx = cgl1.intg(x.head(Ndim), h0Trial, t(0), skipRateTrial).rightCols<1>();
     VectorXd F(Ndim + 3);
     F << cgl1.Rotate(fx, t(1), t(2)), t;
     return F - x;

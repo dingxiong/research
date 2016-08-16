@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 18
+case = 17
 
 if case == 10:
     """
@@ -166,12 +166,16 @@ if case == 17:
     N = 1024
     d = 50
     h = 2e-3
-    di = 0.4
+    
+    Bi = 0.8
+    Gi = -0.4
+    index = 1
 
-    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, 0.8, -0.1, -0.6, 0)
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req = CQCGLreq()
 
-    a0, wth0, wphi0, err0 = cqcglReadReq('../../data/cgl/reqBiGi.h5',
-                                         '000000.900000/-00000.580000/1')
+    a0, wth0, wphi0, err0 = req.readReqBiGi('../../data/cgl/reqBiGi.h5',
+                                            Bi, Gi, index)
     plotOneConfigFromFourier(cgl, a0)
     eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
     print eigvalues[:10]
@@ -184,7 +188,7 @@ if case == 18:
     d = 50
     h = 2e-3
     
-    index = 1
+    index = 2
     for i in range(21):
         Bi = 0.8 + i * 0.1
         fig, ax = pl2d(size=[8, 6], labs=[r'$x$', r'$|A|$'], axisLabelSize=25)

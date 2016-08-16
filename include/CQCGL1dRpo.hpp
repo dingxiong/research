@@ -11,7 +11,7 @@
 #include "sparseRoutines.hpp"
 #include "denseRoutines.hpp"
 
-class CQCGL1dRpo {
+class CQCGL1dRpo : public CQCGL1d {
 
 public:
 
@@ -19,26 +19,31 @@ public:
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> Tri;
 
-    CQCGL cgl1, cgl2, cgl3;
     int M;			/* pieces of multishoot */
-    const int N;		/* dimension of FFT */
-    int Ndim;			/* dimension of state space */
 
     double h0Trial = 1e-3;
     int skipRateTrial = 1000000;
-    double Omega = 0;
     
-    /*---------------   constructors    ------------------------- */
-    CQCGL1dRpo(int M, int N, double d, 
-	     double b, double c, double dr, double di,
-	     int threadNum);
+    ////////////////////////////////////////////////////////////
+    // A_t = Mu A + (Dr + Di*i) A_{xx} + (Br + Bi*i) |A|^2 A + (Gr + Gi*i) |A|^4 A
+    CQCGL1dRpo(int N, double d,
+	       double Mu, double Dr, double Di, double Br, double Bi, 
+	       double Gr, double Gi, int dimTan);
     
+    // A_t = -A + (1 + b*i) A_{xx} + (1 + c*i) |A|^2 A - (dr + di*i) |A|^4 A
+    CQCGL1dRpo(int N, double d, 
+	       double b, double c, double dr, double di, 
+	       int dimTan);
+    
+    // iA_z + D A_{tt} + |A|^2 A + \nu |A|^4 A = i \delta A + i \beta A_{tt} + i |A|^2 A + i \mu |A|^4 A
+    CQCGL1dRpo(int N, double d,
+	       double delta, double beta, double D, double epsilon,
+	       double mu, double nu, int dimTan);
     ~CQCGL1dRpo();
     CQCGL1dRpo & operator=(const CQCGL1dRpo &x);
-
-    /*---------------  member functions ------------------------- */
-    void changeOmega(double w);
-
+    
+    
+    ////////////////////////////////////////////////////////////    
     VectorXd Fx(const VectorXd & x);
     VectorXd DFx(const VectorXd &x, const VectorXd &dx);
     VectorXd MFx(const VectorXd &x);

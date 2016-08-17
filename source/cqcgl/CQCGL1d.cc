@@ -273,7 +273,7 @@ CQCGL1d::adaptTs(bool &doChange, bool &doAccept, const double s){
  */
 ArrayXXd 
 CQCGL1d::constETD(const ArrayXXd a0, const double h, const int Nt, 
-		       const int skip_rate, const bool onlyOrbit, bool reInitTan){
+		  const int skip_rate, const bool onlyOrbit, bool reInitTan){
 
     int nc = 1;			// number of columns of a single state
     FFT *f = F;
@@ -315,7 +315,7 @@ CQCGL1d::constETD(const ArrayXXd a0, const double h, const int Nt,
  */
 ArrayXXd
 CQCGL1d::adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
-		       const int skip_rate, const bool onlyOrbit, bool reInitTan){
+		  const int skip_rate, const bool onlyOrbit, bool reInitTan){
     
     int nc = 1;			// number of columns of a single state
     FFT *f = F;
@@ -445,7 +445,7 @@ CQCGL1d::intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_r
 
 ArrayXXd
 CQCGL1d::aintg(const ArrayXd &a0, const double h, const double tend, 
-		    const int skip_rate){
+	       const int skip_rate){
     
     assert(a0.size() == Ndim);
     return adaptETD(a0, h, tend, skip_rate, true, true);
@@ -453,7 +453,7 @@ CQCGL1d::aintg(const ArrayXd &a0, const double h, const double tend,
 
 std::pair<ArrayXXd, ArrayXXd>
 CQCGL1d::aintgj(const ArrayXd &a0, const double h, const double tend, 
-		     const int skip_rate){
+		const int skip_rate){
     
     assert(a0.size() == Ndim && DimTan == Ndim);
     ArrayXXd v0(Ndim, Ndim+1); 
@@ -476,7 +476,7 @@ CQCGL1d::aintgj(const ArrayXd &a0, const double h, const double tend,
  */
 ArrayXXd
 CQCGL1d::intgv(const ArrayXd &a0, const ArrayXXd &v, const double h,
-		    const int Nt){
+	       const int Nt){
     
     // check the dimension of initial condition.
     assert( Ndim == a0.size() && Ndim == v.rows() && DimTan == v.cols());
@@ -489,7 +489,7 @@ CQCGL1d::intgv(const ArrayXd &a0, const ArrayXXd &v, const double h,
 
 ArrayXXd 
 CQCGL1d::aintgv(const ArrayXXd &a0, const ArrayXXd &v, const double h,
-		     const double tend){
+		const double tend){
     assert( Ndim == a0.size() && Ndim == v.rows() && DimTan == v.cols());
     ArrayXXd v0(Ndim, DimTan+1);
     v0 << a0, v;
@@ -692,7 +692,7 @@ ArrayXd CQCGL1d::velocity(const ArrayXd &a0){
  *   v(x) + \omega_\tau * t_\tau(x) + \omega_\rho * t_\rho(x)
  */
 ArrayXd CQCGL1d::velocityReq(const ArrayXd &a0, const double wth,
-				  const double wphi){
+			     const double wphi){
     return velocity(a0) + wth*transTangent(a0) + wphi*phaseTangent(a0);    
 }
 
@@ -1051,7 +1051,7 @@ MatrixXd CQCGL1d::reflectVe(const MatrixXd &veHat, const Ref<const ArrayXd> &xHa
  *  @note vectors are not normalized
  */
 MatrixXd CQCGL1d::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
-				    const int trunc /* = 0*/){
+			       const int trunc /* = 0*/){
     int Trunc = trunc;
     if(trunc == 0) Trunc = veHat.rows();
 
@@ -1135,7 +1135,7 @@ MatrixXd CQCGL1d::phaseGenerator(){
  *           superposition of 2 functions
  */
 ArrayXXd CQCGL1d::Rotate(const Ref<const ArrayXXd> &aa, const double th,
-			      const double phi){
+			 const double phi){
     ArrayXcd R = ( dcp(0,1) * (th * K2 + phi) ).exp(); // e^{ik\theta + \phi}
     ArrayXXcd raa = r2c(aa); 
     raa.colwise() *= R;
@@ -1147,7 +1147,7 @@ ArrayXXd CQCGL1d::Rotate(const Ref<const ArrayXXd> &aa, const double th,
  * @brief rotate the whole orbit with different phase angles at different point
  */
 ArrayXXd CQCGL1d::rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
-				   const ArrayXd &phi){
+			      const ArrayXd &phi){
     const int m = aa.cols();
     const int n = aa.rows();
     const int m2 = th.size();
@@ -1344,7 +1344,7 @@ VectorXd CQCGL1d::multiF(const ArrayXXd &x, const int nstp, const double th, con
  */
 pair<CQCGL1d::SpMat, VectorXd>
 CQCGL1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
-			 const double phi, bool doesPrint /* = false*/){
+		    const double phi, bool doesPrint /* = false*/){
     int m = x.cols();		/* number of shooting points */
     int n = x.rows();
     assert( Ndim == n );

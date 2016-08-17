@@ -41,91 +41,116 @@ CQCGL1dRpo & CQCGL1dRpo::operator=(const CQCGL1dRpo &x){
 //                      member functions                            //
 //////////////////////////////////////////////////////////////////////
 
+/**
+ * @note group should be a new group
+ * [x, T,  nstp, theta, phi, err]
+ */
+void CQCGL1dRpo::writeRpo(const string fileName, const string groupName,
+			  const MatrixXd &x, const double T, const int nstp,
+			  const double th, const double phi, double err){
+
+    H5File file(fileName, H5F_ACC_RDWR);
+    checkGroup(file, groupName);
+    string DS = "/" + groupName + "/";
+
+    writeMatrixXd(file, DS + "x", x);
+    writeScalar<double>(file, DS + "T", T);
+    writeScalar<int>(file, DS + "nstp", nstp);
+    writeScalar<double>(file, DS + "th", th);
+    writeScalar<double>(file, DS + "phi", phi);
+    writeScalar<double>(file, DS + "err", err);
+}
+
+void CQCGL1dRpo::writeRpo2(const std::string fileName, const string groupName, 
+			   const MatrixXd &x, const int nstp, double err){	
+    MatrixXd tmp = x.bottomRows(3).rowwise().sum();
+    double T = tmp(0);
+    double th = tmp(1);
+    double phi = tmp(2);
+    
+    writeRpo(fileName, groupName, x, T, nstp, th, phi, err);
+}
+
+std::tuple<MatrixXd, double, int, double, double, double>
+CQCGL1dRpo::readRpo(const string fileName, const string groupName){
+    H5File file(fileName, H5F_ACC_RDONLY);
+    string DS = "/" + groupName + "/";
+    
+    return make_tuple(readMatrixXd(file, DS + "x"),
+		      readScalar<double>(file, DS + "T"),
+		      readScalar<int>(file, DS + "nstp"),
+		      readScalar<double>(file, DS + "th"),
+		      readScalar<double>(file, DS + "phi"),
+		      readScalar<double>(file, DS + "err")
+		      );
+    
+}
+
+/**
+ * @brief move rpo from one file, group to another file, group
+ */
+void
+CQCGL1dRpo::moveRpo(string infile, string ingroup, 
+		    string outfile, string outgroup){
+    MatrixXd x;
+    double T, th, phi, err;
+    int nstp;
+    
+    std::tie(x, T, nstp, th, phi, err) = readRpo(infile, ingroup);
+    writeRpo(outfile, outgroup, x, T, nstp, th, phi, err);
+}
+
+//////////////////////////////////////////////////////////////////////
+// The following are overloading functions specific to di groups 
+
+std::string 
+CQCGL1dRpo::toStr(double x){
+    char buffer [20];
+    sprintf (buffer, "%013.6f", x);
+    return std::string(buffer);
+}
+    
+std::tuple<MatrixXd, double, int, double, double, double>
+CQCGL1dRpo::readRpo(const string fileName, double di, int index){
+    string groupName = toStr(di) + "/" + std::to_string(index);	
+    return readRpo(fileName, groupName);
+}
+
+void 
+CQCGL1dRpo::writeRpo(const string fileName, double di, int index,
+		     const MatrixXd &x, const double T, const int nstp,
+		     const double th, const double phi, double err){
+    string groupName = toStr(di) + "/" + std::to_string(index);
+    writeRpo(fileName, groupName, x, T, nstp, th, phi, err);
+}
+
+void 
+CQCGL1dRpo::writeRpo2(const string fileName, double di, int index,
+		      const MatrixXd &x, const int nstp,
+		      double err){
+    string groupName = toStr(di) + "/" + std::to_string(index);
+    writeRpo2(fileName, groupName, x, nstp, err);
+}
+
+
+void 
+CQCGL1dRpo::moveRpo(string infile, string ingroup,
+		    string outfile, double di, int index){
+    string outgroup = toStr(di) + "/" + std::to_string(index);
+    moveRpo(infile, ingroup, outfile, outgroup);
+}
+   
+void 
+CQCGL1dRpo::moveRpo(string infile, string outfile, double di, int index){
+    string groupName = toStr(di) + "/" + std::to_string(index);
+    CqcglMoveRPO(infile, groupName, outfile, groupName); 
+}
+
+
+//======================================================================
+
 #if 0
 
-/**
- * @brief         form g*f(x,t) - x
- * @param[in] x   [Ndim + 3, 1] dimensional vector: (x, t, theta, phi)
- * @return        vector F(x, t) =
- *                  | g*f(x, t) - x|
- *                  |       0      |
- *                  |       0      |
- *                  |       0      |
- */
-VectorXd CQCGL1dRpo::Fx(const VectorXd & x){
-    Vector3d t = x.tail<3>();
-    assert(t(0) > 0); 		/* make sure T > 0 */
-    VectorXd fx = cgl1.intg(x.head(Ndim), h0Trial, t(0), skipRateTrial).rightCols<1>();
-    VectorXd F(Ndim + 3);
-    F << cgl1.Rotate(fx, t(1), t(2)), t;
-    return F - x;
-}
-
-
-/**
- * @brief get the product J * dx
- *
- * Here J = | g*J(x, t) - I,  g*v(f(x,t)),  g*t1(f(x,t)),  g*t2(f(x,t))| 
- *          |     v(x),          0             0                  0    |
- *          |     t1(x),         0             0                  0    |
- *          |     t2(x),         0             0                  0    |
- */
-VectorXd CQCGL1dRpo::DFx(const VectorXd &x, const VectorXd &dx){
-    Vector3d t = x.tail<3>();
-    Vector3d dt = dx.tail<3>();
-    assert(t(0) > 0); 		/* make sure T > 0 */
-    ArrayXXd tmp = cgl2.aintgv(x.head(Ndim), dx.head(Ndim), h0Trial, t(0)); /* f(x, t) and J(x, t)*dx */
-    ArrayXd gfx = cgl2.Rotate(tmp.col(0), t(1), t(2)); /* g(theta, phi)*f(x, t) */
-    ArrayXd gJx = cgl2.Rotate(tmp.col(1), t(1), t(2)); /* g(theta, phi)*J(x,t)*dx */
-    ArrayXd v1 = cgl2.velocity(x.head(Ndim));	       /* v(x) */
-    ArrayXd v2 = cgl2.velocity(tmp.col(0)); /* v(f(x, t)) */
-    ArrayXd t1 = cgl2.transTangent(x.head(Ndim));
-    ArrayXd t2 = cgl2.phaseTangent(x.head(Ndim));
-    VectorXd DF(Ndim + 3);
-    DF << gJx.matrix() - dx.head(Ndim)
-	+ cgl2.Rotate(v2, t(1), t(2)).matrix() * dt(0)
-	+ cgl2.transTangent(gfx).matrix() * dt(1)
-	+ cgl2.phaseTangent(gfx).matrix() * dt(2),
-	
-	v1.matrix().dot(dx.head(Ndim)),
-	t1.matrix().dot(dx.head(Ndim)),
-	t2.matrix().dot(dx.head(Ndim))
-	;
-
-    return DF;
-}
-
-/* 
- * @brief multishooting form [f(x_0, t) - x_1, ... g*f(x_{M-1},t) - x_0]
- * @param[in] x   [Ndim * M + 3, 1] dimensional vector: (x, t, theta, phi)
- * @return    vector F(x, t) =
- *               |   f(x_0, t) -x_1     |
- *               |   f(x_1, t) -x_2     |
- *               |     ......           |
- *               | g*f(x_{M-1}, t) - x_0|
- *               |       0              |
- *               |       0              |
- *               |       0              |
- *
- */
-VectorXd CQCGL1dRpo::MFx(const VectorXd &x){
-    Vector3d t = x.tail<3>();	   /* T, theta, phi */
-    assert(t(0) > 0);		   /* make sure T > 0 */
-    cgl1.changeh(t(0) / nstp / M); /* period T = h*nstp*M */
-    VectorXd F(VectorXd::Zero(Ndim * M + 3));
-
-    for(size_t i = 0; i < M; i++){
-	VectorXd fx = cgl1.intg(x.segment(i*Ndim, Ndim), nstp, nstp).rightCols<1>();
-	if(i != M-1){		// the first M-1 vectors
-	    F.segment(i*Ndim, Ndim) = fx - x.segment((i+1)*Ndim, Ndim);
-	}
-	else{			// the last vector
-	    F.segment(i*Ndim, Ndim) = cgl1.Rotate(fx, t(1), t(2)).matrix() - x.head(Ndim);
-	}
-    }
-    
-    return F;
-}
 
 /* 
  * @brief get the multishooting product J * dx. Dimension [nstp*M+3, 1]
@@ -182,16 +207,16 @@ VectorXd CQCGL1dRpo::MDFx(const VectorXd &x, const VectorXd &dx){
  */
 std::tuple<VectorXd, double, double, double, double>
 CQCGL1dRpo::findRPO(const VectorXd &x0, const double T,
-		  const double th0, const double phi0,
-		  const double tol,
-		  const int btMaxIt,
-		  const int maxit,
-		  const double eta0,
-		  const double t,
-		  const double theta_min,
-		  const double theta_max,
-		  const int GmresRestart,
-		  const int GmresMaxit){
+		    const double th0, const double phi0,
+		    const double tol,
+		    const int btMaxIt,
+		    const int maxit,
+		    const double eta0,
+		    const double t,
+		    const double theta_min,
+		    const double theta_max,
+		    const int GmresRestart,
+		    const int GmresMaxit){
     assert(x0.size() == Ndim);
     auto fx = std::bind(&CQCGL1dRpo::Fx, this, ph::_1);
     auto dfx = std::bind(&CQCGL1dRpo::DFx, this, ph::_1, ph::_2);
@@ -217,16 +242,16 @@ CQCGL1dRpo::findRPO(const VectorXd &x0, const double T,
  */
 std::tuple<MatrixXd, double, double, double, double>
 CQCGL1dRpo::findRPOM(const MatrixXd &x0, const double T,
-		   const double th0, const double phi0,
-		   const double tol,
-		   const int btMaxIt,
-		   const int maxit,
-		   const double eta0,
-		   const double t,
-		   const double theta_min,
-		   const double theta_max,
-		   const int GmresRestart,
-		   const int GmresMaxit){
+		     const double th0, const double phi0,
+		     const double tol,
+		     const int btMaxIt,
+		     const int maxit,
+		     const double eta0,
+		     const double t,
+		     const double theta_min,
+		     const double theta_max,
+		     const int GmresRestart,
+		     const int GmresMaxit){
     assert(x0.cols() == M && x0.rows() == Ndim);
     auto fx = std::bind(&CQCGL1dRpo::MFx, this, ph::_1);
     auto dfx = std::bind(&CQCGL1dRpo::MDFx, this, ph::_1, ph::_2);
@@ -273,14 +298,14 @@ CQCGL1dRpo::findRPOM(const MatrixXd &x0, const double T,
  */
 std::tuple<VectorXd, double, double, double, double>
 CQCGL1dRpo::findRPO_hook(const VectorXd &x0, const double T,
-		       const double th0, const double phi0,
-		       const double tol,
-		       const double minRD,
-		       const int maxit,
-		       const int maxInnIt,
-		       const double GmresRtol,
-		       const int GmresRestart,
-		       const int GmresMaxit){
+			 const double th0, const double phi0,
+			 const double tol,
+			 const double minRD,
+			 const int maxit,
+			 const int maxInnIt,
+			 const double GmresRtol,
+			 const int GmresRestart,
+			 const int GmresMaxit){
     assert(x0.size() == Ndim);
     auto fx = std::bind(&CQCGL1dRpo::Fx, this, ph::_1);
     auto dfx = std::bind(&CQCGL1dRpo::DFx, this, ph::_1, ph::_2);
@@ -312,14 +337,14 @@ CQCGL1dRpo::findRPO_hook(const VectorXd &x0, const double T,
  */
 std::tuple<MatrixXd, double, double, double, double>
 CQCGL1dRpo::findRPOM_hook(const MatrixXd &x0, const double T,
-			const double th0, const double phi0,
-			const double tol,
-			const double minRD,
-			const int maxit,
-			const int maxInnIt,
-			const double GmresRtol,
-			const int GmresRestart,
-			const int GmresMaxit){
+			  const double th0, const double phi0,
+			  const double tol,
+			  const double minRD,
+			  const int maxit,
+			  const int maxInnIt,
+			  const double GmresRtol,
+			  const int GmresRestart,
+			  const int GmresMaxit){
     assert(x0.cols() == M && x0.rows() == Ndim);
     auto fx = std::bind(&CQCGL1dRpo::MFx, this, ph::_1);
     auto dfx = std::bind(&CQCGL1dRpo::MDFx, this, ph::_1, ph::_2);
@@ -439,13 +464,13 @@ VectorXd CQCGL1dRpo::calPre(const VectorXd &x, const VectorXd &dx){
 std::tuple<MatrixXd, double>
 
 CQCGL1dRpo::findRPOM_hook2(const MatrixXd &x0, 
-			 const double tol,
-			 const double minRD,
-			 const int maxit,
-			 const int maxInnIt,
-			 const double GmresRtol,
-			 const int GmresRestart,
-			 const int GmresMaxit){
+			   const double tol,
+			   const double minRD,
+			   const int maxit,
+			   const int maxInnIt,
+			   const double GmresRtol,
+			   const int GmresRestart,
+			   const int GmresMaxit){
     int N = Ndim + 3;
     assert(x0.cols() == M && x0.rows() == N);
     auto fx = std::bind(&CQCGL1dRpo::MFx2, this, ph::_1);
@@ -553,9 +578,9 @@ CQCGL1dRpo::calJJF(const VectorXd &x){
 
 std::tuple<MatrixXd, double>
 CQCGL1dRpo::findRPOM_LM(const MatrixXd &x0, 
-		      const double tol,
-		      const int maxit,
-		      const int innerMaxit){
+			const double tol,
+			const int maxit,
+			const int innerMaxit){
     int N = Ndim + 3;
     assert(x0.cols() == M && x0.rows() == N);
     auto fx = std::bind(&CQCGL1dRpo::MFx2, this, ph::_1);

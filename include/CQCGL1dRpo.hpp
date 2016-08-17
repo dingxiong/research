@@ -44,9 +44,144 @@ public:
     
     
     ////////////////////////////////////////////////////////////    
-    VectorXd Fx(const VectorXd & x);
-    VectorXd DFx(const VectorXd &x, const VectorXd &dx);
-    VectorXd MFx(const VectorXd &x);
+    static
+    void writeRpo(const string fileName, const string groupName,
+		  const MatrixXd &x, const double T, const int nstp,
+		  const double th, const double phi, double err);    
+
+    static
+    void writeRpo2(const std::string fileName, const string groupName, 
+			   const MatrixXd &x, const int nstp, double err);
+
+    static
+    std::tuple<MatrixXd, double, int, double, double, double>
+    readRpo(const string fileName, const string groupName);
+
+    static
+    void
+    moveRpo(string infile, string ingroup, 
+	    string outfile, string outgroup);
+
+    static
+    std::string 
+    toStr(double x);
+    
+    static
+    std::tuple<MatrixXd, double, int, double, double, double>
+    readRpo(const string fileName, double di, int index);
+    
+    static
+    void 
+    writeRpo(const string fileName, double di, int index,
+	     const MatrixXd &x, const double T, const int nstp,
+	     const double th, const double phi, double err);
+
+    static
+    void 
+    writeRpo2(const string fileName, double di, int index,
+	      const MatrixXd &x, const int nstp,
+	      double err);
+    
+    static
+    void 
+    moveRpo(string infile, string ingroup,
+	    string outfile, double di, int index);
+
+    static
+    void 
+    moveRpo(string infile, string outfile, double di, int index);
+
+    ////////////////////////////////////////////////////////////  
+
+    /**
+     * @brief         form g*f(x,t) - x
+     * @param[in] x   [Ndim + 3, 1] dimensional vector: (x, t, theta, phi)
+     * @return        vector F(x, t) =
+     *                  | g*f(x, t) - x|
+     *                  |       0      |
+     *                  |       0      |
+     *                  |       0      |
+     */
+    template<int nstp>
+    VectorXd Fx(const VectorXd & x){
+	VectorXd a0 = x.head(Ndim);
+	Vector3d t = x.tail<3>();
+	assert(t(0) > 0); 		/* make sure T > 0 */
+	VectorXd fx = intg(a0, t(0)/nstp, nstp, nstp).rightCols<1>();
+	VectorXd F(Ndim + 3);
+	F << Rotate(fx, t(1), t(2)) - a0, 0, 0, 0;
+	return F;
+    }
+
+
+
+    /**
+     * @brief get the product J * dx
+     *
+     * Here J = | g*J(x, t) - I,  g*v(f(x,t)),  g*t1(f(x,t)),  g*t2(f(x,t))| 
+     *          |     v(x),          0             0                  0    |
+     *          |     t1(x),         0             0                  0    |
+     *          |     t2(x),         0             0                  0    |
+     */
+    template<int nstp>
+    VectorXd DFx(const VectorXd &x, const VectorXd &dx){
+	VectorXd a0 = x.head(Ndim);
+	Vector3d t = x.tail<3>();
+	VectorXd da0 = dx.head(Ndim);
+	Vector3d dt = dx.tail<3>();
+	assert(t(0) > 0); 		/* make sure T > 0 */
+	ArrayXXd tmp = intgv(a0, da0, t(0)/nstp, nstp); /* f(x, t) and J(x, t)*dx */
+	ArrayXd gfx = Rotate(tmp.col(0), t(1), t(2)); /* g(theta, phi)*f(x, t) */
+	ArrayXd gJx = Rotate(tmp.col(1), t(1), t(2)); /* g(theta, phi)*J(x,t)*dx */
+	ArrayXd v1 = velocity(a0);	       /* v(x) */
+	ArrayXd v2 = velocity(tmp.col(0)); /* v(f(x, t)) */
+	ArrayXd t1 = transTangent(a0);
+	ArrayXd t2 = phaseTangent(a0);
+	VectorXd DF(Ndim + 3);
+	DF << gJx.matrix() - a0
+	    + cgl2.Rotate(v2, t(1), t(2)).matrix() * dt(0)
+	    + cgl2.transTangent(gfx).matrix() * dt(1)
+	    + cgl2.phaseTangent(gfx).matrix() * dt(2),
+	
+	    v1.matrix().dot(da0),
+	    t1.matrix().dot(da0),
+	    t2.matrix().dot(da0)
+	    ;
+
+	return DF;
+    }
+
+    /* 
+     * @brief multishooting form [f(x_0, t) - x_1, ... g*f(x_{M-1},t) - x_0]
+     * @param[in] x   [Ndim * M + 3, 1] dimensional vector: (x, t, theta, phi)
+     * @return    vector F(x, t) =
+     *               |   f(x_0, t) -x_1     |
+     *               |   f(x_1, t) -x_2     |
+     *               |     ......           |
+     *               | g*f(x_{M-1}, t) - x_0|
+     *               |       0              |
+     *               |       0              |
+     *               |       0              |
+     *
+     */
+    VectorXd CQCGL1dRpo::MFx(const VectorXd &x){
+	Vector3d t = x.tail<3>();	   /* T, theta, phi */
+	assert(t(0) > 0);		   /* make sure T > 0 */
+	VectorXd F(VectorXd::Zero(Ndim * M + 3));
+
+	for(size_t i = 0; i < M; i++){
+	    VectorXd fx = cgl1.intg(x.segment(i*Ndim, Ndim), nstp, nstp).rightCols<1>();
+	    if(i != M-1){		// the first M-1 vectors
+		F.segment(i*Ndim, Ndim) = fx - x.segment((i+1)*Ndim, Ndim);
+	    }
+	    else{			// the last vector
+		F.segment(i*Ndim, Ndim) = cgl1.Rotate(fx, t(1), t(2)).matrix() - x.head(Ndim);
+	    }
+	}
+    
+	return F;
+    }
+    
     VectorXd MDFx(const VectorXd &x, const VectorXd &dx);
     
     std::tuple<VectorXd, double, double, double, double>

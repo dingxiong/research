@@ -29,7 +29,9 @@ namespace MyH5 {
     void writeVectorXd(H5File &file, string DSitem, const VectorXd &vec);
     MatrixXd readMatrixXd(H5File &file, string DSitem);
     VectorXd readVectorXd(H5File &file, string DSitem);
-    void checkGroup(H5File &file, const std::string groupName);
+    bool checkGroup(H5File &file, const std::string groupName, const bool doCreate);
+    bool checkGroup(std::string fileName, const std::string groupName, const bool doCreate);
+
     //////////////////////////////////////////////////////////////////////
     /* KS related */
     MatrixXi
@@ -103,41 +105,6 @@ namespace MyH5 {
     void 
     KSwriteReqE(const string fileName, const int Id, 
 		const VectorXcd e);
-    
-    //////////////////////////////////////////////////////////////////////
-    /* cqcgl related */
-    void CqcglWriteRPO(const string fileName, const string groupName,
-		       const MatrixXd &x, const double T, const int nstp,
-		       const double th, const double phi, double err);
-    std::tuple<MatrixXd, double, int, double, double, double>
-    CqcglReadRPO(const string fileName, const string groupName);
-    void
-    CqcglReadRPO(const string fileName, const string groupName,
-		      MatrixXd &x, double &T, int &nstp,
-		      double &th, double &phi, double &err);
-    void
-    CqcglMoveRPO(string infile, string ingroup, 
-		 string outfile, string outgroup);
-    std::string formDiGroupName(double di);
-    void CqcglCheckDiExist(const string fileName, double di);
-    void CqcglReadRPO(const string fileName, double di, int index,
-		      MatrixXd &x, double &T, int &nstp,
-		      double &th, double &phi, double &err);
-    void 
-    CqcglMoveRPO(string infile, string ingroup,
-		 string outfile, double di, int index);
-    void 
-    CqcglMoveRPO(string infile, string outfile, double di, int index);
-    void 
-    CqcglWriteRPO(const string fileName, double di, int index,
-		  const MatrixXd &x, const double T, const int nstp,
-		  const double th, const double phi, double err);
-    
-    void CqcglWriteRPO2(const std::string fileName, const string groupName, 
-			const MatrixXd &x, const int nstp, double err);
-    void CqcglWriteRPO2(const string fileName, double di, int index,
-			const MatrixXd &x, const int nstp,
-			double err);
 }
 
 //////////////////////////////////////////////////

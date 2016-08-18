@@ -27,25 +27,19 @@ public :
 
     ////////////////////////////////////////////////////////////
     static
+    std::string 
+    toStr(double Bi, double Gi, int index);
+
+    static
     std::tuple<VectorXd, double, double ,double>
     readReq(const std::string fileName, const std::string groupName); 
     
-    static
-    std::tuple<VectorXd, double, double ,double>
-    readReq(const std::string fileName, 
-	    const double Bi, const double Gi, int id);
-
     static
     void 
     writeReq(const std::string fileName, const std::string groupName,
 	     const ArrayXd &a, const double wth, 
 	     const double wphi, const double err);
-    static
-    void 
-    writeReq(const std::string fileName, 
-	     const double Bi, const double Gi, int id,
-	     const ArrayXd &a, const double wth, const double wphi,
-	     const double err);
+
     
     ////////////////////////////////////////////////////////////
     VectorXd Fx(const VectorXd &x);

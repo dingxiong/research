@@ -1,5 +1,9 @@
 #include "CQCGL1dRpo.hpp"
 #include <functional>   // std::bind
+#include "myH5.hpp"
+
+#define cee(x) (cout << (x) << endl << endl)
+
 namespace ph = std::placeholders;
 
 using namespace denseRoutines;
@@ -7,6 +11,7 @@ using namespace sparseRoutines;
 using namespace iterMethod;
 using namespace Eigen;
 using namespace std;
+using namespace MyH5;
 
 
 //////////////////////////////////////////////////////////////////////
@@ -40,6 +45,17 @@ CQCGL1dRpo & CQCGL1dRpo::operator=(const CQCGL1dRpo &x){
 //////////////////////////////////////////////////////////////////////
 //                      member functions                            //
 //////////////////////////////////////////////////////////////////////
+std::string 
+CQCGL1dRpo::toStr(double x){
+    char buffer [20];
+    sprintf (buffer, "%013.6f", x);
+    return std::string(buffer);
+}
+
+std::string
+CQCGL1dRpo::toStr(double x, double y){
+    return toStr(x) + '/' + toStr(y);
+}
 
 /**
  * @note group should be a new group
@@ -50,7 +66,7 @@ void CQCGL1dRpo::writeRpo(const string fileName, const string groupName,
 			  const double th, const double phi, double err){
 
     H5File file(fileName, H5F_ACC_RDWR);
-    checkGroup(file, groupName);
+    checkGroup(file, groupName, true);
     string DS = "/" + groupName + "/";
 
     writeMatrixXd(file, DS + "x", x);
@@ -100,97 +116,84 @@ CQCGL1dRpo::moveRpo(string infile, string ingroup,
     writeRpo(outfile, outgroup, x, T, nstp, th, phi, err);
 }
 
-//////////////////////////////////////////////////////////////////////
-// The following are overloading functions specific to di groups 
-
-std::string 
-CQCGL1dRpo::toStr(double x){
-    char buffer [20];
-    sprintf (buffer, "%013.6f", x);
-    return std::string(buffer);
-}
-    
-std::tuple<MatrixXd, double, int, double, double, double>
-CQCGL1dRpo::readRpo(const string fileName, double di, int index){
-    string groupName = toStr(di) + "/" + std::to_string(index);	
-    return readRpo(fileName, groupName);
-}
-
-void 
-CQCGL1dRpo::writeRpo(const string fileName, double di, int index,
-		     const MatrixXd &x, const double T, const int nstp,
-		     const double th, const double phi, double err){
-    string groupName = toStr(di) + "/" + std::to_string(index);
-    writeRpo(fileName, groupName, x, T, nstp, th, phi, err);
-}
-
-void 
-CQCGL1dRpo::writeRpo2(const string fileName, double di, int index,
-		      const MatrixXd &x, const int nstp,
-		      double err){
-    string groupName = toStr(di) + "/" + std::to_string(index);
-    writeRpo2(fileName, groupName, x, nstp, err);
-}
-
-
-void 
-CQCGL1dRpo::moveRpo(string infile, string ingroup,
-		    string outfile, double di, int index){
-    string outgroup = toStr(di) + "/" + std::to_string(index);
-    moveRpo(infile, ingroup, outfile, outgroup);
-}
-   
-void 
-CQCGL1dRpo::moveRpo(string infile, string outfile, double di, int index){
-    string groupName = toStr(di) + "/" + std::to_string(index);
-    CqcglMoveRPO(infile, groupName, outfile, groupName); 
-}
-
 
 //======================================================================
 
-#if 0
-
-
 /* 
- * @brief get the multishooting product J * dx. Dimension [nstp*M+3, 1]
+ * @brief multishooting form [f(x_0, t) - x_1, ... g*f(x_{M-1},t) - x_0]
+ * @param[in] x   [Ndim * M + 3, 1] dimensional vector: (x, t, theta, phi)
+ * @return    vector F(x, t) =
+ *               |   f(x_0, t) -x_1     |
+ *               |   f(x_1, t) -x_2     |
+ *               |     ......           |
+ *               | g*f(x_{M-1}, t) - x_0|
+ *               |       0              |
+ *               |       0              |
+ *               |       0              |
+ *
+ */
+VectorXd CQCGL1dRpo::MFx(const VectorXd &x, int nstp){
+    assert( (x.size() - 3) % Ndim == 0 );
+    int m = (x.size() - 3) / Ndim;
+	
+    Vector3d t = x.tail<3>();	   /* T, theta, phi */
+    assert(t(0) > 0);		   /* make sure T > 0 */
+    VectorXd F(VectorXd::Zero(Ndim * m + 3));
+
+    for(size_t i = 0; i < m; i++){
+	VectorXd fx = intg(x.segment(i*Ndim, Ndim), t(0)/nstp/m, nstp, nstp).rightCols<1>();
+	if(i != m-1){		// the first m-1 vectors
+	    F.segment(i*Ndim, Ndim) = fx - x.segment((i+1)*Ndim, Ndim);
+	}
+	else{			// the last vector
+	    F.segment(i*Ndim, Ndim) = Rotate(fx, t(1), t(2)).matrix() - x.head(Ndim);
+	}
+    }
+	
+    return F;
+}
+    
+/* 
+ * @brief get the multishooting product J * dx. Dimension [nstp*m+3, 1]
  * @see MFx()
  */
-VectorXd CQCGL1dRpo::MDFx(const VectorXd &x, const VectorXd &dx){
+VectorXd CQCGL1dRpo::MDFx(const VectorXd &x, const VectorXd &dx, int nstp){
+    assert( (x.size() - 3) % Ndim == 0 );
+    int m = (x.size() - 3) / Ndim;
+
     Vector3d t = x.tail<3>();
     Vector3d dt = dx.tail<3>();
     assert(t(0) > 0); 		/* make sure T > 0 */
-    cgl2.changeh(t(0) / nstp / M);
-    VectorXd DF(VectorXd::Zero(Ndim * M + 3));
+    VectorXd DF(VectorXd::Zero(Ndim * m + 3));
     
-    for(size_t i = 0; i < M; i++){
+    for(size_t i = 0; i < m; i++){
 	ArrayXd xt = x.segment(i*Ndim, Ndim);
 	ArrayXd dxt = dx.segment(i*Ndim, Ndim);
-	ArrayXXd tmp = cgl2.intgv(xt, dxt, nstp); /* f(x, t) and J(x, t)*dx */
+	ArrayXXd tmp = intgv(xt, dxt, t(0)/nstp/m, nstp); /* f(x, t) and J(x, t)*dx */
 	
-	VectorXd v1 = cgl2.velocity(xt); /* v(x) */
-	VectorXd v2 = cgl2.velocity(tmp.col(0));   /* v(f(x, t)) */
-	VectorXd t1 = cgl2.transTangent(xt);
-	VectorXd t2 = cgl2.phaseTangent(xt);
+	VectorXd v1 = velocity(xt); /* v(x) */
+	VectorXd v2 = velocity(tmp.col(0));   /* v(f(x, t)) */
+	VectorXd t1 = transTangent(xt);
+	VectorXd t2 = phaseTangent(xt);
 
 	// update the last 3 elements
-	DF(M * Ndim) += v1.dot(dxt.matrix());
-	DF(M * Ndim + 1) += t1.dot(dxt.matrix());
-	DF(M * Ndim + 2) += t2.dot(dxt.matrix());
+	DF(m * Ndim) += v1.dot(dxt.matrix());
+	DF(m * Ndim + 1) += t1.dot(dxt.matrix());
+	DF(m * Ndim + 2) += t2.dot(dxt.matrix());
 	
-	if(i != M-1){
+	if(i != m-1){
 	    DF.segment(i*Ndim, Ndim) = tmp.col(1).matrix()
 		- dx.segment((i+1)*Ndim , Ndim)
-		+ 1.0 / M * v2 * dt(0);
+		+ 1.0 / m * v2 * dt(0);
 	}
 	else{
-	    ArrayXd gfx = cgl2.Rotate(tmp.col(0), t(1), t(2)); /* g(theta, phi)*f(x, t) */
-	    VectorXd gJx = cgl2.Rotate(tmp.col(1), t(1), t(2)); /* g(theta, phi)*J(x,t)*dx */
+	    ArrayXd gfx = Rotate(tmp.col(0), t(1), t(2)); /* g(theta, phi)*f(x, t) */
+	    VectorXd gJx = Rotate(tmp.col(1), t(1), t(2)); /* g(theta, phi)*J(x,t)*dx */
 	    DF.segment(i*Ndim, Ndim) = gJx
 		- dx.segment(0, Ndim)
-		+ 1.0/M * cgl2.Rotate(v2, t(1), t(2)).matrix() * dt(0)
-		+ cgl2.transTangent(gfx).matrix() * dt(1)
-		+ cgl2.phaseTangent(gfx).matrix() * dt(2)
+		+ 1.0/m * Rotate(v2, t(1), t(2)).matrix() * dt(0)
+		+ transTangent(gfx).matrix() * dt(1)
+		+ phaseTangent(gfx).matrix() * dt(2)
 		;
 	}
     }
@@ -199,6 +202,104 @@ VectorXd CQCGL1dRpo::MDFx(const VectorXd &x, const VectorXd &dx){
     
 }
 
+/**
+ * @brief         form [g*f(x,t) - x, ...]
+ *
+ * Form the difference vector, which consists of m pieces, each piece
+ * correspond to (x, t, theta, phi). If m = 0, then it reduces to single
+ * shooting.
+ * 
+ * @param[in] x   [(Ndim + 3)*m, 1] dimensional vector. 
+ * @return        vector F_i(x, t) =
+ *                  | g*f(x, t) - x|
+ *                  |       0      |
+ *                  |       0      |
+ *                  |       0      |
+ *                for i = 1, 2, ..., m
+ */
+VectorXd CQCGL1dRpo::MFx2(const VectorXd &x, int nstp){
+    int n = Ndim + 3;
+    assert( x.size() % n == 0 );
+    int m = x.size() / n;
+
+    VectorXd F(VectorXd::Zero(n*m));
+	
+    for(int i = 0; i < m; i++){
+	VectorXd xi = x.segment(n*i, n);
+	int j = (i+1) % m;
+	VectorXd xn = x.segment(n*j, n);
+	
+	double t = xi(Ndim);
+	double th = xi(Ndim+1);
+	double phi = xi(Ndim+2);	
+	assert(t > 0);
+	
+	VectorXd fx = intg(xi.head(Ndim), t/nstp/m, nstp, nstp).rightCols<1>();
+	
+	F.segment(i*n, Ndim) = Rotate(fx, th, phi).matrix() - xn.head(Ndim);
+    }
+	
+    return F;
+}
+
+/**
+ * @brief get the product J * dx
+ *
+ * If m = 1, then it reduces to single shooting
+ *
+ * Here J_i  = | g*J(x, t) - I,  g*v(f(x,t)),  g*t1(f(x,t)),  g*t2(f(x,t))| 
+ *             |     v(x),          0             0                  0    |
+ *             |     t1(x),         0             0                  0    |
+ *             |     t2(x),         0             0                  0    |
+ */
+VectorXd CQCGL1dRpo::MDFx2(const VectorXd &x, const VectorXd &dx, int nstp){
+    int n = Ndim + 3;
+    assert( x.size() % n == 0 );
+    int m = x.size() / n;
+	
+    VectorXd DF(VectorXd::Zero(n*m));
+
+    for (int i = 0; i < m; i++) {
+	VectorXd xi = x.segment(i*n, n);
+	VectorXd dxi = dx.segment(i*n, n);
+	int j = (i+1) % m;
+	VectorXd dxn = dx.segment(j*n, n);
+	
+	double t = xi(Ndim);
+	double th = xi(Ndim+1);
+	double phi = xi(Ndim+2);
+	assert( t > 0 );
+	double dt = dxi(Ndim);
+	double dth = dxi(Ndim+1);
+	double dphi = dxi(Ndim+2);
+	
+	MatrixXd tmp = intgv(xi.head(Ndim), dxi.head(Ndim), t/nstp/m, nstp);
+
+	VectorXd gfx = Rotate(tmp.col(0), th, phi);
+	VectorXd gJx = Rotate(tmp.col(1), th, phi);
+	
+	VectorXd v = velocity(xi.head(Ndim));
+	VectorXd vgf = velocity(gfx); 
+
+	VectorXd t1 = transTangent(xi.head(Ndim));
+	VectorXd tgf1 = transTangent(gfx);
+
+	VectorXd t2 = phaseTangent(xi.head(Ndim));
+	VectorXd tgf2 = phaseTangent(gfx);
+	
+	DF.segment(i*n, Ndim) = gJx + vgf*dt + tgf1*dth + tgf2*dphi - dxn.head(Ndim);
+	DF(i*n+Ndim) = v.dot(dxi.head(Ndim));
+	DF(i*n+Ndim+1) = t1.dot(dxi.head(Ndim));
+	DF(i*n+Ndim+2) = t2.dot(dxi.head(Ndim));
+	
+    }
+    
+    return DF;
+
+}
+
+//======================================================================
+#if 0
 
 /**
  * @brief find rpo in cqcgl 1d system
@@ -377,71 +478,6 @@ CQCGL1dRpo::findRPOM_hook(const MatrixXd &x0, const double T,
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // new version of F and DF, This version use a full multishooting method
 
-VectorXd CQCGL1dRpo::MFx2(const VectorXd &x){
-    int N = Ndim + 3;
-    VectorXd F(VectorXd::Zero(N*M));
-    
-    for(int i = 0; i < M; i++){
-	VectorXd xi = x.segment(N*i, N);
-	int j = (i+1) % M;
-	VectorXd xn = x.segment(N*j, N);
-	
-	double t = xi(Ndim);
-	double th = xi(Ndim+1);
-	double phi = xi(Ndim+2);	
-	assert(t > 0);
-	
-	VectorXd fx = cgl1.aintg(xi.head(Ndim), h0Trial, t, skipRateTrial).rightCols<1>();
-	
-	F.segment(i*N, Ndim) = cgl1.Rotate(fx, th, phi).matrix() - xn.head(Ndim);
-    }
-
-    return F;
-}
-
-VectorXd CQCGL1dRpo::MDFx2(const VectorXd &x, const VectorXd &dx){
-    int N = Ndim + 3;
-    VectorXd DF(VectorXd::Zero(N*M));
-
-    for (int i = 0; i < M; i++) {
-	VectorXd xi = x.segment(i*N, N);
-	VectorXd dxi = dx.segment(i*N, N);
-	int j = (i+1) % M;
-	VectorXd dxn = dx.segment(j*N, N);
-	
-	double t = xi(Ndim);
-	double th = xi(Ndim+1);
-	double phi = xi(Ndim+2);
-	assert( t > 0 );
-	double dt = dxi(Ndim);
-	double dth = dxi(Ndim+1);
-	double dphi = dxi(Ndim+2);
-	
-	MatrixXd tmp = cgl2.aintgv(xi.head(Ndim), dxi.head(Ndim), h0Trial, t);
-
-	VectorXd gfx = cgl2.Rotate(tmp.col(0), th, phi);
-	VectorXd gJx = cgl2.Rotate(tmp.col(1), th, phi);
-	
-	VectorXd v = cgl2.velocity(xi.head(Ndim));
-	VectorXd vgf = cgl2.velocity(gfx); 
-
-	VectorXd t1 = cgl2.transTangent(xi.head(Ndim));
-	VectorXd tgf1 = cgl2.transTangent(gfx);
-
-	VectorXd t2 = cgl2.phaseTangent(xi.head(Ndim));
-	VectorXd tgf2 = cgl2.phaseTangent(gfx);
-	
-	DF.segment(i*N, Ndim) = gJx + vgf*dt + tgf1*dth + tgf2*dphi - dxn.head(Ndim);
-	DF(i*N+Ndim) = v.dot(dxi.head(Ndim));
-	DF(i*N+Ndim+1) = t1.dot(dxi.head(Ndim));
-	DF(i*N+Ndim+2) = t2.dot(dxi.head(Ndim));
-	
-    }
-    
-    return DF;
-
-}
-
 VectorXd CQCGL1dRpo::calPre(const VectorXd &x, const VectorXd &dx){
     int N = Ndim + 3;
     VectorXd DF(VectorXd::Zero(N*M));
@@ -454,16 +490,16 @@ VectorXd CQCGL1dRpo::calPre(const VectorXd &x, const VectorXd &dx){
 	double phi = xi(Ndim+2);
 
 	DF.segment(i*N, N) << 
-	    cgl2.Rotate(dxi.head(Ndim), -th, -phi),
+	    Rotate(dxi.head(Ndim), -th, -phi),
 	    dxi.tail(3);
     }
 
     return DF;
 }
 
-std::tuple<MatrixXd, double>
-
+std::tuple<MatrixXd, double, int>
 CQCGL1dRpo::findRPOM_hook2(const MatrixXd &x0, 
+			   const int nstp,
 			   const double tol,
 			   const double minRD,
 			   const int maxit,
@@ -471,17 +507,20 @@ CQCGL1dRpo::findRPOM_hook2(const MatrixXd &x0,
 			   const double GmresRtol,
 			   const int GmresRestart,
 			   const int GmresMaxit){
-    int N = Ndim + 3;
-    assert(x0.cols() == M && x0.rows() == N);
-    auto fx = std::bind(&CQCGL1dRpo::MFx2, this, ph::_1);
-    auto dfx = std::bind(&CQCGL1dRpo::MDFx2, this, ph::_1, ph::_2);
+    int n = Ndim + 3;
+    int m = x0.cols();
+    assert( x0.rows() == n);
+
+    auto fx = [this, nstp](const VectorXd &x){ return MFx2(x, nstp); };
+    auto dfx = [this, nstp](const VectorXd &x, const VectorXd &dx){ return MDFx2(x, dx, nstp); };
     
     // initialize input 
     MatrixXd x(x0);
-    x.resize(M * N, 1);
+    x.resize(m * n, 1);
     
 
-    auto Pre = [this](const VectorXd &x, const VectorXd &dx){VectorXd p = calPre(x, dx); return p; };
+    // auto Pre = [this](const VectorXd &x, const VectorXd &dx){VectorXd p = calPre(x, dx); return p; };
+    auto Pre = [this](const VectorXd &x, const VectorXd &dx){ return dx; };
     VectorXd xnew;
     std::vector<double> errs;
     int flag;
@@ -492,8 +531,9 @@ CQCGL1dRpo::findRPOM_hook2(const MatrixXd &x0,
 
     MatrixXd tmp2(xnew);
     tmp2.resize(N, M);
-    return std::make_tuple(tmp2,       /* x, th, phi */
-			   errs.back() /* err */
+    return std::make_tuple(tmp2,	/* x, th, phi */
+			   errs.back(), /* err */
+			   flag
 			   );
 }
 

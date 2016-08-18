@@ -83,24 +83,38 @@ namespace MyH5 {
     }
 
     /**
-     * @brief check the existence of groups recursively. If not exist, then create it.
+     * @brief check the existence of groups recursively. 
      *
+     * If doCreate = false, it will immediately return if not exist
+     * If doCreate = true. It will finish the loop 
+     * 
      * @param[in] groupName  some string like "a/b/c". Note, no '/' at the head or tail.
+     * @param[in] doCreate   if not exist, whether create the group
      */
-    void checkGroup(H5File &file, const std::string groupName){
+    bool checkGroup(H5File &file, const std::string groupName, const bool doCreate){
 	stringstream ss(groupName);
 	string item, g;
 	hid_t id = file.getId();
 	
+	bool exist = true;
+	
 	while (getline(ss, item, '/')) {
 	    g += '/' + item;
 	    if(H5Lexists(id, g.c_str(), H5P_DEFAULT) == false){
-		file.createGroup(g.c_str());
+		exist = false;
+		if (doCreate) file.createGroup(g.c_str());
+		else return exist;
 	    }
 	}
-	
-    }
     
+	return exist;
+    }
+
+    bool checkGroup(std::string fileName, const std::string groupName, const bool doCreate){
+	H5File file(fileName, H5F_ACC_RDWR);
+	return checkGroup(file, groupName, doCreate);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////         ks related          ////////////////////////////////////////////////////////////////////////////
     

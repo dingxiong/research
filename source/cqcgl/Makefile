@@ -18,14 +18,11 @@ SOURCE = CQCGL1d.cc
 else ifeq ($(t), req1d)
 SOURCE = CQCGL1dReq.cc
 
-else ifeq ($(t), rpo)		# for RPO code
-SOURCE = CQCGLRPO.cc 
+else ifeq ($(t), rpo1d)		# for RPO code
+SOURCE = CQCGL1dRpo.cc 
 
 else ifeq ($(t), int2d)		# for 2d CQCGL class
 SOURCE = CQCGL2d.cc CQCGLgeneral2d.cc 
-
-else ifeq ($(t), etd)		# for ETD code
-SOURCE = CqcglETD.cc 
 
 else ifeq ($(t), req2d)
 SOURCE = CQCGL2dReq.cc
@@ -42,7 +39,7 @@ SHARED = $(addprefix lib, $(addsuffix .so, $(basename $(word 1, $(SOURCE)))))
 STATIC = $(addprefix lib, $(addsuffix .a, $(basename $(word 1, $(SOURCE)))))
 
 
-all : $(SHARED) $(STATIC) 
+all : $(SHARED) # $(STATIC) 
 
 $(SHARED): $(SOURCE)
 	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@

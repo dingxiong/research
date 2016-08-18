@@ -728,7 +728,10 @@ namespace iterMethod {
      *
      * GMRES will converge in fewer steps if the eigenvalues are clustered. A 
      * matrix P^{-1} which makes AP^{-1} close to identiy is the goal of right
-     * side preconditioning. See discussions in
+     * side preconditioning. The equation then becomes AP^{-1} (Px) = b. If the
+     * solution is AP^{-1} y = b. then x = P^{-1} y. So only need a function
+     * to calculate P^{-1} y.
+     * See discussions in
      * ----------------------------------------------------------------------
      * "How Fast are Nonsymmetric Matrix Iterations?" by
      * Nachtigal, Noël; Reddy, Satish C.; and Trefethen, Lloyd N.

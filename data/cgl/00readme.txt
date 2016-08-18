@@ -62,3 +62,17 @@ reqDi.h5 : store soliton solutions for different di. Group name is di
 req_N: previous soliton solutions for different N. for L = 50
 
 
+############################################################
+reqBiGi.h5: req in the Bi -- Gi parameter plane
+
+reqBiGi_bak1.h5 : only one req with index 1 and 2
+
+reqBiGi_bak2.h5 : index 1 is extended
+
+reqBiGi_bak3.h5 : index 2 is extended
+
+reqBiGi_bak4.h5 : index 1 is further extended but failed at 
+		Bi = -2.1, Gi = -5.4
+
+reqBiGi_bak4.h5 : index 2 is further extended but failed at 
+		Bi = -2.1, Gi = -5.4

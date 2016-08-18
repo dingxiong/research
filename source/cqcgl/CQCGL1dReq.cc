@@ -47,6 +47,18 @@ CQCGL1dReq & CQCGL1dReq::operator=(const CQCGL1dReq &x){
 //                      member functions                            //
 //////////////////////////////////////////////////////////////////////
 
+std::string 
+CQCGL1dReq::toStr(double Bi, double Gi, int id){
+    char g1[20], g2[20];
+    sprintf(g1, "%013.6f", Bi);
+    sprintf(g2, "%013.6f", Gi);
+    
+    string s1(g1);
+    string s2(g2);
+    string s = s1 + '/' + s2 + '/' + to_string(id);
+    
+    return s;
+}
 
 /**
  * @brief read req (relative equibrium) info from hdf5 file
@@ -64,18 +76,7 @@ CQCGL1dReq::readReq(const std::string fileName, const std::string groupName){
 		      );
 }
 
-std::tuple<VectorXd, double, double ,double>
-CQCGL1dReq::readReq(const std::string fileName, 
-		    const double Bi, const double Gi, int id){
-    char g1[20], g2[20];
-    sprintf(g1, "%013.6f", Bi);
-    sprintf(g2, "%013.6f", Gi);
-    
-    string s1(g1);
-    string s2(g2);
-    string s = s1 + '/' + s2 + '/' + to_string(id);
-    return readReq(fileName, s);
-}
+
 
 /**
  * @brief write [a, wth, wphi, err] of Req of cqcgl into a group
@@ -88,7 +89,7 @@ CQCGL1dReq::writeReq(const std::string fileName, const std::string groupName,
 		     const double wphi, const double err){
     
     H5File file(fileName, H5F_ACC_RDWR);
-    checkGroup(file, groupName);
+    checkGroup(file, groupName, true);
     string DS = "/" + groupName + "/";
     
 	
@@ -96,21 +97,6 @@ CQCGL1dReq::writeReq(const std::string fileName, const std::string groupName,
     writeScalar<double>(file, DS + "wth", wth);
     writeScalar<double>(file, DS + "wphi", wphi);
     writeScalar<double>(file, DS + "err", err);
-}
-
-void 
-CQCGL1dReq::writeReq(const std::string fileName, 
-		     const double Bi, const double Gi, int id,
-		     const ArrayXd &a, const double wth, const double wphi,
-		     const double err){
-    char g1[20], g2[20];
-    sprintf(g1, "%013.6f", Bi);
-    sprintf(g2, "%013.6f", Gi);
-    
-    string s1(g1);
-    string s2(g2);
-    string s = s1 + '/' + s2 + '/' + to_string(id);
-    writeReq(fileName, s, a, wth, wphi, err);
 }
 
 
@@ -220,7 +206,7 @@ CQCGL1dReq::findReqParaSeq(const std::string file, int id, double step, int Ns, 
     
     ArrayXd a0;
     double wth0, wphi0, err0;
-    std::tie(a0, wth0, wphi0, err0) = CQCGL1dReq::readReq(file, Bi, Gi, id);
+    std::tie(a0, wth0, wphi0, err0) = CQCGL1dReq::readReq(file, toStr(Bi, Gi, id));
     
     ArrayXd a;
     double wth, wphi, err;
@@ -229,15 +215,22 @@ CQCGL1dReq::findReqParaSeq(const std::string file, int id, double step, int Ns, 
     for (int i = 0; i < Ns; i++){
 	if (isBi) Bi += step;
 	else Gi += step;
-
-	std::tie(a, wth, wphi, err, flag) = findReq_LM(a0, wth0, wphi0, 1e-10, 100, 1000);
-	if (flag == 0){
-	    writeReq(file, Bi, Gi, id, a, wth, wphi, err);
-	    a0 = a;
-	    wth0 = wth;
-	    wphi0 = wphi;
+	
+	// if exist, use it as seed, otherwise find req
+	if ( checkGroup(file, toStr(Bi, Gi, id), false) ){ 
+	    std::tie(a0, wth0, wphi0, err0) = CQCGL1dReq::readReq(file, toStr(Bi, Gi, id));
 	}
-	else exit(1);
+	else {
+	    fprintf(stderr, "%g, %g \n", Bi, Gi);
+	    std::tie(a, wth, wphi, err, flag) = findReq_LM(a0, wth0, wphi0, 1e-10, 100, 1000);
+	    if (flag == 0){
+		writeReq(file, toStr(Bi, Gi, id), a, wth, wphi, err);
+		a0 = a;
+		wth0 = wth;
+		wphi0 = wphi;
+	    }
+	    // else exit(1);
+	}
     }
     
     Bi = Bi0; 			// restore Bi, Gi

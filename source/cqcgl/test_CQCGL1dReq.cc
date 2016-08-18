@@ -102,11 +102,15 @@ int main(){
     double Bi = 0.8;
     double Gi = -0.6;
 
+    iterMethod::LM_OUT_PRINT = false;
+    iterMethod::LM_IN_PRINT = false;
+    iterMethod::CG_PRINT = false;
+
     int ids[] = {1, 2};
     for (int i = 0; i < 2; i++){
 	int id = ids[i];
 	CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
-
+	
 	string file = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGi.h5";
 	double stepB = -0.1;
 	int NsB = 40;

@@ -1,8 +1,8 @@
-from py_cqcgl1d_threads import pyCqcgl1d
+from py_CQCGL1d import *
 from personalFunctions import *
 from scipy.integrate import odeint
 
-case = 130
+case = 40
 
 if case == 1:
     """
@@ -11,13 +11,13 @@ if case == 1:
     """
     N = 1024
     d = 30
-    di = 0.4226
+    di = 0.36
     x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
                                               di, 1)
     h = T / nstp
     nstp = np.int(nstp)
-    cgl = pyCqcgl1d(N, d, h, False, 0, 4.0, 0.8, 0.01, di, 4)
-    aa = cgl.intg(x, nstp, 1)
+    cgl = pyCQCGL1d(N, d, 4.0, 0.8, 0.01, di, -1)
+    aa = cgl.intg(x, h, nstp, 1)
     aaHat, thAll, phiAll = cgl.orbit2slice(aa)
     
     # print the errors and plot the color map
@@ -60,7 +60,7 @@ if case == 1:
     
     # plot 4 periods
     M = 6
-    aa2 = cgl.intg(x, nstp*M, 1)
+    aa2 = cgl.intg(x, h, nstp*M, 1)
     plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, nstp*h*M])
 
 if case == 20:
@@ -113,46 +113,23 @@ if case == 21:
     
     print norm(v1)
 
-if case == 30:
-    """
-    calculate the Floquet exponents of limit cycles
-    by power iteration
-    """
-    N = 1024
-    d = 30
-    di = 0.4225
-    M = 10
-    
-    x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
-                                              di, 1)
-    h = T / nstp
-    cgl = pyCqcgl1d(N, d, h, True, M, 4.0, 0.8, 0.01, di, 4)
-    Q0 = rand(M, cgl.Ndim)
-    # Q, R, D, C = cgl.powIt(x[0], th, phi, Q0, False, nstp,
-    #                        nstp, 1000, 1e-10, True, 10)
-    # print D
-    e = cgl.powEigE(x[0], th, phi, Q0, nstp, nstp, 2000, 1e-12, True, 10)
-    print e
-
 if case == 40:
     """
-    calculate the Floquet exponents of limit cycles directly
+    use L = 50 to see the transition
     """
     N = 1024
-    d = 30
-    di = 0.4225
-    
+    d = 50
+    di = 0.37
     x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
                                               di, 1)
-    h = T / nstp
-    cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, di, 4)
-    aa, J = cgl.intgj(x[0], nstp, nstp, nstp)
-    e, v = eig(cgl.Rotate(J, th, phi))
+    # cgl = pyCQCGL1d(N, d, 4.0, 0.8, 0.01, di, -1)
+    x = x * 0.1**0.5
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, 0.8, -0.1, -di*10, -1)
+    A0 = 3*centerRand(N, 0.1, True)
+    # x = cgl.Config2Fourier(A0)
+    aa = cgl.intg(x, 1e-3, 10000, 10)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
     
-    idx = np.argsort(abs(e))
-    idx = idx[::-1]
-    e = e[idx]
-    v = v[:, idx]
 
 if case == 50:
     """

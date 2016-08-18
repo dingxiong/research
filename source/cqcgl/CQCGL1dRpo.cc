@@ -53,8 +53,8 @@ CQCGL1dRpo::toStr(double x){
 }
 
 std::string
-CQCGL1dRpo::toStr(double x, double y){
-    return toStr(x) + '/' + toStr(y);
+CQCGL1dRpo::toStr(double x, double y, int id){
+    return toStr(x) + '/' + toStr(y) + '/' + to_string(id);
 }
 
 /**
@@ -538,6 +538,48 @@ CQCGL1dRpo::findRPOM_hook2(const MatrixXd &x0,
 			   errs.back(), /* err */
 			   flag
 			   );
+}
+
+/**
+ * @brief find req with a sequence of Bi or Gi
+ */ 
+void 
+CQCGL1dRpo::findRpoParaSeq(const std::string file, int id, double step, int Ns, bool isBi){
+    double Bi0 = Bi;
+    double Gi0 = Gi;
+    
+    MatrixXd x0;
+    double T0, th0, ph0, err0;
+    int nstp0;
+    std::tie(x0, T0, nstp0, th0, phi0, err0) = readRpo(file, toStr(Bi, Gi, id));
+    
+    MatrixXd x;
+    double T, th, phi, err;
+    int nstp, flag;
+    
+    for (int i = 0; i < Ns; i++){
+	if (isBi) Bi += step;
+	else Gi += step;
+	
+	// if exist, use it as seed, otherwise find req
+	if ( checkGroup(file, toStr(Bi, Gi, id), false) ){ 
+	    std::tie(x0, T0, nstp0, th0, phi0, err0) = readRpo(file, toStr(Bi, Gi, id));
+	}
+	else {
+	    fprintf(stderr, "%g, %g \n", Bi, Gi);
+	    std::tie(x, err, flag) = findRPOM_hook2(x0, nstp, wth0, wphi0, 1e-10, 100, 1000);
+	    if (flag == 0){
+		writeReq(file, toStr(Bi, Gi, id), a, wth, wphi, err);
+		a0 = a;
+		wth0 = wth;
+		wphi0 = wphi;
+	    }
+	    // else exit(1);
+	}
+    }
+    
+    Bi = Bi0; 			// restore Bi, Gi
+    Gi = Gi0;
 }
 
 #if 0

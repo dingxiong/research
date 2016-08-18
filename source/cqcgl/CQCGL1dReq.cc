@@ -206,7 +206,7 @@ CQCGL1dReq::findReqParaSeq(const std::string file, int id, double step, int Ns, 
     
     ArrayXd a0;
     double wth0, wphi0, err0;
-    std::tie(a0, wth0, wphi0, err0) = CQCGL1dReq::readReq(file, toStr(Bi, Gi, id));
+    std::tie(a0, wth0, wphi0, err0) = readReq(file, toStr(Bi, Gi, id));
     
     ArrayXd a;
     double wth, wphi, err;
@@ -218,7 +218,7 @@ CQCGL1dReq::findReqParaSeq(const std::string file, int id, double step, int Ns, 
 	
 	// if exist, use it as seed, otherwise find req
 	if ( checkGroup(file, toStr(Bi, Gi, id), false) ){ 
-	    std::tie(a0, wth0, wphi0, err0) = CQCGL1dReq::readReq(file, toStr(Bi, Gi, id));
+	    std::tie(a0, wth0, wphi0, err0) = readReq(file, toStr(Bi, Gi, id));
 	}
 	else {
 	    fprintf(stderr, "%g, %g \n", Bi, Gi);

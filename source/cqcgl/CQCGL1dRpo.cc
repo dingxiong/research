@@ -524,9 +524,12 @@ CQCGL1dRpo::findRPOM_hook2(const MatrixXd &x0,
     VectorXd xnew;
     std::vector<double> errs;
     int flag;
-    std::tie(xnew, errs, flag) = Gmres0HookPre(fx, dfx, Pre, x, tol, minRD, maxit, maxInnIt,
-					       GmresRtol, GmresRestart, GmresMaxit,
-					       true, 3);
+    // std::tie(xnew, errs, flag) = Gmres0HookPre(fx, dfx, Pre, x, tol, minRD, maxit, maxInnIt,
+    // 					       GmresRtol, GmresRestart, GmresMaxit,
+    // 					       true, 3);
+    std::tie(xnew, errs, flag) = Gmres0Hook(fx, dfx, x, tol, minRD, maxit, maxInnIt,
+					    GmresRtol, GmresRestart, GmresMaxit,
+					    true, 3);
     if(flag != 0) fprintf(stderr, "RPO not converged ! \n");
 
     MatrixXd tmp2(xnew);

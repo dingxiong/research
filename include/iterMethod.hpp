@@ -753,7 +753,7 @@ namespace iterMethod {
 		   const int GmresRestart,
 		   const int GmresMaxit,
 		   const bool testT,
-		   const int Tindex){
+		   const int Tindex) {
 	
 	const int N = x0.size(); 
 	VectorXd x(x0);

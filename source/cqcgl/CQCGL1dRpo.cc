@@ -479,17 +479,20 @@ CQCGL1dRpo::findRPOM_hook(const MatrixXd &x0, const double T,
 // new version of F and DF, This version use a full multishooting method
 
 VectorXd CQCGL1dRpo::calPre(const VectorXd &x, const VectorXd &dx){
-    int N = Ndim + 3;
-    VectorXd DF(VectorXd::Zero(N*M));
+    int n = Ndim + 3;
+    assert( x.size() % n == 0 );
+    int m = x.size() / n;
+
+    VectorXd DF(VectorXd::Zero(n*m));
     
-    for (int i = 0; i < M; i++) {
-	VectorXd xi = x.segment(i*N, N);
-	VectorXd dxi = dx.segment(i*N, N);
+    for (int i = 0; i < m; i++) {
+	VectorXd xi = x.segment(i*n, n);
+	VectorXd dxi = dx.segment(i*n, n);
 
 	double th = xi(Ndim+1);
 	double phi = xi(Ndim+2);
 
-	DF.segment(i*N, N) << 
+	DF.segment(i*n, n) << 
 	    Rotate(dxi.head(Ndim), -th, -phi),
 	    dxi.tail(3);
     }
@@ -497,6 +500,7 @@ VectorXd CQCGL1dRpo::calPre(const VectorXd &x, const VectorXd &dx){
     return DF;
 }
 
+/// @return [ (x, T, th, phi), err, flag ]
 std::tuple<MatrixXd, double, int>
 CQCGL1dRpo::findRPOM_hook2(const MatrixXd &x0, 
 			   const int nstp,
@@ -524,20 +528,17 @@ CQCGL1dRpo::findRPOM_hook2(const MatrixXd &x0,
     VectorXd xnew;
     std::vector<double> errs;
     int flag;
-    // std::tie(xnew, errs, flag) = Gmres0HookPre(fx, dfx, Pre, x, tol, minRD, maxit, maxInnIt,
-    // 					       GmresRtol, GmresRestart, GmresMaxit,
-    // 					       true, 3);
-    std::tie(xnew, errs, flag) = Gmres0Hook(fx, dfx, x, tol, minRD, maxit, maxInnIt,
-					    GmresRtol, GmresRestart, GmresMaxit,
-					    true, 3);
+    std::tie(xnew, errs, flag) = Gmres0HookPre(fx, dfx, Pre, x, tol, minRD, maxit, maxInnIt,
+    					       GmresRtol, GmresRestart, GmresMaxit,
+    					       true, 3);
+    // std::tie(xnew, errs, flag) = Gmres0Hook(fx, dfx, x, tol, minRD, maxit, maxInnIt,
+    // 					    GmresRtol, GmresRestart, GmresMaxit,
+    // 					    true, 3);
     if(flag != 0) fprintf(stderr, "RPO not converged ! \n");
 
-    MatrixXd tmp2(xnew);
-    tmp2.resize(N, M);
-    return std::make_tuple(tmp2,	/* x, th, phi */
-			   errs.back(), /* err */
-			   flag
-			   );
+    MatrixXd tmp(xnew);
+    tmp.resize(n, m);
+    return std::make_tuple(tmp,	errs.back(), flag );
 }
 
 /**
@@ -549,13 +550,15 @@ CQCGL1dRpo::findRpoParaSeq(const std::string file, int id, double step, int Ns, 
     double Gi0 = Gi;
     
     MatrixXd x0;
-    double T0, th0, ph0, err0;
+    double T0, th0, phi0, err0;
     int nstp0;
     std::tie(x0, T0, nstp0, th0, phi0, err0) = readRpo(file, toStr(Bi, Gi, id));
     
     MatrixXd x;
     double T, th, phi, err;
     int nstp, flag;
+
+    int Nfail = 0;
     
     for (int i = 0; i < Ns; i++){
 	if (isBi) Bi += step;
@@ -567,20 +570,22 @@ CQCGL1dRpo::findRpoParaSeq(const std::string file, int id, double step, int Ns, 
 	}
 	else {
 	    fprintf(stderr, "%g, %g \n", Bi, Gi);
-	    std::tie(x, err, flag) = findRPOM_hook2(x0, nstp, wth0, wphi0, 1e-10, 100, 1000);
+	    nstp = nstp0;
+	    std::tie(x, err, flag) = findRPOM_hook2(x0, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
 	    if (flag == 0){
-		writeReq(file, toStr(Bi, Gi, id), a, wth, wphi, err);
-		a0 = a;
-		wth0 = wth;
-		wphi0 = wphi;
+		writeRpo2(file, toStr(Bi, Gi, id), x, nstp, err);
+		std::tie(x0, T0, nstp0, th0, phi0, err0) = readRpo(file, toStr(Bi, Gi, id));
 	    }
-	    // else exit(1);
+	    else {
+		if(++Nfail == 3) break;		
+	    }
 	}
     }
     
     Bi = Bi0; 			// restore Bi, Gi
     Gi = Gi0;
 }
+
 
 #if 0
 

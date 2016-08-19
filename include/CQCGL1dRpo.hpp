@@ -45,7 +45,7 @@ public:
     std::string toStr(double x);
     
     static
-    std::string toStr(double x, double y);
+    std::string toStr(double x, double y, int id);
 
     static
     void writeRpo(const std::string fileName, const std::string groupName,
@@ -128,6 +128,9 @@ public:
 		   const double GmresRtol,
 		   const int GmresRestart,
 		   const int GmresMaxit);
+
+    void 
+    findRpoParaSeq(const std::string file, int id, double step, int Ns, bool isBi);
     
     std::tuple<SpMat, SpMat, VectorXd> 
     calJJF(const VectorXd &x);
@@ -136,7 +139,7 @@ public:
 		const double tol,
 		const int maxit,
 		const int innerMaxit);
-
+    
     ////////////////////////////////////////////////////////////
     VectorXd MFx(const VectorXd &x, int nstp);
     VectorXd MDFx(const VectorXd &x, const VectorXd &dx, int nstp);

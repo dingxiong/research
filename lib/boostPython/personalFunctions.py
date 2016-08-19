@@ -297,8 +297,8 @@ class CQCGLplot():
 
 
 class CQCGLreq():
-    def __init__(self):
-        pass
+    def __init__(self, cgl=None):
+        self.cgl = cgl
     
     def readReq(self, fileName, groupName):
         f = h5py.File(fileName, 'r')
@@ -312,13 +312,84 @@ class CQCGLreq():
 
     def readReqdi(self, fileName, di, index):
         groupName = format(di, '.6f') + '/' + str(index)
-        return cqcglReadReq(fileName, groupName)
+        return self.readReq(fileName, groupName)
 
     def readReqBiGi(self, fileName, Bi, Gi, index):
         groupName = (format(Bi, '013.6f') + '/' + format(Gi, '013.6f') +
                      '/' + str(index))
-        return cqcglReadReq(fileName, groupName)
+        return self.readReq(fileName, groupName)
+
+    def eigReq(self, a0, wth0, wphi0):
+        stabMat = self.cgl.stabReq(a0, wth0, wphi0).T
+        eigvalue, eigvector = eig(stabMat)
+        eigvalue, eigvector = sortByReal(eigvalue, eigvector)
+        return eigvalue, eigvector
     
+
+class CQCGLrpo():
+    def __init__(self):
+        pass
+        
+    def readRpo(self, fileName, groupName):
+        f = h5py.File(fileName, 'r')
+        req = '/' + groupName + '/'
+        x = f[req+'x'].value
+        T = f[req+'T'].value
+        nstp = f[req+'nstp'].value
+        th = f[req+'th'].value
+        phi = f[req+'phi'].value
+        err = f[req+'err'].value
+        f.close()
+        # return x[0], T[0], nstp[0], th[0], phi[0], err[0]
+        return x, T, nstp, th, phi, err
+
+    def readRpodi(self, fileName, di, index):
+        groupName = format(di, '.6f') + '/' + str(index)
+        return self.readRpo(fileName, groupName)
+
+    def readRpoBiGi(self, fileName, Bi, Gi, index):
+        groupName = (format(Bi, '013.6f') + '/' + format(Gi, '013.6f') +
+                     '/' + str(index))
+        return self.readRpo(fileName, groupName)
+    
+    def readRPOAll(self, fileName, index, hasEV):
+        f = h5py.File(fileName, 'r')
+        gs = f.keys()
+        f.close()
+        xx = []                     # all rpo
+        dis = []                    # all di
+        for i in gs:
+            di = float(i)
+            dis.append(di)
+            if hasEV:
+                x = cqcglReadRPOEVdi(fileName, di, index)
+            else:
+                x = cqcglReadRPOdi(fileName, di, index)
+            xx.append(x)
+        return dis, xx
+
+    def saveRpo(self, fileName, groupName, x, T, nstp, th, phi, err):
+        f = h5py.File(fileName, 'a')
+        rpo = f.create_group(groupName)
+        rpo.create_dataset("x", data=x)
+        rpo.create_dataset("T", data=T)
+        rpo.create_dataset("nstp", data=nstp)
+        rpo.create_dataset("th", data=th)
+        rpo.create_dataset('phi', data=phi)
+        rpo.create_dataset('err', data=err)
+        f.close()
+
+    def saveRpodi(self, fileName, di, index, x, T, nstp, th, phi, err):
+        groupName = format(di, '.6f') + '/' + str(index)
+        return self.saveRPO(fileName, groupName, x, T, nstp, th, phi, err)
+
+    def saveRpoBiGi(self, fileName, Bi, Gi, index, x, T, nstp, th, phi, err):
+        groupName = (format(Bi, '013.6f') + '/' + format(Gi, '013.6f') +
+                     '/' + str(index))
+        return self.saveRpo(fileName, groupName, x, T, nstp, th, phi, err)
+
+    
+        
 #===================================================
 
 
@@ -557,28 +628,6 @@ def sortByReal(eigvalue, eigvector=None):
         return eigvalue[indx], eigvector[:, indx]
 
 
-def eigReq(cgl, a0, wth0, wphi0):
-    stabMat = cgl.stabReq(a0, wth0, wphi0).T
-    eigvalue, eigvector = eig(stabMat)
-    eigvalue, eigvector = sortByReal(eigvalue, eigvector)
-    return eigvalue, eigvector
-
-
-def cqcglSaveReq(fileName, groupName, a, wth, wphi, err):
-    f = h5py.File(fileName, 'a')
-    req = f.create_group(groupName)
-    req.create_dataset("a", data=a)
-    req.create_dataset("wth", data=wth)
-    req.create_dataset('wphi', data=wphi)
-    req.create_dataset('err', data=err)
-    f.close()
-
-
-def cqcglSaveReqdi(fileName, di, index, a, wth, wphi, err):
-    groupName = format(di, '.6f') + '/' + str(index)
-    return cqcglSaveReq(fileName, groupName, a, wth, wphi, err)
-
-
 def cqcglSaveReqEV(fileName, groupName, a, wth, wphi, err, er, ei, vr, vi):
     f = h5py.File(fileName, 'a')
     req = f.create_group(groupName)
@@ -596,22 +645,6 @@ def cqcglSaveReqEV(fileName, groupName, a, wth, wphi, err, er, ei, vr, vi):
 def cqcglSaveReqEVdi(fileName, di, index, a, wth, wphi, err, er, ei, vr, vi):
     groupName = format(di, '.6f') + '/' + str(index)
     cqcglSaveReqEV(fileName, groupName, a, wth, wphi, err, er, ei, vr, vi)
-
-
-def cqcglReadReq(fileName, groupName):
-    f = h5py.File(fileName, 'r')
-    req = '/' + groupName + '/'
-    a = f[req+'a'].value
-    wth = f[req+'wth'].value
-    wphi = f[req+'wphi'].value
-    err = f[req+'err'].value
-    f.close()
-    return a, wth, wphi, err
-
-
-def cqcglReadReqdi(fileName, di, index):
-    groupName = format(di, '.6f') + '/' + str(index)
-    return cqcglReadReq(fileName, groupName)
 
 
 def cqcglReadReqAll(fileName, index, hasEV):
@@ -723,42 +756,6 @@ def cqcglExtractReq(inputFile, outputFile, groups, startId=1):
         ix += 1
 
 
-def cqcglReadRPO(fileName, groupName):
-    f = h5py.File(fileName, 'r')
-    req = '/' + groupName + '/'
-    x = f[req+'x'].value
-    T = f[req+'T'].value
-    nstp = f[req+'nstp'].value
-    th = f[req+'th'].value
-    phi = f[req+'phi'].value
-    err = f[req+'err'].value
-    f.close()
-    # return x[0], T[0], nstp[0], th[0], phi[0], err[0]
-    return x, T, nstp, th, phi, err
-
-
-def cqcglReadRPOdi(fileName, di, index):
-    groupName = format(di, '.6f') + '/' + str(index)
-    return cqcglReadRPO(fileName, groupName)
-
-    
-def cqcglReadRPOAll(fileName, index, hasEV):
-    f = h5py.File(fileName, 'r')
-    gs = f.keys()
-    f.close()
-    xx = []                     # all rpo
-    dis = []                    # all di
-    for i in gs:
-        di = float(i)
-        dis.append(di)
-        if hasEV:
-            x = cqcglReadRPOEVdi(fileName, di, index)
-        else:
-            x = cqcglReadRPOdi(fileName, di, index)
-        xx.append(x)
-    return dis, xx
-
-
 def cqcglMoveRPO(inputFile, ingroup, outputFile, outgroup):
     x, T, nstp, th, phi, err = cqcglReadRPO(inputFile, ingroup)
     cqcglSaveRPO(outputFile, outgroup, x, T, nstp, th, phi, err)
@@ -802,23 +799,6 @@ def cqcglReadRPOEVonly(fileName, groupName):
 def cqcglReadRPOEVonlydi(fileName, di, index):
     groupName = format(di, '.6f') + '/' + str(index)
     return cqcglReadRPOEVonly(fileName, groupName)
-
-
-def cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err):
-    f = h5py.File(fileName, 'a')
-    rpo = f.create_group(groupName)
-    rpo.create_dataset("x", data=x)
-    rpo.create_dataset("T", data=T)
-    rpo.create_dataset("nstp", data=nstp)
-    rpo.create_dataset("th", data=th)
-    rpo.create_dataset('phi', data=phi)
-    rpo.create_dataset('err', data=err)
-    f.close()
-
-
-def cqcglSaveRPOdi(fileName, di, index, x, T, nstp, th, phi, err):
-    groupName = format(di, '.6f') + '/' + str(index)
-    return cqcglSaveRPO(fileName, groupName, x, T, nstp, th, phi, err)
 
 
 def cqcglSaveRPOEV(fileName, groupName, x, T, nstp, th, phi, err, e, v):

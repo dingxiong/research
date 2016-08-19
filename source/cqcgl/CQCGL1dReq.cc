@@ -91,13 +91,36 @@ CQCGL1dReq::writeReq(const std::string fileName, const std::string groupName,
     H5File file(fileName, H5F_ACC_RDWR);
     checkGroup(file, groupName, true);
     string DS = "/" + groupName + "/";
-    
 	
     writeMatrixXd(file, DS + "a", a);
     writeScalar<double>(file, DS + "wth", wth);
     writeScalar<double>(file, DS + "wphi", wphi);
     writeScalar<double>(file, DS + "err", err);
 }
+
+void 
+CQCGL1dReq::writeE(const std::string fileName, const std::string groupName, 
+		   const VectorXcd e){
+    H5File file(fileName, H5F_ACC_RDWR);
+    checkGroup(file, groupName, true);
+    string DS = "/" + groupName + "/";
+    
+    writeMatrixXd(file, DS + "er", e.real());
+    writeMatrixXd(file, DS + "ei", e.imag());
+}
+
+
+void 
+CQCGL1dReq::writeV(const std::string fileName, const std::string groupName, 
+		   const VectorXcd v){
+    H5File file(fileName, H5F_ACC_RDWR);
+    checkGroup(file, groupName, true);
+    string DS = "/" + groupName + "/";
+    
+    writeMatrixXd(file, DS + "vr", v.real());
+    writeMatrixXd(file, DS + "vi", v.imag());
+}
+
 
 
 //====================================================================================================
@@ -212,6 +235,8 @@ CQCGL1dReq::findReqParaSeq(const std::string file, int id, double step, int Ns, 
     double wth, wphi, err;
     int flag;
     
+    int Nfail = 0;
+
     for (int i = 0; i < Ns; i++){
 	if (isBi) Bi += step;
 	else Gi += step;
@@ -229,10 +254,45 @@ CQCGL1dReq::findReqParaSeq(const std::string file, int id, double step, int Ns, 
 		wth0 = wth;
 		wphi0 = wphi;
 	    }
-	    // else exit(1);
+	    else {
+		if(++Nfail == 3) break;
+	    }
 	}
     }
     
+    Bi = Bi0; 			// restore Bi, Gi
+    Gi = Gi0;
+}
+
+/// @brief calculate the eigenvalues and eigenvectors of req in certain range 
+void 
+CQCGL1dReq::calEVParaSeq(const std::string file, std::vector<int> ids, std::vector<double> Bis,
+			 std::vector<double> Gis, bool saveV){
+    double Bi0 = Bi;
+    double Gi0 = Gi;
+    int id;
+
+    ArrayXd a0;
+    double wth0, wphi0, err0;
+    VectorXcd e;
+    MatrixXcd v;
+    
+    for (int i = 0; i < ids.size(); i++){
+	id = ids[i]; 
+	for (int j = 0; j < Bis.size(); j++){
+	    Bi = Bis[j];
+	    for(int k = 0; k < Gis.size(); k++){
+		Gi = Gis[k];
+		if ( checkGroup(file, toStr(Bi, Gi, id), false) ){ 
+		    std::tie(a0, wth0, wphi0, err0) = readReq(file, toStr(Bi, Gi, id));
+		    std::tie(e, v) = evReq(a0, wth0, wphi0); 	
+		    writeE(file, toStr(Bi, Gi, id), e);
+		    if (saveV) writeV(file, toStr(Bi, Gi, id), v.leftCols(10));
+		}
+	    }
+	}
+    }
+        
     Bi = Bi0; 			// restore Bi, Gi
     Gi = Gi0;
 }

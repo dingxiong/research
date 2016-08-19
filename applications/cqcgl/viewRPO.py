@@ -2,7 +2,7 @@ from py_CQCGL1d import *
 from personalFunctions import *
 from scipy.integrate import odeint
 
-case = 40
+case = 41
 
 if case == 1:
     """
@@ -115,19 +115,38 @@ if case == 21:
 
 if case == 40:
     """
-    use L = 50 to see the transition
+    use L = 50 to obtain the guess initial conditon
+    for rpo
     """
     N = 1024
     d = 50
-    di = 0.37
-    x, T, nstp, th, phi, err = cqcglReadRPOdi('../../data/cgl/rpoT2X1.h5',
-                                              di, 1)
-    # cgl = pyCQCGL1d(N, d, 4.0, 0.8, 0.01, di, -1)
+    Bi = 0.8
+    Gi = -3.6
+
+    rpo = CQCGLrpo()
+    x, T, nstp, th, phi, err = rpo.readRpodi('../../data/cgl/rpoT2X1.h5',
+                                             0.36, 1)
     x = x * 0.1**0.5
-    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, 0.8, -0.1, -di*10, -1)
-    A0 = 3*centerRand(N, 0.1, True)
-    # x = cgl.Config2Fourier(A0)
-    aa = cgl.intg(x, 1e-3, 10000, 10)
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    aa = cgl.intg(x, 1e-3, 40000, 50)
+    aa = cgl.intg(aa[-1], 1e-3, 10000, 10)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
+
+if case == 41:
+    """
+    use L = 50 to view the rpo
+    """
+    N = 1024
+    d = 50
+    Bi = 1.0
+    Gi = -3.6
+    
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    rpo = CQCGLrpo()
+    x, T, nstp, th, phi, err = rpo.readRpoBiGi('../../data/cgl/rpoBiGi.h5',
+                                               Bi, Gi, 1)
+    a0 = x[:cgl.Ndim]
+    aa = cgl.intg(a0, T/nstp, 10*nstp, 50)
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
     
 

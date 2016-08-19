@@ -1,9 +1,9 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 16
+case = 10
 
-if case == 10:
+if case == 8:
     """
     calculate the stability exponents of req
     of different di.
@@ -42,6 +42,24 @@ if case == 10:
     e2, v2 = eig(Ap)
     e2, v2 = sortByReal(e2, v2)
     
+
+if case == 10:
+    """
+    use the new data to calculate tyhe stability exponents of req
+    """
+    N = 1024
+    d = 50
+    Bi = 0.8
+    Gi = -0.6
+    index = 1
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req = CQCGLreq(cgl)
+
+    a0, wth0, wphi0, err0 = req.readReqBiGi('../../data/cgl/reqBiGi.h5',
+                                            Bi, Gi, index)
+    e, v = req.eigReq(a0, wth0, wphi0)
+    print e[:10]
 
 if case == 11:
     """

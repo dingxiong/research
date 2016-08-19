@@ -74,5 +74,7 @@ reqBiGi_bak3.h5 : index 2 is extended
 reqBiGi_bak4.h5 : index 1 is further extended but failed at 
 		Bi = -2.1, Gi = -5.4
 
-reqBiGi_bak4.h5 : index 2 is further extended but failed at 
+reqBiGi_bak5.h5 : index 2 is further extended but failed at 
 		Bi = -2.1, Gi = -5.4
+
+reqBiGi_bak6.h5 : both index 1 and 2 are extended in Bi axis

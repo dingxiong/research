@@ -40,6 +40,12 @@ public :
 	     const ArrayXd &a, const double wth, 
 	     const double wphi, const double err);
 
+    void 
+    writeE(const std::string fileName, const std::string groupName, 
+	   const VectorXcd e);
+    void 
+    writeV(const std::string fileName, const std::string groupName, 
+	   const VectorXcd v);
     
     ////////////////////////////////////////////////////////////
     VectorXd Fx(const VectorXd &x);
@@ -54,7 +60,10 @@ public :
     optThPhi(const ArrayXd &a0);
     void 
     findReqParaSeq(const std::string file, int id, double step, int Ns, bool isBi);
-
+    void 
+    calEVParaSeq(const std::string file, std::vector<int> ids, std::vector<double> Bis,
+		 std::vector<double> Gis, bool saveV);
+    
     
 };
 

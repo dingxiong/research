@@ -587,8 +587,8 @@ namespace iterMethod {
 	    double rnorm = r.norm();
 	    double err = rnorm / bnrm2;
 
-	    if(GMRES_OUT_PRINT && iter % GMRES_OUT_PRINT_FREQUENCE == 0)
-		fprintf(stderr, "**** GMRES : out loop: i= %zd/%d, r= %g\n", iter, maxit, err);
+	    if(GMRES_OUT_PRINT && (iter+1) % GMRES_OUT_PRINT_FREQUENCE == 0)
+		fprintf(stderr, "**** GMRES : out loop: i= %zd/%d, r= %g\n", iter+1, maxit, err);
 
 	    // if(err < rtol) return std::make_tuple(x, errVec, 0);
 	
@@ -617,8 +617,8 @@ namespace iterMethod {
 		double err = fabs(p(i+1)) / bnrm2;
 		errVec.push_back(err); 
 
-		if(GMRES_IN_PRINT && i%GMRES_IN_PRINT_FREQUENCE == 0)
-		    fprintf(stderr, "** GMRES : inner loop: i= %zd/%d, r= %g\n", i, M, err);
+		if(GMRES_IN_PRINT && (i+1)%GMRES_IN_PRINT_FREQUENCE == 0)
+		    fprintf(stderr, "** GMRES : inner loop: i= %zd/%d, r= %g\n", i+1, M, err);
 
 		if (err < rtol){
 		    VectorXd xold = x; 
@@ -718,7 +718,7 @@ namespace iterMethod {
 			    // then no need to iterate more.
 	}
 
-	return std::make_tuple(x, errVec, 0);
+	return std::make_tuple(x, errVec, 1);
 	    
     }
 
@@ -764,8 +764,8 @@ namespace iterMethod {
 	    VectorXd F = fx(x);
 	    double Fnorm = F.norm();
 	    
-	    if(HOOK_PRINT && i % HOOK_PRINT_FREQUENCE == 0)
-		fprintf(stderr, "\n+++++++++++ GHOOK: i = %zd/%d, r = %g ++++++++++ \n", i, maxit, Fnorm);
+	    if(HOOK_PRINT && (i+1) % HOOK_PRINT_FREQUENCE == 0)
+		fprintf(stderr, "+++++++++++ GHOOK: i = %zd/%d, r = %g ++++++++++ \n", i+1, maxit, Fnorm);
 
 	    errVec.push_back(Fnorm);
 	    if(Fnorm < tol) return std::make_tuple(x, errVec, 0);
@@ -791,8 +791,8 @@ namespace iterMethod {
 
 		double newT = newx(N - Tindex); 
 
-		if(HOOK_PRINT && i % HOOK_PRINT_FREQUENCE == 0)	    
-		    fprintf(stderr, " %zd, %g |", j, newT);
+		if(HOOK_PRINT && (j+1) % HOOK_PRINT_FREQUENCE == 0)	    
+		    fprintf(stderr, " %zd, %g |", j+1, newT);
 
 		if(!testT || newT > 0){
 		    VectorXd newF = fx(newx); 
@@ -808,12 +808,14 @@ namespace iterMethod {
 		
 		if(j == maxInnIt-1) fail = true;
 	    }
+	    if(HOOK_PRINT) fprintf(stderr, "\n");
 	    
+
 	    if(fail) break; // if all inner loop finish, it means state not changed
 			    // then no need to iterate more.
 	}
 
-	return std::make_tuple(x, errVec, 0);
+	return std::make_tuple(x, errVec, 1);
 	    
     }
 

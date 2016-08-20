@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 10
+case = 18
 
 if case == 8:
     """
@@ -104,6 +104,9 @@ if case == 12:
 
 
 if case == 13:
+    """
+    new size L = 50
+    """
     N = 1024
     d = 50
     h = 1e-4
@@ -209,22 +212,24 @@ if case == 18:
     d = 50
     h = 2e-3
     
-    for i in range(49):
-        Bi = -2 + i * 0.1
+    fileName = '../../data/cgl/reqBiGi.h5'
+    
+    for i in range(61):
+        Bi = 2.8 - i * 0.1
         fig, ax = pl2d(size=[8, 6], labs=[r'$x$', r'$|A|$'], axisLabelSize=25)
-        name = format(Bi, '013.6f') + '_' + '.png'
-        for j in range(51):
-            Gi = -0.6 - 0.1*j
+        name = format(Bi, '013.6f') + '.png'
+        for j in range(55):
+            Gi = -0.2 - 0.1*j
             cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
-            req = CQCGLreq()
-            a0, wth0, wphi0, err0 = req.readReqBiGi(
-                '../../data/cgl/reqBiGi.h5', Bi, Gi, 1)
-            Aamp = np.abs(cgl.Fourier2Config(a0))
-            ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp)
-            a0, wth0, wphi0, err0 = req.readReqBiGi(
-                '../../data/cgl/reqBiGi.h5', Bi, Gi, 2)
-            Aamp = np.abs(cgl.Fourier2Config(a0))
-            ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp)
+            req = CQCGLreq(cgl)
+            if req.checkExist(fileName, Bi, Gi, 1):
+                a0, wth0, wphi0, err0 = req.readReqBiGi(fileName, Bi, Gi, 1)
+                Aamp = np.abs(cgl.Fourier2Config(a0))
+                ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp)
+            if req.checkExist(fileName, Bi, Gi, 2):
+                a0, wth0, wphi0, err0 = req.readReqBiGi(fileName, Bi, Gi, 2)
+                Aamp = np.abs(cgl.Fourier2Config(a0))
+                ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp)
         ax2d(fig, ax, save=True, name='ex/'+name)
         
 

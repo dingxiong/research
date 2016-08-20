@@ -47,6 +47,8 @@ CQCGL1dRpo & CQCGL1dRpo::operator=(const CQCGL1dRpo &x){
 //////////////////////////////////////////////////////////////////////
 std::string 
 CQCGL1dRpo::toStr(double x){
+    //  avoid possibilty that 000000.000000 or -00000.000000
+    if (fabs(x) < 1e-6) x = 0; 
     char buffer [20];
     sprintf (buffer, "%013.6f", x);
     return std::string(buffer);

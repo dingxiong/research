@@ -24,7 +24,7 @@ using namespace denseRoutines;
 typedef std::complex<double> dcp;
 
 
-#define N40
+#define N60
 
 int main(int argc, char **argv){
 
@@ -106,48 +106,47 @@ int main(int argc, char **argv){
 #ifdef N40
     //======================================================================
     // extend the soliton solution in the Bi-Gi plane
+    iterMethod::LM_OUT_PRINT = false;
+    iterMethod::LM_IN_PRINT = false;
+    iterMethod::CG_PRINT = false;
+
     const int N = 1024;
     const int L = 50;
     double Bi = 2.8;
     double Gi = -0.6;
 
-    iterMethod::LM_OUT_PRINT = false;
-    iterMethod::LM_IN_PRINT = false;
-    iterMethod::CG_PRINT = false;
+    CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
+    string file = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGi.h5";
+    
+    double stepB = -0.1;
+    int NsB = 61;
+    ////////////////////////////////////////////////////////////
+    // mpi part 
+    MPI_Init(&argc, &argv);
+    int rank, num;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num);
+    int inc = NsB / num;
+    int rem = NsB - inc * num;
+    int p_size = inc + (rank < rem ? 1 : 0);
+    int p_start = inc*rank + (rank < rem ? rank : rem);
+    int p_end = p_start + p_size;
+    fprintf(stderr, "MPI : %d / %d; range : %d - %d \n", rank, num, p_start, p_end);
+    ////////////////////////////////////////////////////////////
 
     int ids[] = {1, 2};
-    for (int i = 0; i < 2; i++){
-
+    for (int i = 0; i < 2; i++){	
 	int id = ids[i];
-	CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
-	
-	string file = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGi.h5";
-	double stepB = -0.1;
-	int NsB = 61;
 	// cgl.findReqParaSeq(file, id, stepB, NsB, true);
-
-	////////////////////////////////////////////////////////////
-	// mpi part 
-	MPI_Init(&argc, &argv);
-	int rank, num;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &num);
-	int inc = NsB / num;
-	int rem = NsB - inc * num;
-	int p_size = inc + (rank < rem ? 1 : 0);
-	int p_start = inc*rank + (rank < rem ? rank : rem);
-	int p_end = p_start + p_size;
-	fprintf(stderr, "MPI : %d / %d; range : %d - %d \n", rank, num, p_start, p_end);
-	////////////////////////////////////////////////////////////
 	for (int i = p_start; i < p_end; i++){
 	    cgl.Bi = Bi+i*stepB;
 	    cgl.findReqParaSeq(file, id, 0.1, 4, false);
 	}
-	
-	////////////////////////////////////////////////////////////
-	MPI_Finalize();
-	////////////////////////////////////////////////////////////
     }
+    
+    ////////////////////////////////////////////////////////////
+    MPI_Finalize();
+    ////////////////////////////////////////////////////////////
 
 #endif
 #ifdef N50
@@ -172,6 +171,49 @@ int main(int argc, char **argv){
     cout << e.head(10) << endl;
     cout << endl;
     cout << v.cols() << ' ' << v.rows() << endl;
+
+#endif
+#ifdef N60
+    //======================================================================
+    // try to calculate the eigenvalue and eigenvector of one req
+    const int N = 1024;
+    const int L = 50;
+    double Bi = 2.8;
+    double Gi = -0.2;
+    CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
+    
+    string file = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGiEV.h5";
+
+    ArrayXd a0;
+    double wth0, wphi0, err0;
+
+    VectorXcd e;
+    MatrixXcd v;
+    
+    std::vector<double> Bis, Gis;
+    for(int i = 0; i < 55; i++) Gis.push_back(-0.2-0.1*i);
+    
+    int NsB = 61;
+    ////////////////////////////////////////////////////////////
+    // mpi part 
+    MPI_Init(&argc, &argv);
+    int rank, num;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num);
+    int inc = NsB / num;
+    int rem = NsB - inc * num;
+    int p_size = inc + (rank < rem ? 1 : 0);
+    int p_start = inc*rank + (rank < rem ? rank : rem);
+    int p_end = p_start + p_size;
+    for (int i = p_start; i < p_end; i++) Bis.push_back(2.8-0.1*i);
+    fprintf(stderr, "MPI : %d / %d; range : %d - %d \n", rank, num, p_start, p_end);
+    ////////////////////////////////////////////////////////////
+    
+    cgl.calEVParaSeq(file, std::vector<int>{1, 2}, Bis, Gis, true);
+
+    ////////////////////////////////////////////////////////////
+    MPI_Finalize();
+    ////////////////////////////////////////////////////////////
 
 #endif
     

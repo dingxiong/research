@@ -300,6 +300,20 @@ class CQCGLreq():
     def __init__(self, cgl=None):
         self.cgl = cgl
     
+    def toStr(self, Bi, Gi, index):
+        if abs(Bi) < 1e-6:
+            Bi = 0
+        if abs(Gi) < 1e-6:
+            Gi = 0
+        return (format(Bi, '013.6f') + '/' + format(Gi, '013.6f') +
+                '/' + str(index))
+
+    def checkExist(self, fileName, Bi, Gi, index):
+        f = h5py.File(fileName, 'r')
+        x = self.toStr(Bi, Gi, index) in f
+        f.close()
+        return x
+
     def readReq(self, fileName, groupName):
         f = h5py.File(fileName, 'r')
         req = '/' + groupName + '/'
@@ -315,9 +329,7 @@ class CQCGLreq():
         return self.readReq(fileName, groupName)
 
     def readReqBiGi(self, fileName, Bi, Gi, index):
-        groupName = (format(Bi, '013.6f') + '/' + format(Gi, '013.6f') +
-                     '/' + str(index))
-        return self.readReq(fileName, groupName)
+        return self.readReq(fileName, self.toStr(Bi, Gi, index))
 
     def eigReq(self, a0, wth0, wphi0):
         stabMat = self.cgl.stabReq(a0, wth0, wphi0).T

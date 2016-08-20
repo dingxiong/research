@@ -49,6 +49,10 @@ CQCGL1dReq & CQCGL1dReq::operator=(const CQCGL1dReq &x){
 
 std::string 
 CQCGL1dReq::toStr(double Bi, double Gi, int id){
+    //  avoid possibilty that 000000.000000 or -00000.000000
+    if (fabs(Bi) < 1e-6) Bi = 0; 
+    if (fabs(Gi) < 1e-6) Gi = 0;
+
     char g1[20], g2[20];
     sprintf(g1, "%013.6f", Bi);
     sprintf(g2, "%013.6f", Gi);
@@ -112,7 +116,7 @@ CQCGL1dReq::writeE(const std::string fileName, const std::string groupName,
 
 void 
 CQCGL1dReq::writeV(const std::string fileName, const std::string groupName, 
-		   const VectorXcd v){
+		   const MatrixXcd v){
     H5File file(fileName, H5F_ACC_RDWR);
     checkGroup(file, groupName, true);
     string DS = "/" + groupName + "/";
@@ -283,16 +287,18 @@ CQCGL1dReq::calEVParaSeq(const std::string file, std::vector<int> ids, std::vect
 	    Bi = Bis[j];
 	    for(int k = 0; k < Gis.size(); k++){
 		Gi = Gis[k];
-		if ( checkGroup(file, toStr(Bi, Gi, id), false) ){ 
-		    std::tie(a0, wth0, wphi0, err0) = readReq(file, toStr(Bi, Gi, id));
-		    std::tie(e, v) = evReq(a0, wth0, wphi0); 	
-		    writeE(file, toStr(Bi, Gi, id), e);
-		    if (saveV) writeV(file, toStr(Bi, Gi, id), v.leftCols(10));
+		if ( checkGroup(file, toStr(Bi, Gi, id), false) ){
+		    if( !checkGroup(file, toStr(Bi, Gi, id) + "/er", false)){
+			fprintf(stderr, "%d %g %g \n", id, Bi, Gi);
+			std::tie(a0, wth0, wphi0, err0) = readReq(file, toStr(Bi, Gi, id));
+			std::tie(e, v) = evReq(a0, wth0, wphi0); 	
+			writeE(file, toStr(Bi, Gi, id), e);
+			if (saveV) writeV(file, toStr(Bi, Gi, id), v.leftCols(10));
+		    }
 		}
 	    }
 	}
     }
-        
     Bi = Bi0; 			// restore Bi, Gi
     Gi = Gi0;
 }

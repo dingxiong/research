@@ -45,7 +45,7 @@ public :
 	   const VectorXcd e);
     void 
     writeV(const std::string fileName, const std::string groupName, 
-	   const VectorXcd v);
+	   const MatrixXcd v);
     
     ////////////////////////////////////////////////////////////
     VectorXd Fx(const VectorXd &x);

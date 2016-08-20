@@ -14,7 +14,7 @@ hdf5 = /usr/lib/x86_64-linux-gnu
 ifdef pace
 OPTIM = -O3
 EIGEN = /nv/hp16/xding35/data/apps/eigen/include/eigen3
-hdf5 = /nv/hp16/xding35/data/apps/hdf5
+hdf5 = /nv/hp16/xding35/data/apps/hdf5/lib
 endif
 ####
 

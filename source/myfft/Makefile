@@ -4,18 +4,25 @@ AR = ar
 OPTIM = -O3 -msse2 -msse4 -march=corei7
 INCLUDE = ../../include
 EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
+CFLAGS = -std=c++11 
+LIB = ../../lib
 
-CFLAGS = -std=c++0x 
+# for pace cluster 
+ifdef pace
+OPTIM = -O3
+EIGEN = /nv/hp16/xding35/data/apps/eigen/include/eigen3
+endif
+####
 
 CLEANUP = no
 ifeq ($(CLEANUP), yes)
 CFLAGS += -DCLEAN
 endif
 
-
 SOURCE = myfft.cc
-SHARED = libmyfft.so
-STATIC = libmyfft.a
+SHARED = $(addprefix lib, $(addsuffix .so, $(basename $(word 1, $(SOURCE)))))
+STATIC = $(addprefix lib, $(addsuffix .a, $(basename $(word 1, $(SOURCE)))))
+
 
 all : $(SHARED) $(STATIC) 
 
@@ -29,4 +36,4 @@ $(STATIC): $(SOURCE:.cc=.o)
 clean:
 	rm -f *.so *.o *.a
 move:
-	mv *.so *.a /usr/local/home/xiong/00git/research/lib
+	mv *.so *.a  $(LIB)

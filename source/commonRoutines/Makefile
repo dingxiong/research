@@ -18,8 +18,8 @@ SHARED = $(addprefix lib, $(addsuffix .so, $(basename $(word 1, $(SOURCE)))))
 STATIC = $(addprefix lib, $(addsuffix .a, $(basename $(word 1, $(SOURCE)))))
 
 SOURCE2 = denseRoutines.cc
-SHARED = $(addprefix lib, $(addsuffix .so, $(basename $(word 1, $(SOURCE2)))))
-STATIC = $(addprefix lib, $(addsuffix .a, $(basename $(word 1, $(SOURCE2)))))
+SHARED2 = $(addprefix lib, $(addsuffix .so, $(basename $(word 1, $(SOURCE2)))))
+STATIC2 = $(addprefix lib, $(addsuffix .a, $(basename $(word 1, $(SOURCE2)))))
 
 all : $(SHARED) $(STATIC) $(SHARED2) $(STATIC2) 
 

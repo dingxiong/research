@@ -1,4 +1,5 @@
 # usage: make t=***
+# or on pace cluster : make t=** pace=**
 
 CC = g++
 AR = ar
@@ -7,6 +8,15 @@ OPTIM = -O3 -msse2 -msse4 -march=corei7
 INCLUDE = ../../include
 EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
 CFLAGS = -std=c++11
+LIB = ../../lib
+
+# for pace cluster 
+ifdef pace
+OPTIM = -O3
+EIGEN = /nv/hp16/xding35/data/apps/eigen/include/eigen3
+endif
+####
+
 
 ifndef t
 t = int
@@ -51,4 +61,4 @@ $(STATIC): $(SOURCE:.cc=.o)
 clean:
 	rm -f *.so *.o *.a
 move:
-	mv *.so *.a /usr/local/home/xiong/00git/research/lib
+	mv *.so *.a $(LIB)

@@ -47,4 +47,4 @@ $(STATIC): $(SOURCE:.cc=.o)
 clean:
 	rm -f *.so *.o *.a
 move:
-	mv *.so *.a /usr/local/home/xiong/00git/research/lib
+	mv *.so *.a $(LIB)

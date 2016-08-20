@@ -182,8 +182,8 @@ int main(int argc, char **argv){
     double Gi = -0.2;
     CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
     
-    string file = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGiEV.h5";
-
+    // string file = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGiEV.h5";
+    string file = "../../data/cgl/reqBiGiEV.h5";
     ArrayXd a0;
     double wth0, wphi0, err0;
 

@@ -112,8 +112,7 @@ public:
     void CGLInit(int dimTan);
     void changeOmega(double w);
     void changeMu(double Mu);
-    void opticParam(const double delta, const double beta, const double D, 
-		    const double epsilon, const double mu, const double nu);
+
     void calCoe(const double h);
     void oneStep(double &du, const bool onlyOrbit);
     ArrayXXcd ZR(ArrayXcd &z);
@@ -210,10 +209,7 @@ public:
     ArrayXXd rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
 			 const ArrayXd &phi);
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-    orbit2sliceWrap(const Ref<const ArrayXXd> &aa);
-    std::tuple<ArrayXXd, ArrayXd, ArrayXd>
     orbit2slice(const Ref<const ArrayXXd> &aa);
-    ArrayXXd orbit2sliceSimple(const Ref<const ArrayXXd> &aa);
     MatrixXd ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x);
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
     reduceAllSymmetries(const Ref<const ArrayXXd> &aa);

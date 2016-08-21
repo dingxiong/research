@@ -122,25 +122,6 @@ void CQCGL1d::changeMu(double Mu){
     L.segment(Nplus, Nalias).setZero();
 }
 
-
-/**
- * use the form of CQCGL in the optical form
- */
-void CQCGL1d::opticParam(const double delta, const double beta, const double D, 
-			 const double epsilon, const double mu, const double nu){
-    Mu = delta;
-    Dr = beta;
-    Di = D/2;
-    Br = epsilon;
-    Bi = 1;
-    Gr = mu;
-    Gi = nu;
-
-    L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square(); 
-    L.segment(Nplus, Nalias).setZero();
-}
-
-
 /**
  * @brief calculate the coefficients of ETDRK4 or Krogstad
  */
@@ -1162,41 +1143,18 @@ ArrayXXd CQCGL1d::rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
     return aaHat;
 }
 
+
 /**
- * @brief rotate the state points in the full state space to the slice
- *
+ * @brief reduce the continous symmetries
+ * 
  * @param[in] aa       states in the full state space
  * @return    aaHat, theta, phi
- *
+ * 
  * @note  g(theta, phi)(x+y) is different from gx+gy. There is no physical
  *        meaning to transform the sum/subtraction of two state points.
  */
 std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-CQCGL1d::orbit2sliceWrap(const Ref<const ArrayXXd> &aa){
-    int n = aa.rows();
-    int m = aa.cols();
-    assert(Ndim == n);
-    ArrayXXd raa(n, m);
-    ArrayXd th(m);
-    ArrayXd phi(m);
-
-    for(size_t i = 0; i < m; i++){
-	double am1 = atan2(aa(n-1, i), aa(n-2, i));
-	double a1 = atan2(aa(3, i), aa(2, i));
-	phi(i) = 0.5 * (a1 + am1);
-	th(i) = 0.5 * (a1 - am1);
-	raa.col(i) = Rotate(aa.col(i), -th(i), -phi(i));
-    }
-    return std::make_tuple(raa, th, phi);
-}
-
-/**
- * @brief reduce the continous symmetries without wrapping the phase
- *        so there is no continuity
- * @see orbit2sliceWrap()
- */
-std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-CQCGL1d::orbit2slice(const Ref<const ArrayXXd> &aa){
+CQCGL1d::orbit2slice(const Ref<const ArrayXXd> &aa, int method){
     int n = aa.rows();
     int m = aa.cols();
     assert(Ndim == n);
@@ -1204,43 +1162,104 @@ CQCGL1d::orbit2slice(const Ref<const ArrayXXd> &aa){
     ArrayXd th(m);
     ArrayXd phi(m);
     
-    for(size_t i = 0; i < m; i++){
-	double am1 = atan2(aa(n-1, i), aa(n-2, i));
-	double a1 = atan2(aa(3, i), aa(2, i));
-	phi(i) = 0.5 * (a1 + am1);
-	th(i) = 0.5 * (a1 - am1);
+    swith (method){
+
+    case 1: {
+	// a0 -> positive real. a1 -> positive real
+	for(int i = 0; i < m; i++){
+	    double x = atan2(aa(1, i), aa(0, i));
+	    double y = atan2(aa(3, i), aa(2, i));
+	    phi(i) = x;
+	    th(i) = y - x;
+	}
+	break;
     }
 
-    const double M_2PI = 2 * M_PI;
-    for(size_t i = 1; i < m; i++){
-	double t0 = th(i) - th(i-1);
-	double t1 = t0 - M_PI;
-	double t2 = t0 + M_PI;
-	double t0WrapAbs = fabs(remainder(t0, M_2PI));
-	if(fabs(t1) < t0WrapAbs) { // theta jump pi up
-	    th(i) = remainder(th(i) - M_PI, M_2PI);
-	    phi(i) = remainder(phi(i) - M_PI, M_2PI);
-	    continue;
+    case 2: {
+	// a0 -> positive imag. a1 -> positive real
+	for (int i = 0; i < m; i++){
+	    double x = atan2(aa(1, i), aa(0, i));
+	    double y = atan2(aa(3, i), aa(2, i));
+	    phi(i) = x - M_PI/2;
+	    th(i) = y - x + M_PI/2;
 	}
-	if(fabs(t2) < t0WrapAbs) { // theta jump pi down
-	    th(i) = remainder(th(i) + M_PI, M_2PI);
-	    phi(i) = remainder(phi(i) + M_PI, M_2PI);
-	}
+	break;
     }
-    
+
+    case 3: {
+	// a0 -> positive real. a1 -> positive imag
+	for (int i = 0; i < m; i++){
+	    double x = atan2(aa(1, i), aa(0, i));
+	    double y = atan2(aa(3, i), aa(2, i));
+	    phi(i) = x;
+	    th(i) = y - x - M_PI/2;
+	}
+	break;
+    }
+	
+    case 4: {
+	// a0 -> positive imag. a1 -> positive imag
+	for (int i = 0; i < m; i++){
+	    double x = atan2(aa(1, i), aa(0, i));
+	    double y = atan2(aa(3, i), aa(2, i));
+	    phi(i) = x - M_PI/2;
+	    th(i) = y - x;
+	}
+	break;
+    }
+
+    case 5: {
+	// a1 -> positive real. a-1 -> positive imag
+	// phase is wrapped. 
+	for(size_t i = 0; i < m; i++){
+	    double am1 = atan2(aa(n-1, i), aa(n-2, i));
+	    double a1 = atan2(aa(3, i), aa(2, i));
+	    phi(i) = 0.5 * (a1 + am1);
+	    th(i) = 0.5 * (a1 - am1);
+	    raa.col(i) = Rotate(aa.col(i), -th(i), -phi(i));
+	}
+	break;
+    }
+
+    case 6: {
+	// a1 -> positive real. a-1 -> positive imag
+	// phase is unwrapped. 
+	for(size_t i = 0; i < m; i++){
+	    double am1 = atan2(aa(n-1, i), aa(n-2, i));
+	    double a1 = atan2(aa(3, i), aa(2, i));
+	    phi(i) = 0.5 * (a1 + am1);
+	    th(i) = 0.5 * (a1 - am1);
+	}
+
+	const double M_2PI = 2 * M_PI;
+	for(size_t i = 1; i < m; i++){
+	    double t0 = th(i) - th(i-1);
+	    double t1 = t0 - M_PI;
+	    double t2 = t0 + M_PI;
+	    double t0WrapAbs = fabs(remainder(t0, M_2PI));
+	    if(fabs(t1) < t0WrapAbs) { // theta jump pi up
+		th(i) = remainder(th(i) - M_PI, M_2PI);
+		phi(i) = remainder(phi(i) - M_PI, M_2PI);
+		continue;
+	    }
+	    if(fabs(t2) < t0WrapAbs) { // theta jump pi down
+		th(i) = remainder(th(i) + M_PI, M_2PI);
+		phi(i) = remainder(phi(i) + M_PI, M_2PI);
+	    }
+	}
+	break;
+    }
+		
+    default:
+	fprintf(stderr, "orbit to slice error\n");
+    }
+	
+
     for(size_t i = 0; i < m; i++){
 	raa.col(i) = Rotate(aa.col(i), -th(i), -phi(i));
     }
 
     return std::make_tuple(raa, th, phi);
-}
-
-/**
- * @ simple version of orbit2slice(). Discard translation and phase information.
- */
-ArrayXXd CQCGL1d::orbit2sliceSimple(const Ref<const ArrayXXd> &aa){
-    auto tmp = orbit2slice(aa);
-    return std::get<0>(tmp);
 }
 
 
@@ -1260,17 +1279,24 @@ ArrayXXd CQCGL1d::orbit2sliceSimple(const Ref<const ArrayXXd> &aa){
  */
 MatrixXd CQCGL1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
     int n = x.size();
-    std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(x);
-    ArrayXXd &xhat =  std::get<0>(tmp); // dimension [2*N, 1]
-    double th = std::get<1>(tmp)[0];
-    double phi = std::get<2>(tmp)[0];
+    ArrayXXd xhat;
+    ArrayXd th, phi;
+    std::tie(xhat, th, phi) = orbit2slice(x);
     VectorXd tx_rho = phaseTangent(xhat);
     VectorXd tx_tau = transTangent(xhat);
-	
+    VectorXd t0;
+    
+    switch (method){
+    case 1: {
+	t0 = ;
+	break;
+    }
+
+    }
     MatrixXd vep = Rotate(ve, -th, -phi);
     vep = vep - 0.5 * ((tx_rho - tx_tau) * vep.row(n-1) / xhat(n-2) +
 		       (tx_rho + tx_tau) * vep.row(3) / xhat(2));
-  
+    
     return vep;
 
 }

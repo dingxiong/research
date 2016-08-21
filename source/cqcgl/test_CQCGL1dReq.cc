@@ -184,7 +184,6 @@ int main(int argc, char **argv){
     
     // string file = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGiEV.h5";
     string fileName = "../../data/cgl/reqBiGiEV.h5";
-    H5File file(fileName, H5F_ACC_RDWR);
     ArrayXd a0;
     double wth0, wphi0, err0;
 
@@ -210,6 +209,7 @@ int main(int argc, char **argv){
     fprintf(stderr, "MPI : %d / %d; range : %d - %d \n", rank, num, p_start, p_end);
     ////////////////////////////////////////////////////////////
     
+    H5File file(fileName + "_" + to_string(rank), H5F_ACC_RDWR);
     cgl.calEVParaSeq(file, std::vector<int>{1, 2}, Bis, Gis, true);
 
     ////////////////////////////////////////////////////////////

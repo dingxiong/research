@@ -2,6 +2,9 @@
 #define CQCGL1dREQ_H
 
 #include "CQCGL1d.hpp"
+#include "myH5.hpp"
+
+using namespace H5;
 
 class CQCGL1dReq : public CQCGL1d {
 
@@ -32,19 +35,19 @@ public :
 
     static
     std::tuple<VectorXd, double, double ,double>
-    readReq(const std::string fileName, const std::string groupName); 
+    readReq(H5File &file, const std::string groupName); 
     
     static
     void 
-    writeReq(const std::string fileName, const std::string groupName,
+    writeReq(H5File &file, const std::string groupName,
 	     const ArrayXd &a, const double wth, 
 	     const double wphi, const double err);
 
     void 
-    writeE(const std::string fileName, const std::string groupName, 
+    writeE(H5File &file, const std::string groupName, 
 	   const VectorXcd e);
     void 
-    writeV(const std::string fileName, const std::string groupName, 
+    writeV(H5File &file, const std::string groupName, 
 	   const MatrixXcd v);
     
     ////////////////////////////////////////////////////////////
@@ -59,9 +62,9 @@ public :
     std::vector<double>
     optThPhi(const ArrayXd &a0);
     void 
-    findReqParaSeq(const std::string file, int id, double step, int Ns, bool isBi);
+    findReqParaSeq(H5File &file, int id, double step, int Ns, bool isBi);
     void 
-    calEVParaSeq(const std::string file, std::vector<int> ids, std::vector<double> Bis,
+    calEVParaSeq(H5File &file, std::vector<int> ids, std::vector<double> Bis,
 		 std::vector<double> Gis, bool saveV);
     
     

@@ -69,8 +69,8 @@ CQCGL1dReq::toStr(double Bi, double Gi, int id){
  *
  */
 std::tuple<VectorXd, double, double ,double>
-CQCGL1dReq::readReq(const std::string fileName, const std::string groupName){
-    H5File file(fileName, H5F_ACC_RDONLY);
+CQCGL1dReq::readReq(H5File &file, const std::string groupName){
+    // H5File file(fileName, H5F_ACC_RDONLY);
     string DS = "/" + groupName + "/";
 
     return make_tuple(readMatrixXd(file, DS + "a").col(0),
@@ -88,11 +88,11 @@ CQCGL1dReq::readReq(const std::string fileName, const std::string groupName){
  * @note group should be a new group
  */
 void 
-CQCGL1dReq::writeReq(const std::string fileName, const std::string groupName,
+CQCGL1dReq::writeReq(H5File &file, const std::string groupName,
 		     const ArrayXd &a, const double wth, 
 		     const double wphi, const double err){
     
-    H5File file(fileName, H5F_ACC_RDWR);
+    // H5File file(fileName, H5F_ACC_RDWR);
     checkGroup(file, groupName, true);
     string DS = "/" + groupName + "/";
 	
@@ -103,9 +103,9 @@ CQCGL1dReq::writeReq(const std::string fileName, const std::string groupName,
 }
 
 void 
-CQCGL1dReq::writeE(const std::string fileName, const std::string groupName, 
+CQCGL1dReq::writeE(H5File &file, const std::string groupName, 
 		   const VectorXcd e){
-    H5File file(fileName, H5F_ACC_RDWR);
+    // H5File file(fileName, H5F_ACC_RDWR);
     checkGroup(file, groupName, true);
     string DS = "/" + groupName + "/";
     
@@ -115,9 +115,9 @@ CQCGL1dReq::writeE(const std::string fileName, const std::string groupName,
 
 
 void 
-CQCGL1dReq::writeV(const std::string fileName, const std::string groupName, 
+CQCGL1dReq::writeV(H5File &file, const std::string groupName, 
 		   const MatrixXcd v){
-    H5File file(fileName, H5F_ACC_RDWR);
+    // H5File file(fileName, H5F_ACC_RDWR);
     checkGroup(file, groupName, true);
     string DS = "/" + groupName + "/";
     
@@ -227,7 +227,7 @@ CQCGL1dReq::optThPhi(const ArrayXd &a0){
  * @brief find req with a sequence of Bi or Gi
  */ 
 void 
-CQCGL1dReq::findReqParaSeq(const std::string file, int id, double step, int Ns, bool isBi){
+CQCGL1dReq::findReqParaSeq(H5File &file, int id, double step, int Ns, bool isBi){
     double Bi0 = Bi;
     double Gi0 = Gi;
     
@@ -270,7 +270,7 @@ CQCGL1dReq::findReqParaSeq(const std::string file, int id, double step, int Ns, 
 
 /// @brief calculate the eigenvalues and eigenvectors of req in certain range 
 void 
-CQCGL1dReq::calEVParaSeq(const std::string file, std::vector<int> ids, std::vector<double> Bis,
+CQCGL1dReq::calEVParaSeq(H5File &file, std::vector<int> ids, std::vector<double> Bis,
 			 std::vector<double> Gis, bool saveV){
     double Bi0 = Bi;
     double Gi0 = Gi;

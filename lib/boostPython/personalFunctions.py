@@ -288,6 +288,20 @@ def plotMat(y, colortype='jet', percent='5%', colorBar=True,
         plt.show(block=False)
 
 
+def plotContour(z, x=None, y=None, size=[8, 6], labs=[r'$x$', r'$y$'],
+                axisLabelSize=25,
+                save=False, name='output.png', title=None, loc='best'):
+    fig, ax = pl2d(size=size, labs=labs, axisLabelSize=axisLabelSize)
+    if x is None or y is None:
+        m, n = z.shape
+        x = np.arange(n)
+        y = np.arange(m)
+    X, Y = np.meshgrid(x, y)
+    CS = ax.contour(X, Y, z)
+    ax.clabel(CS, inline=1, fontsize=10)
+    ax2d(fig, ax, save=save, name=name, title=title, loc=loc)
+
+
 ##################################################
 #            1d CQCGL related                    #
 ##################################################
@@ -308,28 +322,58 @@ class CQCGLreq():
         return (format(Bi, '013.6f') + '/' + format(Gi, '013.6f') +
                 '/' + str(index))
 
-    def checkExist(self, fileName, Bi, Gi, index):
+    def checkExist(self, fileName, groupName):
         f = h5py.File(fileName, 'r')
-        x = self.toStr(Bi, Gi, index) in f
+        x = groupName in f
         f.close()
         return x
 
-    def readReq(self, fileName, groupName):
+    def numStab(self, e):
+        """
+        get the number of unstable exponents. Assume e is sorted by its
+        real part.
+
+        Return
+        ======
+        m : number of unstable exponents or starting index for marginal
+            exponent
+        ep : exponents without marginal ones
+        """
+        n = len(e)
+        for i in range(n):
+            if abs(e[i].real) < 1e-8:
+                m = i
+                break
+        ep = np.delete(e, [m, m+1])
+        return m, ep
+        
+    def readReq(self, fileName, groupName, flag=0):
         f = h5py.File(fileName, 'r')
         req = '/' + groupName + '/'
         a = f[req+'a'].value
         wth = f[req+'wth'].value
         wphi = f[req+'wphi'].value
         err = f[req+'err'].value
+        if flag == 1:
+            e = f[req+'er'].value + 1j*f[req+'ei'].value
+        if flag == 2:
+            e = f[req+'er'].value + 1j*f[req+'ei'].value
+            v = f[req+'vr'].value + 1j*f[req+'vi'].value
         f.close()
-        return a, wth, wphi, err
+        
+        if flag == 0:
+            return a, wth, wphi, err
+        if flag == 1:
+            return a, wth, wphi, err, e
+        if flag == 2:
+            return a, wth, wphi, err, e, v
 
-    def readReqdi(self, fileName, di, index):
+    def readReqdi(self, fileName, di, index, flag=0):
         groupName = format(di, '.6f') + '/' + str(index)
         return self.readReq(fileName, groupName)
 
-    def readReqBiGi(self, fileName, Bi, Gi, index):
-        return self.readReq(fileName, self.toStr(Bi, Gi, index))
+    def readReqBiGi(self, fileName, Bi, Gi, index, flag=0):
+        return self.readReq(fileName, self.toStr(Bi, Gi, index), flag)
 
     def eigReq(self, a0, wth0, wphi0):
         stabMat = self.cgl.stabReq(a0, wth0, wphi0).T

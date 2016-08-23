@@ -2,7 +2,7 @@
 #include <functional>
 #include "CQCGL1dReq.hpp"
 #include "iterMethod.hpp"
-#include "myH5.hpp"
+
 
 #define cee(x) (cout << (x) << endl << endl)
 
@@ -102,6 +102,30 @@ CQCGL1dReq::writeReq(H5File &file, const std::string groupName,
     writeScalar<double>(file, DS + "err", err);
 }
 
+VectorXcd 
+CQCGL1dReq::readE(H5File &file, const std::string groupName){
+    string DS = "/" + groupName + "/";
+    VectorXd er = readMatrixXd(file, DS + "er");
+    VectorXd ei = readMatrixXd(file, DS + "ei");
+    VectorXcd e(er.size());
+    e.real() = er;
+    e.imag() = ei;
+
+    return e;
+}
+
+MatrixXcd 
+CQCGL1dReq::readV(H5File &file, const std::string groupName){
+    string DS = "/" + groupName + "/";
+    MatrixXd vr = readMatrixXd(file, DS + "vr");
+    MatrixXd vi = readMatrixXd(file, DS + "vi");
+    MatrixXcd v(vr.rows(), vr.cols());
+    v.real() = vr;
+    v.imag() = vi;
+
+    return v;
+}
+
 void 
 CQCGL1dReq::writeE(H5File &file, const std::string groupName, 
 		   const VectorXcd e){
@@ -125,7 +149,22 @@ CQCGL1dReq::writeV(H5File &file, const std::string groupName,
     writeMatrixXd(file, DS + "vi", v.imag());
 }
 
+void 
+CQCGL1dReq::moveReq(H5File &fin, std::string gin, H5File &fout, std::string gout,
+		    int flag){
+    VectorXd a;
+    VectorXcd e;
+    MatrixXcd v;
+    double wth, wphi, err;
 
+    std::tie(a, wth, wphi, err) = readReq(fin, gin);
+    if (flag == 1 || flag == 2) e = readE(fin, gin);
+    if (flag == 2) v = readV(fin, gin);
+    
+    writeReq(fout, gout, a, wth, wphi, err);
+    if (flag == 1 || flag == 2) writeE(fout, gout, e);
+    if (flag == 2) writeV(fout, gout, v);
+}
 
 //====================================================================================================
 
@@ -250,7 +289,7 @@ CQCGL1dReq::findReqParaSeq(H5File &file, int id, double step, int Ns, bool isBi)
 	    std::tie(a0, wth0, wphi0, err0) = readReq(file, toStr(Bi, Gi, id));
 	}
 	else {
-	    fprintf(stderr, "%g, %g \n", Bi, Gi);
+	    fprintf(stderr, "%d %g %g \n", id, Bi, Gi);
 	    std::tie(a, wth, wphi, err, flag) = findReq_LM(a0, wth0, wphi0, 1e-10, 100, 1000);
 	    if (flag == 0){
 		writeReq(file, toStr(Bi, Gi, id), a, wth, wphi, err);

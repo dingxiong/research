@@ -1,7 +1,25 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 18
+case = 20
+
+if case == 6:
+    N = 1024
+    d = 50
+    h = 2e-3
+    di = 0.4
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, 3, -0.1, -3.9, -1)
+    req = CQCGLreq(cgl)
+
+    a0, wth0, wphi0, err0 = req.readReqdi('../../data/cgl/reqDi.h5',
+                                          di, 1)
+    a0 = a0 * (0.1**0.5)
+    nstp = 20000
+    for i in range(5):
+        aa = cgl.intg(a0, h, nstp, 10)
+        a0 = aa[-1]
+        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
 
 if case == 8:
     """
@@ -70,11 +88,6 @@ if case == 11:
     d = 30
     h = 0.0002
     
-    # dis = [0.54, 0.55, 0.56, 0.57, 0.59, 0.61, 0.63, 0.65, 0.67,
-    #        0.69, 0.71, 0.74, 0.77, 0.8, 0.83]
-    # files = ['req54.h5', 'req55.h5', 'req56.h5', 'req57.h5', 'req59.h5',
-    #          'req61.h5', 'req63.h5', 'req65.h5', 'req67.h5', 'req69.h5',
-    #          'req71.h5', 'req74.h5', 'req77.h5', 'req8.h5', 'req83.h5']
     for i in range(len(dis)):
         a0, wth0, wphi0, err = cqcglReadReq(files[i], '1')
         cgl = pyCqcgl1d(N, d, h, True, 0, 4.0, 0.8, 0.01, dis[i], 4)
@@ -154,9 +167,9 @@ if case == 15:
     c = -4.1158
 
     cgl = pyCQCGL1d(N, d, 4.0, c, 0.01, di, -1)
-
-    a0, wth0, wphi0, err0 = cqcglReadReqdi('../../data/cgl/reqDi.h5',
-                                           di, 1)
+    req = CQCGLreq(cgl)
+    a0, wth0, wphi0, err0 = req.readReqdi('../../data/cgl/reqDi.h5',
+                                          di, 1)
     nstp = 10000
     for i in range(3):
         aa = cgl.intg(a0, h, nstp, 10)
@@ -164,20 +177,25 @@ if case == 15:
         plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
 
 if case == 16:
+    """
+    to see different profiles with L = 50
+    """
     N = 1024
     d = 50
     h = 2e-3
 
-    Bi = -2.1
-    Gi = -5.5
-    index = 2
+    Bi = 0.8
+    Gi = -3.6
+    index = 1
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     req = CQCGLreq()
 
-    a0, wth0, wphi0, err0 = req.readReqBiGi('../../data/cgl/reqBiGi.h5',
-                                            Bi, Gi, index)
+    a0, wth0, wphi0, err0, e, v = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, index, flag=2)
+    print e[:20]
+    
     nstp = 20000
+    a0 += 0.1*norm(a0)*v[0].real
     for i in range(3):
         aa = cgl.intg(a0, h, nstp, 10)
         a0 = aa[-1]
@@ -191,22 +209,20 @@ if case == 17:
     d = 50
     h = 2e-3
     
-    Bi = -2.1
-    Gi = -5.5
-    index = 2
+    Bi = 2.0
+    Gi = -0.5
+    index = 1
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
-    req = CQCGLreq()
+    req = CQCGLreq(cgl)
 
-    a0, wth0, wphi0, err0 = req.readReqBiGi('../../data/cgl/reqBiGi.h5',
-                                            Bi, Gi, index)
+    a0, wth0, wphi0, err0, e, v = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, index, flag=2)
     plotOneConfigFromFourier(cgl, a0)
-    eigvalues, eigvectors = eigReq(cgl, a0, wth0, wphi0)
-    print eigvalues[:10]
+    print e[:12]
     
 if case == 18:
     """
-    Plot the solitons in the Bi-Gi plan to see the transition.
+    Plot the solitons in the Bi-Gi plane to see the transition.
     """
     N = 1024
     d = 50
@@ -214,26 +230,85 @@ if case == 18:
     
     fileName = '../../data/cgl/reqBiGi.h5'
     
-    for i in range(61):
-        Bi = 2.8 - i * 0.1
-        fig, ax = pl2d(size=[8, 6], labs=[r'$x$', r'$|A|$'], axisLabelSize=25)
+    for i in range(67):
+        Bi = -3.2 + i * 0.1
+        fig, ax = pl2d(size=[8, 6], labs=[r'$x$', r'$|A|$'], ylim=[-0.5, 3], axisLabelSize=25)
         name = format(Bi, '013.6f') + '.png'
         for j in range(55):
             Gi = -0.2 - 0.1*j
             cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
             req = CQCGLreq(cgl)
-            if req.checkExist(fileName, Bi, Gi, 1):
+            if req.checkExist(fileName, req.toStr(Bi, Gi, 1)):
                 a0, wth0, wphi0, err0 = req.readReqBiGi(fileName, Bi, Gi, 1)
                 Aamp = np.abs(cgl.Fourier2Config(a0))
                 ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp)
-            if req.checkExist(fileName, Bi, Gi, 2):
+            if req.checkExist(fileName, req.toStr(Bi, Gi, 2)):
                 a0, wth0, wphi0, err0 = req.readReqBiGi(fileName, Bi, Gi, 2)
                 Aamp = np.abs(cgl.Fourier2Config(a0))
                 ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp)
         ax2d(fig, ax, save=True, name='ex/'+name)
         
 
+if case == 19:
+    """
+    plot the stability of req in the Bi-Gi plane
+    """
+    N = 1024
+    d = 50
+    h = 2e-3
+    
+    fileName = '../../data/cgl/reqBiGiEV.h5'
+    index = 1
+    
+    es = np.zeros([61, 55, 1362], dtype=np.complex)
+    e1 = np.zeros((61, 55), dtype=np.complex)
+
+    fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=25)
+    for i in range(61):
+        Bi = 2.8 - i*0.1
+        for j in range(55):
+            Gi = -0.2 - 0.1*j
+            req = CQCGLreq()
+            if req.checkExist(fileName, req.toStr(Bi, Gi, index) + '/vr'):
+                a0, wth0, wphi0, err0, e, v = req.readReqBiGi(fileName, Bi, Gi, index, flag=2)
+                es[i, j, :] = e
+                m, ep = req.numStab(e)
+                e1[i, j] = ep[0]
+                if m == 0:
+                    c, marker = 'g', 's'
+                elif m == 1:
+                    c, marker = 'm', '^'
+                elif m == 2:
+                    c, marker = 'c', '+'
+                elif m == 4:
+                    c, marker = 'r', 'o'
+                elif m == 6:
+                    c, marker = 'b', 'D'
+                else:
+                    c, marker = 'k', '8'
+                ax.scatter(Gi, Bi, s=15, edgecolors='none',
+                           marker=marker, c=c)
+    
+    ax2d(fig, ax)
+
 if case == 20:
+    """
+    check req really converges
+    """
+    fileName = '../../data/cgl/reqBiGiEV.h5'
+    index = 2
+
+    for i in range(67):
+        Bi = 3.4 - i*0.1
+        for j in range(55):
+            Gi = -0.2 - 0.1*j
+            req = CQCGLreq()
+            if req.checkExist(fileName, req.toStr(Bi, Gi, index)):
+                a0, wth0, wphi0, err0= req.readReqBiGi(fileName, Bi, Gi, index)
+                if err0 > 1e-6:
+                    print err0, Bi, Gi
+    
+if case == 30:
     """
     Try to locate the Hopf bifurcation limit cycle.
     There is singularity for reducing the discrete symmetry
@@ -285,7 +360,7 @@ if case == 20:
     fig.tight_layout(pad=0)
     plt.show(block=False)
  
-if case == 21:
+if case == 31:
     """
     Try to find the guess of the limit cycle for di large enough
     such that the soliton is unstable.
@@ -323,7 +398,7 @@ if case == 21:
     print nstp, T, th0, phi0, err
     # cqcglSaveRPOdi('rpot.h5', di, 1, aa[i1], T, nstp, th0, phi0, err)
     
-if case == 30:
+if case == 40:
     """
     compare the Hopf bifurcation limit cycle with slightly different di
     """
@@ -369,7 +444,7 @@ if case == 30:
     plt.legend(loc='upper right', frameon=False)
     plt.show(block=False)
 
-if case == 40:
+if case == 50:
     """
     visualize a few explosion examples in the covariant coordinate.
     Only care about the part after explosion.
@@ -422,7 +497,7 @@ if case == 40:
     fig.tight_layout(pad=0)
     plt.show(block=False)
 
-if case == 50:
+if case == 60:
     """
     In the case that we visualize Hopf limit cycle and the explosion in the
     same frame, we find that after explosion, the system almost lands

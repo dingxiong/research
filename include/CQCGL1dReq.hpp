@@ -42,13 +42,28 @@ public :
     writeReq(H5File &file, const std::string groupName,
 	     const ArrayXd &a, const double wth, 
 	     const double wphi, const double err);
+    static
+    VectorXcd 
+    readE(H5File &file, const std::string groupName);
 
+    static
+    MatrixXcd 
+    readV(H5File &file, const std::string groupName);
+    
+    static
     void 
     writeE(H5File &file, const std::string groupName, 
 	   const VectorXcd e);
+    
+    static
     void 
     writeV(H5File &file, const std::string groupName, 
 	   const MatrixXcd v);
+    
+    static
+    void 
+    moveReq(H5File &fin, std::string gin, H5File &fout, std::string gout,
+	    int flag = 0);
     
     ////////////////////////////////////////////////////////////
     VectorXd Fx(const VectorXd &x);

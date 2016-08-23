@@ -124,21 +124,22 @@ int main(int argc, char **argv){
     //======================================================================
     // combine the calculated E/V data
    
-    string s = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGi_";
-    H5File fout(s + "t.h5", H5F_ACC_RDWR);
+    string s = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGiEV";
+    H5File fout(s + ".h5", H5F_ACC_RDWR);
     int ids[] = {1, 2};
     
     for ( int i = 0; i < 6; i++){
-	H5File fin(s + to_string(i) + ".h5", H5F_ACC_RDONLY);
+	H5File fin(s + "_add_" + to_string(i) + ".h5", H5F_ACC_RDONLY);
 	for (int j = 0; j < 2; j++){
 	    int id = ids[j];
-	    for( int k = 0; k < 61; k++){
+	    for( int k = 0; k < 6; k++){
 		double Bi = 2.9 + 0.1*k;
 		for(int p = 0; p < 55; p++){
-		    double Gi = -5.5 + 0.1*p;
+		    double Gi = -5.6 + 0.1*p;
 		    string g = CQCGL1dReq::toStr(Bi, Gi, id);
-		    if (checkGroup(fin, g, false)){
-			CQCGL1dReq::moveReq(fin, g, fout, g, 0);
+		    if (checkGroup(fin, g + "/vr", false)){
+			fprintf(stderr, "%d %g %g\n", id, Bi, Gi);
+			CQCGL1dReq::moveReq(fin, g, fout, g, 2);
 		    }
 		}
 	    }
@@ -148,6 +149,7 @@ int main(int argc, char **argv){
 #endif
 #ifdef N60
     //======================================================================
+    // extend the soliton in one direction of parameter space
     iterMethod::LM_OUT_PRINT = false;
     iterMethod::LM_IN_PRINT = false;
     iterMethod::CG_PRINT = false;
@@ -162,11 +164,11 @@ int main(int argc, char **argv){
     H5File file(fileName, H5F_ACC_RDWR);
 
     double stepB = 0.1;
-    int NsB = 6;
+    int NsB = 24;
     
-    // cgl.findReqParaSeq(file, 1, stepB, NsB, true);
-    // cgl.findReqParaSeq(file, 2, stepB, NsB, true);
-    cgl.findReqParaSeq(file, 1, 0.1, 53, false);
+    cgl.findReqParaSeq(file, 1, stepB, NsB, true);
+    cgl.findReqParaSeq(file, 2, stepB, NsB, true);
+    // cgl.findReqParaSeq(file, 2, 0.1, 53, false);
     
 #endif
     

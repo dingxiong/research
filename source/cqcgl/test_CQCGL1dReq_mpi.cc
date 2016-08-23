@@ -22,7 +22,7 @@ using namespace denseRoutines;
 typedef std::complex<double> dcp;
 
 
-#define N20
+#define N10
 
 int main(int argc, char **argv){
 
@@ -35,14 +35,14 @@ int main(int argc, char **argv){
 
     const int N = 1024;
     const int L = 50;
-    double Bi = 2.8;
+    double Bi = 3.4;
     double Gi = -5.6;
 
     CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
     string fileName = "../../data/cgl/reqBiGi";
 
     double stepB = 0.1;
-    int NsB = 6;
+    int NsB = 24;
 
     ////////////////////////////////////////////////////////////
     // mpi part 
@@ -76,7 +76,7 @@ int main(int argc, char **argv){
 #endif
 #ifdef N20
     //======================================================================
-    // try to calculate the eigenvalue and eigenvector of one req
+    // try to calculate the eigenvalue and eigenvector
     const int N = 1024;
     const int L = 50;
     double Bi = 3.4;
@@ -107,6 +107,50 @@ int main(int argc, char **argv){
     int p_start = inc*rank + (rank < rem ? rank : rem);
     int p_end = p_start + p_size;
     for (int i = p_start; i < p_end; i++) Bis.push_back(Bi-0.1*i);
+    fprintf(stderr, "MPI : %d / %d; range : %d - %d \n", rank, num, p_start, p_end);
+    ////////////////////////////////////////////////////////////
+    
+    H5File file(fileName + to_string(rank) + ".h5", H5F_ACC_RDWR);
+    cgl.calEVParaSeq(file, std::vector<int>{1, 2}, Bis, Gis, true);
+
+    ////////////////////////////////////////////////////////////
+    MPI_Finalize();
+    ////////////////////////////////////////////////////////////
+
+#endif
+#ifdef N30
+    //======================================================================
+    // try to calculate the eigenvalue and eigenvector. Parallel for Gi.
+    const int N = 1024;
+    const int L = 50;
+    double Bi = 3.4;
+    double Gi = -5.6;
+    CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
+    
+    // string file = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGiEV.h5";
+    string fileName = "../../data/cgl/reqBiGiEV_add_";
+    ArrayXd a0;
+    double wth0, wphi0, err0;
+
+    VectorXcd e;
+    MatrixXcd v;
+    
+    std::vector<double> Bis, Gis;
+    Bis.push_back(Bi);
+    
+    int NsG = 55;
+    ////////////////////////////////////////////////////////////
+    // mpi part 
+    MPI_Init(&argc, &argv);
+    int rank, num;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num);
+    int inc = NsG / num;
+    int rem = NsG - inc * num;
+    int p_size = inc + (rank < rem ? 1 : 0);
+    int p_start = inc*rank + (rank < rem ? rank : rem);
+    int p_end = p_start + p_size;
+    for (int i = p_start; i < p_end; i++) Gis.push_back(Gi+0.1*i);
     fprintf(stderr, "MPI : %d / %d; range : %d - %d \n", rank, num, p_start, p_end);
     ////////////////////////////////////////////////////////////
     

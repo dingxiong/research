@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 20
+case = 16
 
 if case == 6:
     N = 1024
@@ -184,8 +184,8 @@ if case == 16:
     d = 50
     h = 2e-3
 
-    Bi = 0.8
-    Gi = -3.6
+    Bi = 3.4
+    Gi = -4
     index = 1
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
@@ -265,7 +265,7 @@ if case == 19:
 
     fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=25)
     for i in range(61):
-        Bi = 2.8 - i*0.1
+        Bi = 3.4 - i*0.1
         for j in range(55):
             Gi = -0.2 - 0.1*j
             req = CQCGLreq()

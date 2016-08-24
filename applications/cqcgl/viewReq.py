@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 16
+case = 20
 
 if case == 6:
     N = 1024
@@ -230,7 +230,7 @@ if case == 18:
     
     fileName = '../../data/cgl/reqBiGi.h5'
     
-    for i in range(67):
+    for i in range(90):
         Bi = -3.2 + i * 0.1
         fig, ax = pl2d(size=[8, 6], labs=[r'$x$', r'$|A|$'], ylim=[-0.5, 3], axisLabelSize=25)
         name = format(Bi, '013.6f') + '.png'
@@ -298,7 +298,7 @@ if case == 20:
     fileName = '../../data/cgl/reqBiGiEV.h5'
     index = 2
 
-    for i in range(67):
+    for i in range(90):
         Bi = 3.4 - i*0.1
         for j in range(55):
             Gi = -0.2 - 0.1*j

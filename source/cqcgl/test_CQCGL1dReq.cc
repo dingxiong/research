@@ -16,7 +16,7 @@ using namespace MyH5;
 typedef std::complex<double> dcp;
 
 
-#define N60
+#define N50
 
 int main(int argc, char **argv){
 
@@ -124,22 +124,22 @@ int main(int argc, char **argv){
     //======================================================================
     // combine the calculated E/V data
    
-    string s = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGiEV";
+    string s = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGi";
     H5File fout(s + ".h5", H5F_ACC_RDWR);
     int ids[] = {1, 2};
     
-    for ( int i = 0; i < 6; i++){
-	H5File fin(s + "_add_" + to_string(i) + ".h5", H5F_ACC_RDONLY);
+    for ( int i = 0; i < 24; i++){
+	H5File fin(s + "_" + to_string(i) + ".h5", H5F_ACC_RDONLY);
 	for (int j = 0; j < 2; j++){
 	    int id = ids[j];
-	    for( int k = 0; k < 6; k++){
-		double Bi = 2.9 + 0.1*k;
+	    for( int k = 0; k < 24; k++){
+		double Bi = 3.5 + 0.1*k;
 		for(int p = 0; p < 55; p++){
-		    double Gi = -5.6 + 0.1*p;
+		    double Gi = -5.5 + 0.1*p;
 		    string g = CQCGL1dReq::toStr(Bi, Gi, id);
-		    if (checkGroup(fin, g + "/vr", false)){
+		    if (checkGroup(fin, g, false)){
 			fprintf(stderr, "%d %g %g\n", id, Bi, Gi);
-			CQCGL1dReq::moveReq(fin, g, fout, g, 2);
+			CQCGL1dReq::moveReq(fin, g, fout, g, 0);
 		    }
 		}
 	    }

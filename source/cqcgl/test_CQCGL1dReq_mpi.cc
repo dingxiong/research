@@ -22,7 +22,7 @@ using namespace denseRoutines;
 typedef std::complex<double> dcp;
 
 
-#define N10
+#define N20
 
 int main(int argc, char **argv){
 
@@ -79,7 +79,7 @@ int main(int argc, char **argv){
     // try to calculate the eigenvalue and eigenvector
     const int N = 1024;
     const int L = 50;
-    double Bi = 3.4;
+    double Bi = 5.7;
     double Gi = -5.6;
     CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
     
@@ -94,7 +94,7 @@ int main(int argc, char **argv){
     std::vector<double> Bis, Gis;
     for(int i = 0; i < 55; i++) Gis.push_back(Gi+0.1*i);
     
-    int NsB = 6;
+    int NsB = 23;
     ////////////////////////////////////////////////////////////
     // mpi part 
     MPI_Init(&argc, &argv);

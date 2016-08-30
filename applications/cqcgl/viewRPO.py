@@ -138,17 +138,23 @@ if case == 41:
     """
     N = 1024
     d = 50
-    Bi = 0.8
-    Gi = -3.6
+    Bi = 2.3
+    Gi = -5.6
     
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     rpo = CQCGLrpo()
-    x, T, nstp, th, phi, err = rpo.readRpoBiGi('../../data/cgl/rpoBiGi.h5',
+    x, T, nstp, th, phi, err = rpo.readRpoBiGi('../../data/cgl/rpoBiGi2.h5',
                                                Bi, Gi, 1)
     a0 = x[:cgl.Ndim]
+    v0 = cgl.velocity(a0)
+    t1 = cgl.transTangent(a0)
+    t2 = cgl.phaseTangent(a0)
+    ang = pAngle(v0, np.vstack((t1, t2)).T)
+    print ang
     aa = cgl.intg(a0, T/nstp, 10*nstp, 50)
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
     
+
 
 if case == 50:
     """

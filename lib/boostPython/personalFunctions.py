@@ -3,6 +3,8 @@
 ##################################################
 from time import time
 import h5py
+import matplotlib
+matplotlib.use('Qt4Agg')
 from pylab import *
 import numpy as np
 from numpy.random import rand
@@ -17,6 +19,8 @@ import matplotlib.animation as animation
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import os
 import subprocess as sps
+
+from numpy.linalg import norm
 
 ##################################################
 #               Plot related                     #
@@ -1307,7 +1311,7 @@ def pAngleVQ(V, Q):
     """
     assert V.ndim == 1
     V = V / LA.norm(V)
-    c = LA.norm(dot(Q.T, V))
+    c = LA.norm(np.dot(Q.T, V))
     if (c > 1):
         c = 1
     return np.arccos(c)

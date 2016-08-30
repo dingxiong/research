@@ -22,7 +22,7 @@ using namespace denseRoutines;
 typedef std::complex<double> dcp;
 
 
-#define N20
+#define N30
 
 int main(int argc, char **argv){
 
@@ -123,7 +123,7 @@ int main(int argc, char **argv){
     // try to calculate the eigenvalue and eigenvector. Parallel for Gi.
     const int N = 1024;
     const int L = 50;
-    double Bi = 3.4;
+    double Bi = 3.6;
     double Gi = -5.6;
     CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
     

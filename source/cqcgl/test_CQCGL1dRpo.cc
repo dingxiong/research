@@ -84,8 +84,8 @@ int main(){
     // use saved guess directively
     const int N = 1024;
     const double L = 50;
-    double Bi = 0.8;
-    double Gi = -3.6;
+    double Bi = 2;
+    double Gi = -5.6;
     
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
     string file = "/usr/local/home/xiong/00git/research/data/cgl/p.h5";
@@ -130,19 +130,21 @@ int main(){
     // find limit cycles by varying Bi and Gi
     const int N = 1024;
     const int L = 50;
-    double Bi = 0.8;
-    double Gi = -3.6;
+    double Bi = 2.0;
+    double Gi = -5.5;
 
     int id = 1;
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
 	
-    string file = "/usr/local/home/xiong/00git/research/data/cgl/rpoBiGi.h5";
-    double stepB = -0.1;
-    int NsB = 40;
-    cgl.findRpoParaSeq(file, id, stepB, NsB, true);
+    string file = "/usr/local/home/xiong/00git/research/data/cgl/rpoBiGi2.h5";
+    double stepB = 0.1;
+    int NsB = 10;
+    // cgl.findRpoParaSeq(file, id, stepB, NsB, true);
+    cgl.findRpoParaSeq(file, id, stepB, NsB, false);
+
     // for (int i = 1; i < NsB+1; i++){
     // 	cgl.Bi = Bi+i*stepB;
-    // 	cgl.findReqParaSeq(file, id, -0.1, 50, false);
+    // 	cgl.findRpoParaSeq(file, id, -0.1, 50, false);
     // }
 
 

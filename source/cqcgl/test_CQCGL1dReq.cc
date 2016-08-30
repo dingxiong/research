@@ -124,22 +124,22 @@ int main(int argc, char **argv){
     //======================================================================
     // combine the calculated E/V data
    
-    string s = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGi";
+    string s = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGiEV";
     H5File fout(s + ".h5", H5F_ACC_RDWR);
     int ids[] = {1, 2};
     
-    for ( int i = 0; i < 24; i++){
-	H5File fin(s + "_" + to_string(i) + ".h5", H5F_ACC_RDONLY);
+    for ( int i = 0; i < 8; i++){
+	H5File fin(s + "_add_" + to_string(i) + ".h5", H5F_ACC_RDONLY);
 	for (int j = 0; j < 2; j++){
 	    int id = ids[j];
 	    for( int k = 0; k < 24; k++){
 		double Bi = 3.5 + 0.1*k;
 		for(int p = 0; p < 55; p++){
-		    double Gi = -5.5 + 0.1*p;
+		    double Gi = -5.6 + 0.1*p;
 		    string g = CQCGL1dReq::toStr(Bi, Gi, id);
-		    if (checkGroup(fin, g, false)){
+		    if (checkGroup(fin, g+"/vr", false)){
 			fprintf(stderr, "%d %g %g\n", id, Bi, Gi);
-			CQCGL1dReq::moveReq(fin, g, fout, g, 0);
+			CQCGL1dReq::moveReq(fin, g, fout, g, 2);
 		    }
 		}
 	    }
@@ -156,7 +156,7 @@ int main(int argc, char **argv){
 
     const int N = 1024;
     const int L = 50;
-    double Bi = 3.4;
+    double Bi = 4.5;
     double Gi = -5.6;
 
     CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
@@ -164,10 +164,10 @@ int main(int argc, char **argv){
     H5File file(fileName, H5F_ACC_RDWR);
 
     double stepB = 0.1;
-    int NsB = 24;
+    int NsB = 55;
     
-    cgl.findReqParaSeq(file, 1, stepB, NsB, true);
-    cgl.findReqParaSeq(file, 2, stepB, NsB, true);
+    cgl.findReqParaSeq(file, 1, stepB, NsB, false);
+    cgl.findReqParaSeq(file, 2, stepB, NsB, false);
     // cgl.findReqParaSeq(file, 2, 0.1, 53, false);
     
 #endif

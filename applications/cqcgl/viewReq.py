@@ -1,7 +1,8 @@
 from py_CQCGL1d import *
 from personalFunctions import *
+from sets import Set
 
-case = 20
+case = 16
 
 if case == 6:
     N = 1024
@@ -184,8 +185,8 @@ if case == 16:
     d = 50
     h = 2e-3
 
-    Bi = 3.4
-    Gi = -4
+    Bi = 2.1
+    Gi = -5.6
     index = 1
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
@@ -210,7 +211,7 @@ if case == 17:
     h = 2e-3
     
     Bi = 2.0
-    Gi = -0.5
+    Gi = -5.6
     index = 1
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
@@ -260,12 +261,17 @@ if case == 19:
     fileName = '../../data/cgl/reqBiGiEV.h5'
     index = 1
     
-    es = np.zeros([61, 55, 1362], dtype=np.complex)
-    e1 = np.zeros((61, 55), dtype=np.complex)
+    cs = {0: 'g', 1: 'm', 2: 'c', 4: 'r', 6: 'b'}#, 8: 'y', 56: 'r', 14: 'grey'}
+    ms = {0: 's', 1: '^', 2: '+', 4: 'o', 6: 'D'}#, 8: '8', 56: '4', 14: 'v'}
 
-    fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=25)
-    for i in range(61):
-        Bi = 3.4 - i*0.1
+    es = np.zeros([90, 55, 1362], dtype=np.complex)
+    e1 = np.zeros((90, 55), dtype=np.complex)
+    ns = Set([])
+
+    fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=25,
+                   xlim=[-6, 0], ylim=[-4, 6])
+    for i in range(90):
+        Bi = 5.7 - i*0.1
         for j in range(55):
             Gi = -0.2 - 0.1*j
             req = CQCGLreq()
@@ -274,21 +280,12 @@ if case == 19:
                 es[i, j, :] = e
                 m, ep = req.numStab(e)
                 e1[i, j] = ep[0]
-                if m == 0:
-                    c, marker = 'g', 's'
-                elif m == 1:
-                    c, marker = 'm', '^'
-                elif m == 2:
-                    c, marker = 'c', '+'
-                elif m == 4:
-                    c, marker = 'r', 'o'
-                elif m == 6:
-                    c, marker = 'b', 'D'
-                else:
-                    c, marker = 'k', '8'
+                ns.add(m)
+                # print index, Bi, Gi, m
                 ax.scatter(Gi, Bi, s=15, edgecolors='none',
-                           marker=marker, c=c)
+                           marker=ms.get(m, '*'), c=cs.get(m, 'k'))
     
+    ax.grid(which='both')
     ax2d(fig, ax)
 
 if case == 20:

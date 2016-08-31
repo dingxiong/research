@@ -13,6 +13,7 @@
 #include <Eigen/Dense>
 #include <complex>
 #include <ctime>
+#include <mpi.h>
 
 #include "CQCGL1dReq.hpp"
 #include "CQCGL1dRpo.hpp"
@@ -25,7 +26,7 @@ using namespace iterMethod;
 
 #define CASE_10
 
-int main(){
+int main(int argc, char **argv){
     
     cout.precision(15);
     GMRES_IN_PRINT_FREQUENCE = 50;
@@ -37,15 +38,15 @@ int main(){
     // find limit cycles by varying Bi and Gi
     const int N = 1024;
     const int L = 50;
-    double Bi = 2.0;
+    double Bi = 2.1;
     double Gi = -5.6;
 
     int id = 1;
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
 	
-    string file = "../../data/cgl/rpoBiGi2";
+    string file = "../../data/cgl/rpoBiGi2.h5";
     double stepB = 0.1;
-    int NsB = 10;
+    int NsB = 37;
 
     ////////////////////////////////////////////////////////////
     // mpi part 
@@ -61,7 +62,6 @@ int main(){
     fprintf(stderr, "MPI : %d / %d; range : %d - %d \n", rank, num, p_start, p_end);
     ////////////////////////////////////////////////////////////
 
-    string f2 = file + "_" + to_string(rank) + ".h5";
     for (int i = p_start; i < p_end; i++){
 	cgl.Bi = Bi + i*stepB;
 	cgl.findRpoParaSeq(file, 1, 0.1, 55, false);

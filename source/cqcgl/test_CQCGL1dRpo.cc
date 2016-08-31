@@ -131,14 +131,14 @@ int main(){
     const int N = 1024;
     const int L = 50;
     double Bi = 2.0;
-    double Gi = -5.5;
+    double Gi = -5.6;
 
     int id = 1;
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
 	
     string file = "/usr/local/home/xiong/00git/research/data/cgl/rpoBiGi2.h5";
     double stepB = 0.1;
-    int NsB = 10;
+    int NsB = 30;
     // cgl.findRpoParaSeq(file, id, stepB, NsB, true);
     cgl.findRpoParaSeq(file, id, stepB, NsB, false);
 

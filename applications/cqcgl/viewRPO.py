@@ -138,7 +138,7 @@ if case == 41:
     """
     N = 1024
     d = 50
-    Bi = 2.3
+    Bi = 5.7
     Gi = -5.6
     
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
@@ -152,7 +152,7 @@ if case == 41:
     ang = pAngle(v0, np.vstack((t1, t2)).T)
     print ang
     aa = cgl.intg(a0, T/nstp, 10*nstp, 50)
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 10])
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T*10])
     
 
 

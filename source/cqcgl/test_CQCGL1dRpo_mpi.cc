@@ -46,7 +46,7 @@ int main(int argc, char **argv){
 	
     string file = "../../data/cgl/rpoBiGi2.h5";
     double stepB = 0.1;
-    int NsB = 37;
+    int NsB = 8;
 
     ////////////////////////////////////////////////////////////
     // mpi part 

@@ -36,10 +36,10 @@ namespace denseRoutines {
     subspBound(const MatrixXi subspDim, const MatrixXi ixSp);
 
     void normc(MatrixXd &A);
-    std::vector<int> csort(const VectorXcd &e);
-    VectorXcd eEig(const MatrixXd &A);
-    MatrixXcd vEig(const MatrixXd &A);
-    std::pair<VectorXcd, MatrixXcd> evEig(const MatrixXd &A);
+    std::vector<int> csort(const VectorXcd &e, int flag);
+    VectorXcd eEig(const MatrixXd &A, int flag);
+    MatrixXcd vEig(const MatrixXd &A, int flag);
+    std::pair<VectorXcd, MatrixXcd> evEig(const MatrixXd &A, int flag);
     VectorXd centerRand(const int N, const double frac);
     MatrixXd realv(const MatrixXcd &v);
     MatrixXd orthAxes(const Ref<const MatrixXd> &v);

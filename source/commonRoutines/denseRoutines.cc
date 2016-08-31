@@ -166,13 +166,28 @@ void denseRoutines::normc(MatrixXd &A){
  *        by their real part
  */
 std::vector<int>
-denseRoutines::csort(const VectorXcd &e){
+denseRoutines::csort(const VectorXcd &e, int flag){
     int n = e.size(); 
     std::vector<int> id(n);
     for(int i = 0; i < n; i++) id[i] = i;
-    std::sort(id.begin(), id.end(), 
-	      [&e](int i, int j){return e(i).real() > e(j).real();}
-	      ); 
+
+    switch (flag){
+    case 1 : 			// real part
+	std::sort(id.begin(), id.end(), 
+		  [&e](int i, int j){return e(i).real() > e(j).real();}
+		  );
+	break;
+
+    case 2 :			// magnitude
+	std::sort(id.begin(), id.end(), 
+		  [&e](int i, int j){return std::abs(e(i)) > std::abs(e(j)); }
+		  );
+	break;
+
+    default:
+	fprintf(stderr, "errer of csort in denseRoutines\n");
+    }
+    
     return id;
 }
 
@@ -181,9 +196,9 @@ denseRoutines::csort(const VectorXcd &e){
  *
  * The eigenvalues are sorted by their real part. It returns a complex vector.
  */
-VectorXcd denseRoutines::eEig(const MatrixXd &A){
+VectorXcd denseRoutines::eEig(const MatrixXd &A, int flag){
     EigenSolver<MatrixXd> es(A);
-    std::vector<int> id = csort(es.eigenvalues());
+    std::vector<int> id = csort(es.eigenvalues(), flag);
     int n = id.size();
     VectorXcd re(n);
     for(size_t i = 0; i < n; i++) re(i) = es.eigenvalues()(id[i]);
@@ -195,9 +210,9 @@ VectorXcd denseRoutines::eEig(const MatrixXd &A){
  *
  * The eigenvalues are sorted by their real part. It returns a complex matrix.
  */
-MatrixXcd denseRoutines::vEig(const MatrixXd &A){
+MatrixXcd denseRoutines::vEig(const MatrixXd &A, int flag){
     EigenSolver<MatrixXd> es(A);
-    std::vector<int> id = csort(es.eigenvalues());
+    std::vector<int> id = csort(es.eigenvalues(), flag);
     int n = id.size();
     MatrixXcd rv(n, n);
     for(size_t i = 0; i < n; i++) rv.col(i) = es.eigenvectors().col(id[i]);
@@ -210,9 +225,9 @@ MatrixXcd denseRoutines::vEig(const MatrixXd &A){
  * The eigenvalues are sorted by their real part. 
  */
 std::pair<VectorXcd, MatrixXcd>
-denseRoutines::evEig(const MatrixXd &A){
+denseRoutines::evEig(const MatrixXd &A, int flag){
     EigenSolver<MatrixXd> es(A);
-    std::vector<int> id = csort(es.eigenvalues());
+    std::vector<int> id = csort(es.eigenvalues(), flag);
     int n = id.size();
     VectorXcd re(n);
     MatrixXcd rv(n, n);

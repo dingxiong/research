@@ -21,6 +21,6 @@ If you need build python binding, you also need
 * [Boost.Python](http://www.boost.org/doc/libs/1_58_0/libs/python/doc/)
 * [Boost.NumPy](https://github.com/ndarray/Boost.NumPy)
 
-For Arpack++ support, please
-* In ubuntu, `sudo apt-get install libarpack++2-dev`
+For Arpack++ support, you need
+* [arpackpp](https://github.com/m-reuter/arpackpp)
 

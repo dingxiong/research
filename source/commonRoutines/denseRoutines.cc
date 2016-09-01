@@ -191,6 +191,67 @@ denseRoutines::csort(const VectorXcd &e, int flag){
     return id;
 }
 
+/// @brief transform real-format eigenvector matrix to complex format
+/// @note assume complex paris are complete
+MatrixXcd
+denseRoutines::vr2vc(const VectorXcd &e, const Ref<const MatrixXd> &v){
+    assert(e.size() == v.cols());
+    int m = v.rows();
+    int n = v.cols();
+    MatrixXcd vc(m, n);
+    
+    int i = 0;
+    while(i < n-1){
+	double r1 = fabs( e(i).imag() );
+	double r2 = fabs( e(i).imag() + e(i+1).imag() );
+	if(r1 > 1e-6 && r2 < 1e-10){
+	    vc.col(i).real() = v.col(i);
+	    vc.col(i).imag() = v.col(i+1);
+	    vc.col(i+1).real() = v.col(i);
+	    vc.col(i+1).imag() = -v.col(i+1);
+	    i += 2;
+	} 
+	else {
+	    vc.col(i).real() = v.col(i);
+	    vc.col(i).imag().setZero();
+	    i++;
+	}
+    }
+    
+    if (i == n-1) {
+	vc.col(i).real() = v.col(i);
+	vc.col(i).imag().setZero();
+    }
+
+    return vc;
+}
+
+MatrixXd 
+denseRoutines::vc2vr(const Ref<const MatrixXcd> &v){
+    int m = v.rows();
+    int n = v.cols();
+    MatrixXd vr(m, n);
+
+    int i = 0;
+    while (i < n-1) {
+	double r1 = v.col(i).imag().array().abs().maxCoeff();
+	double r2 = (v.col(i) + v.col(i+1)).imag().array().abs().maxCoeff();
+	if (r1 > 1e-6 && r2 < 1e-10){
+	    vr.col(i) = v.col(i).real();
+	    vr.col(i+1) = v.col(i).imag();
+	    i += 2;
+	}
+	else {
+	    vr.col(i) = v.col(i).real();
+	    i++;
+	}
+    }
+    
+    if (i == n-1) vr.col(i) = v.col(i).real();
+    
+    return vr;
+}
+
 /**
  * @brief calculate the eigenvalues of a real matrix.
  *

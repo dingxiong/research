@@ -64,6 +64,20 @@ public:
     void
     moveRpo(std::string infile, std::string ingroup, 
 	    std::string outfile, std::string outgroup);
+
+    VectorXcd 
+    readE(std::string fileName, const std::string groupName);
+    
+    MatrixXd 
+    readV(std::string fileName, const std::string groupName);
+    
+    void 
+    writeE(std::string fileName, const std::string groupName, 
+	   const VectorXcd &e);
+
+    void 
+    writeV(std::string fileName, const std::string groupName, 
+	   const MatrixXd &v);
     
     ////////////////////////////////////////////////////////////  
 

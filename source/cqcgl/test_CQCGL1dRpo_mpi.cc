@@ -38,7 +38,7 @@ int main(int argc, char **argv){
     // find limit cycles by varying Bi and Gi
     const int N = 1024;
     const int L = 50;
-    double Bi = 2.1;
+    double Bi = 1.9;
     double Gi = -5.6;
 
     int id = 1;
@@ -46,7 +46,7 @@ int main(int argc, char **argv){
 	
     string file = "../../data/cgl/rpoBiGi2.h5";
     double stepB = 0.1;
-    int NsB = 8;
+    int NsB = 39;
 
     ////////////////////////////////////////////////////////////
     // mpi part 

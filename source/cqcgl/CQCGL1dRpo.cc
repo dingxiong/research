@@ -119,6 +119,52 @@ CQCGL1dRpo::moveRpo(string infile, string ingroup,
 }
 
 
+VectorXcd 
+CQCGL1dRpo::readE(std::string fileName, const std::string groupName){
+    H5File file(fileName, H5F_ACC_RDONLY);
+    string DS = "/" + groupName + "/";
+    VectorXd er = readMatrixXd(file, DS + "er");
+    VectorXd ei = readMatrixXd(file, DS + "ei");
+    VectorXcd e(er.size());
+    e.real() = er;
+    e.imag() = ei;
+
+    return e;
+}
+
+MatrixXd 
+CQCGL1dRpo::readV(std::string fileName, const std::string groupName){
+    H5File file(fileName, H5F_ACC_RDONLY);
+    string DS = "/" + groupName + "/";
+    return readMatrixXd(file, DS + "v");
+}
+
+void 
+CQCGL1dRpo::writeE(std::string fileName, const std::string groupName, 
+		   const VectorXcd &e){
+    H5File file(fileName, H5F_ACC_RDWR);
+    checkGroup(file, groupName, true);
+    string DS = "/" + groupName + "/";
+    
+    writeMatrixXd(file, DS + "er", e.real());
+    writeMatrixXd(file, DS + "ei", e.imag());
+}
+
+
+void 
+CQCGL1dRpo::writeV(std::string fileName, const std::string groupName, 
+		   const MatrixXd &v){
+    H5File file(fileName, H5F_ACC_RDWR);
+    checkGroup(file, groupName, true);
+    string DS = "/" + groupName + "/";
+    
+    writeMatrixXd(file, DS + "v", v);
+}
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+
 //======================================================================
 
 /* 

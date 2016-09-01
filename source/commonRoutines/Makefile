@@ -21,7 +21,7 @@ SOURCE2 = denseRoutines.cc
 SHARED2 = $(addprefix lib, $(addsuffix .so, $(basename $(word 1, $(SOURCE2)))))
 STATIC2 = $(addprefix lib, $(addsuffix .a, $(basename $(word 1, $(SOURCE2)))))
 
-all : $(SHARED) $(STATIC) $(SHARED2) $(STATIC2) 
+all : $(SHARED) $(SHARED2) # $(STATIC2) $(STATIC)
 
 $(SHARED): $(SOURCE)
 	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@

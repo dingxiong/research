@@ -37,6 +37,10 @@ namespace denseRoutines {
 
     void normc(MatrixXd &A);
     std::vector<int> csort(const VectorXcd &e, int flag);
+    MatrixXcd
+    vr2vc(const VectorXcd &e, const MatrixXd &v);
+    MatrixXd 
+    vc2vr(const MatrixXcd &v);
     VectorXcd eEig(const MatrixXd &A, int flag);
     MatrixXcd vEig(const MatrixXd &A, int flag);
     std::pair<VectorXcd, MatrixXcd> evEig(const MatrixXd &A, int flag);

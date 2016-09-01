@@ -735,14 +735,14 @@ MatrixXd CQCGL1d::stabReq(const ArrayXd &a0, double wth, double wphi){
  * @brief stability exponents of req
  */
 VectorXcd CQCGL1d::eReq(const ArrayXd &a0, double wth, double wphi){
-    return eEig(stabReq(a0, wth, wphi));
+    return eEig(stabReq(a0, wth, wphi), 1);
 }
 
 /**
  * @brief stability vectors of req
  */
 MatrixXcd CQCGL1d::vReq(const ArrayXd &a0, double wth, double wphi){
-    return vEig(stabReq(a0, wth, wphi));
+    return vEig(stabReq(a0, wth, wphi), 1);
 }
 
 /**
@@ -750,7 +750,7 @@ MatrixXcd CQCGL1d::vReq(const ArrayXd &a0, double wth, double wphi){
  */
 std::pair<VectorXcd, MatrixXcd>
 CQCGL1d::evReq(const ArrayXd &a0, double wth, double wphi){
-    return evEig(stabReq(a0, wth, wphi));
+    return evEig(stabReq(a0, wth, wphi), 1);
 }
 
 
@@ -1162,7 +1162,7 @@ CQCGL1d::orbit2slice(const Ref<const ArrayXXd> &aa, int method){
     ArrayXd th(m);
     ArrayXd phi(m);
     
-    swith (method){
+    switch (method){
 
     case 1: {
 	// a0 -> positive real. a1 -> positive real
@@ -1277,23 +1277,24 @@ CQCGL1d::orbit2slice(const Ref<const ArrayXXd> &aa, int method){
  *
  * @note vectors are not normalized
  */
-MatrixXd CQCGL1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
+MatrixXd CQCGL1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x, int flag){
     int n = x.size();
     ArrayXXd xhat;
     ArrayXd th, phi;
-    std::tie(xhat, th, phi) = orbit2slice(x);
+    std::tie(xhat, th, phi) = orbit2slice(x, flag);
     VectorXd tx_rho = phaseTangent(xhat);
     VectorXd tx_tau = transTangent(xhat);
     VectorXd t0;
-    
+    /*
     switch (method){
     case 1: {
 	t0 = ;
 	break;
     }
-
+    
     }
-    MatrixXd vep = Rotate(ve, -th, -phi);
+    */
+    MatrixXd vep = Rotate(ve, -th(0), -phi(0));
     vep = vep - 0.5 * ((tx_rho - tx_tau) * vep.row(n-1) / xhat(n-2) +
 		       (tx_rho + tx_tau) * vep.row(3) / xhat(2));
     
@@ -1305,8 +1306,8 @@ MatrixXd CQCGL1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
  * @brief a wrap function => reduce all symmetries of an orbit
  */
 std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-CQCGL1d::reduceAllSymmetries(const Ref<const ArrayXXd> &aa){
-    std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(aa);
+CQCGL1d::reduceAllSymmetries(const Ref<const ArrayXXd> &aa, int flag){
+    std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(aa, flag);
     return std::make_tuple(reduceReflection(std::get<0>(tmp)),
 			   std::get<1>(tmp), std::get<2>(tmp));
 }
@@ -1314,9 +1315,9 @@ CQCGL1d::reduceAllSymmetries(const Ref<const ArrayXXd> &aa){
 /**
  * @brief a wrap function => reduce all the symmetries of covariant vectors
  */
-MatrixXd CQCGL1d::reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x){
-    std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(x);
-    return reflectVe(ve2slice(ve, x), std::get<0>(tmp).col(0));
+MatrixXd CQCGL1d::reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x, int flag){
+    std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(x, flag);
+    return reflectVe(ve2slice(ve, x, flag), std::get<0>(tmp).col(0));
 }
 
 #if 0

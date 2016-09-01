@@ -137,10 +137,9 @@ int main(){
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
 	
     string file = "/usr/local/home/xiong/00git/research/data/cgl/rpoBiGi2.h5";
-    double stepB = 0.1;
-    int NsB = 30;
-    // cgl.findRpoParaSeq(file, id, stepB, NsB, true);
-    cgl.findRpoParaSeq(file, id, stepB, NsB, false);
+    double stepB = -0.1;
+    int NsB = 20;
+    cgl.findRpoParaSeq(file, id, stepB, NsB, true);
 
     // for (int i = 1; i < NsB+1; i++){
     // 	cgl.Bi = Bi+i*stepB;

@@ -3,7 +3,7 @@
 
 #include "CQCGL1dRpo.hpp"
 
-class CQCGL1dRpo_arpack : public CQCGL1d {
+class CQCGL1dRpo_arpack : public CQCGL1dRpo {
 
 public:
 
@@ -29,9 +29,12 @@ public:
 
     ////////////////////////////////////////////////////////////
     std::pair<VectorXcd, MatrixXd>
-    evRpo(const ArrayXd &a0, double h, double nstp, 
+    evRpo(const ArrayXd &a0, double h, int nstp, 
 	  double th, double phi, int ne);
     
+    void 
+    calEVParaSeq(std::string file, std::vector<double> Bis, 
+		 std::vector<double> Gis, int ne, bool saveV);
 };
 
 
@@ -41,15 +44,16 @@ struct Jdotx {
     double h, th, phi;
     int Nt;
     
-    Jdotx(CQCGL1dRpo_arpack *rpo, ArrayXd &a0, dobule h, int Nt,
+    Jdotx(CQCGL1dRpo_arpack *rpo, const ArrayXd &a0, double h, int Nt,
 	  double th, double phi) 
 	: rpo(rpo), a0(a0), h(h), Nt(Nt), th(th), phi(phi){}
     
     void mul(double *v, double *w){
+	int Ndim = rpo->Ndim;
 	Map<const ArrayXd> mv(v, Ndim);
 	Map<ArrayXd> mw(w, Ndim);
-	ArrayXXd tmp = rpo.intgv(a0, mv, h, Nt);
-	w = cgl.Rotate(tmp.rightCols(1), th, phi);
+	ArrayXXd tmp = rpo->intgv(a0, mv, h, Nt);
+	mw = rpo->Rotate(tmp.rightCols(1), th, phi);
     }
     
 };

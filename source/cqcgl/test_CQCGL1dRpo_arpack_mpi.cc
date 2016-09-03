@@ -7,60 +7,111 @@
 //
 // then change g++ to h5c++
 // 
-// h5c++ -O3 test_CQCGL1dRpo_mpi.cc -L../../lib -I../../include -I/usr/local/home/xiong/apps/eigen/include/eigen3 -std=c++11 -lCQCGL1dRpo -lCQCGL1d -lsparseRoutines -ldenseRoutines -literMethod -lmyH5 -lmyfft -lfftw3 -lm -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -pthread -L/usr//lib -L/usr/lib/openmpi/lib -lmpi_cxx -lmpi -ldl -lhwloc 
+// h5c++ -O3 test_CQCGL1dRpo_arpack_mpi.cc -std=c++11 -L../../lib -I$RESH/include -I$EIGEN  -I$XDAPPS/arpackpp/include -lCQCGL1dRpo_arpack -lCQCGL1dRpo -lCQCGL1d -lsparseRoutines -ldenseRoutines -literMethod -lmyH5 -lmyfft -lfftw3 -lm -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -pthread -L/usr//lib -L/usr/lib/openmpi/lib -lmpi_cxx -lmpi -ldl -lhwloc -llapack -larpack -lsuperlu -lopenblas
+
 
 #include <iostream>
 #include <arsnsym.h>
 #include <Eigen/Dense>
-#include "denseRoutines.hpp"
+#include "CQCGL1dRpo_arpack.hpp"
+#include "myH5.hpp"
+#include <mpi.h>
 
 using namespace std;
 using namespace Eigen;
 using namespace denseRoutines;
+using namespace MyH5;
 
-class Mat {
-public:
-    MatrixXd A;
+#define cee(x) (cout << (x) << endl << endl)
 
-    Mat(MatrixXd A) : A(A) {}
-    ~Mat(){}
+#define CASE_10
 
-    void mul(double *v, double *w){
-	Map<const VectorXd> mv(v, A.cols());
-	Map<VectorXd> mw(w, A.cols());
-	mw = A * mv;
-    }
-};
 
 int main(int argc, char **argv){
-    int n = 100;
-    int ne = 5;
-    MatrixXd A(n, n);
-    A.setRandom();
 
-    Mat mat(A);
-    ARNonSymStdEig<double, Mat> dprob(n, ne, &mat, &Mat::mul, "LM");
-    dprob.ChangeTol(1e-9);
+#ifdef CASE_10
+    //======================================================================
+    // to visulize the limit cycle first 
+    const int N = 1024;
+    const double L = 50;
+    double Bi = 1.9;
+    double Gi = -5.6;
     
-    VectorXd er(ne+1), ei(ne+1);
-    MatrixXd v((ne+1)*n, 1);
-    double *p_er = er.data();
-    double *p_ei = ei.data();
-    double *p_v = v.data();
-    int nconv = dprob.EigenValVectors(p_v, p_er, p_ei);
-    VectorXcd e(ne+1);
-    e.real() = er;
-    e.imag() = ei;
-    v.resize(n, ne+1);
-    VectorXcd v1(n);
-    v1.real() = v.col(2);
-    v1.imag() = v.col(3);
+    CQCGL1dRpo_arpack cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
+    string file = "../../data/cgl/rpoBiGiEV.h5";
     
-    cout << nconv << endl << endl;
-    cout << e << endl << endl;
+    std::vector<double> Bis, Gis;
+    std::tie(Bis, Gis) =  CQCGL1dRpo_arpack::getMissIds(file, Bi, Gi, 0.1, 0.1, 39, 55);
+    int Ns = Bis.size();
+    cout << Ns << endl;
+
+    ////////////////////////////////////////////////////////////
+    // mpi part 
+    MPI_Init(&argc, &argv);
+    int rank, num;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num);
+    int inc = Ns / num;
+    int rem = Ns - inc * num;
+    int p_size = inc + (rank < rem ? 1 : 0);
+    int p_start = inc*rank + (rank < rem ? rank : rem);
+    int p_end = p_start + p_size;
+    std::vector<double> p_Bis, p_Gis;
+    for(int i = p_start; i < p_end; i++){
+	p_Bis.push_back(Bis[i]);
+	p_Gis.push_back(Gis[i]);
+    }
     
-    double err = (A*v1 - e(2)*v1).norm();
-    cout << err << endl;
+    fprintf(stderr, "MPI : %d / %d; range : %d - %d \n", rank, num, p_start, p_end);
+    ////////////////////////////////////////////////////////////
+
+    cgl.calEVParaSeq(file, p_Bis, p_Gis, 16, true);
     
+
+    ////////////////////////////////////////////////////////////
+    MPI_Finalize();
+    ////////////////////////////////////////////////////////////
+
+
+#endif
+#ifdef CASE_20
+    //======================================================================
+    // Calculate E and V along one Gi line for a specific Bi
+    const int N = 1024;
+    const int L = 50;
+    double Bi = 2.3;
+    double Gi = -5.6;
+
+    CQCGL1dRpo_arpack cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
+    string file = "../../data/cgl/rpoBiGiEV.h5";    
+    std::vector<double> Bis, Gis;
+    Bis.push_back(Bi);
+    
+    int NsG = 16;
+    ////////////////////////////////////////////////////////////
+    // mpi part 
+    MPI_Init(&argc, &argv);
+    int rank, num;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num);
+    int inc = NsG / num;
+    int rem = NsG - inc * num;
+    int p_size = inc + (rank < rem ? 1 : 0);
+    int p_start = inc*rank + (rank < rem ? rank : rem);
+    int p_end = p_start + p_size;
+    for (int i = p_start; i < p_end; i++) Gis.push_back(Gi+0.1*i);
+    fprintf(stderr, "MPI : %d / %d; range : %d - %d \n", rank, num, p_start, p_end);
+    ////////////////////////////////////////////////////////////
+
+    cgl.calEVParaSeq(file, Bis, Gis, 10, true);
+
+    ////////////////////////////////////////////////////////////
+    MPI_Finalize();
+    ////////////////////////////////////////////////////////////
+
+
+#endif
+
     return 0;
 }
+

@@ -109,13 +109,27 @@ CQCGL1dRpo::readRpo(const string fileName, const string groupName){
  */
 void
 CQCGL1dRpo::moveRpo(string infile, string ingroup, 
-		    string outfile, string outgroup){
+		    string outfile, string outgroup, int flag){
     MatrixXd x;
     double T, th, phi, err;
     int nstp;
-    
+
+    VectorXcd e;
+    MatrixXd v;
+
     std::tie(x, T, nstp, th, phi, err) = readRpo(infile, ingroup);
     writeRpo(outfile, outgroup, x, T, nstp, th, phi, err);
+    
+    if (flag == 1 || flag == 2){
+	e = readE(infile, ingroup);
+	writeE(outfile, outgroup, e);
+    }
+    
+    if (flag == 2) {
+	v = readV(infile, ingroup);
+	writeV(outfile, outgroup, v);
+    }
+    
 }
 
 
@@ -282,7 +296,7 @@ VectorXd CQCGL1dRpo::MFx2(const VectorXd &x, int nstp){
 	double phi = xi(Ndim+2);	
 	assert(t > 0);
 	
-	VectorXd fx = intg(xi.head(Ndim), t/nstp/m, nstp, nstp).rightCols<1>();
+	VectorXd fx = intg(xi.head(Ndim), t/nstp, nstp, nstp).rightCols<1>();
 	
 	F.segment(i*n, Ndim) = Rotate(fx, th, phi).matrix() - xn.head(Ndim);
     }
@@ -321,7 +335,7 @@ VectorXd CQCGL1dRpo::MDFx2(const VectorXd &x, const VectorXd &dx, int nstp){
 	double dth = dxi(Ndim+1);
 	double dphi = dxi(Ndim+2);
 	
-	MatrixXd tmp = intgv(xi.head(Ndim), dxi.head(Ndim), t/nstp/m, nstp);
+	MatrixXd tmp = intgv(xi.head(Ndim), dxi.head(Ndim), t/nstp, nstp);
 
 	VectorXd gfx = Rotate(tmp.col(0), th, phi);
 	VectorXd gJx = Rotate(tmp.col(1), th, phi);

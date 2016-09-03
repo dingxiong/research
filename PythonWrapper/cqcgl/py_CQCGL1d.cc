@@ -194,6 +194,7 @@ public:
     }
     
     /* orbit2slice */
+    /*
     bp::tuple PYorbit2slice(const bn::ndarray &aa){
 	int m, n;
 	getDims(aa, m, n);
@@ -202,16 +203,7 @@ public:
 	return bp::make_tuple(copy2bn(std::get<0>(tmp)), copy2bn(std::get<1>(tmp)),
 			      copy2bn(std::get<2>(tmp)));
     }
-
-    /* orbit2sliceUnwrap */
-    bp::tuple PYorbit2sliceWrap(const bn::ndarray &aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2sliceWrap(tmpaa);
-	return bp::make_tuple(copy2bn(std::get<0>(tmp)), copy2bn(std::get<1>(tmp)),
-			      copy2bn(std::get<2>(tmp)));
-    }
+    */
 
     /* stability matrix */
     bn::ndarray PYstab(bn::ndarray a0){
@@ -264,54 +256,6 @@ public:
 	getDims(xHat, m2, n2);
 	Map<ArrayXd> tmpxHat((double*)xHat.get_data(), n2*m2);
 	return copy2bn( reflectVe(tmpveHat, tmpxHat) );
-    }
-
-    /* reflectVeAll */
-    bn::ndarray PYreflectVeAll(const bn::ndarray &veHat, const bn::ndarray &aaHat,
-			       const int trunc){
-	int m, n;
-	getDims(veHat, m, n);	
-	Map<MatrixXd> tmpveHat((double*)veHat.get_data(), n, m);
-	int m2, n2;
-	getDims(aaHat, m2, n2);
-	Map<ArrayXd> tmpaaHat((double*)aaHat.get_data(), n2, m2);
-	return copy2bn( reflectVeAll(tmpveHat, tmpaaHat, trunc) );
-    }
-    
-    
-    /* ve2slice */
-    bn::ndarray PYve2slice(bn::ndarray ve, bn::ndarray x){
-	int m, n;
-	getDims(ve, m, n);
-	int m2, n2;
-	getDims(x, m2, n2);
-	Map<ArrayXXd> tmpve((double*)ve.get_data(), n, m);
-	Map<ArrayXd> tmpx((double*)x.get_data(), n2*m2);
-	return copy2bn( ve2slice(tmpve, tmpx) );
-    }
-    
-    /* reduceAllSymmetries */
-    bp::tuple PYreduceAllSymmetries(const bn::ndarray &aa){
-	int m, n;
-	getDims(aa, m, n);
-	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = 
-	    reduceAllSymmetries(tmpaa);
-	return bp::make_tuple(copy2bn(std::get<0>(tmp)),
-			      copy2bn(std::get<1>(tmp)),
-			      copy2bn(std::get<2>(tmp)));
-	
-    }
-
-    /* reduceVe */
-    bn::ndarray PYreduceVe(const bn::ndarray &ve, const bn::ndarray &x){
-	int m, n;
-	getDims(ve, m, n);
-	Map<ArrayXXd> tmpve((double*)ve.get_data(), n, m);
-	int m2, n2;
-	getDims(x, m2, n2);
-	Map<ArrayXd> tmpx((double*)x.get_data(), n2*m2);
-	return copy2bn(reduceVe(tmpve, tmpx));
     }
     
     /* transRotate */
@@ -448,18 +392,13 @@ BOOST_PYTHON_MODULE(py_CQCGL1d) {
 	.def("calQ", &pyCQCGL1d::PYcalQ)
 	.def("calMoment", &pyCQCGL1d::PYcalMoment)
 	.def("calMoment", &pyCQCGL1d::PYcalMoment2)
-	.def("orbit2sliceWrap", &pyCQCGL1d::PYorbit2sliceWrap)
-	.def("orbit2slice", &pyCQCGL1d::PYorbit2slice)
+	//.def("orbit2slice", &pyCQCGL1d::PYorbit2slice)
 	.def("stab", &pyCQCGL1d::PYstab)
 	.def("stabReq", &pyCQCGL1d::PYstabReq)
 	.def("reflect", &pyCQCGL1d::PYreflect)
 	.def("reduceReflection", &pyCQCGL1d::PYreduceReflection)
 	.def("refGradMat", &pyCQCGL1d::PYrefGradMat)
 	.def("reflectVe", &pyCQCGL1d::PYreflectVe)
-	.def("reflectVeAll", &pyCQCGL1d::PYreflectVeAll)
-	.def("ve2slice", &pyCQCGL1d::PYve2slice)
-	.def("reduceAllSymmetries", &pyCQCGL1d::PYreduceAllSymmetries)
-	.def("reduceVe", &pyCQCGL1d::PYreduceVe)
 	.def("transRotate", &pyCQCGL1d::PYtransRotate) 
 	.def("transTangent", &pyCQCGL1d::PYtransTangent)
 	.def("phaseRotate", &pyCQCGL1d::PYphaseRotate)

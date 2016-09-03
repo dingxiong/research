@@ -21,6 +21,7 @@ import os
 import subprocess as sps
 
 from numpy.linalg import norm
+from matplotlib.ticker import AutoMinorLocator
 
 ##################################################
 #               Plot related                     #
@@ -292,6 +293,29 @@ def plotMat(y, colortype='jet', percent='5%', colorBar=True,
         plt.show(block=False)
 
 
+def plotIm(y, ext, size=[4, 5], labs=[r'$x$', r'$y$'], colortype='jet', percent='5%',
+           axisLabelSize=25, barTicks=None, tickSize=None, save=False, name='out.png'):
+    """
+    plot the imag color map of a matrix. It has more control compared with plotMat
+    """
+    fig, ax = pl2d(size=size, labs=labs, axisLabelSize=axisLabelSize)
+    im = ax.imshow(y, cmap=plt.get_cmap(colortype), extent=ext,
+                   aspect='auto', origin='lower')
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax = dr.append_axes('right', size=percent, pad=0.05)
+
+    if barTicks is not None:
+        plt.colorbar(im, cax=cax, ticks=barTicks)
+    else:
+        plt.colorbar(im, cax=cax)
+
+    if tickSize is not None:
+        ax.tick_params(axis='both', which='major', labelsize=tickSize)
+    
+    ax2d(fig, ax, save=save, name=name)
+
+
 def plotContour(z, x=None, y=None, size=[8, 6], labs=[r'$x$', r'$y$'],
                 axisLabelSize=25,
                 save=False, name='output.png', title=None, loc='best'):
@@ -331,25 +355,6 @@ class CQCGLreq():
         x = groupName in f
         f.close()
         return x
-
-    def numStab(self, e):
-        """
-        get the number of unstable exponents. Assume e is sorted by its
-        real part.
-
-        Return
-        ======
-        m : number of unstable exponents or starting index for marginal
-            exponent
-        ep : exponents without marginal ones
-        """
-        n = len(e)
-        for i in range(n):
-            if abs(e[i].real) < 1e-8:
-                m = i
-                break
-        ep = np.delete(e, [m, m+1])
-        return m, ep
         
     def readReq(self, fileName, groupName, flag=0):
         f = h5py.File(fileName, 'r')
@@ -374,7 +379,7 @@ class CQCGLreq():
 
     def readReqdi(self, fileName, di, index, flag=0):
         groupName = format(di, '.6f') + '/' + str(index)
-        return self.readReq(fileName, groupName)
+        return self.readReq(fileName, groupName, flag)
 
     def readReqBiGi(self, fileName, Bi, Gi, index, flag=0):
         return self.readReq(fileName, self.toStr(Bi, Gi, index), flag)
@@ -387,10 +392,25 @@ class CQCGLreq():
     
 
 class CQCGLrpo():
-    def __init__(self):
-        pass
+
+    def __init__(self, cgl=None):
+        self.cgl = cgl
         
-    def readRpo(self, fileName, groupName):
+    def toStr(self, Bi, Gi, index):
+        if abs(Bi) < 1e-6:
+            Bi = 0
+        if abs(Gi) < 1e-6:
+            Gi = 0
+        return (format(Bi, '013.6f') + '/' + format(Gi, '013.6f') +
+                '/' + str(index))
+
+    def checkExist(self, fileName, groupName):
+        f = h5py.File(fileName, 'r')
+        x = groupName in f
+        f.close()
+        return x
+
+    def readRpo(self, fileName, groupName, flag=0):
         f = h5py.File(fileName, 'r')
         req = '/' + groupName + '/'
         x = f[req+'x'].value
@@ -399,18 +419,26 @@ class CQCGLrpo():
         th = f[req+'th'].value
         phi = f[req+'phi'].value
         err = f[req+'err'].value
+        if flag == 1:
+            e = f[req+'er'].value + 1j*f[req+'ei'].value
+        if flag == 2:
+            e = f[req+'er'].value + 1j*f[req+'ei'].value
+            v = f[req+'v'].value
         f.close()
-        # return x[0], T[0], nstp[0], th[0], phi[0], err[0]
-        return x, T, nstp, th, phi, err
 
-    def readRpodi(self, fileName, di, index):
+        if flag == 0:
+            return x, T, nstp, th, phi, err
+        if flag == 1:
+            return x, T, nstp, th, phi, err, e
+        if flag == 2:
+            return x, T, nstp, th, phi, err, e, v
+
+    def readRpodi(self, fileName, di, index, flag=0):
         groupName = format(di, '.6f') + '/' + str(index)
-        return self.readRpo(fileName, groupName)
+        return self.readRpo(fileName, groupName, flag)
 
-    def readRpoBiGi(self, fileName, Bi, Gi, index):
-        groupName = (format(Bi, '013.6f') + '/' + format(Gi, '013.6f') +
-                     '/' + str(index))
-        return self.readRpo(fileName, groupName)
+    def readRpoBiGi(self, fileName, Bi, Gi, index, flag=0):
+        return self.readRpo(fileName, self.toStr(Bi, Gi, index), flag)
     
     def readRPOAll(self, fileName, index, hasEV):
         f = h5py.File(fileName, 'r')
@@ -1531,3 +1559,44 @@ def getJumpPts(x):
     y = np.arange(n-1)
     y = y[d != 0]
     return y
+
+def numStab(e, nmarg=2, tol=1e-8, flag=0):
+    """
+    get the number of unstable exponents. Assume e is sorted by its
+    real part. 
+
+    Parameters
+    ======
+    nmarg : number of marginal eigenvalues of expolents
+    flag :  flag = 0 => exponents; flag = 1 => eigenvalues
+    tol :  tolerance to judge marginal exponents
+
+    Return
+    ======
+    m : number of unstable exponents or starting index for marginal
+        exponent
+    ep : exponents without marginal ones
+    """
+    accu = True
+    if flag == 0:
+        x = e.real
+    else:
+        x = np.log(np.abs(e))
+
+    n = len(x)
+    for i in range(n):
+        if abs(x[i]) < tol:
+            m = i
+            break
+
+    if m >= n-1:
+        accu = False
+    else:
+        for i in range(m+1, min(m+nmarg, n)):
+            if abs(x[i]) > tol:
+                accu = False
+                break
+
+    ep = np.delete(e, range(m, m+nmarg))
+    return m, ep, accu
+

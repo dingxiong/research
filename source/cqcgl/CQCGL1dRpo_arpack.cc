@@ -82,6 +82,9 @@ CQCGL1dRpo_arpack::evRpo(const ArrayXd &a0, double h, int nstp,
     return std::make_pair(e2, vr);
 }
 
+/**
+ * Bis and Gis have the same size. Bis[i] and Gis[i] give the pair.
+ */ 
 void 
 CQCGL1dRpo_arpack::calEVParaSeq(std::string file, std::vector<double> Bis, 
 				std::vector<double> Gis, int ne, bool saveV){
@@ -94,24 +97,42 @@ CQCGL1dRpo_arpack::calEVParaSeq(std::string file, std::vector<double> Bis,
     VectorXcd e;
     MatrixXd v;
 
+    assert(Bis.size() == Gis.size());
+
     for (int i = 0; i < Bis.size(); i++) {
 	Bi = Bis[i];
-	for (int j = 0; j < Gis.size(); j++){
-	    Gi = Gis[j];
-	    std::string g = toStr(Bi, Gi, 1);
-	    if( checkGroup(file, g, false) ) {
-		if ( !checkGroup(file, g + "/er", false) ) {
-		    fprintf(stderr, "%g %g\n", Bi, Gi);
-		    std::tie(x, T, nstp, th, phi, err) = readRpo(file, g);
-		    a0 = x.head(Ndim);
-		    std::tie(e, v) = evRpo(a0, T/nstp, nstp, th, phi, ne);
-		    writeE(file, g, e);
-		    if (saveV) writeV(file, g, v);
-		}
-	    }
+	Gi = Gis[i];
+	std::string g = toStr(Bi, Gi, 1);
+	if( checkGroup(file, g, false) && !checkGroup(file, g + "/er", false) ) {
+	    fprintf(stderr, "%g %g\n", Bi, Gi);
+	    std::tie(x, T, nstp, th, phi, err) = readRpo(file, g);
+	    a0 = x.head(Ndim);
+	    std::tie(e, v) = evRpo(a0, T/nstp, nstp, th, phi, ne);
+	    writeE(file, g, e);
+	    if (saveV) writeV(file, g, v);
 	}
     }
     
     Bi = Bi0;
     Gi = Gi0;
+}
+
+/// @brief obtain the the remaing set that needs computing E and V. 
+std::pair< std::vector<double>, std::vector<double> >
+CQCGL1dRpo_arpack::getMissIds(std::string file, double Bi0, double Gi0, 
+			      double incB, double incG, int nB, int nG){
+    std::vector<double> Bis, Gis;
+    for(int i = 0; i < nB; i++){
+	double Bi = Bi0 + incB*i;
+	for(int j = 0; j < nG; j++) {
+	    double Gi = Gi0 + incG*j;
+	    std::string g = toStr(Bi, Gi, 1);
+	    if (checkGroup(file, g, false) && !checkGroup(file, g+"/er", false)){
+		Bis.push_back(Bi);
+		Gis.push_back(Gi);
+	    }
+	}
+    }
+    
+    return std::make_pair(Bis, Gis);
 }

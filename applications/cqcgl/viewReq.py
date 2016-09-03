@@ -185,8 +185,8 @@ if case == 16:
     d = 50
     h = 2e-3
 
-    Bi = 2.1
-    Gi = -5.6
+    Bi = 4.7
+    Gi = -4.6
     index = 1
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)

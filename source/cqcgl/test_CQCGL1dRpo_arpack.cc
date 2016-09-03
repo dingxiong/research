@@ -1,5 +1,5 @@
 // to compile
-// g++ test_CQCGL1dRpo_arpack.cc -std=c++11 -O3  -march=corei7 -msse4 -msse2 -I$EIGEN -I$RESH/include -I$XDAPPS/arpackpp/include -L$RESH/lib -lCQCGL1dRpo_arpack -lCQCGL1dRpo -lCQCGL1d -lmyfft -lfftw3 -lm -lsparseRoutines -ldenseRoutines -literMethod -lmyH5 -llapack -larpack -lsuperlu -lopenblas -ldenseRoutines
+// g++ test_CQCGL1dRpo_arpack.cc -std=c++11 -O3  -march=corei7 -msse4 -msse2 -I$EIGEN -I$RESH/include -I$XDAPPS/arpackpp/include -L$RESH/lib -lCQCGL1dRpo_arpack -lCQCGL1dRpo -lCQCGL1d -lmyfft -lfftw3 -lm -lsparseRoutines -ldenseRoutines -literMethod -lmyH5 -llapack -larpack -lsuperlu -lopenblas 
 
 #include <iostream>
 #include <arsnsym.h>

@@ -35,6 +35,11 @@ public:
     void 
     calEVParaSeq(std::string file, std::vector<double> Bis, 
 		 std::vector<double> Gis, int ne, bool saveV);
+
+    static
+    std::pair< std::vector<double>, std::vector<double> >
+    getMissIds(std::string file, double Bi0, double Gi0, 
+	       double incB, double incG, int nB, int nG);
 };
 
 

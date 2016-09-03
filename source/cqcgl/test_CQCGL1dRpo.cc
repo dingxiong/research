@@ -1,6 +1,6 @@
 /* to comiple:
  *
- * h5c++ test_CQCGL1dRpo.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$EIGEN -I$RESH/include  -L$RESH/lib -lCQCGL1dRpo -lCQCGL1dReq -lCQCGL1d -lmyfft -lfftw3 -lm -lsparseRoutines -ldenseRoutines -literMethod -lmyH5 && ./a.out
+ * h5c++ test_CQCGL1dRpo.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$EIGEN -I$RESH/include  -L$RESH/lib -lCQCGL1dRpo -lCQCGL1dReq -lCQCGL1d -lmyfft -lfftw3 -lm -lsparseRoutines -ldenseRoutines -literMethod -lmyH5
  *
  */
 
@@ -16,10 +16,11 @@
 using namespace std; 
 using namespace Eigen;
 using namespace iterMethod;
+using namespace MyH5;
 
 #define cee(x) (cout << (x) << endl << endl)
 
-#define CASE_40
+#define CASE_23
 
 int main(){
     
@@ -78,6 +79,42 @@ int main(){
     cout << T0 << ' ' << nstp << endl;
     std::tie(x, err, flag) = cgl.findRPOM_hook2(x0, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
     if (flag == 0) CQCGL1dRpo::writeRpo2("rpoBiGi.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);    
+
+#endif
+#ifdef CASE_23
+    //======================================================================
+    // find rpo of next one in Bi-Gi plane but using multishooting
+    const int N = 1024;
+    const double L = 50;
+    double Bi = 5.5;
+    double Gi = -5.2;
+    
+    CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
+    string file = "../../data/cgl/rpoBiGi2.h5";
+
+    ArrayXd x0;
+    double T0, th0, phi0, err0;
+    int nstp0; 
+
+    std::tie(x0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::readRpo(file, CQCGL1dRpo::toStr(Bi, Gi, 1));
+    ArrayXd a0 = x0.head(cgl.Ndim);
+    ArrayXXd aa = cgl.intg(a0, T0/nstp0, nstp0, nstp0/4);
+    MatrixXd x1(cgl.Ndim+3, 4);
+    x1.col(0) << aa.col(0), T0/4, 0, 0;
+    x1.col(1) << aa.col(1), T0/4, 0, 0;
+    x1.col(2) << aa.col(2), T0/4, 0, 0;
+    x1.col(3) << aa.col(3), T0/4, th0, phi0;
+	
+    double T, th, phi, err;
+    MatrixXd x;
+    int nstp = 1000;
+    int flag;
+
+    cgl.Gi += 0.1;
+    cout << cgl.Bi << ' ' << cgl.Gi << endl;
+    std::tie(x, err, flag) = cgl.findRPOM_hook2(x1, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
+    if (flag == 0) CQCGL1dRpo::writeRpo2("rpoBiGi2.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);    
+
 #endif
 #ifdef CASE_25
     //======================================================================
@@ -110,11 +147,11 @@ int main(){
     // test the accuracy of a limit cycle
     const int N = 1024;
     const double L = 50;
-    double Bi = 0.8;
-    double Gi = -3.6;
+    double Bi = 4.1;
+    double Gi = -4.4;
     
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
-    string file = "/usr/local/home/xiong/00git/research/data/cgl/rpoBiGi.h5";
+    string file = "/usr/local/home/xiong/00git/research/data/cgl/rpoBiGi2.h5";
     ArrayXd a0;
     double T0, th0, phi0, err0;
     int nstp0; 
@@ -130,120 +167,41 @@ int main(){
     // find limit cycles by varying Bi and Gi
     const int N = 1024;
     const int L = 50;
-    double Bi = 2.0;
-    double Gi = -5.6;
+    double Bi = 5.7;
+    double Gi = -5.3;
 
     int id = 1;
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
 	
-    string file = "/usr/local/home/xiong/00git/research/data/cgl/rpoBiGi2.h5";
-    double stepB = -0.1;
-    int NsB = 20;
-    cgl.findRpoParaSeq(file, id, stepB, NsB, true);
+    string file = "../../data/cgl/rpoBiGi2.h5";
+    double step = 0.1;
+    int Ns = 20;
+    cgl.findRpoParaSeq(file, id, step, Ns, false);
 
     // for (int i = 1; i < NsB+1; i++){
     // 	cgl.Bi = Bi+i*stepB;
     // 	cgl.findRpoParaSeq(file, id, -0.1, 50, false);
     // }
 
-
 #endif
-
-
+#ifdef CASE_50
+    //====================================================================== 
+    // move rpo from one file to another file
+    std::string fin = "../../data/cgl/rpoBiGi2.h5";
+    std::string fout = "../../data/cgl/rpoBiGiEV.h5";
     
-
-
-
-
-
-
-    // =============================================================
-#if 0	
-    switch (28){
-
-    case 25: {
-	/* try to find periodic orbit with the new form of cqcgl
-	 * using GMRES Hook v2 method with multishooting method
-	 * space resolution is large
-	 */
-	GMRES_IN_PRINT_FREQUENCE = 10;
-
-	const int N = 512;
-	const double d = 30;
-	const double h = 1e-4;
-
-	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpo3.h5");
-	int nstp;
-	double T, th, phi, err;
-	MatrixXd x;
-	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
-	
-	int M = x.cols();
-	int S = 1;
-	M /= S;
-	nstp *= S;
-	
-	int Ndim = x.rows();
-	MatrixXd xp(Ndim+3, M);
-	for(int i = 0; i < M; i++){
-	    xp.col(i).head(Ndim) = x.col(S*i);
-	    xp(Ndim, i) = T / M;
-	    if (i == M-1) {
-		xp(Ndim+1, i) = th;
-		xp(Ndim+2, i) = phi;
-	    }
-	    else{
-		xp(Ndim+1, i) = 0;
-		xp(Ndim+2, i) = 0;
+    for( int i = 0; i < 39; i++){
+	double Bi = 1.9 + 0.1*i;
+	for(int j = 0; j < 55; j++){
+	    double Gi = -5.6 + 0.1*j;
+	    string g = CQCGL1dRpo::toStr(Bi, Gi, 1);
+	    if (checkGroup(fin, g, false) && !checkGroup(fout, g, false)){
+		fprintf(stderr, "%d %g %g\n", 1, Bi, Gi);
+		CQCGL1dRpo::moveRpo(fin, g, fout, g, 0);
 	    }
 	}
-
-	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
-	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, 0.01, 0.04, 4);
-	auto result = cglrpo.findRPOM_hook2(xp, 1e-12, 1e-3, 10, 20, 2e-1, 100, 1);
-
-	CqcglWriteRPO2("rpo2.h5", "1", 
-		       std::get<0>(result),
-		       nstp,
-		       std::get<1>(result)
-		       );
-	
-	break;
     }
-
-    case 32:{
-	/* use the inexact new to refine rpo 
-	 * which is obtain from GMRES HOOK method
-	 *
-	 * ==> this trial almost fails.
-	 */
-	std::string file("/usr/local/home/xiong/00git/research/data/cgl/rpoT2x2.h5");
-	int nstp;
-	double T, th, phi, err;
-	MatrixXd x;
-	CqcglReadRPO(file, "1", x, T, nstp, th, phi, err);
-
-	int M = x.cols();
-	const int N = 1024;
-	const double d = 30;
-	const double h = T / (M * nstp);
-
-	printf("T %g, nstp %d, M %d, th %g, phi %g, err %g\n", T, nstp, M, th, phi, err);
-	CqcglRPO cglrpo(nstp, M, N, d, h, 4.0, 0.8, -0.01, -0.04, 4);
-	auto result = cglrpo.findRPOM(x, T, th, phi, 1e-12, 20, 100, 1e-2, 1e-2, 0.1, 0.5, 1000, 10);
-	CqcglWriteRPO("rpo2x2.h5", "2",
-		      std::get<0>(result), /* x */
-		      std::get<1>(result), /* T */
-		      nstp,		   /* nstp */
-		      std::get<2>(result), /* th */
-		      std::get<3>(result), /* phi */
-		      std::get<4>(result)  /* err */
-		      );
-	
-	break;
-    }
-
-    }
+    
 
 #endif
 

@@ -63,18 +63,22 @@ public:
     static
     void
     moveRpo(std::string infile, std::string ingroup, 
-	    std::string outfile, std::string outgroup);
+	    std::string outfile, std::string outgroup, int flag);
 
+    static
     VectorXcd 
     readE(std::string fileName, const std::string groupName);
-    
+
+    static
     MatrixXd 
     readV(std::string fileName, const std::string groupName);
     
+    static
     void 
     writeE(std::string fileName, const std::string groupName, 
 	   const VectorXcd &e);
 
+    static
     void 
     writeV(std::string fileName, const std::string groupName, 
 	   const MatrixXd &v);

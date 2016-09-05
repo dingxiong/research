@@ -607,7 +607,8 @@ CQCGL1dRpo::findRPOM_hook2(const MatrixXd &x0,
  * @brief find req with a sequence of Bi or Gi
  */ 
 void 
-CQCGL1dRpo::findRpoParaSeq(const std::string file, int id, double step, int Ns, bool isBi){
+CQCGL1dRpo::findRpoParaSeq(const std::string file, int id, double step, int Ns, bool isBi,
+			   int nstpFlag, int paraNstp){
     double Bi0 = Bi;
     double Gi0 = Gi;
     
@@ -631,8 +632,15 @@ CQCGL1dRpo::findRpoParaSeq(const std::string file, int id, double step, int Ns, 
 	    std::tie(x0, T0, nstp0, th0, phi0, err0) = readRpo(file, toStr(Bi, Gi, id));
 	}
 	else {
-	    fprintf(stderr, "%g, %g \n", Bi, Gi);
-	    nstp = nstp0;
+	    switch(nstpFlag){
+	    case 1 : nstp = static_cast<int>( T0 / (1e-3*10) ) * 10; break; 
+	    case 2 : nstp = nstp0 - paraNstp ; break; // change the same amount 
+	    case 3 : nstp = paraNstp; break; // use a specific value
+	    default : nstp = nstp0; // use previous nstp
+	    }
+
+	    fprintf(stderr, "Bi = %g Gi = %g nstp = %d T0 = %g\n", Bi, Gi, nstp, T0);
+
 	    std::tie(x, err, flag) = findRPOM_hook2(x0, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
 	    if (flag == 0){
 		writeRpo2(file, toStr(Bi, Gi, id), x, nstp, err);

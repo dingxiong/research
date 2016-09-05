@@ -148,7 +148,8 @@ public:
 		   const int GmresMaxit);
 
     void 
-    findRpoParaSeq(const std::string file, int id, double step, int Ns, bool isBi);
+    findRpoParaSeq(const std::string file, int id, double step, int Ns, bool isBi,
+		   int nstpFlag, int paraNstp);
     
     std::tuple<SpMat, SpMat, VectorXd> 
     calJJF(const VectorXd &x);

@@ -185,8 +185,8 @@ if case == 16:
     d = 50
     h = 2e-3
 
-    Bi = 4.7
-    Gi = -4.6
+    Bi = 4.8
+    Gi = -4.9
     index = 1
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
@@ -197,7 +197,7 @@ if case == 16:
     
     nstp = 20000
     a0 += 0.1*norm(a0)*v[0].real
-    for i in range(3):
+    for i in range(2):
         aa = cgl.intg(a0, h, nstp, 10)
         a0 = aa[-1]
         plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])

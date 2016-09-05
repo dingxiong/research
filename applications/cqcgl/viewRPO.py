@@ -2,7 +2,7 @@ from py_CQCGL1d import *
 from personalFunctions import *
 from scipy.integrate import odeint
 
-case = 43
+case = 44
 
 if case == 1:
     """
@@ -138,8 +138,8 @@ if case == 41:
     """
     N = 1024
     d = 50
-    Bi = 4.3
-    Gi = -4.5
+    Bi = 3.8
+    Gi = -3.8
     
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     rpo = CQCGLrpo()
@@ -231,6 +231,55 @@ if case == 43:
     ax2d(fig, ax)
     plotIm(Ts, [-5.6, 0, -4, 6], size=[8, 6], labs=[r'$G_i$', r'$B_i$'])
     
+if case == 44:
+    """
+    L = 50
+    Plot the rpo existence in the Bi-Gi plane
+    """
+    N = 1024
+    d = 50 
+
+    fileName = '../../data/cgl/rpoBiGi2.h5'
+    fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=25,
+                   xlim=[-5.8, -3.5], ylim=[1.8, 6])
+    for i in range(39):
+        Bi = 1.9 + i*0.1
+        for j in range(55):
+            Gi = -5.6 + 0.1*j
+            rpo = CQCGLrpo()
+            if rpo.checkExist(fileName, rpo.toStr(Bi, Gi, 1)):
+                ax.scatter(Gi, Bi, s=15, edgecolors='none', marker='o', c='r')
+
+    ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.grid(which='major', linewidth=2)
+    ax.grid(which='minor', linewidth=1)
+    ax2d(fig, ax)
+    
+if case == 45:
+    """
+    use L = 50 to view the rpo
+    """
+    N = 1024
+    d = 50
+    Bi = 2.3
+    Gi = -4.1
+    
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    rpo = CQCGLrpo()
+    x, T, nstp, th, phi, err = rpo.readRpoBiGi('../../data/cgl/rpoBiGi2.h5',
+                                               Bi, Gi, 1, flag=0)
+    a0 = x[:cgl.Ndim]
+    v0 = cgl.velocity(a0)
+    t1 = cgl.transTangent(a0)
+    t2 = cgl.phaseTangent(a0)
+    ang = pAngle(v0, np.vstack((t1, t2)).T)
+    print ang
+    
+    for i in range(1):
+        aa = cgl.intg(a0, T/nstp, 2*nstp, 10)
+        a0 = aa[-1]
+        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 2*T])
 
 if case == 50:
     """

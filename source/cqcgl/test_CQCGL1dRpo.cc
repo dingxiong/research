@@ -20,7 +20,7 @@ using namespace MyH5;
 
 #define cee(x) (cout << (x) << endl << endl)
 
-#define CASE_23
+#define CASE_22
 
 int main(){
     
@@ -81,6 +81,42 @@ int main(){
     if (flag == 0) CQCGL1dRpo::writeRpo2("rpoBiGi.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);    
 
 #endif
+#ifdef CASE_22
+    //====================================================================== 
+    // find limit cycles by varying Bi and Gi but using propagated initial
+    // condition
+    const int N = 1024;
+    const int L = 50;
+    double Bi = 4.8;
+    double Gi = -4.8;
+
+    int id = 1;
+    CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
+	
+    string file = "../../data/cgl/rpoBiGi2.h5";
+    ArrayXd x0;
+    double T0, th0, phi0, err0;
+    int nstp0;
+    std::tie(x0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::readRpo(file, CQCGL1dRpo::toStr(Bi, Gi, id));
+
+    ArrayXd a0 = x0.head(cgl.Ndim);
+    ArrayXXd aa = cgl.intg(a0, T0/nstp0, nstp0, 1);
+    ArrayXd x1(cgl.Ndim+3);
+    x1 << aa.col(3000), T0, th0, phi0;
+
+    double T, th, phi, err;
+    ArrayXd x;
+    int flag, nstp;
+    nstp = nstp0;
+    
+    cgl.Gi -= 0.1;
+    if (!checkGroup(file, CQCGL1dRpo::toStr(cgl.Bi, cgl.Gi, id), false)){
+	fprintf(stderr, "Bi = %g Gi = %g nstp = %d T0 = %g\n", cgl.Bi, cgl.Gi, nstp, T0);
+	std::tie(x, err, flag) = cgl.findRPOM_hook2(x1, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
+	if(flag == 0) CQCGL1dRpo::writeRpo2(file, cgl.toStr(cgl.Bi, cgl.Gi, id), x, nstp, err);
+    }
+    
+#endif
 #ifdef CASE_23
     //======================================================================
     // find rpo of next one in Bi-Gi plane but using multishooting
@@ -121,25 +157,26 @@ int main(){
     // use saved guess directively
     const int N = 1024;
     const double L = 50;
-    double Bi = 2;
-    double Gi = -5.6;
+    double Bi = 4.8;
+    double Gi = -4.9;
     
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
-    string file = "/usr/local/home/xiong/00git/research/data/cgl/p.h5";
+    string file = "../../data/cgl/p.h5";
     ArrayXd a0;
     double T0, th0, phi0, err0;
     int nstp0; 
     std::tie(a0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::readRpo(file, cgl.toStr(Bi, Gi, 1));
     VectorXd x0(cgl.Ndim+3);
-    x0 << a0, T0, th0, phi0;
-	
+    // x0 << a0, T0, th0, phi0;
+    x0 << a0, 3, th0, -7.3;
+
     double T, th, phi, err;
     MatrixXd x;
     int nstp = nstp0;
     int flag;
 
     std::tie(x, err, flag) = cgl.findRPOM_hook2(x0, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
-    if (flag == 0) CQCGL1dRpo::writeRpo2("rpoBiGi.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);   
+    if (flag == 0) CQCGL1dRpo::writeRpo2("../../data/cgl/rpoBiGi2.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);   
 
 #endif
 #ifdef CASE_30
@@ -167,21 +204,22 @@ int main(){
     // find limit cycles by varying Bi and Gi
     const int N = 1024;
     const int L = 50;
-    double Bi = 5.7;
-    double Gi = -5.3;
+    double Bi = 4.9;
+    double Gi = -4.9;
 
     int id = 1;
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
 	
     string file = "../../data/cgl/rpoBiGi2.h5";
-    double step = 0.1;
+    double step = -0.02;
     int Ns = 20;
-    cgl.findRpoParaSeq(file, id, step, Ns, false);
+    cgl.findRpoParaSeq(file, id, step, Ns, true, 1, 0);
 
     // for (int i = 1; i < NsB+1; i++){
     // 	cgl.Bi = Bi+i*stepB;
     // 	cgl.findRpoParaSeq(file, id, -0.1, 50, false);
     // }
+
 
 #endif
 #ifdef CASE_50

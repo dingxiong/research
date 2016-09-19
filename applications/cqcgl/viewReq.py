@@ -1,8 +1,7 @@
 from py_CQCGL1d import *
 from personalFunctions import *
-from sets import Set
 
-case = 16
+case = 10
 
 if case == 6:
     N = 1024

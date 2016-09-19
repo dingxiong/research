@@ -194,16 +194,25 @@ public:
     }
     
     /* orbit2slice */
-    /*
-    bp::tuple PYorbit2slice(const bn::ndarray &aa){
+    bp::tuple PYorbit2slice(const bn::ndarray &aa, int method){
 	int m, n;
 	getDims(aa, m, n);
 	Map<ArrayXXd> tmpaa((double*)aa.get_data(), n, m);
-	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(tmpaa);
-	return bp::make_tuple(copy2bn(std::get<0>(tmp)), copy2bn(std::get<1>(tmp)),
+	std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(tmpaa, method);
+	return bp::make_tuple(copy2bn(std::get<0>(tmp)), 
+			      copy2bn(std::get<1>(tmp)),
 			      copy2bn(std::get<2>(tmp)));
     }
-    */
+
+    bn::ndarray PYve2slice(const bn::ndarray &ve, const bn::ndarray &x, int flag){
+	int m, n;
+	getDims(ve, m, n);
+	Map<ArrayXXd> tmpve((double*)ve.get_data(), n, m);
+	getDims(x, m, n);
+	Map<ArrayXd> tmpx((double*)x.get_data(), n*m);
+
+	return copy2bn(ve2slice(tmpve, tmpx, flag));
+    }
 
     /* stability matrix */
     bn::ndarray PYstab(bn::ndarray a0){
@@ -392,7 +401,8 @@ BOOST_PYTHON_MODULE(py_CQCGL1d) {
 	.def("calQ", &pyCQCGL1d::PYcalQ)
 	.def("calMoment", &pyCQCGL1d::PYcalMoment)
 	.def("calMoment", &pyCQCGL1d::PYcalMoment2)
-	//.def("orbit2slice", &pyCQCGL1d::PYorbit2slice)
+	.def("orbit2slice", &pyCQCGL1d::PYorbit2slice)
+	.def("ve2slice", &pyCQCGL1d::PYve2slice)
 	.def("stab", &pyCQCGL1d::PYstab)
 	.def("stabReq", &pyCQCGL1d::PYstabReq)
 	.def("reflect", &pyCQCGL1d::PYreflect)

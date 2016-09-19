@@ -31,7 +31,7 @@ int main(int argc, char **argv){
 
 #ifdef CASE_10
     //======================================================================
-    // to visulize the limit cycle first 
+    // calculate E and V 
     const int N = 1024;
     const double L = 50;
     double Bi = 1.9;
@@ -65,7 +65,7 @@ int main(int argc, char **argv){
     fprintf(stderr, "MPI : %d / %d; range : %d - %d \n", rank, num, p_start, p_end);
     ////////////////////////////////////////////////////////////
 
-    cgl.calEVParaSeq(file, p_Bis, p_Gis, 16, true);
+    cgl.calEVParaSeq(file, p_Bis, p_Gis, 30, true);
     
 
     ////////////////////////////////////////////////////////////

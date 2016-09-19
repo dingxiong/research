@@ -1154,7 +1154,7 @@ ArrayXXd CQCGL1d::rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
  *        meaning to transform the sum/subtraction of two state points.
  */
 std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-CQCGL1d::orbit2slice(const Ref<const ArrayXXd> &aa, int method){
+CQCGL1d::orbit2slice(const Ref<const ArrayXXd> &aa, const int method){
     int n = aa.rows();
     int m = aa.cols();
     assert(Ndim == n);
@@ -1209,7 +1209,7 @@ CQCGL1d::orbit2slice(const Ref<const ArrayXXd> &aa, int method){
     }
 
     case 5: {
-	// a1 -> positive real. a-1 -> positive imag
+	// a1 -> positive real. a-1 -> positive real
 	// phase is wrapped. 
 	for(size_t i = 0; i < m; i++){
 	    double am1 = atan2(aa(n-1, i), aa(n-2, i));
@@ -1222,7 +1222,7 @@ CQCGL1d::orbit2slice(const Ref<const ArrayXXd> &aa, int method){
     }
 
     case 6: {
-	// a1 -> positive real. a-1 -> positive imag
+	// a1 -> positive real. a-1 -> positive real
 	// phase is unwrapped. 
 	for(size_t i = 0; i < m; i++){
 	    double am1 = atan2(aa(n-1, i), aa(n-2, i));
@@ -1265,16 +1265,6 @@ CQCGL1d::orbit2slice(const Ref<const ArrayXXd> &aa, int method){
 
 /** @brief project covariant vectors to 1st mode slice
  *
- * projection matrix is h = (I - |tx><tp|/<tx|tp>) * g(-th), so eigenvector |ve> is
- * projected to |ve> - |tx>*(<tp|ve>|/<tx|tp>), before which, g(-th) is 
- * performed.
- *
- * In 1th and -1st mode slice, template point is 
- * |xp_\rho>=(0, ...,1, 0) ==> |tp_\rho>=(0,0,0,...,0,1)
- * |xp_\tau>=(0,0,1,...,0) ==> |tp_\tau>=(0,0,0,1,...,0)
- * <tp_\rho|ve> = ve.bottomRows(1) // last row
- * <tp_\tau|ve> = ve.row(3) // 4th row
- *
  * @note vectors are not normalized
  */
 MatrixXd CQCGL1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x, int flag){
@@ -1284,20 +1274,70 @@ MatrixXd CQCGL1d::ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x, int 
     std::tie(xhat, th, phi) = orbit2slice(x, flag);
     VectorXd tx_rho = phaseTangent(xhat);
     VectorXd tx_tau = transTangent(xhat);
-    VectorXd t0;
-    /*
-    switch (method){
-    case 1: {
-	t0 = ;
+    VectorXd x0_rho(n), x0_tau(n);
+    x0_rho.setZero();
+    x0_tau.setZero();
+    
+    switch (flag){
+    case 1 : {
+	x0_rho(0) = 1;
+	x0_tau(2) = 1;
+	break;
+    }
+	
+    case 2 : {
+	x0_rho(1) = 1;
+	x0_tau(2) = 1;
 	break;
     }
     
+    case 3 : {
+	x0_rho(0) = 1;
+	x0_tau(3) = 1;
+	break;
     }
-    */
-    MatrixXd vep = Rotate(ve, -th(0), -phi(0));
-    vep = vep - 0.5 * ((tx_rho - tx_tau) * vep.row(n-1) / xhat(n-2) +
-		       (tx_rho + tx_tau) * vep.row(3) / xhat(2));
+	
+    case 4 : {
+	x0_rho(1) = 1;
+	x0_tau(3) = 1;
+	break;
+    }
+	
+    case 5 : {
+	x0_rho(n-2) = 1;
+	x0_tau(3) = 1;
+	break;
+    }
+	
+    case 6 : {
+	x0_rho(n-2) = 1;
+	x0_tau(2) = 1;
+	break;
+    }
+
+    default:
+	fprintf(stderr, "orbit to slice error\n");
     
+    }
+
+    VectorXd tp_rho = phaseTangent(x0_rho);
+    VectorXd tp_tau = transTangent(x0_tau);
+
+    Matrix2d L;
+    L << tx_rho.dot(tp_rho), tx_tau.dot(tp_rho),
+	tx_rho.dot(tp_tau), tx_tau.dot(tp_tau);
+
+    MatrixXd tx(n, 2);
+    tx.col(0) = tx_rho;
+    tx.col(1) = tx_tau;
+
+    MatrixXd t0(n, 2);
+    t0.col(0) = tp_rho;
+    t0.col(1) = tp_tau;
+
+    MatrixXd vep = Rotate(ve, -th(0), -phi(0));
+    vep = vep - tx * L.inverse() * t0.transpose() * vep;
+
     return vep;
 
 }

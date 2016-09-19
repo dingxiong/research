@@ -2,7 +2,7 @@ from py_CQCGL1d import *
 from personalFunctions import *
 from scipy.integrate import odeint
 
-case = 44
+case = 46
 
 if case == 1:
     """
@@ -138,8 +138,8 @@ if case == 41:
     """
     N = 1024
     d = 50
-    Bi = 3.8
-    Gi = -3.8
+    Bi = 2.0
+    Gi = -5.6
     
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     rpo = CQCGLrpo()
@@ -196,16 +196,17 @@ if case == 43:
 
     fileName = '../../data/cgl/rpoBiGiEV.h5'
     
-    cs = {0: 'g', 1: 'm', 2: 'c', 4: 'r', 6: 'b'}#, 8: 'y', 56: 'r', 14: 'grey'}
-    ms = {0: 's', 1: '^', 2: '+', 4: 'o', 6: 'D'}#, 8: '8', 56: '4', 14: 'v'}
+    cs = {0: 'g'}#, 10: 'm', 2: 'c', 4: 'r', 6: 'b', 8: 'y'}#, 56: 'r', 14: 'grey'}
+    ms = {0: 's'}#, 10: '^', 2: '+', 4: 'o', 6: 'D', 8: 'v'}#, 56: '4', 14: 'v'}
 
-    es = np.zeros([39, 55, 20], dtype=np.complex)
-    e1 = np.zeros((39, 55), dtype=np.complex)
+    es = {}
+    e1 = {}
+    unconverge = {}
     Ts = np.zeros((39, 55))
     ns = set()
 
-    fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=25,
-                   xlim=[-6, 0], ylim=[-4, 6])
+    fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=20, tickSize=15,
+                   xlim=[-5.7, -3.95], ylim=[1.8, 6])
     for i in range(39):
         Bi = 1.9 + i*0.1
         for j in range(55):
@@ -213,24 +214,36 @@ if case == 43:
             rpo = CQCGLrpo()
             if rpo.checkExist(fileName, rpo.toStr(Bi, Gi, 1) + '/er'):
                 x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi(fileName, Bi, Gi, 1, flag=2)
-                es[i, j, :len(e)] = e
-                m, ep, accu = numStab(e, nmarg=3, tol=1e-5, flag=1)
+                es[(Bi, Gi)] = e
+                m, ep, accu = numStab(e, nmarg=3, tol=1e-4, flag=1)
                 if accu == False:
+                    unconverge[(Bi, Gi)] = 1
                     print Bi, Gi, e[m:m+3]
-                e1[i, j] = ep[0]
+                e1[(Bi, Gi)] = ep[0]
                 Ts[i, j] = T
                 ns.add(m)
                 # print index, Bi, Gi, m
-                ax.scatter(Gi, Bi, s=15, edgecolors='none',
-                           marker=ms.get(m, '*'), c=cs.get(m, 'k'))
+                ax.scatter(Gi, Bi, s=60, edgecolors='none',
+                           marker=ms.get(m, 'o'), c=cs.get(m, 'r'))
 
-    ax.xaxis.set_minor_locator(AutoMinorLocator(10))
-    ax.yaxis.set_minor_locator(AutoMinorLocator(10))
-    ax.grid(which='major', linewidth=2)
-    ax.grid(which='minor', linewidth=1)
+    #ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+    #ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+    #ax.grid(which='major', linewidth=2)
+    #ax.grid(which='minor', linewidth=1)
     ax2d(fig, ax)
     plotIm(Ts, [-5.6, 0, -4, 6], size=[8, 6], labs=[r'$G_i$', r'$B_i$'])
+    fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=20, tickSize=15,
+                   xlim=[-5.7, -3.95], ylim=[1.8, 6])
+    keys = unconverge.keys()
+    for i in keys:
+        ax.scatter(i[1], i[0], s=60, edgecolors='none', marker='o', c='k')
+    #ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+    #ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+    #ax.grid(which='major', linewidth=2)
+    #ax.grid(which='minor', linewidth=1)
+    ax2d(fig, ax)
     
+
 if case == 44:
     """
     L = 50
@@ -262,24 +275,82 @@ if case == 45:
     """
     N = 1024
     d = 50
-    Bi = 2.3
-    Gi = -4.1
+    Bi = 5.0
+    Gi = -4.3
     
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     rpo = CQCGLrpo()
     x, T, nstp, th, phi, err = rpo.readRpoBiGi('../../data/cgl/rpoBiGi2.h5',
                                                Bi, Gi, 1, flag=0)
     a0 = x[:cgl.Ndim]
-    v0 = cgl.velocity(a0)
-    t1 = cgl.transTangent(a0)
-    t2 = cgl.phaseTangent(a0)
-    ang = pAngle(v0, np.vstack((t1, t2)).T)
-    print ang
-    
-    for i in range(1):
-        aa = cgl.intg(a0, T/nstp, 2*nstp, 10)
+
+    for i in range(3):
+        aa = cgl.intg(a0, T/nstp, 15*nstp, 10)
         a0 = aa[-1]
         plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 2*T])
+
+if case == 46:
+    """
+    use L = 50 to view the rpo int the symmetry reduced state space
+    """
+    N = 1024
+    d = 50
+    Bi = 4.5
+    Gi = -4.5
+    sysFlag = 4
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    rpo = CQCGLrpo()
+    x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
+                                               Bi, Gi, 1, flag=2)
+    a0 = x[:cgl.Ndim]
+    po = cgl.intg(a0, T/nstp, nstp, 10)
+    poH = cgl.orbit2slice(po, sysFlag)[0]
+
+    a0 += 0.1 * norm(a0) * v[0];
+
+    aa = cgl.intg(a0, T/nstp, 25*nstp, 10)
+    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 2*T])
+    aaH, ths, phis = cgl.orbit2slice(aa, sysFlag)
+    plotConfigSpaceFromFourier(cgl, aaH, [0, d, 0, 2*T])
+
+    fig, ax = pl3d(size=[8, 6])
+    ax.plot(poH[:, 1], poH[:, 3], poH[:, 4], c='r', lw=2)
+    ax.plot(aaH[:, 1], aaH[:, 3], aaH[:, 4], c='b', lw=1)
+    ax3d(fig, ax)
+    
+if case == 47:
+    """
+    L = 50 find all moving rpo 
+    """
+    N = 1024
+    d = 50
+
+    fileName = '../../data/cgl/rpoBiGi2.h5'
+    mv = {}
+    nmv = {}
+    for i in range(39):
+        Bi = 1.9 + i * 0.1
+        for j in range(55):
+            Gi = -5.6 + 0.1*j
+            rpo = CQCGLrpo()
+            if rpo.checkExist(fileName, rpo.toStr(Bi, Gi, 1)):
+                x, T, nstp, th, phi, err = rpo.readRpoBiGi(fileName, Bi, Gi, 1)
+                if abs(th) > 1e-4:
+                    mv[(Bi, Gi)] = th
+                else :
+                    nmv[(Bi, Gi)] = th
+                
+
+    fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=20, tickSize=15,
+                   xlim=[-5.7, -3.95], ylim=[1.8, 6])
+    mvkeys = mv.keys()
+    for i in mvkeys:
+        ax.scatter(i[1], i[0], s=60, edgecolors='none', marker='o', c='r')
+    nmvkeys = nmv.keys()
+    for i in nmvkeys:
+        ax.scatter(i[1], i[0], s=60, edgecolors='none', marker='s', c='g')
+    ax2d(fig, ax)
 
 if case == 50:
     """

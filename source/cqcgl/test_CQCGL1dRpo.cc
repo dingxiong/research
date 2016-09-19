@@ -20,7 +20,7 @@ using namespace MyH5;
 
 #define cee(x) (cout << (x) << endl << endl)
 
-#define CASE_22
+#define CASE_50
 
 int main(){
     
@@ -225,8 +225,8 @@ int main(){
 #ifdef CASE_50
     //====================================================================== 
     // move rpo from one file to another file
-    std::string fin = "../../data/cgl/rpoBiGi2.h5";
-    std::string fout = "../../data/cgl/rpoBiGiEV.h5";
+    std::string fin = "../../data/cgl/rpoBiGiEV.h5";
+    std::string fout = "../../data/cgl/rpoBiGiEV2.h5";
     
     for( int i = 0; i < 39; i++){
 	double Bi = 1.9 + 0.1*i;
@@ -235,7 +235,7 @@ int main(){
 	    string g = CQCGL1dRpo::toStr(Bi, Gi, 1);
 	    if (checkGroup(fin, g, false) && !checkGroup(fout, g, false)){
 		fprintf(stderr, "%d %g %g\n", 1, Bi, Gi);
-		CQCGL1dRpo::moveRpo(fin, g, fout, g, 0);
+		CQCGL1dRpo::moveRpo(fin, g, fout, g, 2);
 	    }
 	}
     }

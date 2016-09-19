@@ -209,7 +209,7 @@ public:
     ArrayXXd rotateOrbit(const Ref<const ArrayXXd> &aa, const ArrayXd &th,
 			 const ArrayXd &phi);
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
-    orbit2slice(const Ref<const ArrayXXd> &aa, int method);
+    orbit2slice(const Ref<const ArrayXXd> &aa, const int method);
     MatrixXd ve2slice(const ArrayXXd &ve, const Ref<const ArrayXd> &x, int flag);
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
     reduceAllSymmetries(const Ref<const ArrayXXd> &aa, int flag);

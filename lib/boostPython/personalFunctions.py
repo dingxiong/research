@@ -386,9 +386,11 @@ class CQCGLreq():
 
     def eigReq(self, a0, wth0, wphi0):
         stabMat = self.cgl.stabReq(a0, wth0, wphi0).T
-        eigvalue, eigvector = eig(stabMat)
-        eigvalue, eigvector = sortByReal(eigvalue, eigvector)
-        return eigvalue, eigvector
+        e, v = LA.eig(stabMat)
+        e, v = sortByReal(e, v)
+        v = v.T.copy()
+
+        return e, v
     
 
 class CQCGLrpo():
@@ -1584,6 +1586,7 @@ def numStab(e, nmarg=2, tol=1e-8, flag=0):
         x = np.log(np.abs(e))
 
     n = len(x)
+    m = n-1
     for i in range(n):
         if abs(x[i]) < tol:
             m = i

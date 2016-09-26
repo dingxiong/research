@@ -295,7 +295,7 @@ if case == 46:
     """
     N = 1024
     d = 50
-    Bi = 4.5
+    Bi = 4
     Gi = -4.5
     sysFlag = 4
 
@@ -307,16 +307,30 @@ if case == 46:
     po = cgl.intg(a0, T/nstp, nstp, 10)
     poH = cgl.orbit2slice(po, sysFlag)[0]
 
-    a0 += 0.1 * norm(a0) * v[0];
+    aE = a0 + 0.1 * norm(a0) * v[0];
 
-    aa = cgl.intg(a0, T/nstp, 25*nstp, 10)
+    aa = cgl.intg(aE, T/nstp, 12*nstp, 10)
     plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 2*T])
     aaH, ths, phis = cgl.orbit2slice(aa, sysFlag)
     plotConfigSpaceFromFourier(cgl, aaH, [0, d, 0, 2*T])
 
+    # req = CQCGLreq(cgl)
+    # reqe, reqaH, reqvH = req.getAxes('../../data/cgl/reqBiGiEV.h5', Bi, Gi, 1, sysFlag)
+    # e1, e2, e3 = orthAxes(reqvH[0].real, reqvH[1].real, reqvH[2].real)
+    # bases = np.vstack((e1, e2, e3))
+    # poHP, aaHP = poH.dot(bases.T), aaH.dot(bases.T)
+    
+    vrH = cgl.ve2slice(v.real.copy(), a0, sysFlag)
+    viH = cgl.ve2slice(v.imag.copy(), a0, sysFlag)
+    e1, e2, e3 = orthAxes(vrH[0], viH[0], vrH[1])
+    bases = np.vstack((e1, e2, e3))
+    poHP, aaHP = poH.dot(bases.T), aaH.dot(bases.T)
+    
     fig, ax = pl3d(size=[8, 6])
-    ax.plot(poH[:, 1], poH[:, 3], poH[:, 4], c='r', lw=2)
-    ax.plot(aaH[:, 1], aaH[:, 3], aaH[:, 4], c='b', lw=1)
+    ax.plot(poH[:, -1], poH[:, 4], poH[:, 5], c='r', lw=2)
+    ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1)
+    #ax.plot(poHP[:, 0], poHP[:, 1], poHP[:, 2], c='r', lw=2)
+    #ax.plot(aaHP[:, 0], aaHP[:, 1], aaHP[:, 2], c='b', lw=1)
     ax3d(fig, ax)
     
 if case == 47:

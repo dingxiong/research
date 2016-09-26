@@ -391,6 +391,14 @@ class CQCGLreq():
         v = v.T.copy()
 
         return e, v
+
+    def getAxes(self, fileName, Bi, Gi, index, flag):
+        a, wth, wphi, err, e, v = self.readReqBiGi(fileName, Bi, Gi, index, flag=2)
+        aH = self.cgl.orbit2slice(a, flag)[0]
+        vrH = self.cgl.ve2slice(v.real.copy(), a, flag)
+        viH = self.cgl.ve2slice(v.imag.copy(), a, flag)
+        
+        return e, aH, vrH + 1j*viH
     
 
 class CQCGLrpo():

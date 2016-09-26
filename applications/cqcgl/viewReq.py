@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 10
+case = 17
 
 if case == 6:
     N = 1024
@@ -209,17 +209,24 @@ if case == 17:
     d = 50
     h = 2e-3
     
-    Bi = 2.0
+    Bi = 2.7
     Gi = -5.6
     index = 1
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
     req = CQCGLreq(cgl)
 
-    a0, wth0, wphi0, err0, e, v = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, index, flag=2)
-    plotOneConfigFromFourier(cgl, a0)
-    print e[:12]
-    
+    fig, ax = pl2d(size=[8, 6], labs=[r'$x$', r'$|A|$'], axisLabelSize=25, tickSize=16)
+
+    a0, wth0, wphi0, err0 = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, 1, flag=0)
+    Aamp = np.abs(cgl.Fourier2Config(a0))
+    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, c='r')
+    a0, wth0, wphi0, err0 = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, 2, flag=0)
+    Aamp = np.abs(cgl.Fourier2Config(a0))
+    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, c='b')
+
+    ax2d(fig, ax)
+            
 if case == 18:
     """
     Plot the solitons in the Bi-Gi plane to see the transition.

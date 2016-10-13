@@ -334,8 +334,55 @@ def plotContour(z, x=None, y=None, size=[8, 6], labs=[r'$x$', r'$y$'],
 #            1d CQCGL related                    #
 ##################################################
 class CQCGLplot():
-    def __init__(self):
-        pass
+    def __init__(self, cgl=None):
+        self.cgl = cgl
+
+    def oneConfig(self, A, d=30, isFourier=True, 
+                  size=[6, 5], labs=[r'$x$', r'$|A|$'],
+                  axisLabelSize=20, tickSize=None,
+                  save=False, name='out.png'):
+        """
+        plot the configuration at one point 
+        or plot one eigen vector.
+        
+        Parameter
+        ======
+        isFourier : is the input the Fourier modes of A. If it is, then we need back FFT.
+        """
+        fig, ax = pl2d(size=size, labs=labs, axisLabelSize=axisLabelSize, tickSize=tickSize)
+        if isFourier:
+            A = self.cgl.Fourier2Config(A)
+        Aamp = np.abs(A)
+        ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=1.5)
+        ax2d(fig, ax, save=save, name=name)
+    
+    def config(self, AA, ext, isFourier=True, tt=None, yls=None,
+               barTicks=[2, 7], colortype='jet',
+               percent='5%', size=[4, 5], labs=[r'$x$', r'$t$'],
+               axisLabelSize=20, tickSize=None,
+               save=False, name='out.png'):
+        """
+        plot the color map of the states
+        """
+        if isFourier:
+            AA = self.cgl.Fourier2Config(AA)
+        Aamp = np.abs(AA)
+        fig, ax = pl2d(size=size, labs=labs, axisLabelSize=axisLabelSize, tickSize=tickSize)
+        im = ax.imshow(Aamp, cmap=plt.get_cmap(colortype), extent=ext,
+                       aspect='auto', origin='lower')
+        if tt is not None:
+            n = len(tt)
+            ids = findTimeSpots(tt, yls)
+            yts = ids / float(n) * ext[3]
+            ax.set_yticks(yts)
+            ax.set_yticklabels(yls)
+
+        ax.grid('on')
+        dr = make_axes_locatable(ax)
+        cax = dr.append_axes('right', size=percent, pad=0.05)
+        plt.colorbar(im, cax=cax, ticks=barTicks)
+
+        ax2d(fig, ax, save=save, name=name)
 
 
 class CQCGLreq():
@@ -491,42 +538,6 @@ class CQCGLrpo():
 #===================================================
 
 
-def plotConfigSpace(AA, ext, tt=None, yls=None,
-                    barTicks=[2, 7], colortype='jet',
-                    percent='5%', size=[4, 5],
-                    axisLabelSize=20, tickSize=None,
-                    save=False, name='out.png'):
-    """
-    plot the color map of the states
-    """
-    Aamp = np.abs(AA)
-    fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111)
-    ax.set_xlabel(r'$x$', fontsize=axisLabelSize)
-    ax.set_ylabel(r'$t$', fontsize=axisLabelSize)
-    im = ax.imshow(Aamp, cmap=plt.get_cmap(colortype), extent=ext,
-                   aspect='auto', origin='lower')
-    if tt is not None:
-        n = len(tt)
-        ids = findTimeSpots(tt, yls)
-        yts = ids / float(n) * ext[3]
-        ax.set_yticks(yts)
-        ax.set_yticklabels(yls)
-
-    ax.grid('on')
-    dr = make_axes_locatable(ax)
-    cax = dr.append_axes('right', size=percent, pad=0.05)
-    plt.colorbar(im, cax=cax, ticks=barTicks)
-
-    if tickSize is not None:
-        ax.tick_params(axis='both', which='major', labelsize=tickSize)
-        
-    fig.tight_layout(pad=0)
-    if save:
-        plt.savefig(name)
-        plt.close()
-    else:
-        plt.show(block=False)
 
         
 def findTimeSpots(tt, spots):
@@ -547,20 +558,6 @@ def findTimeSpots(tt, spots):
         ids[i] = L
     return ids
 
-
-def plotConfigSpaceFromFourier(cgl, aa, ext, tt=None, yls=None,
-                               barTicks=[2, 7],
-                               colortype='jet',
-                               percent='5%', size=[4, 5],
-                               axisLabelSize=25, tickSize=15,
-                               save=False, name='out.png'):
-    """
-    plot the configuration from Fourier mode
-    """
-    plotConfigSpace(cgl.Fourier2Config(aa), ext, tt, yls,
-                    barTicks,
-                    colortype, percent, size,
-                    axisLabelSize, tickSize, save, name)
 
 
 def plotConfigSurface(AA, ext, barTicks=[2, 4], colortype='jet',
@@ -647,33 +644,6 @@ def plotConfigWireFourier(cgl, aa, ext, barTicks=[2, 7], size=[7, 6],
     plotConfigWire(cgl.Fourier2Config(aa), ext, barTicks, size,
                    axisLabelSize, tickSize, c, save, name)
     
-
-def plotOneConfig(A, d=30, size=[6, 5], axisLabelSize=20,
-                  save=False, name='out.png'):
-    """
-    plot the configuration at one point
-    """
-    Aamp = np.abs(A)
-    fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111)
-    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp)
-    ax.set_xlabel(r'$x$', fontsize=axisLabelSize)
-    ax.set_ylabel(r'$|A|$', fontsize=axisLabelSize)
-    fig.tight_layout(pad=0)
-    if save:
-        plt.savefig(name)
-        plt.close()
-    else:
-        plt.show(block=False)
-
-
-def plotOneConfigFromFourier(cgl, a0, d=30, size=[6, 5], axisLabelSize=20,
-                             save=False, name='out.png'):
-    """
-    plot the configuration at one point from Fourier mode
-    """
-    plotOneConfig(cgl.Fourier2Config(a0).squeeze(), d, size,
-                  axisLabelSize, save, name)
 
 
 def plotPhase(cgl, aa, ext, barTicks=[-3, 0, 3],

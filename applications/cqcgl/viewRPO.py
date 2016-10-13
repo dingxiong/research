@@ -2,7 +2,7 @@ from py_CQCGL1d import *
 from personalFunctions import *
 from scipy.integrate import odeint
 
-case = 46
+case = 411
 
 if case == 1:
     """
@@ -138,27 +138,57 @@ if case == 41:
     """
     N = 1024
     d = 50
-    Bi = 2.0
-    Gi = -5.6
-    
+    Bi, Gi = 4.6, -5.0
+
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
-    rpo = CQCGLrpo()
+    rpo = CQCGLrpo(cgl)
+    cp = CQCGLplot(cgl)
     x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
                                                      Bi, Gi, 1, flag=2)
     a0 = x[:cgl.Ndim]
-    v0 = cgl.velocity(a0)
-    t1 = cgl.transTangent(a0)
-    t2 = cgl.phaseTangent(a0)
-    ang = pAngle(v0, np.vstack((t1, t2)).T)
-    print ang
+    print e[:10]
+
+    a0 += 0.1*norm(a0)*v[0]
+    numT = 20
+    for i in range(1):
+        aa = cgl.intg(a0, T/nstp, numT*nstp, 10)
+        a0 = aa[-1]
+        cp.config(aa, [0, d, 0, T*numT])
+        
+    
+if case == 411:
+    """
+    use L = 50 to view the rpo and the difference plot
+    """
+    N = 1024
+    d = 50
+    Bi, Gi = 4.8, -4.5
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    rpo = CQCGLrpo(cgl)
+    cp = CQCGLplot(cgl)
+    x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
+                                                     Bi, Gi, 1, flag=2)
+    a0 = x[:cgl.Ndim]
     print e[:10]
     
+    aa0 = cgl.intg(a0, T/nstp, nstp, 10)[:-1]
+
     a0 += 0.1*norm(a0)*v[0]
-    for i in range(3):
-        aa = cgl.intg(a0, T/nstp, 5*nstp, 50)
-        a0 = aa[-1]
-        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T*5])
+    numT = 7
+    skipRate = 10
+
+    aaBase = aa0
+    for i in range(1, numT):
+        aaBase = np.vstack((aaBase, cgl.Rotate(aa0, -i*th, -i*phi)))
     
+    for i in range(1):
+        aa = cgl.intg(a0, T/nstp, numT*nstp, skipRate)
+        a0 = aa[-1]
+        cp.config(aa, [0, d, 0, T*numT])
+        dif = aa[:-1] - aaBase
+        cellSize = nstp / skipRate
+        cp.config(dif[0*cellSize:6*cellSize], [0, d, 0*T, 6*T])
 
 if case == 42:
     """
@@ -273,13 +303,12 @@ if case == 45:
     """
     use L = 50 to view the rpo
     """
-    N = 1024
-    d = 50
-    Bi = 5.0
-    Gi = -4.3
+    N, d = 1024, 50
+    Bi, Gi = 4.6, -5.0
     
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     rpo = CQCGLrpo()
+    cp = CQCGLplot(cgl)
     x, T, nstp, th, phi, err = rpo.readRpoBiGi('../../data/cgl/rpoBiGi2.h5',
                                                Bi, Gi, 1, flag=0)
     a0 = x[:cgl.Ndim]
@@ -287,7 +316,7 @@ if case == 45:
     for i in range(3):
         aa = cgl.intg(a0, T/nstp, 15*nstp, 10)
         a0 = aa[-1]
-        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 2*T])
+        cp.config(aa, [0, d, 0, 2*T])
 
 if case == 46:
     """

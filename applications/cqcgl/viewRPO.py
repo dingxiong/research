@@ -136,9 +136,8 @@ if case == 41:
     """
     use L = 50 to view the rpo
     """
-    N = 1024
-    d = 50
-    Bi, Gi = 4.6, -5.0
+    N, d = 1024, 50
+    Bi, Gi = 2, -5.6
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     rpo = CQCGLrpo(cgl)
@@ -149,7 +148,7 @@ if case == 41:
     print e[:10]
 
     a0 += 0.1*norm(a0)*v[0]
-    numT = 20
+    numT = 10
     for i in range(1):
         aa = cgl.intg(a0, T/nstp, numT*nstp, 10)
         a0 = aa[-1]
@@ -235,7 +234,7 @@ if case == 43:
     Ts = np.zeros((39, 55))
     ns = set()
 
-    fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=20, tickSize=15,
+    fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=25, tickSize=20,
                    xlim=[-5.7, -3.95], ylim=[1.8, 6])
     for i in range(39):
         Bi = 1.9 + i*0.1
@@ -304,7 +303,7 @@ if case == 45:
     use L = 50 to view the rpo
     """
     N, d = 1024, 50
-    Bi, Gi = 4.6, -5.0
+    Bi, Gi = 1.9, -5.6
     
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     rpo = CQCGLrpo()
@@ -313,7 +312,7 @@ if case == 45:
                                                Bi, Gi, 1, flag=0)
     a0 = x[:cgl.Ndim]
 
-    for i in range(3):
+    for i in range(2):
         aa = cgl.intg(a0, T/nstp, 15*nstp, 10)
         a0 = aa[-1]
         cp.config(aa, [0, d, 0, 2*T])
@@ -324,24 +323,26 @@ if case == 46:
     """
     N = 1024
     d = 50
-    Bi = 4
+    Bi = 4.8
     Gi = -4.5
-    sysFlag = 4
+    sysFlag = 1
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
-    rpo = CQCGLrpo()
+    rpo = CQCGLrpo(cgl)
+    cp = CQCGLplot(cgl)
+
     x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
                                                Bi, Gi, 1, flag=2)
     a0 = x[:cgl.Ndim]
     po = cgl.intg(a0, T/nstp, nstp, 10)
     poH = cgl.orbit2slice(po, sysFlag)[0]
 
-    aE = a0 + 0.1 * norm(a0) * v[0];
+    aE = a0 + 0.001 * norm(a0) * v[0];
 
     aa = cgl.intg(aE, T/nstp, 12*nstp, 10)
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 2*T])
+    cp.config(aa, [0, d, 0, 12*T])
     aaH, ths, phis = cgl.orbit2slice(aa, sysFlag)
-    plotConfigSpaceFromFourier(cgl, aaH, [0, d, 0, 2*T])
+    cp. config(aaH, [0, d, 0, 12*T])
 
     # req = CQCGLreq(cgl)
     # reqe, reqaH, reqvH = req.getAxes('../../data/cgl/reqBiGiEV.h5', Bi, Gi, 1, sysFlag)
@@ -357,7 +358,7 @@ if case == 46:
     
     fig, ax = pl3d(size=[8, 6])
     ax.plot(poH[:, -1], poH[:, 4], poH[:, 5], c='r', lw=2)
-    ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1)
+    ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
     #ax.plot(poHP[:, 0], poHP[:, 1], poHP[:, 2], c='r', lw=2)
     #ax.plot(aaHP[:, 0], aaHP[:, 1], aaHP[:, 2], c='b', lw=1)
     ax3d(fig, ax)

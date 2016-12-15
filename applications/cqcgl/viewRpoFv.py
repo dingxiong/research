@@ -7,13 +7,11 @@ if case == 10:
     """
     use L = 50 to view the rpo, its FV and the explosion
     """
-    N = 1024
-    d = 50
-    Bi = 2.0
-    Gi = -5.6
+    N, d = 1024, 50
+    Bi, Gi = 2.0, -5.6
     
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
-    rpo = CQCGLrpo()
+    rpo = CQCGLrpo(cgl)
     cp = CQCGLplot(cgl)
     x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
                                                      Bi, Gi, 1, flag=2)
@@ -35,6 +33,27 @@ if case == 10:
     cellSize = nstp/skipRate
     cp.config(aa[12*cellSize:19*cellSize], [0, d, T*12, T*19])
 
+
+if case == 20:
+    """
+    plot a long integration to see whether there are only symmetric/asymmetric
+    explosions or both of them
+    """
+    N, d = 1024, 50
+    Bi, Gi = 4.6, -5.0
+    
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    rpo = CQCGLrpo(cgl)
+    cp = CQCGLplot(cgl)
+    x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
+                                                     Bi, Gi, 1, flag=2)
+    a0 = x[:cgl.Ndim]
+    a0 += 0.1 * norm(a0) * v[0]
+
+    for i in range(10):
+        aa = cgl.intg(a0, T/nstp, 10*nstp, 50)
+        a0 = aa[-1]
+        cp.config(aa, [0, d, 0, 10*T])
     
     
 

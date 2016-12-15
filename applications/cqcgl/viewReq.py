@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from personalFunctions import *
 
-case = 17
+case = 171
 
 if case == 6:
     N = 1024
@@ -132,6 +132,7 @@ if case == 13:
     cgl = pyCQCGL1d(N, d, 4.0, 0.8, 0.01, di, -1)
     plotOneConfigFromFourier(cgl, a0)
     plotOneConfigFromFourier(cgl, a1)
+
     
 if case == 14:
     N = 1024
@@ -179,27 +180,27 @@ if case == 15:
 if case == 16:
     """
     to see different profiles with L = 50
+    More : to see the transition from req to rpo in the stable region
     """
-    N = 1024
-    d = 50
+    N, d = 1024, 50
     h = 2e-3
 
-    Bi = 4.8
-    Gi = -4.9
+    Bi, Gi = 2.5, -5
     index = 1
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
-    req = CQCGLreq()
+    req = CQCGLreq(cgl)
+    cp = CQCGLplot(cgl)
 
     a0, wth0, wphi0, err0, e, v = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, index, flag=2)
     print e[:20]
     
-    nstp = 20000
+    nstp = 30000
     a0 += 0.1*norm(a0)*v[0].real
-    for i in range(2):
+    for i in range(1):
         aa = cgl.intg(a0, h, nstp, 10)
         a0 = aa[-1]
-        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+        cp.config(aa, [0, d, 0, nstp*h])
 
 if case == 17:
     """
@@ -227,6 +228,31 @@ if case == 17:
 
     ax2d(fig, ax)
             
+if case == 171:
+    """
+    new size L = 50
+    plot the plane soliton and composite soliton in the same figure.
+    """
+    N, d = 1024, 50
+    
+    fig, ax = pl2d(size=[8, 6], labs=[r'$x$', r'$|A|$'], axisLabelSize=25, tickSize=20)
+
+    Bi, Gi = 2.0, -5.6
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req = CQCGLreq(cgl)
+    a0, wth0, wphi0, err0 = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, 1, flag=0)
+    Aamp = np.abs(cgl.Fourier2Config(a0))
+    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, ls='-', c='r')
+
+    Bi, Gi = 2.7, -5.6
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req = CQCGLreq(cgl)
+    a0, wth0, wphi0, err0 = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, 1, flag=0)
+    Aamp = np.abs(cgl.Fourier2Config(a0))
+    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, ls='--', c='b')
+    
+    ax2d(fig, ax)
+
 if case == 18:
     """
     Plot the solitons in the Bi-Gi plane to see the transition.
@@ -259,6 +285,7 @@ if case == 18:
 if case == 19:
     """
     plot the stability of req in the Bi-Gi plane
+    and save the data
     """
     N = 1024
     d = 50
@@ -272,7 +299,8 @@ if case == 19:
 
     es = np.zeros([90, 55, 1362], dtype=np.complex)
     e1 = np.zeros((90, 55), dtype=np.complex)
-    ns = Set([])
+    ns = set()
+    saveData = np.zeros([0, 3])
 
     fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=25,
                    xlim=[-6, 0], ylim=[-4, 6])
@@ -284,15 +312,17 @@ if case == 19:
             if req.checkExist(fileName, req.toStr(Bi, Gi, index) + '/vr'):
                 a0, wth0, wphi0, err0, e, v = req.readReqBiGi(fileName, Bi, Gi, index, flag=2)
                 es[i, j, :] = e
-                m, ep = req.numStab(e)
+                m, ep, accu = numStab(e)
                 e1[i, j] = ep[0]
                 ns.add(m)
                 # print index, Bi, Gi, m
                 ax.scatter(Gi, Bi, s=15, edgecolors='none',
                            marker=ms.get(m, '*'), c=cs.get(m, 'k'))
+                saveData = np.vstack((saveData, np.array([Gi, Bi, m])));
     
     ax.grid(which='both')
     ax2d(fig, ax)
+    np.savetxt("BiGiReqStab.dat", saveData)
 
 if case == 20:
     """

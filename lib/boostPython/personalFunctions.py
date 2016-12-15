@@ -52,6 +52,7 @@ def plinit(size=[8, 6]):
 
 
 def ax3dinit(fig, num=111, labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
+             tickSize=None,
              xlim=None, ylim=None, zlim=None, isBlack=False):
     ax = fig.add_subplot(num, projection='3d')
 
@@ -61,6 +62,9 @@ def ax3dinit(fig, num=111, labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
         ax.set_ylabel(labs[1], fontsize=axisLabelSize)
     if labs[2] is not None:
         ax.set_zlabel(labs[2], fontsize=axisLabelSize)
+
+    if tickSize is not None:
+        ax.tick_params(axis='both', which='major', labelsize=tickSize)
 
     if xlim is not None:
         ax.set_xlim(xlim)
@@ -77,9 +81,11 @@ def ax3dinit(fig, num=111, labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
 
 
 def pl3d(size=[8, 6], labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
+         tickSize=None,
          xlim=None, ylim=None, zlim=None, isBlack=False):
     fig = plinit(size=size)
     ax = ax3dinit(fig, labs=labs, axisLabelSize=axisLabelSize,
+                  tickSize=tickSize,
                   xlim=xlim, ylim=ylim, zlim=zlim, isBlack=isBlack)
     return fig, ax
 
@@ -163,11 +169,11 @@ def ax2dinit(fig, num=111, labs=[r'$x$', r'$y$'], axisLabelSize=25,
     return ax
 
 
-def pl2d(size=[8, 6], labs=[r'$x$', r'$y$'], axisLabelSize=25,
+def pl2d(size=[8, 6], num=111, labs=[r'$x$', r'$y$'], axisLabelSize=25,
          xscale=None, yscale=None, xlim=None, ylim=None, tickSize=None,
          isBlack=False, ratio='auto'):
     fig = plt.figure(figsize=size)
-    ax = ax2dinit(fig, labs=labs, axisLabelSize=axisLabelSize, xscale=xscale,
+    ax = ax2dinit(fig, num=111, labs=labs, axisLabelSize=axisLabelSize, xscale=xscale,
                   yscale=yscale, xlim=xlim, ylim=ylim, tickSize=tickSize,
                   isBlack=isBlack, ratio=ratio)
     return fig, ax
@@ -337,7 +343,7 @@ class CQCGLplot():
     def __init__(self, cgl=None):
         self.cgl = cgl
 
-    def oneConfig(self, A, d=30, isFourier=True, 
+    def oneConfig(self, A, d=50, isFourier=True, 
                   size=[6, 5], labs=[r'$x$', r'$|A|$'],
                   axisLabelSize=20, tickSize=None,
                   save=False, name='out.png'):

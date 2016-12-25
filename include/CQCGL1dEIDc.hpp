@@ -72,11 +72,7 @@ public :
 	L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square(); 
 	L.segment(Nplus, Nalias).setZero();
 	
-	int nYN0 = eidc.nYNs[eidc.scheme];
-	for(int i = 0; i < nYN0; i++){
-	    Yv[i].resize(N);
-	    Nv[i].resize(N);
-	}
+	setScheme(eidc.scheme);
 	eidc.init(&L, Yv, Nv);
     }
     
@@ -92,9 +88,9 @@ public :
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     inline void 
     setScheme(std::string x){
-	int nYN0 = eidc.nYNs[eidc.scheme];	
-	eidc.scheme = eidc.names[x];
-	int nYN1 = eidc.nYNs[eidc.scheme];
+	int nYN0 = eidc.names.at(eidc.scheme).nYN;
+	eidc.scheme = x;
+	int nYN1 = eidc.names.at(eidc.scheme).nYN;
 	for (int i = nYN0; i < nYN1; i++) {
 	    Yv[i].resize(N);
 	    Nv[i].resize(N);

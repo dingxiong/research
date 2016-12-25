@@ -1,14 +1,14 @@
-/* h5c++ test_CQCGL1dEIDc.cc -std=c++11 -lCQCGL -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I $RESH/include/ -L $RESH/lib/ -I $XDAPPS/eigen/include/eigen3 -DEIGEN_FFTW_DEFAULT -O3 -o cgl1d.out && time ./cgl1d.out 
+/* h5c++ test_CQCGL1dEIDc.cc -std=c++11 -lCQCGL1d -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I $RESH/include/ -L $RESH/lib/ -I $XDAPPS/eigen/include/eigen3 -DEIGEN_FFTW_DEFAULT -O3 -o cgl1d.out && time ./cgl1d.out 
  */
 #include <iostream>
 #include <ctime>
 #include "CQCGL1dEIDc.hpp"
 #include "myH5.hpp"
-#include "CQCGL.hpp"
+#include "CQCGL1d.hpp"
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N30
+#define N10
 
 using namespace MyH5;
 using namespace std;
@@ -30,7 +30,7 @@ int main(){
     const double d = 30;
     const double di = 0.06;
     CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
 
     std::string file = "/usr/local/home/xiong/00git/research/data/cgl/reqDi.h5";
     std::string groupName = to_string(di) + "/1";
@@ -76,7 +76,7 @@ int main(){
     const double d = 30;
     const double di = 0.06;
     CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
     
     VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
     VectorXd a0 = cgl2.Config2Fourier(A0);
@@ -97,7 +97,7 @@ int main(){
     const double d = 30;
     const double di = 0.06;
     CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
  
     VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
     VectorXd a0 = cgl2.Config2Fourier(A0);
@@ -134,7 +134,7 @@ int main(){
     const double d = 30;
     const double di = 0.06;
     CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
  
     VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
     VectorXd a0 = cgl2.Config2Fourier(A0);
@@ -163,7 +163,7 @@ int main(){
     const double d = 30;
     const double di = 0.06;
     CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
 
     cgl.eidc.rtol = 1e-10;
 
@@ -189,10 +189,10 @@ int main(){
     const double di = 0.06;
     CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
     cgl.changeOmega(-176.67504941219335);
-    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
-
+    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+    
     cgl.eidc.rtol = 1e-10;
-
+    
     VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
     VectorXd a0 = cgl2.Config2Fourier(A0);
     double T = 4;
@@ -204,7 +204,7 @@ int main(){
 	savetxt("cqcgl1d_N60_comoving_hs_"+to_string(i)+".dat", cgl.hs);
 	// cout << cgl.hs << endl;
     }
-
+    
 #endif
 #ifdef N70
     //====================================================================================================
@@ -218,7 +218,7 @@ int main(){
     const double di = 0.06;
     CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
     // cgl.changeOmega(-176.67504941219335);
-    CQCGL cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
  
     VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
     VectorXd a0 = cgl2.Config2Fourier(A0);

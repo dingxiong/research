@@ -35,80 +35,32 @@ public:
     Ary *L;
     ArrayXcd *N, *Y;
 
-    enum Scheme {
-	Cox_Matthews,
-	Krogstad,
-	Hochbruck_Ostermann,
-	Luan_Ostermann,
-	IFRK43,
-	IFRK54,
-	SSPP43
+    struct Scheme {
+	// string name;		// scheme name
+	int nstage; /* number of stages, which is used to indicate which Y[?]  store the update */
+	int nYN;    // number of Y[], N[] needed in the internal stage
+	int nnl;    // number of nonlinear evaluations per step
+	int nab;    // number of calculation of a, b whenever change step
+	int order;  // orders of scheme
+	
+	Scheme(int nstage, int nYN, int nnl, int nab, int order) :
+	    nstage(nstage), nYN(nYN), nnl(nnl), nab(nab), order(order)
+	{}
     };
-    Scheme scheme = Cox_Matthews; /* scheme  */
 
-    std::unordered_map<std::string, Scheme> names = {
-        {"Cox_Matthews",        Cox_Matthews},
-        {"Krogstad",            Krogstad},
-        {"Hochbruck_Ostermann", Hochbruck_Ostermann},
-	{"Luan_Ostermann",      Luan_Ostermann},
-	{"IFRK43",              IFRK43},
-	{"IFRK54",              IFRK54},
-	{"SSPP43",              SSPP43}               
+    const std::unordered_map<std::string, Scheme> names = {
+	//   name                    nstage   nYN   nnl     nab     order
+        {"Cox_Matthews",        Scheme(4,      5,    5,      4,      4)},
+        {"Krogstad",            Scheme(4,      5,    5,      8,      4)},
+        {"Hochbruck_Ostermann", Scheme(5,      5,    5,      11,     4)},
+	{"Luan_Ostermann",      Scheme(8,      9,    9,      23,     8)},
+	{"IFRK43",              Scheme(4,      5,    5,      0,      4)},
+	{"IFRK54",              Scheme(6,      7,    7,      0,      5)},
+	{"SSPP43",              Scheme(3,      4,    24,     0,      4)}               
     };
+
+    std::string scheme = "Cox_Matthews"; /* default scheme  */
     
-    std::unordered_map<int, int> nstages = { /* number of stages, which is used to indicate
-						which Y[?]  store the update */
-        {Cox_Matthews,        4},
-        {Krogstad,            4},
-        {Hochbruck_Ostermann, 5},
-	{Luan_Ostermann,      8},
-	{IFRK43,              4},
-	{IFRK54,              6},
-	{SSPP43,              3}
-    };
-    
-    std::unordered_map<int, int> nYNs = { /* number of Y[], N[] needed in the internal stage */
-	{Cox_Matthews,        5},
-        {Krogstad,            5},
-        {Hochbruck_Ostermann, 5},
-	{Luan_Ostermann,      9},
-	{IFRK43,              5},
-	{IFRK54,              7},
-	{SSPP43,              4}
-    };
-
-    std::unordered_map<int, int> nnls = { /* number of nonlinear evaluations per step */
-	{Cox_Matthews,        5},
-        {Krogstad,            5},
-        {Hochbruck_Ostermann, 5},
-	{Luan_Ostermann,      9},
-	{IFRK43,              5},
-	{IFRK54,              7},
-	{SSPP43,              24}
-    };
-
-    std::unordered_map<int, int> nabs = { /* number of calculation of a, b whenever change step */
-	{Cox_Matthews,        4},
-        {Krogstad,            8},
-        {Hochbruck_Ostermann, 11},
-	{Luan_Ostermann,      23},
-	{IFRK43,              0},
-	{IFRK54,              0},
-	{SSPP43,              0}
-    };
-
-
-    std::unordered_map<int, int> orders = { /* orders of schemes */
-        {Cox_Matthews,        4},
-        {Krogstad,            4},
-        {Hochbruck_Ostermann, 4},
-	{Luan_Ostermann,      8},
-	{IFRK43,              4},
-	{IFRK54,              5},
-	{SSPP43,              4}
-    };
-
-
     Ary a[9][9], b[9], c[9];
     
     int M = 64;			/* number of sample points */
@@ -162,10 +114,10 @@ public:
     void 
     intg(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h0, 
 	 const int skip_rate){
-	int ns = nstages[scheme];
-	int od = orders[scheme];
-	int nnl = nnls[scheme];
-	int nab = nabs[scheme];
+	int ns = names.at(scheme).nstage;
+	int od = names.at(scheme).order;
+	int nnl = names.at(scheme).nnl;
+	int nab = names.at(scheme).nab;
 
 	NCalCoe = 0;
 	NReject = 0;
@@ -218,9 +170,9 @@ public:
     void 
     intgC(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h, 
 	  const int skip_rate){
-	int ns = nstages[scheme];
-	int nnl = nnls[scheme];
-	int nab = nabs[scheme];
+	int ns = names.at(scheme).nstage;
+	int nnl = names.at(scheme).nnl;
+	int nab = names.at(scheme).nab;
 
 	NCallF = 0;
 	NSteps = 0; 
@@ -229,7 +181,7 @@ public:
 	calCoe(h);
 	NCalCoe += nab;
 
-	const int Nt = (int)round((tend-t0)/h);
+	const int Nt = static_cast<int>( round((tend-t0)/h) );
 
 	double t = t0;
 	Y[0] = u0;
@@ -258,17 +210,22 @@ public:
 	doChange = true;
 	doAccept = true;
 
-	if ( s > mumax) mu = mumax;
-	else if (s > mue) mu = s;
+	if ( s > mumax)
+	    mu = mumax;
+	else if (s > mue)
+	    mu = s;
 	else if (s >= 1) {
 	    mu = 1;
 	    doChange = false;
 	}
 	else {
 	    doAccept = false;
-	    if (s > muc) mu = muc;
-	    else if (s > mumin) mu = s;
-	    else mu = mumin;
+	    if (s > muc) 
+		mu = muc;
+	    else if (s > mumin) 
+		mu = s;
+	    else 
+		mu = mumin;
 	}
 
 	return mu;
@@ -281,10 +238,8 @@ public:
     void 
     oneStep(double t, double h, NL nl){
 
-	switch (scheme) {
-      
-	case  Cox_Matthews : 
-	    nl(Y[0], N[0], t);	
+	if(scheme == "Cox_Matthews") {
+      	    nl(Y[0], N[0], t);	
 	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
 	    
 	    nl(Y[1], N[1], t+h/2);	
@@ -299,10 +254,8 @@ public:
 	    nl(Y[4], N[4], t+h);
 	
 	    err = (b[3]*(N[4] - N[3])).abs().maxCoeff() / Y[4].abs().maxCoeff();
-
-	    break;
-	
-	case  Krogstad : 
+	}
+	else if (scheme == "Krogstad") {
 	    nl(Y[0], N[0], t);	
 	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
 
@@ -318,10 +271,8 @@ public:
 	    nl(Y[4], N[4], t+h);
 	
 	    err = (b[3]*(N[4] - N[3])).abs().maxCoeff() / Y[4].abs().maxCoeff();
-
-	    break;
-
-	case Hochbruck_Ostermann :
+	}
+	else if (scheme == "Hochbruck_Ostermann") {
 	    nl(Y[0], N[0], t);	
 	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
 
@@ -338,10 +289,8 @@ public:
 	    Y[5] = c[3]*Y[0] + b[0]*N[0] + b[3]*N[3] + b[4]*N[4];
 
 	    err = (b[4]*(N[4] - 0.5*N[2]- 0.5*N[1])).abs().maxCoeff() / Y[5].abs().maxCoeff();
-
-	    break;
-
-	case Luan_Ostermann :
+	}
+	else if (scheme == "Luan_Ostermann"){
 	    nl(Y[0], N[0], t);	
 	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
 
@@ -369,10 +318,8 @@ public:
 	    nl(Y[8], N[8], t+h);
 	    
 	    err = (b[7]*(N[8] - N[7])).abs().maxCoeff() / Y[8].abs().maxCoeff();
-	    
-	    break;
-
-	case IFRK43 :
+	}
+	else if (scheme == "IFRK43") {
 	    nl(Y[0], N[0], t);	
 	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
 
@@ -388,10 +335,8 @@ public:
 	    nl(Y[4], N[4], t+h);
 
 	    err = h*(1.0/10)*(N[4] - N[3]).abs().maxCoeff() / Y[4].abs().maxCoeff();
-	    
-	    break;
-	    
-	case IFRK54 :
+	}
+	else if (scheme == "IFRK54"){
 	    nl(Y[0], N[0], t);	
 	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
 
@@ -413,10 +358,8 @@ public:
 	    nl(Y[6], N[6], t+h);	    
 	    err = h*(-71./57600*N[0] + 71./16695*N[2] - 71./1920*N[3] + 17253./339200*N[4]
 		     -22./525*N[5] + 1./40*N[6]).abs().maxCoeff() / Y[4].abs().maxCoeff();
-	    
-	    break;
-
-	case SSPP43 : {     
+	}
+	else if (scheme == "SSPP43") {
 	    ArrayXcd y0 = Y[0];
 	    
 	    Y[0] = c[0] * Y[0];
@@ -443,15 +386,11 @@ public:
 	    err = 0.5*(t1 - t2).abs().maxCoeff() / Y[3].abs().maxCoeff();
 	    
 	    Y[0] = y0;		// reset previous state
-
-	    break; 
 	}
-	    
-	default :
+	else {
 	    fprintf(stderr, "Please indicate the scheme !\n");
 	    exit(1);
 	}
-
     }
 
     template<class NL>
@@ -478,15 +417,13 @@ public:
 	int n = sL;
 	
 	if (CN > 0){
-	    p = (*L).size() / CN;
+	    p = sL / CN;
 	    n = CN;
 	} 
 	
 	Ary hL = h * (*L);
 
-	switch (scheme) {
-    
-	case Cox_Matthews : {	  	    
+	if(scheme == "Cox_Matthews") {
 	    c[1] = (hL/2).exp();
 	    c[3] = hL.exp();
 
@@ -512,10 +449,8 @@ public:
 		b[3].segment(i*n, s) = h * mean( (-4.0 - 3.0*z -z2 + ze*(4.0 - z) ) / z3 );
 
 	    }
-	    break;
 	}
-
-	case Krogstad : {
+	else if (scheme == "Krogstad") {
 	    c[1] = (hL/2).exp();
 	    c[3] = hL.exp();
 	    
@@ -554,12 +489,9 @@ public:
 		b[0].segment(i*n, s) = h * mean( (-t4 + ze*(4.0 - 3.0 * z + z2)) / z3 );
 		b[1].segment(i*n, s) = h*2*mean( (t1 + ze*t2) / z3 );
 		b[3].segment(i*n, s) = h * mean( (-4.0 - 3.0*z -z2 - ze*t3 ) / z3 );
-	    }
-	    
-	    break;
+	    }   
 	}
-	    
-	case Hochbruck_Ostermann : {
+	else if (scheme == "Hochbruck_Ostermann") {	    
 	    c[1] = (hL/2).exp();
 	    c[3] = hL.exp();
 
@@ -608,11 +540,9 @@ public:
 		b[4].segment(i*n, s) = h*4*mean( (t6 + ze*t5 ) / z3 );
 
 	    }
-
-	    break;
 	}
 	    
-	case Luan_Ostermann : {
+	else if (scheme == "Luan_Ostermann"){
 	    c[1] = (hL/2).exp();
 	    c[3] = (hL/4).exp();
 	    c[5] = (hL/5).exp();
@@ -700,10 +630,8 @@ public:
 		b[7].segment(i*n, s) =-h * mean( (90 + 64*z + 21*z2 + 4*z3 - 2*ze*(45 - 13*z + z2)) / (4*z4) );
 
 	    }
-	    break;
 	}
-
-	case IFRK43 : {
+	else if (scheme == "IFRK43") {
 	    c[1] = (hL/2).exp();
 	    c[3] = hL.exp();
 	    
@@ -712,11 +640,8 @@ public:
 
 	    b[0] = h * (1.0/6) * c[3];
 	    b[1] = h * (1.0/3) * c[1];
-	    
-	    break;	
 	}
-
-	case IFRK54 : {
+	else if (scheme == "IFRK54"){
 	    c[1] = (hL/5).exp();
 	    c[2] = (3*hL/10).exp();
 	    c[3] = (4*hL/5).exp();
@@ -743,11 +668,8 @@ public:
 	    b[2] = (h*500./1113) * (7*hL/10).exp();
 	    b[3] = (h*125./192) * c[1];
 	    b[4] = (-h*2187./6784) * (hL/9).exp();
-
-	    break;	
 	}
-
-	case SSPP43 : {
+	else if (scheme == "SSPP43") {
 	    a1 = 0.268330095781759925;
 	    a2 = -0.187991618799159782;
 	    a3 = 0.919661523017399857;
@@ -755,14 +677,11 @@ public:
 	    c[0] = (a1*hL).exp();
 	    c[1] = (a2*hL).exp();
 	    c[2] = (a3*hL).exp();
-	    
-	    break;
 	}
-	    
-	default : fprintf(stderr, "Please indicate the scheme !\n");
-	    
+	else {
+	    fprintf(stderr, "Please indicate the scheme !\n");
+	    exit(1);
 	}
-	
     }
     
     inline 

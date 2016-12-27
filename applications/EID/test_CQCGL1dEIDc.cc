@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N10
+#define N50
 
 using namespace MyH5;
 using namespace std;
@@ -17,8 +17,9 @@ using namespace denseRoutines;
 
 int main(){
 
-    std::vector<std::string> scheme = {"Cox_Matthews", "Krogstad", "Hochbruck_Ostermann", 
-				       "Luan_Ostermann", "IFRK43", "IFRK54", "SSPP43"};
+    std::vector<std::string> scheme = {"IFRK43", "IFRK54",
+				       "Cox_Matthews", "Krogstad", "Hochbruck_Ostermann", 
+				       "Luan_Ostermann", "SSPP43"};
 
 #ifdef N10
     //====================================================================================================
@@ -73,41 +74,42 @@ int main(){
     //====================================================================================================
     // test a single method to see whether there is a bug
     const int N = 1024; 
-    const double d = 30;
-    const double di = 0.06;
-    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
-    
-    VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
-    VectorXd a0 = cgl2.Config2Fourier(A0);
-    
-    double T = 4;
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
 
-    cgl.setScheme(scheme[6]);	
-    ArrayXXd aa = cgl.intgC(a0, 0.001, T, 10);
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
+    
+    VectorXcd A0 = Gaussian(N, N/2, N/30, 2.5) + Gaussian(N, 2*N/5, N/30, 0.2);
+    VectorXd a0 = cgl2.Config2Fourier(A0);    
+    double T = 20;
 
+    cgl.setScheme(scheme[1]);	
+    ArrayXXd aa = cgl.intgC(a0, 0.002, T, 50);
+    savetxt("aa.dat", aa.transpose());
 
 #endif
 #ifdef N20
     //====================================================================================================
     // Test the accuracy of constant stepping shemes.
-    // Choose Luan-Ostermann method with a small time step as the base, then integrate the
-    // system for one period of ppo1.
+    // Choose Luan-Ostermann method with a small time step as the base
     const int N = 1024; 
-    const double d = 30;
-    const double di = 0.06;
-    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
- 
-    VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
-    VectorXd a0 = cgl2.Config2Fourier(A0);
-    double T = 4;
-    double h0 = T / (1<<20);	// T / 2^20
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
+    
+    VectorXcd A0 = Gaussian(N, N/2, N/30, 2.5) + Gaussian(N, 2*N/5, N/30, 0.2);
+    VectorXd a0 = cgl2.Config2Fourier(A0);    
+    double T = 20;
+
+    double h0 = T / (1<<18);	// T / 2^18
     
     cgl.setScheme("Luan_Ostermann");
     ArrayXd x0 = cgl.intgC(a0, h0, T, 1000000).rightCols(1);
 
-    int n = 10;
+    int n = 8;
 
     MatrixXd erros(n, scheme.size()+1);
     for(int i = 0; i < scheme.size(); i++) {
@@ -127,21 +129,42 @@ int main(){
     savetxt("cqcgl1d_N20_err.dat", erros);
 
 #endif
+#ifdef N25
+    //====================================================================================================
+    // fix the time step. try to look at the estimated local error of a single sheme
+    const int N = 1024; 
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
+ 
+    VectorXcd A0 = Gaussian(N, N/2, N/20, 1) + Gaussian(N, N/3, N/20, 0.4); 
+    VectorXd a0 = cgl2.Config2Fourier(A0);
+    double T = 40;
+    int n0 = 17, n1 = 6;
+    double h0 = T / (1<<n0);	// T / 2^17
+
+    cgl.setScheme("Cox_Matthews");	
+    // cgl.changeOmega(-17.667504892760448);
+    ArrayXXd aa = cgl.intgC(a0, h0, T, 1<<n1);
+    savetxt("ex0.dat", cgl.lte);
+#endif
 #ifdef N30
     //====================================================================================================
     // fix the time step. try to look at the estimated local error of all shemes
     const int N = 1024; 
-    const double d = 30;
-    const double di = 0.06;
-    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
- 
-    VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
-    VectorXd a0 = cgl2.Config2Fourier(A0);
-    double T = 4;
-    int n0 = 17, n1 = 6;
-    double h0 = T / (1<<n0);	// T / 2^17
-    double w[] = {0, -176.67504941219335};
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
+    
+    VectorXcd A0 = Gaussian(N, N/2, N/30, 2.5) + Gaussian(N, 2*N/5, N/30, 0.2);
+    VectorXd a0 = cgl2.Config2Fourier(A0);    
+    double T = 20;
+    int n0 = 15, n1 = 6;
+    double h0 = T / (1<<n0);	
+    double w[] = {0, -17.667504892760448};
 
     MatrixXd ltes(1<<(n0-n1), 2*scheme.size());
     for(int k = 0; k < 2; k++){
@@ -153,6 +176,34 @@ int main(){
 	}
     }
     savetxt("cqcgl1d_N30_lte.dat", ltes);
+#endif
+#ifdef N40
+    //====================================================================================================
+    // compare static frame integration and comoving frame integration for a single method
+    // by using different rtol so make the global error close
+    const int N = 1024; 
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
+    cgl.setScheme("Cox_Matthews");
+    MatrixXd hs;
+    
+    VectorXcd A0 = Gaussian(N, N/2, N/30, 2.5) + Gaussian(N, 2*N/5, N/30, 0.2);
+    VectorXd a0 = cgl2.Config2Fourier(A0);
+    double T = 20;
+    double w[] = {0, -17.667504892760448};
+
+    for(int i = 0; i < 2; i++){
+	cgl.changeOmega(w[i]);
+	cgl.eidc.rtol = i == 0 ? 1e-10 : 1e-11;
+	ArrayXXd aa = cgl.intg(a0, T/(1<<12), T, 100);
+	MatrixXd tmp(cgl.hs.size(), 2);
+	tmp << cgl.Ts, cgl.hs;
+	savetxt("cqcgl1d_N40_" + to_string(i) + ".dat", tmp);
+	savetxt("aa_" + to_string(i) + ".dat", aa.transpose());
+    }
 
 #endif
 #ifdef N50
@@ -160,23 +211,22 @@ int main(){
     // static frame integration
     // set the rtol = 1e-10 and output some statics
     const int N = 1024; 
-    const double d = 30;
-    const double di = 0.06;
-    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
 
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
     cgl.eidc.rtol = 1e-10;
 
-    VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
+    VectorXcd A0 = Gaussian(N, N/2, N/30, 2.5) + Gaussian(N, 2*N/5, N/30, 0.2);
     VectorXd a0 = cgl2.Config2Fourier(A0);
-    double T = 4;
+    double T = 20;
     double h0 = T / (1<<12);	// T / 2^12
     
     for(int i = 0; i < scheme.size(); i++) {
 	cgl.setScheme(scheme[i]);
 	ArrayXXd aa = cgl.intg(a0, h0, T, 1<<5);
 	savetxt("cqcgl1d_N50_hs_"+to_string(i)+".dat", cgl.hs);
-	// cout << cgl.hs << endl;
     }
     
 #endif
@@ -204,7 +254,43 @@ int main(){
 	savetxt("cqcgl1d_N60_comoving_hs_"+to_string(i)+".dat", cgl.hs);
 	// cout << cgl.hs << endl;
     }
+#endif
+#ifdef N65
+    //====================================================================================================
+    // comoving frame integration
+    //       rtol vs global relative error for a single method
+    //       
+    const int N = 1024; 
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    cgl.changeOmega(-17.667504892760448);
+    CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
+
+    VectorXcd A0 = Gaussian(N, N/2, N/20, 2.5) + Gaussian(N, N/3, N/20, 0.5);
+    VectorXd a0 = cgl2.Config2Fourier(A0);    
+    double T = 40;
+    double h0 = T / (1 << 20);
     
+    cgl.setScheme("Luan_Ostermann");
+    ArrayXd x0 = cgl.intgC(a0, h0, T, 1000000).rightCols(1);
+
+    int n = 10;
+    time_t t;
+    
+    cgl.setScheme("Luan_Ostermann");
+    VectorXd errors(n);
+    for(int i = 0, k = 1; i < n; i++, k*=5){
+	printf("i == %d\n", i);
+	double rtol = k * 1e-15;
+	cgl.eidc.rtol = rtol;
+	ArrayXd lastState = cgl.intg(a0, T/(1<<12), T, 1000000).rightCols(1);
+	double err = (lastState - x0).abs().maxCoeff() / x0.abs().maxCoeff();
+	errors[i] = err;
+    }
+    cout << errors << endl;
+
 #endif
 #ifdef N70
     //====================================================================================================
@@ -217,7 +303,7 @@ int main(){
     const double d = 30;
     const double di = 0.06;
     CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    // cgl.changeOmega(-176.67504941219335);
+    // cgl.changeOmega(-17.667504892760448);
     CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
  
     VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
@@ -288,37 +374,44 @@ int main(){
     //====================================================================================================
     // test the norm of b for estimating the local error
     const int N = 1024; 
-    const double d = 30;
-    const double di = 0.06;
-    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
     
     int bindex[] = {3, 3, 4, 7};
 
     ArrayXXcd bs1(N, 4);
     for (int i = 0; i < 4; i++){
 	cgl.setScheme(scheme[i]);
-	cgl.eidc.calCoe(1e-4);
+	cgl.eidc.calCoe(1e-3);
 	bs1.col(i) = cgl.eidc.b[bindex[i]];
     }
-    savetxt("l1r.dat", cgl.L.real()); savetxt("l1c.dat", cgl.L.imag());
+    savetxt("l1r.dat", cgl.L.real()); 
+    savetxt("l1c.dat", cgl.L.imag());
     
-    cgl.changeOmega(-176.67504941219335);
+    cgl.changeOmega(-17.667504892760448);
     
     ArrayXXcd bs2(N, 4);
     for (int i = 0; i < 4; i++){
 	cgl.setScheme(scheme[i]);
-	cgl.eidc.calCoe(1e-4);
+	cgl.eidc.calCoe(1e-3);
 	bs2.col(i) = cgl.eidc.b[bindex[i]];
     }
-    savetxt("l2r.dat", cgl.L.real()); savetxt("l2c.dat", cgl.L.imag());
+    savetxt("l2r.dat", cgl.L.real());
+    savetxt("l2c.dat", cgl.L.imag());
 
-    for(int i = 0; i < 4; i++) cout << bs1.col(i).abs().maxCoeff() << ' ';
+    for(int i = 0; i < 4; i++) 
+	cout << bs1.col(i).matrix().norm() << '\t';
     cout << endl;
-    for(int i = 0; i < 4; i++) cout << bs2.col(i).abs().maxCoeff() << ' ';
+    for(int i = 0; i < 4; i++)
+	cout << bs2.col(i).matrix().norm() << '\t';
     cout << endl;
 
-    savetxt("bs1r.dat", bs1.real()); savetxt("bs1c.dat", bs1.imag());
-    savetxt("bs2r.dat", bs2.real()); savetxt("bs2c.dat", bs2.imag());
+    savetxt("bs1r.dat", bs1.real()); 
+    savetxt("bs1c.dat", bs1.imag());
+    savetxt("bs2r.dat", bs2.real()); 
+    savetxt("bs2c.dat", bs2.imag());
 
 #endif
     

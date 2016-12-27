@@ -1,11 +1,12 @@
 from personalFunctions import *
-from py_CQCGL_threads import *
+from py_CQCGL1d import *
 from py_CQCGL2d import *
 
-case = 60
+case = 40
 
-labels = ["Cox-Matthews", "Krogstad", "Hochbruck-Ostermann",
-          "Luan-Ostermann", "IFRK43", "IFRK54", "SSPP43"]
+labels = ["IFRK4(3)", "IFRK5(4)",
+          "ERK4(3)2(2)", "ERK4(3)3(3)", "ERK4(3)4(3)", "ERK5(4)5(4)",
+          "SSPP4(3)"]
 mks = ['o', 's', '+', '^', 'x', 'v', 'p']
 Nscheme = len(labels)
 lss = ['--', '-.', ':', '-', '-', '-', '-']
@@ -61,18 +62,40 @@ if case == 30:
 # 1d cqcgl
 if case == 40:
     """
-    plot 1d cqcgl
+    plot 1d cqcgl for the const time step
     """
-    N = 1024
-    d = 30
-    di = 0.06
+    N, d = 1024, 50
+    Bi, Gi = 0.8, -0.6
 
-    cgl = pyCQCGL(N, d, 4.0, 0.8, 0.01, di, -1, 4)
-    aa = np.loadtxt('aa.dat')
-    aa2 = np.loadtxt('aa2.dat')
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, 4])
-    plotConfigSpaceFromFourier(cgl, aa2, [0, d, 0, 4])
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    cp = CQCGLplot(cgl)
+    aa = np.loadtxt('data/aa.dat')
 
+    # plot the heat map
+    AA = cgl.Fourier2Config(aa)
+    Aamp = np.abs(AA)
+    fig, ax = pl2d(size=[4, 5], labs=[r'$x$', r'$t$'], axisLabelSize=25, tickSize=18)
+    im = ax.imshow(Aamp, cmap=plt.get_cmap('jet'), extent=[0, d, 0, 20],
+                   aspect='auto', origin='lower')
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax = dr.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im, cax=cax, ticks=[0, 1, 2, 3])
+    ax2d(fig, ax)
+
+    # plot a single state
+    numOfState = aa.shape[0]
+    fig, ax = pl2d(size=[6, 5], labs=[r'$x$', r'$|A|$'], 
+                   ylim=[0, 3.5],
+                   axisLabelSize=25, tickSize=18)
+    A = cgl.Fourier2Config(aa[int(10./20 * numOfState)])
+    Aamp = np.abs(A)
+    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=3, ls='--', c='r')
+    A = cgl.Fourier2Config(aa[int(7.0/20 * numOfState)])
+    Aamp = np.abs(A)
+    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, ls='-', c='b')
+    ax.locator_params(axis='y', nbins=4)
+    ax2d(fig, ax)
 
 if case == 50:
     """
@@ -80,18 +103,18 @@ if case == 50:
     """
     err = np.loadtxt('data/cqcgl1d_N20_err.dat')
     h = err[:, 0]
-    fig, ax = pl2d(size=[6, 5], labs=[r'$h$', 'relative error'],
+    fig, ax = pl2d(size=[6, 5], labs=[r'$h$', None],
                    axisLabelSize=20, tickSize=15,
-                   xlim=[1e-8, 5e-3],
-                   ylim=[1e-9, 1e1],
+                   xlim=[3e-5, 3e-2],
+                   ylim=[1e-11, 1e1],
                    xscale='log', yscale='log')
     for i in range(Nscheme):
         ax.plot(h, err[:, i+1], lw=1.5, marker=mks[i], mfc='none',
                 label=labels[i])
-    ax.plot([1e-5, 1e-3], [1e-6, 1e2], lw=2, c='k', ls='--')
-    ax.plot([1e-4, 1e-3], [1e-8, 1e-3], lw=2, c='k', ls='--')
+    ax.plot([1e-4, 1e-2], [1e-8, 1e0], lw=2, c='k', ls='--')
+    ax.plot([2e-3, 2e-2], [1e-9, 1e-4], lw=2, c='k', ls='--')
     # ax.grid(True, which='both')
-    ax.locator_params(axis='y', numticks=4)
+    ax.locator_params(axis='y', numticks=5)
     ax2d(fig, ax, loc='upper left')
 
 if case == 60:
@@ -101,19 +124,22 @@ if case == 60:
     err = np.loadtxt('data/cqcgl1d_N30_lte.dat')
     lss = ['--', '-.', ':', '-', '-', '-', '-']
     n = err.shape[0]
-    T = 4.0
+    T = 20.0
     x = np.arange(1, n+1) * T/n
     
     fig, ax = pl2d(size=[6, 5], labs=[r'$t$', r'estimated local error'],
                    axisLabelSize=20, tickSize=15,
                    # xlim=[1e-8, 5e-3],
-                   ylim=[1e-22, 1e-8],
+                   ylim=[1e-17, 1e-7],
                    yscale='log')
     for i in range(Nscheme):
         ax.plot(x, err[:, i], lw=1.5, ls=lss[i], label=labels[i])
     ax.locator_params(axis='y', numticks=5)
     ax.locator_params(axis='x', nbins=5)
-    ax2d(fig, ax, loc='lower right')
+    fig.tight_layout(pad=0)
+    ax.legend(loc='lower right', ncol=2)
+    plt.show(block=False)
+    # ax2d(fig, ax, loc='lower right')
 
     fig, ax = pl2d(size=[6, 5], labs=[r'$t$', r'estimated local error'],
                    axisLabelSize=20, tickSize=15,
@@ -121,12 +147,12 @@ if case == 60:
                    ylim=[1e-30, 1e-8],
                    yscale='log')
     for i in range(Nscheme):
-        ax.plot(x, err[:, Nscheme+i], lw=1.5, ls=lss[i], label=labels[i])
+        ax.plot(x, err[:, Nscheme+i], lw=2, ls=lss[i], label=labels[i])
     ax.locator_params(axis='y', numticks=4)
     ax.locator_params(axis='x', nbins=5)
     ax2d(fig, ax, loc='lower right')
 
-if case == 65:
+if case == 70:
     """
     plot the time steps used in the process
     """
@@ -135,20 +161,23 @@ if case == 65:
         x = np.loadtxt('data/cqcgl1d_N50_hs_' + str(i) + '.dat')
         hs.append(x)
     
-    T = 4.0
+    T = 20.0
     lss = ['--', '-.', ':', '-', '-', '-', '-']
     fig, ax = pl2d(size=[6, 5], labs=[r'$t$', r'$h$'],
                    axisLabelSize=20, tickSize=15,
                    # xlim=[1e-8, 5e-3],
-                   ylim=[5e-6, 1e-2],
+                   ylim=[2e-5, 2e-3],
                    yscale='log')
     for i in range(Nscheme):
         n = len(hs[i])
         x = np.arange(1, n+1) * T/n
-        ax.plot(x, hs[i], lw=1.5, ls=lss[i], label=labels[i])
-    ax.locator_params(axis='y', numticks=4)
+        ax.plot(x, hs[i], lw=2, ls=lss[i], label=labels[i])
+    # ax.locator_params(axis='y', numticks=5)
     ax.locator_params(axis='x', nbins=5)
-    ax2d(fig, ax, loc='upper left')
+    fig.tight_layout(pad=0)
+    ax.legend(loc='lower right', ncol=2)
+    plt.show(block=False)
+    # ax2d(fig, ax, loc='upper left')
     
 if case == 66:
     """
@@ -321,7 +350,7 @@ if case == 69:
 
 ###############################################################################
 # 2d cqcgl
-if case == 70:
+if case == 150:
     """
     check the integration process is correct.
     Save the figure and compare

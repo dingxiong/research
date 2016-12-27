@@ -253,7 +253,8 @@ public:
 	    
 	    nl(Y[4], N[4], t+h);
 	
-	    err = (b[3]*(N[4] - N[3])).abs().maxCoeff() / Y[4].abs().maxCoeff();
+	    err = (b[3]*(N[4] - N[3])).abs().maxCoeff() / Y[4].abs().maxCoeff(); 
+	    //cout << b[3].matrix().norm() << '\t' << (N[4] - N[3]).matrix().norm() << endl;
 	}
 	else if (scheme == "Krogstad") {
 	    nl(Y[0], N[0], t);	

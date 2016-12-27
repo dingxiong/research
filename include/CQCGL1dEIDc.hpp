@@ -72,7 +72,11 @@ public :
 	L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square(); 
 	L.segment(Nplus, Nalias).setZero();
 	
-	setScheme(eidc.scheme);
+	int nYN0 = eidc.names.at(eidc.scheme).nYN; // do not call setScheme here. Different.
+	for(int i = 0; i < nYN0; i++){
+	    Yv[i].resize(N);
+	    Nv[i].resize(N);
+	}
 	eidc.init(&L, Yv, Nv);
     }
     

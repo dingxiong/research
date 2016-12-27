@@ -44,7 +44,11 @@ public:
     const int N;		/* dimension of FFT */
     const double d;		/* system domain size */
     
-    int DimTan;    		/* true tangent space dimension */
+    int DimTan;    		/* true tangent space dimension
+				   dimTan > 0 => dimTan
+				   dimTan = 0 => Ndim
+				   dimTan < 0 => 0 
+				*/
     int Ne;			/* effective number of modes */
     int Ndim;			/* dimension of state space */
     int Nplus, Nminus, Nalias;

@@ -23,6 +23,8 @@ import subprocess as sps
 from numpy.linalg import norm
 from matplotlib.ticker import AutoMinorLocator
 
+from bisect import bisect_left
+
 ##################################################
 #               Plot related                     #
 ##################################################
@@ -378,8 +380,8 @@ class CQCGLplot():
                        aspect='auto', origin='lower')
         if tt is not None:
             n = len(tt)
-            ids = findTimeSpots(tt, yls)
-            yts = ids / float(n) * ext[3]
+            ids = [bisect_left(tt, yl) for yl in yls]
+            yts = [x / float(n) * ext[3] for x in ids]
             ax.set_yticks(yts)
             ax.set_yticklabels(yls)
 
@@ -542,29 +544,6 @@ class CQCGLrpo():
     
         
 #===================================================
-
-
-
-        
-def findTimeSpots(tt, spots):
-    n = len(spots)
-    ids = np.zeros(n, dtype=np.int)
-    for i in range(n):
-        t = spots[i]
-        L = 0
-        R = size(tt) - 1
-        while R-L > 1:
-            d = (R-L)/2
-            if tt[L+d] <= t:
-                L += d
-            elif tt[R-d] > t:
-                R -= d
-            else:
-                print "error"
-        ids[i] = L
-    return ids
-
-
 
 def plotConfigSurface(AA, ext, barTicks=[2, 4], colortype='jet',
                       percent='5%', size=[7, 5], axisLabelSize=25,

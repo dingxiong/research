@@ -2,7 +2,7 @@ from personalFunctions import *
 from py_CQCGL1d import *
 from py_CQCGL2d import *
 
-case = 40
+case = 120
 
 labels = ["IFRK4(3)", "IFRK5(4)",
           "ERK4(3)2(2)", "ERK4(3)3(3)", "ERK4(3)4(3)", "ERK5(4)5(4)",
@@ -62,13 +62,18 @@ if case == 30:
 # 1d cqcgl
 if case == 40:
     """
-    plot 1d cqcgl for the const time step
+    plot 1d cqcgl of heat map / configuration figure for the const time step,
+    time step adaption and comoving frame methods
     """
     N, d = 1024, 50
     Bi, Gi = 0.8, -0.6
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     cp = CQCGLplot(cgl)
+
+    ###################
+    # the case with constant time step
+    ################### 
     aa = np.loadtxt('data/aa.dat')
 
     # plot the heat map
@@ -96,6 +101,70 @@ if case == 40:
     ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, ls='-', c='b')
     ax.locator_params(axis='y', nbins=4)
     ax2d(fig, ax)
+
+    ###################
+    # the case with static frame time step adaption
+    ################### 
+    aa = np.loadtxt('data/aaAdapt_Cox_Matthews.dat')
+    Ts = np.loadtxt('data/TsAdapt_Cox_Matthews.dat')
+    
+    AA = cgl.Fourier2Config(aa)
+    Aamp = np.abs(AA)
+    fig, ax = pl2d(size=[4, 5], labs=[r'$x$', r'$t$'], axisLabelSize=25, tickSize=18)
+    im = ax.imshow(Aamp, cmap=plt.get_cmap('jet'), extent=[0, d, 0, 20],
+                   aspect='auto', origin='lower')
+    yls = [0, 5, 10, 15, 20]
+    ids = [bisect_left(Ts, yl) for yl in yls]
+    yts = [x / float(Ts.size) * 20 for x in ids]
+    ax.set_yticks(yts)
+    ax.set_yticklabels(yls)
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax = dr.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im, cax=cax, ticks=[0, 1, 2, 3])
+    ax2d(fig, ax)
+
+    aa = np.loadtxt('data/aaAdapt_SSPP43.dat')
+    Ts = np.loadtxt('data/TsAdapt_SSPP43.dat')
+    
+    AA = cgl.Fourier2Config(aa)
+    Aamp = np.abs(AA)
+    fig, ax = pl2d(size=[4, 5], labs=[r'$x$', r'$t$'], axisLabelSize=25, tickSize=18)
+    im = ax.imshow(Aamp, cmap=plt.get_cmap('jet'), extent=[0, d, 0, 20],
+                   aspect='auto', origin='lower')
+    yls = [0, 5, 10, 15, 20]
+    ids = [bisect_left(Ts, yl) for yl in yls]
+    yts = [x / float(Ts.size) * 20 for x in ids]
+    ax.set_yticks(yts)
+    ax.set_yticklabels(yls)
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax = dr.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im, cax=cax, ticks=[0, 1, 2, 3])
+    ax2d(fig, ax)
+
+    ###################
+    # the case with comoving frame time step adaption
+    ################### 
+    aa = np.loadtxt('data/aaCom.dat')
+    Ts = np.loadtxt('data/TsCom.dat')
+    
+    AA = cgl.Fourier2Config(aa)
+    Aamp = np.abs(AA)
+    fig, ax = pl2d(size=[4, 5], labs=[r'$x$', r'$t$'], axisLabelSize=25, tickSize=18)
+    im = ax.imshow(Aamp, cmap=plt.get_cmap('jet'), extent=[0, d, 0, 20],
+                   aspect='auto', origin='lower')
+    yls = [0, 5, 10, 15, 20]
+    ids = [bisect_left(Ts, yl) for yl in yls]
+    yts = [x / float(Ts.size) * 20 for x in ids]
+    ax.set_yticks(yts)
+    ax.set_yticklabels(yls)
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax = dr.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im, cax=cax, ticks=[0, 1, 2, 3])
+    ax2d(fig, ax)
+
 
 if case == 50:
     """
@@ -179,7 +248,7 @@ if case == 70:
     plt.show(block=False)
     # ax2d(fig, ax, loc='upper left')
     
-if case == 66:
+if case == 80:
     """
     same as case 65 but in comoving frame
     plot the time steps used in the process
@@ -204,19 +273,19 @@ if case == 66:
     ax.locator_params(axis='x', nbins=5)
     ax2d(fig, ax, loc='upper left')
 
-if case == 67:
+if case == 90:
     """
     static frame
     plot the relative error, Nab, Nn vs rtol
     """
-    err = np.loadtxt('data/cqcgl1d_N70_stat.dat')
+    err = np.loadtxt('data/cqcgl1d_N70_stat1.dat')
     rtol = err[:, 0]
     
     # plot relative error
     fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', 'relative error'],
                    axisLabelSize=20, tickSize=15,
                    # xlim=[1e-8, 5e-3],
-                   ylim=[1e-9, 3e-2],
+                   # ylim=[1e-9, 3e-2],
                    xscale='log',
                    yscale='log')
     for i in range(Nscheme):
@@ -229,10 +298,10 @@ if case == 67:
     # plot Nab
     fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Nab$'],
                    axisLabelSize=20, tickSize=15,
-                   ylim=[4e2, 2400],
+                   # ylim=[4e2, 2400],
                    # yscale='log',
                    xscale='log')
-    for i in range(4):
+    for i in range(2, 6):
         ax.plot(rtol, err[:, 4*i+2], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
     ax.locator_params(axis='y', nbins=5)
@@ -242,7 +311,7 @@ if case == 67:
     # plot Nn
     fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Nn$'],
                    axisLabelSize=20, tickSize=15,
-                   ylim=[5e4, 1e9],
+                   # ylim=[5e4, 1e9],
                    xscale='log', yscale='log')
     for i in range(Nscheme):
         ax.plot(rtol, err[:, 4*i+3], lw=1.5, marker=mks[i], mfc='none',
@@ -254,7 +323,7 @@ if case == 67:
     # plot Wt
     fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Wt$'],
                    axisLabelSize=20, tickSize=15,
-                   ylim=[2e0, 1e4],
+                   # ylim=[2e0, 1e4],
                    xscale='log', yscale='log')
     for i in range(Nscheme):
         ax.plot(rtol, err[:, 4*i+4], lw=1.5, marker=mks[i], mfc='none',
@@ -322,15 +391,15 @@ if case == 68:
     ax.locator_params(axis='x', numticks=5)
     ax2d(fig, ax, loc='upper right')
 
-if case == 69:
+if case == 120:
     """
     Compare the accuracy of static and comoving frames
     """
-    err = np.loadtxt('data/cqcgl1d_N70_stat.dat')
-    err2 = np.loadtxt('data/cqcgl1d_N70_comoving.dat')
+    err = np.loadtxt('data/cqcgl1d_N70_stat0.dat')
+    err2 = np.loadtxt('data/cqcgl1d_N70_stat1.dat')
     rtol = err[:, 0]
 
-    for i in range(4):
+    for i in range(2, 6):
         fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', 'relative error'],
                        axisLabelSize=20, tickSize=15,
                        # xlim=[1e-8, 5e-3],
@@ -350,7 +419,7 @@ if case == 69:
 
 ###############################################################################
 # 2d cqcgl
-if case == 150:
+if case == 250:
     """
     check the integration process is correct.
     Save the figure and compare

@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N50
+#define N70
 
 using namespace MyH5;
 using namespace std;
@@ -73,6 +73,7 @@ int main(){
 #ifdef N15
     //====================================================================================================
     // test a single method to see whether there is a bug
+    // Also, save the state for orbits 
     const int N = 1024; 
     const double d = 50;
     double Bi = 0.8, Gi = -0.6;
@@ -84,10 +85,35 @@ int main(){
     VectorXd a0 = cgl2.Config2Fourier(A0);    
     double T = 20;
 
-    cgl.setScheme(scheme[1]);	
+    cgl.setScheme("Cox_Matthews");	
     ArrayXXd aa = cgl.intgC(a0, 0.002, T, 50);
     savetxt("aa.dat", aa.transpose());
+    
+    // save for time adaption integrated orbit
+    if(true){
+	cgl.eidc.rtol = 1e-10;
 
+	cgl.setScheme("Cox_Matthews");
+	ArrayXXd aaAdapt = cgl.intg(a0, T/(1<<15), T, 400);
+	savetxt("aaAdapt_Cox_Matthews.dat", aaAdapt.transpose());
+	savetxt("TsAdapt_Cox_Matthews.dat", cgl.Ts);
+
+	cgl.setScheme("SSPP43");
+	aaAdapt = cgl.intg(a0, T/(1<<15), T, 400);
+	savetxt("aaAdapt_SSPP43.dat", aaAdapt.transpose());
+	savetxt("TsAdapt_SSPP43.dat", cgl.Ts);
+    }
+
+    // save for time adaption orbit in comoving frame
+    if(true){
+	cgl.eidc.rtol = 1e-10;
+	cgl.setScheme("Cox_Matthews");
+	cgl.changeOmega(-17.667504892760448);
+	ArrayXXd aaCom = cgl.intg(a0, T/(1<<15), T, 200);
+	savetxt("aaCom.dat", aaCom.transpose());
+	savetxt("TsCom.dat", cgl.Ts);
+    }
+    
 #endif
 #ifdef N20
     //====================================================================================================
@@ -127,28 +153,6 @@ int main(){
 	cout << endl;
     }
     savetxt("cqcgl1d_N20_err.dat", erros);
-
-#endif
-#ifdef N25
-    //====================================================================================================
-    // fix the time step. try to look at the estimated local error of a single sheme
-    const int N = 1024; 
-    const double d = 50;
-    double Bi = 0.8, Gi = -0.6;
-
-    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
-    CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
- 
-    VectorXcd A0 = Gaussian(N, N/2, N/20, 1) + Gaussian(N, N/3, N/20, 0.4); 
-    VectorXd a0 = cgl2.Config2Fourier(A0);
-    double T = 40;
-    int n0 = 17, n1 = 6;
-    double h0 = T / (1<<n0);	// T / 2^17
-
-    cgl.setScheme("Cox_Matthews");	
-    // cgl.changeOmega(-17.667504892760448);
-    ArrayXXd aa = cgl.intgC(a0, h0, T, 1<<n1);
-    savetxt("ex0.dat", cgl.lte);
 #endif
 #ifdef N30
     //====================================================================================================
@@ -294,51 +298,55 @@ int main(){
 #endif
 #ifdef N70
     //====================================================================================================
-    // comoving frame integration.
+    // static & comoving frame integration with time step adaption turned on.
     // choose different rtol to obtain
     //      rtol vs global relative error
     //      rtol vs integration steps, N(x) evaluation times
     //      
     const int N = 1024; 
-    const double d = 30;
-    const double di = 0.06;
-    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    // cgl.changeOmega(-17.667504892760448);
-    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
- 
-    VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
-    VectorXd a0 = cgl2.Config2Fourier(A0);
-    double T = 4;
-    double h0 = T / (1<<20);	// T / 2^20
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
     
-    cgl.setScheme("Luan_Ostermann");
-    ArrayXd x0 = cgl.intgC(a0, h0, T, 1000000).rightCols(1);
+    VectorXcd A0 = Gaussian(N, N/2, N/30, 2.5) + Gaussian(N, 2*N/5, N/30, 0.2);
+    VectorXd a0 = cgl2.Config2Fourier(A0);    
+    double T = 20;
+    double h0 = T / (1<<18);	// T / 2^20    
+    double w[] = {0, -17.667504892760448};
 
     int n = 10;
     time_t t; 
-    
-    MatrixXd erros(n, 4*scheme.size()+1);
-    for(int i = 0; i < scheme.size(); i++) {
-	cgl.setScheme(scheme[i]);	
-	for(int j = 0, k=1; j < n; j++, k*=5){
-	    double rtol = k*1e-14;
-	    cgl.eidc.rtol = rtol;
-	    if(i == 0) {
-		erros(j, 0) = rtol; 
+	
+    for(int p = 0; p < 2; p++){
+	cgl.changeOmega(w[p]);
+	cgl.setScheme("Luan_Ostermann");
+	ArrayXd x0 = cgl.intgC(a0, h0, T, 1000000).rightCols(1);
+
+	MatrixXd erros(n, 4*scheme.size()+1);
+	for(int i = 0; i < scheme.size(); i++) {
+	    cgl.setScheme(scheme[i]);	
+	    for(int j = 0, k=1; j < n; j++, k*=5){
+		double rtol = k*1e-13;
+		cgl.eidc.rtol = rtol;
+		if(i == 0) {
+		    erros(j, 0) = rtol; 
+		}
+		t = clock();
+		ArrayXd xf = cgl.intg(a0, T/(1<<12), T, 1000000).rightCols(1);
+		t = clock() - t;
+		double err = (xf - x0).abs().maxCoeff() / x0.abs().maxCoeff();
+		erros(j, 4*i+1) = err; 
+		erros(j, 4*i+2) = cgl.eidc.NCalCoe;
+		erros(j, 4*i+3) = cgl.eidc.NCallF;
+		erros(j, 4*i+4) = static_cast<double>(t) / CLOCKS_PER_SEC;
+		cout << err << ' ';
 	    }
-	    t = clock();
-	    ArrayXXd aa = cgl.intg(a0, T/(1<<12), T, 1000000);
-	    t = clock() - t;
-	    double err = (aa.rightCols(1) - x0).abs().maxCoeff() / x0.abs().maxCoeff();
-	    erros(j, 4*i+1) = err; 
-	    erros(j, 4*i+2) = cgl.eidc.NCalCoe;
-	    erros(j, 4*i+3) = cgl.eidc.NCallF;
-	    erros(j, 4*i+4) = static_cast<double>(t) / CLOCKS_PER_SEC;
-	    cout << err << ' ';
+	    cout << endl;
 	}
-	cout << endl;
+	savetxt("cqcgl1d_N70_stat" + to_string(p) + ".dat", erros);
     }
-    savetxt("cqcgl1d_N70_stat.dat", erros);
 #endif
 #ifdef N80
     //====================================================================================================

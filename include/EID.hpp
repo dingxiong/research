@@ -53,7 +53,7 @@ public:
         {"Cox_Matthews",        Scheme(4,      5,    5,      4,      4)},
         {"Krogstad",            Scheme(4,      5,    5,      8,      4)},
         {"Hochbruck_Ostermann", Scheme(5,      5,    5,      11,     4)},
-	{"Luan_Ostermann",      Scheme(8,      9,    9,      23,     8)},
+	{"Luan_Ostermann",      Scheme(8,      9,    9,      23,     5)},
 	{"IFRK43",              Scheme(4,      5,    5,      0,      4)},
 	{"IFRK54",              Scheme(6,      7,    7,      0,      5)},
 	{"SSPP43",              Scheme(3,      4,    24,     0,      4)}               

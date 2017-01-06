@@ -2,7 +2,7 @@ from py_CQCGL1d import *
 from personalFunctions import *
 import matplotlib.gridspec as gridspec
 
-case = 40
+case = 60
 
 
 if case == 10:
@@ -12,7 +12,7 @@ if case == 10:
     saveData = np.loadtxt("BiGiReqStab.dat")
     cs = {0: 'g', 1: 'm', 2: 'c', 4: 'r', 6: 'b'}#, 8: 'y', 56: 'r', 14: 'grey'}
     ms = {0: 's', 1: '^', 2: '+', 4: 'o', 6: 'D'}#, 8: '8', 56: '4', 14: 'v'}
-    fig, ax = pl2d(size=[8, 6], labs=[r'$G_i$', r'$B_i$'], axisLabelSize=25,
+    fig, ax = pl2d(size=[8, 6], labs=[r'$\gamma_i$', r'$\beta_i$'], axisLabelSize=25,
                    tickSize=20, xlim=[-6, 0], ylim=[-4, 6])
     for item in saveData:
         Gi, Bi, m = item
@@ -256,4 +256,33 @@ if case == 50:
     ax3d(fig, ax)
     
     
+if case == 60:
+    """
+    plot the stability table of the rpos
+    """
+    N, d = 1024, 50
 
+    fileName = '../../data/cgl/rpoBiGiEV.h5'
+    
+    cs = {0: 'g'}#, 10: 'm', 2: 'c', 4: 'r', 6: 'b', 8: 'y'}#, 56: 'r', 14: 'grey'}
+    ms = {0: 's'}#, 10: '^', 2: '+', 4: 'o', 6: 'D', 8: 'v'}#, 56: '4', 14: 'v'}
+
+    fig, ax = pl2d(size=[8, 6], labs=[r'$\gamma_i$', r'$\beta_i$'], axisLabelSize=25, tickSize=20,
+                   xlim=[-5.7, -3.95], ylim=[1.8, 6])
+    for i in range(39):
+        Bi = 1.9 + i*0.1
+        for j in range(55):
+            Gi = -5.6 + 0.1*j
+            rpo = CQCGLrpo()
+            if rpo.checkExist(fileName, rpo.toStr(Bi, Gi, 1) + '/er'):
+                x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi(fileName, Bi, Gi, 1, flag=2)
+                m, ep, accu = numStab(e, nmarg=3, tol=1e-4, flag=1)
+                ax.scatter(Gi, Bi, s=60, edgecolors='none',
+                           marker=ms.get(m, 'o'), c=cs.get(m, 'r'))
+
+    #ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+    #ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+    #ax.grid(which='major', linewidth=2)
+    #ax.grid(which='minor', linewidth=1)
+    ax2d(fig, ax)
+    

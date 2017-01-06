@@ -239,24 +239,23 @@ int main(){
     // Comoving frame integration
     // set the rtol = 1e-10 and output time steps
     const int N = 1024; 
-    const double d = 30;
-    const double di = 0.06;
-    CQCGL1dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    cgl.changeOmega(-176.67504941219335);
-    CQCGL1d cgl2(N, d, 4, 0.8, 0.01, di, -1, 4);
-    
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
     cgl.eidc.rtol = 1e-10;
-    
-    VectorXcd A0 = Gaussian(N, N/2, N/10, 3) + Gaussian(N, N/4, N/10, 0.5);
+    cgl.changeOmega(-17.667504892760448);
+
+    VectorXcd A0 = Gaussian(N, N/2, N/30, 2.5) + Gaussian(N, 2*N/5, N/30, 0.2);
     VectorXd a0 = cgl2.Config2Fourier(A0);
-    double T = 4;
+    double T = 20;
     double h0 = T / (1<<12);	// T / 2^12
     
     for(int i = 0; i < scheme.size(); i++) {
 	cgl.setScheme(scheme[i]);
 	ArrayXXd aa = cgl.intg(a0, h0, T, 1<<5);
 	savetxt("cqcgl1d_N60_comoving_hs_"+to_string(i)+".dat", cgl.hs);
-	// cout << cgl.hs << endl;
     }
 #endif
 #ifdef N65
@@ -321,7 +320,7 @@ int main(){
 	
     for(int p = 0; p < 2; p++){
 	cgl.changeOmega(w[p]);
-	cgl.setScheme("Luan_Ostermann");
+	cgl.setScheme("IFRK54");
 	ArrayXd x0 = cgl.intgC(a0, h0, T, 1000000).rightCols(1);
 
 	MatrixXd erros(n, 4*scheme.size()+1);

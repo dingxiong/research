@@ -2,7 +2,7 @@ from personalFunctions import *
 from py_CQCGL1d import *
 from py_CQCGL2d import *
 
-case = 120
+case = 90
 
 labels = ["IFRK4(3)", "IFRK5(4)",
           "ERK4(3)2(2)", "ERK4(3)3(3)", "ERK4(3)4(3)", "ERK5(4)5(4)",
@@ -250,7 +250,7 @@ if case == 70:
     
 if case == 80:
     """
-    same as case 65 but in comoving frame
+    same as case 70 but in comoving frame
     plot the time steps used in the process
     """
     hs = []
@@ -258,12 +258,12 @@ if case == 80:
         x = np.loadtxt('data/cqcgl1d_N60_comoving_hs_' + str(i) + '.dat')
         hs.append(x)
     
-    T = 4.0
+    T = 20.0
     lss = ['--', '-.', ':', '-', '-', '-', '-']
     fig, ax = pl2d(size=[6, 5], labs=[r'$t$', r'$h$'],
                    axisLabelSize=20, tickSize=15,
                    # xlim=[1e-8, 5e-3],
-                   ylim=[5e-6, 2e-1],
+                   ylim=[2e-6, 2e-2],
                    yscale='log')
     for i in range(Nscheme):
         n = len(hs[i])
@@ -271,14 +271,17 @@ if case == 80:
         ax.plot(x, hs[i], lw=1.5, ls=lss[i], label=labels[i])
     ax.locator_params(axis='y', numticks=5)
     ax.locator_params(axis='x', nbins=5)
-    ax2d(fig, ax, loc='upper left')
+    fig.tight_layout(pad=0)
+    ax.legend(loc='lower right', ncol=2)
+    plt.show(block=False)
+    # ax2d(fig, ax, loc='upper left')
 
 if case == 90:
     """
     static frame
     plot the relative error, Nab, Nn vs rtol
     """
-    err = np.loadtxt('data/cqcgl1d_N70_stat1.dat')
+    err = np.loadtxt('data/cqcgl1d_N70_stat0.dat')
     rtol = err[:, 0]
     
     # plot relative error

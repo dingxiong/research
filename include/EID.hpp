@@ -71,16 +71,18 @@ public:
 				   If CN <= 0, then not split.
 				*/
 
-    double a1, a2, a3;
+    double a1, a2, a3;		// for split step method 
 
     ////////////////////////////////////////////////////////////
     // time adaptive method related parameters
     double rtol = 1e-8;
     double nu = 0.9;	       /* safe factor */
-    double mumax = 2.5;	       /* maximal time step increase factor */
+    double mumax = 4;	       /* maximal time step increase factor */
     double mumin = 0.4;	       /* minimal time step decrease factor */
     double mue = 1.25;	       /* upper lazy threshold */
     double muc = 0.85;	       /* lower lazy threshold */
+    //double mue = 1.35;
+    //double  muc = 0.8;
 
     int NCalCoe = 0;	      /* times to evaluate coefficient */
     int NReject = 0;	      /* times that new state is rejected */
@@ -102,13 +104,6 @@ public:
 	this->N = N;
     }
     ////////////////////////////////////////////////////////////
-
-    /*
-      inline void 
-      setScheme(std::string x){
-      scheme = names[x];
-      }
-    */
 
     template<class NL, class SS>
     void 
@@ -153,7 +148,7 @@ public:
 		Y[0] = Y[ns];
 		if ( NSteps % skip_rate == 0 || TimeEnds) saveState(Y[0], t, h, err);
 	    }
-	    else {
+	    else { 
 		NReject++;
 		TimeEnds = false;
 	    }
@@ -219,15 +214,14 @@ public:
 	    doChange = false;
 	}
 	else {
-	    doAccept = false;
+	    doAccept = false; 
 	    if (s > muc) 
 		mu = muc;
 	    else if (s > mumin) 
 		mu = s;
 	    else 
-		mu = mumin;
+		mu = mumin; // cout << mu << '\t' << rtol << '\t' << err << '\t' << NSteps << endl;
 	}
-
 	return mu;
     }
     
@@ -254,7 +248,6 @@ public:
 	    nl(Y[4], N[4], t+h);
 	
 	    err = (b[3]*(N[4] - N[3])).abs().maxCoeff() / Y[4].abs().maxCoeff(); 
-	    //cout << b[3].matrix().norm() << '\t' << (N[4] - N[3]).matrix().norm() << endl;
 	}
 	else if (scheme == "Krogstad") {
 	    nl(Y[0], N[0], t);	

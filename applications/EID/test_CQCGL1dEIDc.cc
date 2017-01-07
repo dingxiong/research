@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N70
+#define N75
 
 using namespace MyH5;
 using namespace std;
@@ -113,7 +113,6 @@ int main(){
 	savetxt("aaCom.dat", aaCom.transpose());
 	savetxt("TsCom.dat", cgl.Ts);
     }
-    
 #endif
 #ifdef N20
     //====================================================================================================
@@ -220,7 +219,7 @@ int main(){
 
     CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
     CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
-    cgl.eidc.rtol = 1e-10;
+    cgl.eidc.rtol = 5e-9;
 
     VectorXcd A0 = Gaussian(N, N/2, N/30, 2.5) + Gaussian(N, 2*N/5, N/30, 0.2);
     VectorXd a0 = cgl2.Config2Fourier(A0);
@@ -345,6 +344,45 @@ int main(){
 	    cout << endl;
 	}
 	savetxt("cqcgl1d_N70_stat" + to_string(p) + ".dat", erros);
+    }
+#endif
+#ifdef N75
+    //====================================================================================================
+    // figure out why the Luan_Ostermann method produces large Nab
+    const int N = 1024; 
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    cgl.changeOmega(-17.667504892760448);
+    CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
+    
+    VectorXcd A0 = Gaussian(N, N/2, N/30, 2.5) + Gaussian(N, 2*N/5, N/30, 0.2);
+    VectorXd a0 = cgl2.Config2Fourier(A0);    
+    double T = 20;
+    double h0 = T / (1<<18);	// T / 2^20    
+    
+    int n = 10;
+    time_t t; 
+
+    cgl.setScheme("Luan_Ostermann");
+    ArrayXd x0 = cgl.intgC(a0, h0, T, 1000000).rightCols(1);
+
+    //cgl.setScheme("Hochbruck_Ostermann");
+    //cgl.setScheme("IFRK54");
+    for(int j = 0, k=1; j < n; j++, k*=5){
+	double rtol = k*1e-13;
+	cgl.eidc.rtol = rtol;
+	t = clock();
+	ArrayXd xf = cgl.intg(a0, T/(1<<12), T, 1000000).rightCols(1);
+	t = clock() - t;
+	double err = (xf - x0).abs().maxCoeff() / x0.abs().maxCoeff();
+	cout << err << '\t'
+	     << static_cast<double>(t) / CLOCKS_PER_SEC << '\t'
+	     << cgl.eidc.NCallF << '\t'
+	     << cgl.eidc.NCalCoe << '\t'
+	     << cgl.eidc.NSteps << '\t'
+	     << cgl.eidc.NReject << endl;
     }
 #endif
 #ifdef N80

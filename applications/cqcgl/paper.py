@@ -2,7 +2,7 @@ from py_CQCGL1d import *
 from personalFunctions import *
 import matplotlib.gridspec as gridspec
 
-case = 60
+case = 10
 
 
 if case == 10:

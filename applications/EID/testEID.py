@@ -281,59 +281,77 @@ if case == 90:
     static frame
     plot the relative error, Nab, Nn vs rtol
     """
-    err = np.loadtxt('data/cqcgl1d_N70_stat0.dat')
+    err = np.loadtxt('data/cqcgl1d_N70_stat1.dat')
     rtol = err[:, 0]
     
+    fig = plt.figure(figsize=[12, 10])
+    
     # plot relative error
-    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', 'relative error'],
-                   axisLabelSize=20, tickSize=15,
-                   # xlim=[1e-8, 5e-3],
-                   # ylim=[1e-9, 3e-2],
-                   xscale='log',
-                   yscale='log')
+    ax = fig.add_subplot('221')
+    ax.text(0.5, 0.9, '(a)', horizontalalignment='center',
+         transform=ax.transAxes, fontsize=18, color='black')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel(r'$rtol$', fontsize=20)
+    ax.set_ylabel('relative error', fontsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=15)
     for i in range(Nscheme):
         ax.plot(rtol, err[:, 4*i+1], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
     ax.locator_params(axis='y', numticks=5)
     ax.locator_params(axis='x', numticks=5)
-    ax2d(fig, ax, loc='bottem right')
+    ax.legend(loc='bottem right', fontsize=12)
     
     # plot Nab
-    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Nab$'],
-                   axisLabelSize=20, tickSize=15,
-                   # ylim=[4e2, 2400],
-                   # yscale='log',
-                   xscale='log')
+    ax = fig.add_subplot('222')
+    ax.text(0.5, 0.9, '(b)', horizontalalignment='center',
+         transform=ax.transAxes, fontsize=18, color='black')
+    ax.set_xscale('log')
+    ax.set_xlabel(r'$rtol$', fontsize=20)
+    ax.set_ylabel(r'$Nab$', fontsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=15)
     for i in range(2, 6):
         ax.plot(rtol, err[:, 4*i+2], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
     ax.locator_params(axis='y', nbins=5)
     ax.locator_params(axis='x', numticks=5)
-    ax2d(fig, ax, loc='upper left')
+    ax.legend(loc='bottem right', fontsize=12)
 
     # plot Nn
-    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Nn$'],
-                   axisLabelSize=20, tickSize=15,
-                   # ylim=[5e4, 1e9],
-                   xscale='log', yscale='log')
+    ax = fig.add_subplot('223')
+    ax.text(0.1, 0.9, '(c)', horizontalalignment='center',
+         transform=ax.transAxes, fontsize=18, color='black')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel(r'$rtol$', fontsize=20)
+    ax.set_ylabel(r'$Nn$', fontsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=15)
     for i in range(Nscheme):
         ax.plot(rtol, err[:, 4*i+3], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
     ax.locator_params(axis='y', numticks=5)
     ax.locator_params(axis='x', numticks=5)
-    ax2d(fig, ax, loc='upper right')
+    ax.legend(loc='upper right', fontsize=12)
 
     # plot Wt
-    fig, ax = pl2d(size=[6, 5], labs=[r'$rtol$', r'$Wt$'],
-                   axisLabelSize=20, tickSize=15,
-                   # ylim=[2e0, 1e4],
-                   xscale='log', yscale='log')
+    ax = fig.add_subplot('224')
+    ax.text(0.1, 0.9, '(d)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=18, color='black')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel(r'$rtol$', fontsize=20)
+    ax.set_ylabel(r'$Wt$', fontsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=15)
     for i in range(Nscheme):
         ax.plot(rtol, err[:, 4*i+4], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
     ax.locator_params(axis='y', numticks=5)
     ax.locator_params(axis='x', numticks=5)
-    ax2d(fig, ax, loc='upper right')
+    ax.legend(loc='upper right', fontsize=12)
+
+    ## 
+    fig.tight_layout(pad=1)
+    plt.show(block=False)
 
 if case == 68:
     """

@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N75
+#define N15
 
 using namespace MyH5;
 using namespace std;
@@ -89,6 +89,9 @@ int main(){
     ArrayXXd aa = cgl.intgC(a0, 0.002, T, 50);
     savetxt("aa.dat", aa.transpose());
     
+    aa = cgl.intgC(a0, 0.002, T, 5);
+    savetxt("a0NoAdapt.dat", aa.row(0).transpose());
+    
     // save for time adaption integrated orbit
     if(true){
 	cgl.eidc.rtol = 1e-10;
@@ -112,6 +115,9 @@ int main(){
 	ArrayXXd aaCom = cgl.intg(a0, T/(1<<15), T, 200);
 	savetxt("aaCom.dat", aaCom.transpose());
 	savetxt("TsCom.dat", cgl.Ts);
+
+	aaCom = cgl.intgC(a0, 0.002, T, 5);
+	savetxt("a0ComNoAdapt.dat", aaCom.row(0).transpose());
     }
 #endif
 #ifdef N20
@@ -219,7 +225,7 @@ int main(){
 
     CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
     CQCGL1d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1);
-    cgl.eidc.rtol = 5e-9;
+    cgl.eidc.rtol = 1e-10;
 
     VectorXcd A0 = Gaussian(N, N/2, N/30, 2.5) + Gaussian(N, 2*N/5, N/30, 0.2);
     VectorXd a0 = cgl2.Config2Fourier(A0);
@@ -322,7 +328,7 @@ int main(){
 	cgl.setScheme("IFRK54");
 	ArrayXd x0 = cgl.intgC(a0, h0, T, 1000000).rightCols(1);
 
-	MatrixXd erros(n, 4*scheme.size()+1);
+	MatrixXd erros(n, 6*scheme.size()+1);
 	for(int i = 0; i < scheme.size(); i++) {
 	    cgl.setScheme(scheme[i]);	
 	    for(int j = 0, k=1; j < n; j++, k*=5){
@@ -335,10 +341,13 @@ int main(){
 		ArrayXd xf = cgl.intg(a0, T/(1<<12), T, 1000000).rightCols(1);
 		t = clock() - t;
 		double err = (xf - x0).abs().maxCoeff() / x0.abs().maxCoeff();
-		erros(j, 4*i+1) = err; 
-		erros(j, 4*i+2) = cgl.eidc.NCalCoe;
-		erros(j, 4*i+3) = cgl.eidc.NCallF;
-		erros(j, 4*i+4) = static_cast<double>(t) / CLOCKS_PER_SEC;
+		erros.row(j).segment(6*i+1, 6) << 
+		    err,  
+		    cgl.eidc.NCalCoe, 
+		    cgl.eidc.NCallF,
+		    cgl.eidc.NReject,
+		    cgl.eidc.TotalTime,
+		    cgl.eidc.CoefficientTime;
 		cout << err << ' ';
 	    }
 	    cout << endl;

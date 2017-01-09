@@ -2,6 +2,8 @@
 #define EID_H
 
 #include <cmath>
+#include <ctime>
+#include <chrono>
 #include <iostream>
 #include <unordered_map>
 #include <Eigen/Dense>
@@ -88,6 +90,8 @@ public:
     int NReject = 0;	      /* times that new state is rejected */
     int NCallF = 0;	      /* times to call velocity function f */
     int NSteps = 0;	      /* total number of integrations steps */
+    double TotalTime = 0;
+    double CoefficientTime = 0;
         
     double err = 0;	 /* LTE : local truncation error estimation */
 
@@ -109,6 +113,8 @@ public:
     void 
     intg(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h0, 
 	 const int skip_rate){
+	auto t_start = std::chrono::high_resolution_clock::now();
+	
 	int ns = names.at(scheme).nstage;
 	int od = names.at(scheme).order;
 	int nnl = names.at(scheme).nnl;
@@ -118,9 +124,11 @@ public:
 	NReject = 0;
 	NCallF = 0;    
 	NSteps = 0;
-
+	TotalTime = 0;
+	CoefficientTime = 0;
+	
 	double h = h0;
-	calCoe(h);
+	CoefficientTime += calCoe(h);
 	NCalCoe += nab;
 	
 	double t = t0;
@@ -132,7 +140,7 @@ public:
 
 	    if ( t + h > tend){
 		h = tend - t;
-		calCoe(h);
+		CoefficientTime += calCoe(h);
 		NCalCoe += nab;
 		TimeEnds = true;
 	    }
@@ -148,17 +156,21 @@ public:
 		Y[0] = Y[ns];
 		if ( NSteps % skip_rate == 0 || TimeEnds) saveState(Y[0], t, h, err);
 	    }
-	    else { 
+	    else {
 		NReject++;
 		TimeEnds = false;
 	    }
 	
 	    if (doChange) {
 		h *= mu;
-		calCoe(h);
+		CoefficientTime += calCoe(h);
 		NCalCoe += nab;
 	    }
 	}
+	
+	auto t_end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> t_elapse = t_end - t_start;
+	TotalTime = t_elapse.count();
     }
     
     template<class NL, class SS>
@@ -403,9 +415,12 @@ public:
 	return Y[0] + h/6* (N[0] + 2*(N[1]+N[2]) + N[3]);
     }
 
-    void 
+    /// calculate the coefficients of Butcher table
+    /// @return time used in seconds
+    double
     calCoe(double h){
-
+	auto t_start = std::chrono::high_resolution_clock::now();
+	
 	int sL = (*L).size();	// size of L
 	int p = 1;
 	int n = sL;
@@ -676,6 +691,11 @@ public:
 	    fprintf(stderr, "Please indicate the scheme !\n");
 	    exit(1);
 	}
+	
+	auto t_end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> t_elapse = t_end - t_start;
+	
+	return t_elapse.count();
     }
     
     inline 

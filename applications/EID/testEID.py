@@ -2,7 +2,7 @@ from personalFunctions import *
 from py_CQCGL1d import *
 from py_CQCGL2d import *
 
-case = 90
+case = 40
 
 labels = ["IFRK4(3)", "IFRK5(4)",
           "ERK4(3)2(2)", "ERK4(3)3(3)", "ERK4(3)4(3)", "ERK5(4)5(4)",
@@ -164,7 +164,49 @@ if case == 40:
     cax = dr.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im, cax=cax, ticks=[0, 1, 2, 3])
     ax2d(fig, ax)
+    
+    ####################
+    # plot the high frequency phase rotation
+    ####################
+    aa = np.loadtxt('data/a0NoAdapt.dat')
+    fig = plt.figure(figsize=[6, 5])
+    ax = fig.add_subplot('111')
+    ax.set_xlabel(r'$t$', fontsize=25)
+    ax.set_ylabel(r'$Re(a_0)$', fontsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    ax.plot(np.linspace(0, 20, aa.size), aa, lw=1, c='r')
+    plt.tight_layout(pad=0)
+    plt.show(block=False)
 
+    ####################
+    # plot the phase rotation and the profile of req
+    ####################
+    aa = np.loadtxt('data/a0ComNoAdapt.dat')
+    req = CQCGLreq(cgl)
+    a0, wth0, wphi0, err0 = req.readReqBiGi('../../data/cgl/reqBiGi.h5',
+                                            Bi, Gi, 1)
+    AA = cgl.Fourier2Config(a0)
+    Aamp = np.abs(AA)    
+    
+    fig = plt.figure(figsize=[12, 5])
+    ax = fig.add_subplot('121')
+    ax.text(0.1, 0.9, '(a)', horizontalalignment='center',
+         transform=ax.transAxes, fontsize=18, color='black')
+    ax.set_xlabel(r'$x$', fontsize=25)
+    ax.set_ylabel(r'$|A|$', fontsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2)
+
+    ax = fig.add_subplot('122')
+    ax.text(0.1, 0.9, '(b)', horizontalalignment='center',
+         transform=ax.transAxes, fontsize=18, color='black')
+    ax.set_xlabel(r'$t$', fontsize=25)
+    ax.set_ylabel(r'$Re(\tilde{a}_0)$', fontsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    ax.plot(np.linspace(0, 20, aa.size), aa, lw=1, c='r')
+
+    plt.tight_layout(pad=0)
+    plt.show(block=False)
 
 if case == 50:
     """
@@ -263,7 +305,7 @@ if case == 80:
     fig, ax = pl2d(size=[6, 5], labs=[r'$t$', r'$h$'],
                    axisLabelSize=20, tickSize=15,
                    # xlim=[1e-8, 5e-3],
-                   ylim=[2e-6, 2e-2],
+                   ylim=[1e-6, 1e-2],
                    yscale='log')
     for i in range(Nscheme):
         n = len(hs[i])
@@ -278,32 +320,34 @@ if case == 80:
 
 if case == 90:
     """
-    static frame
+    static & comoving frame
     plot the relative error, Nab, Nn vs rtol
     """
-    err = np.loadtxt('data/cqcgl1d_N70_stat1.dat')
+    loadFlag = 1
+
+    err = np.loadtxt('data/cqcgl1d_N70_stat' + ('0' if loadFlag == 0 else '1') + '.dat')
     rtol = err[:, 0]
     
-    fig = plt.figure(figsize=[12, 10])
+    fig = plt.figure(figsize=[12, 15])
     
     # plot relative error
-    ax = fig.add_subplot('221')
+    ax = fig.add_subplot('321')
     ax.text(0.5, 0.9, '(a)', horizontalalignment='center',
          transform=ax.transAxes, fontsize=18, color='black')
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel(r'$rtol$', fontsize=20)
-    ax.set_ylabel('relative error', fontsize=20)
+    ax.set_ylabel('relative error', fontsize=15)
     ax.tick_params(axis='both', which='major', labelsize=15)
     for i in range(Nscheme):
-        ax.plot(rtol, err[:, 4*i+1], lw=1.5, marker=mks[i], mfc='none',
+        ax.plot(rtol, err[:, 6*i+1], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
     ax.locator_params(axis='y', numticks=5)
     ax.locator_params(axis='x', numticks=5)
     ax.legend(loc='bottem right', fontsize=12)
     
     # plot Nab
-    ax = fig.add_subplot('222')
+    ax = fig.add_subplot('322')
     ax.text(0.5, 0.9, '(b)', horizontalalignment='center',
          transform=ax.transAxes, fontsize=18, color='black')
     ax.set_xscale('log')
@@ -311,14 +355,14 @@ if case == 90:
     ax.set_ylabel(r'$Nab$', fontsize=20)
     ax.tick_params(axis='both', which='major', labelsize=15)
     for i in range(2, 6):
-        ax.plot(rtol, err[:, 4*i+2], lw=1.5, marker=mks[i], mfc='none',
+        ax.plot(rtol, err[:, 6*i+2], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
     ax.locator_params(axis='y', nbins=5)
     ax.locator_params(axis='x', numticks=5)
-    ax.legend(loc='bottem right', fontsize=12)
+    ax.legend(loc='right', fontsize=12)
 
     # plot Nn
-    ax = fig.add_subplot('223')
+    ax = fig.add_subplot('323')
     ax.text(0.1, 0.9, '(c)', horizontalalignment='center',
          transform=ax.transAxes, fontsize=18, color='black')
     ax.set_xscale('log')
@@ -327,15 +371,32 @@ if case == 90:
     ax.set_ylabel(r'$Nn$', fontsize=20)
     ax.tick_params(axis='both', which='major', labelsize=15)
     for i in range(Nscheme):
-        ax.plot(rtol, err[:, 4*i+3], lw=1.5, marker=mks[i], mfc='none',
+        ax.plot(rtol, err[:, 6*i+3], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
     ax.locator_params(axis='y', numticks=5)
     ax.locator_params(axis='x', numticks=5)
     ax.legend(loc='upper right', fontsize=12)
 
+    # plot NReject
+    ax = fig.add_subplot('324')
+    ax.text(0.9, 0.9, '(d)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=18, color='black')
+    ax.set_xscale('log')
+    # ax.set_yscale('log')
+    ax.set_xlabel(r'$rtol$', fontsize=20)
+    ax.set_ylabel(r'number of rejections', fontsize=15)
+    ax.set_ylim([0, 80] if loadFlag == 0 else [0, 250])
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    for i in range(Nscheme):
+        ax.plot(rtol, err[:, 6*i+4], lw=1.5, marker=mks[i], mfc='none',
+                ms=8, label=labels[i])
+    ax.locator_params(axis='y', numticks=5)
+    ax.locator_params(axis='x', numticks=5)
+    ax.legend(loc='upper left', ncol=2, fontsize=12)
+
     # plot Wt
-    ax = fig.add_subplot('224')
-    ax.text(0.1, 0.9, '(d)', horizontalalignment='center',
+    ax = fig.add_subplot('325')
+    ax.text(0.1, 0.9, '(e)', horizontalalignment='center',
             transform=ax.transAxes, fontsize=18, color='black')
     ax.set_xscale('log')
     ax.set_yscale('log')
@@ -343,11 +404,28 @@ if case == 90:
     ax.set_ylabel(r'$Wt$', fontsize=20)
     ax.tick_params(axis='both', which='major', labelsize=15)
     for i in range(Nscheme):
-        ax.plot(rtol, err[:, 4*i+4], lw=1.5, marker=mks[i], mfc='none',
+        ax.plot(rtol, err[:, 6*i+5], lw=1.5, marker=mks[i], mfc='none',
                 ms=8, label=labels[i])
     ax.locator_params(axis='y', numticks=5)
     ax.locator_params(axis='x', numticks=5)
     ax.legend(loc='upper right', fontsize=12)
+
+    # plot time of calculating coefficients / Wt
+    ax = fig.add_subplot('326')
+    ax.text(0.07, 0.9, '(f)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=18, color='black')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel(r'$rtol$', fontsize=20)
+    ax.set_ylabel(r'time ratio', fontsize=15)
+    ax.set_ylim([1e-6, 2e0])
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    for i in range(Nscheme):
+        ax.plot(rtol, err[:, 6*i+6]/err[:, 6*i+5], lw=1.5, marker=mks[i], mfc='none',
+                ms=8, label=labels[i])
+    ax.locator_params(axis='y', numticks=5)
+    ax.locator_params(axis='x', numticks=5)
+    ax.legend(loc='lower right', fontsize=12)
 
     ## 
     fig.tight_layout(pad=1)

@@ -2,7 +2,7 @@ from personalFunctions import *
 from py_CQCGL1d import *
 from py_CQCGL2d import *
 
-case = 40
+case = 80
 
 labels = ["IFRK4(3)", "IFRK5(4)",
           "ERK4(3)2(2)", "ERK4(3)3(3)", "ERK4(3)4(3)", "ERK5(4)5(4)",
@@ -305,7 +305,7 @@ if case == 80:
     fig, ax = pl2d(size=[6, 5], labs=[r'$t$', r'$h$'],
                    axisLabelSize=20, tickSize=15,
                    # xlim=[1e-8, 5e-3],
-                   ylim=[1e-6, 1e-2],
+                   ylim=[8e-6, 2e-2],
                    yscale='log')
     for i in range(Nscheme):
         n = len(hs[i])

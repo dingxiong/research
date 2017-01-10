@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N15
+#define N60
 
 using namespace MyH5;
 using namespace std;

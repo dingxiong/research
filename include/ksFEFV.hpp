@@ -23,6 +23,15 @@ KScalFE(const std::string fileName,
 	const double tol = 1e-15,
 	const int nqr = 1);
 
+Eigen::MatrixXd
+KSgetR(const std::string fileName,
+       const std::string ppType,
+       const int ppId,
+       const int L /* = 22 */,
+       const int MaxN /* = 80000 */,
+       const double tol /* = 1e-15 */,
+       const int nqr /* = 1 */);
+
 void 
 KScalWriteFE(const std::string inputfileName,
 	     const std::string outputfileName,

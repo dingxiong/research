@@ -1,7 +1,7 @@
 /* to comiple:
  * (Note : libksdim.a is static library, so the following order is important)
  *
- * h5c++ test_ksFEFV.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lksFEFV -lksint -lfftw3 -lmyH5 -lped
+ * h5c++ test_ksFEFV.cc -std=c++11 -O3 -march=corei7 -msse4 -msse2 -I$XDAPPS/eigen/include/eigen3 -I$RESH/include  -L$RESH/lib -lksFEFV -lksint -lmyfft -lfftw3 -literMethod -ldenseRoutines -lmyH5 -lped
  * 
  */
 
@@ -12,23 +12,25 @@
 #include <algorithm> 
 #include "ksFEFV.hpp"
 #include "myH5.hpp"
+#include "denseRoutines.hpp"
 
 
 using namespace std;
 using namespace Eigen;
 using namespace MyH5;
+using namespace denseRoutines;
 
 int main(){
     cout.precision(16);
 
-    switch (50) {
+    switch (5) {
 	
     case 1: {
 	/* calculate FE, FV for a single orbit */
 	const double L = 22;
 	const int nqr = 5; // spacing 	
 	const int MaxN = 2000;  // maximal iteration number for PED
-	const double tol = 1e-15; // torlearance for PED   
+	const double tol = 1e-12; // torlearance for PED   
 	const int trunc = 30; // number of vectors	
 	const size_t ppId = 33;
 	const string inputfileName = "../../data/ks22h001t120x64EV.h5";
@@ -36,8 +38,40 @@ int main(){
 	const string ppType = "rpo";
 	// KScalWriteFEFVInit(inputfileName, outputfileName, ppType, ppId, L, MaxN, tol, nqr, trunc);
 	auto tmp = KScalFEFV(inputfileName, ppType, ppId, L, MaxN, tol, nqr, trunc);
-	cout << tmp.second.col(0) << endl;
+	cout << tmp.first << endl;
 	
+	break;
+    }
+
+    case 5: {
+	const double L = 22;
+	const int nqr = 5; // spacing 	
+	const int MaxN = 2000;  // maximal iteration number for PED
+	const double tol = 1e-12; // torlearance for PED   
+	const int trunc = 30; // number of vectors	
+	const size_t ppId = 147;
+	const string inputfileName = "../../data/ks22h001t120x64EV.h5";
+	const string outputfileName = "ex.h5";
+	const string ppType = "ppo";
+	MatrixXd R = KSgetR(inputfileName, ppType, ppId, L, MaxN, tol, nqr);
+
+	int rs = R.rows(), cs = R.cols() / rs;
+	cout << rs << ' ' << cs << endl;
+	
+	VectorXd maxElements(cs/10);
+	for(int k = 0; k < cs/10; k++){
+	    MatrixXd r(MatrixXd::Identity(10, 10));
+	    for(int i = 0; i < cs; i++){
+		int index = (2 * cs - 1 - i - k*10) % cs;
+		r = R.middleCols(index*rs, rs).topLeftCorner(10, 10) * r;
+	    }
+	    r -= r.diagonal().asDiagonal(); // get rid of diagonal
+	    maxElements(k) = r.array().abs().maxCoeff();
+	    // cout << maxElements(k) << endl;	
+	}
+
+	savetxt("maxElement.dat", maxElements);
+
 	break;
     }
 

@@ -40,13 +40,14 @@ KScalFEFV(const string fileName,
     const int Nks = N + 2;
     
     // solve the Jacobian of this po.
-    KS ks(Nks, T/nstp, L);
-    std::pair<ArrayXXd, ArrayXXd> tmp2 = ks.intgj(a.col(0), nstp, 1, nqr);
-    MatrixXd daa = tmp2.second;
+    KS ks(Nks, L);
+    std::pair<ArrayXXd, ArrayXXd> tmp2 = ks.intgj(a.col(0), T/nstp, nstp, nqr);
+    MatrixXd daa = tmp2.second; 
+    daa = daa.rightCols(daa.cols() - daa.rows()).eval();
   
     // calculate the Flqouet exponents and vectors.
     PED ped;
-    ped.reverseOrderSize(daa); // reverse order.
+    ped.reverseOrder(daa); // reverse order.
     if(ppType.compare("ppo") == 0)
 	daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
     else // R*J for rpo
@@ -89,13 +90,14 @@ KScalFE(const string fileName,
     const int Nks = N + 2;
     
     // solve the Jacobian of this po.
-    KS ks(Nks, T/nstp, L);
-    pair<ArrayXXd, ArrayXXd> tmp2 = ks.intgj(a.col(0), nstp, 1, nqr);
+    KS ks(Nks, L);
+    pair<ArrayXXd, ArrayXXd> tmp2 = ks.intgj(a.col(0), T/nstp, nstp, nqr);
     MatrixXd daa = tmp2.second;
+    daa = daa.rightCols(daa.cols() - daa.rows()).eval();
   
     // calculate the Flqouet exponents and vectors.
     PED ped;
-    ped.reverseOrderSize(daa); // reverse order.
+    ped.reverseOrder(daa); // reverse order.
     if(ppType.compare("ppo") == 0)
 	daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
     else // R*J for rpo
@@ -104,6 +106,44 @@ KScalFE(const string fileName,
     eigvals.col(0) = eigvals.col(0).array()/T;
 
     return eigvals;
+}
+
+MatrixXd
+KSgetR(const string fileName,
+       const string ppType,
+       const int ppId,
+       const int L /* = 22 */,
+       const int MaxN /* = 80000 */,
+       const double tol /* = 1e-15 */,
+       const int nqr /* = 1 */){
+    
+    auto tmp = MyH5::KSreadRPO(fileName, ppType, ppId);
+    MatrixXd &a = std::get<0>(tmp);
+    double T = std::get<1>(tmp);
+    int nstp = (int) std::get<2>(tmp);
+    double r = std::get<3>(tmp);
+    double s = std::get<4>(tmp);
+
+    const int N = a.rows();
+    const int Nks = N + 2;
+    
+    // solve the Jacobian of this po.
+    KS ks(Nks, L);
+    pair<ArrayXXd, ArrayXXd> tmp2 = ks.intgj(a.col(0), T/nstp, nstp, nqr);
+    MatrixXd daa = tmp2.second;
+    daa = daa.rightCols(daa.cols() - daa.rows()).eval();
+  
+    // calculate the Flqouet exponents and vectors.
+    PED ped;
+    ped.reverseOrder(daa); // reverse order.
+    if(ppType.compare("ppo") == 0)
+	daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+    else // R*J for rpo
+	daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
+    MatrixXd eigvals = ped.EigVals(daa, MaxN, tol, false);
+    eigvals.col(0) = eigvals.col(0).array()/T;
+
+    return daa;
 }
 
 void 
@@ -208,8 +248,8 @@ KScalLeftFEFV(const std::string fileName, const std::string ppType, const int pp
     const int Nks = N + 2;
     
     // solve the Jacobian of this po.
-    KS ks(Nks, T/nstp, L);
-    std::pair<ArrayXXd, ArrayXXd> tmp2 = ks.intgj(a.col(0), nstp, 1, nqr);
+    KS ks(Nks, L);
+    std::pair<ArrayXXd, ArrayXXd> tmp2 = ks.intgj(a.col(0), T/nstp, nstp, nqr);
     MatrixXd daa = tmp2.second;
     
     // get the order of J_1^T, J_2^T, ..., (R*J_M)^T 

@@ -944,13 +944,12 @@ void PED::fixPhase(MatrixXd &EigVecs, const VectorXd &realComplexIndex){
  *  @see reverseOrderSize()
  */
 void PED::reverseOrder(MatrixXd &J){
-    const int N = J.rows();
-    const int M = J.cols();
-    VectorXd tmp(N);
-    for(size_t i = 0; i < M/2; i++){
-	tmp = J.col(i);
-	J.col(i) = J.col(M-i-1);
-	J.col(M-i-1) = tmp;
+    const int rows = J.rows(), cols = J.cols(), M = cols / rows;
+    MatrixXd tmp(rows, rows);
+    for(int i = 0; i < M / 2; i++){
+	tmp = J.middleCols(i*rows, rows);
+	J.middleCols(i*rows, rows) = J.middleCols((M - i - 1)*rows, rows);
+	J.middleCols((M - i - 1)*rows, rows) = tmp;
     }
 }
 

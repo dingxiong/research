@@ -61,7 +61,7 @@ def filterAng(a, ns, angSpan, angNum):
                 a[i][j] = 0
 
 
-situation = 7
+situation = 2
 
 if situation == 1:
     ##################################################
@@ -82,12 +82,12 @@ if situation == 1:
         for j in range(1, 201):
             f1 = folder + str(j) + '/ang' + str(i) + '.dat'
             if os.stat(f1).st_size > 0:
-                ang = arccos(loadtxt(f1))
+                ang = np.arccos(np.loadtxt(f1))
                 as1 = np.append(as1, ang)
 
             f2 = folder2 + str(j) + '/ang' + str(i) + '.dat'
             if os.stat(f2).st_size > 0:
-                ang2 = arccos(loadtxt(f2))
+                ang2 = np.arccos(np.loadtxt(f2))
                 as2 = np.append(as2, ang2)
 
         angs.append(np.append(as1, as2))
@@ -96,7 +96,7 @@ if situation == 1:
 
     ##################################################
 
-    case = 1
+    case = 2
 
     if case == 1:
         """
@@ -234,7 +234,7 @@ if situation == 2:
     for j in range(1, 201):
         f1 = folder + str(j) + '/ang' + str(i) + '.dat'
         if os.stat(f1).st_size > 0:
-            ang = arccos(loadtxt(f1))
+            ang = np.arccos(np.loadtxt(f1))
             as1 = np.append(as1, ang)
             n1.append(ang.shape[0])
         else:
@@ -242,7 +242,7 @@ if situation == 2:
 
         f2 = folder2 + str(j) + '/ang' + str(i) + '.dat'
         if os.stat(f2).st_size > 0:
-            ang2 = arccos(loadtxt(f2))
+            ang2 = np.arccos(np.loadtxt(f2))
             as2 = np.append(as2, ang2)
             n2.append(ang2.shape[0])
         else:

@@ -592,14 +592,14 @@ MatrixXd KS::stabReq(const Ref<const VectorXd> &a0, const double theta){
 std::pair<VectorXcd, MatrixXcd>
 KS::stabEig(const Ref<const VectorXd> &a0){
     MatrixXd A = stab(a0);
-    return denseRoutines::evEig(A);
+    return denseRoutines::evEig(A, 1);
 }
 
 /* Eigenvalues/Eigenvectors of equilibrium */
 std::pair<VectorXcd, MatrixXcd>
 KS::stabReqEig(const Ref<const VectorXd> &a0, const double theta){
     MatrixXd A = stabReq(a0, theta);
-    return denseRoutines::evEig(A);
+    return denseRoutines::evEig(A, 1);
 }
 
 /*************************************************** 
@@ -774,7 +774,7 @@ ArrayXXd KS::half2whole(const Ref<const ArrayXXd> &aa){
  */
 ArrayXXd KS::Rotation(const Ref<const ArrayXXd> &aa, const double th){
     int n = aa.rows();
-    int m = aa.cols();
+    int m = aa.cols(); 
     assert( 0 == n%2);
     ArrayXXd raa(n, m);
   

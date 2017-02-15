@@ -181,7 +181,7 @@ def pl2d(size=[8, 6], num=111, labs=[r'$x$', r'$y$'], axisLabelSize=25,
     return fig, ax
 
 
-def ax2d(fig, ax, doBlock=False, save=False, name='output.png',
+def ax2d(fig, ax, doBlock=False, save=False, name='output',
          title=None, loc='best', alpha=0.2):
     fig.tight_layout(pad=0)
     if title is not None:
@@ -190,7 +190,8 @@ def ax2d(fig, ax, doBlock=False, save=False, name='output.png',
 
     ax.legend(loc=loc, framealpha=alpha)
     if save:
-        plt.savefig(name)
+        plt.savefig(name + '.png', format='png')
+        plt.savefig(name + '.eps', format='eps')
         plt.close()
     else:
         plt.show(block=doBlock)

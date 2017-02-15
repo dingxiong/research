@@ -5,7 +5,7 @@ from personalFunctions import *
 def magvalue(x):
     return np.abs(x[0::2] + 1j * x[1::2])
 
-case = 30
+case = 5
 
 if case == 1:
     f = h5py.File('../../data/myN32/ks22h02t100EV.h5')

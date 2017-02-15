@@ -1291,27 +1291,19 @@ class KSplot():
         ax.plot(np.linspace(0, self.L, A.shape[0]), A, lw=1.5)
         ax2d(fig, ax, save=save, name=name)
 
-    def plotColorMapOrbit(self, aa, ext, barTicks=[-0.03, 0.03], colortype='jet',
-                            percent='5%', size=[3, 6], axisLabelSize=20,
-                            axisOn=True, barOn=True,
-                            save=False, name='out'):
+    def config(self, A, ext, isFourier=True, barOn=True,
+               barTicks=[-3, -2, -1, 0, 1, 2, 3], colortype='jet',
+               percent='5%', size=[3, 6], labs=[r'$x$', r'$t$'],
+               axisLabelSize=20, tickSize=None,
+               save=False, name='out.png'):
         """
         plot the color map of the states
         """
-        half1 = aa[:, 0::2] + 1j*aa[:, 1::2]
-        half2 = aa[:, 0::2] - 1j*aa[:, 1::2]
-        M = half1.shape[0]
-        aaWhole = np.hstack((np.zeros((M, 1)), half1,
-                             np.zeros((M, 1)), half2[:, ::-1]))
-        AA = np.fft.ifftn(aaWhole, axes=(1,)).real  # only the real part
+        if isFourier:
+            A = self.F2C(A)
 
-        fig = plt.figure(figsize=size)
-        ax = fig.add_subplot(111)
-        if axisOn:
-            ax.set_xlabel(r'$x$', fontsize=axisLabelSize)
-            ax.set_ylabel(r'$t$', fontsize=axisLabelSize)
-
-        im = ax.imshow(AA, cmap=plt.get_cmap(colortype), extent=ext,
+        fig, ax = pl2d(size=size, labs=labs, axisLabelSize=axisLabelSize, tickSize=tickSize)
+        im = ax.imshow(A, cmap=plt.get_cmap(colortype), extent=ext,
                        aspect='auto', origin='lower')
         ax.grid('on')
         if barOn:
@@ -1319,15 +1311,10 @@ class KSplot():
             cax = dr.append_axes('right', size=percent, pad=0.05)
             bar = plt.colorbar(im, cax=cax, ticks=barTicks)
 
-        fig.tight_layout(pad=0)
-        if save:
-            plt.savefig(name+'.png', format='png')
-            plt.savefig(name+'.eps', format='eps')
-        else:
-            plt.show(block=False)
+        ax2d(fig, ax, save=save, name=name)
 
 
-    def plotPoHeat(self, ks, fileName, poType, poId, NT=1, Ts=100, fixT=False):
+    def poHeat(self, ks, fileName, poType, poId, NT=1, Ts=100, fixT=False):
         """
         plot the heat map of ppo/rpo.
         Sometimes, a few periods make it easy to observe the state space.
@@ -1335,14 +1322,14 @@ class KSplot():
 
         NT : the number of periods need to be ploted
         """
-        a0, T, nstp, r, s = KSreadPO(fileName, poType, poId)
+        a0, T, nstp, r, s = self.readPO(fileName, poType, poId)
         h = T / nstp
         if fixT:
-            aa = ks.intg(a0, h, np.int(Ts/h), 5)
-            KSplotColorMapOrbit(aa, [0, ks.d, 0, Ts])
+            aa = self.ks.intg(a0, h, np.int(Ts/h), 5)
+            self.config(aa, [0, ks.d, 0, Ts])
         else:
-            aa = ks.intg(a0, h, nstp*NT, 5)
-            KSplotColorMapOrbit(aa, [0, ks.d, 0, T*NT])
+            aa = self.ks.intg(a0, h, nstp*NT, 5)
+            self.config(aa, [0, ks.d, 0, T*NT])
 
 
 ############################################################

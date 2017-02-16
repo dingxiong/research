@@ -5,7 +5,7 @@ from personalFunctions import *
 def magvalue(x):
     return np.abs(x[0::2] + 1j * x[1::2])
 
-case = 5
+case = 4
 
 if case == 1:
     f = h5py.File('../../data/myN32/ks22h02t100EV.h5')
@@ -124,17 +124,16 @@ if case == 4:
     """
     plot the orbit rpo1 for N = 64
     """
-    N = 64
-    f = h5py.File('../../data/ks22h001t120x64EV.h5')
-    pp = '/rpo/1/'
-    T = np.array(f[pp + 'T'])[0]
-    nstp = np.int(np.array(f[pp + 'nstp'])[0])
-    a0 = np.array(f[pp + 'a'])
+    N, L = 64, 22
+    ks = pyKS(N, L)
+    ksp = KSplot(ks)
+    poFile = '../../data/ks22h001t120x64EV.h5'
+    a0, T, nstp, r, s = ksp.readPO(poFile, 'rpo', 1)
+
     h = T / nstp
 
-    ks = pyKS(N, h, 22)
-    aa = ks.intg(a0, nstp*2, 10)
-    KSplotColorMapOrbit(aa, [0, 22, 0, 16.31*2])
+    aa = ks.intg(a0, h, nstp*2, 10)
+    ksp.config(aa, [0, 22, 0, 16.31*2])
 
 if case == 5:
 

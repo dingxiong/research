@@ -29,10 +29,10 @@ using namespace MyFFT;
  * @param[in] threadNum    number of threads for integration
  */
 CQCGL2d::CQCGL2d(int N, int M, double dx, double dy,
-			       double Mu, double Dr, double Di,
-			       double Br, double Bi, double Gr,
-			       double Gi,  
-			       int threadNum)
+		 double Mu, double Dr, double Di,
+		 double Br, double Bi, double Gr,
+		 double Gi,  
+		 int threadNum)
     : N(N), M(M), dx(dx), dy(dy),
       Mu(Mu), Dr(Dr), Di(Di), Br(Br), Bi(Bi),
       Gr(Gr), Gi(Gi),
@@ -43,14 +43,38 @@ CQCGL2d::CQCGL2d(int N, int M, double dx, double dy,
 	FFT2d(M, N, threadNum), 
 	FFT2d(M, N, threadNum) },    
 				      
-				      JF{ FFT2d(M, N, threadNum), 
-					      FFT2d(M, N, threadNum), 
-					      FFT2d(M, N, threadNum), 
-					      FFT2d(M, N, threadNum), 
-					      FFT2d(M, N, threadNum) }      
+				       JF{ FFT2d(M, N, threadNum), 
+					       FFT2d(M, N, threadNum), 
+					       FFT2d(M, N, threadNum), 
+					       FFT2d(M, N, threadNum), 
+					       FFT2d(M, N, threadNum) }      
 {
     CGLInit(); // calculate coefficients.
 }
+
+///  M = N, dx = dy
+CQCGL2d::CQCGL2d(int N, double dx,
+		 double Mu, double Dr, double Di,
+		 double Br, double Bi, double Gr,
+		 double Gi,  
+		 int threadNum)
+    : CQCGL2d(N, N, dx, dx, Mu, Dr, Di, Br, Bi, Gr, Gi, threadNum) {}
+
+
+/**
+ * Constructor of cubic quintic complex Ginzburg-Landau equation
+ * A_t = -A + (1 + b*i) (A_{xx} + A_{yy}) + (1 + c*i) |A|^2 A - (dr + di*i) |A|^4 A
+ */
+CQCGL2d::CQCGL2d(int N, int M,  double dx, double dy, 
+		 double b, double c, double dr, double di, 
+		 int threadNum)
+    : CQCGL2d(N, M, dx, dy, -1, 1, b, 1, c, -dr, -di, threadNum) {}
+
+CQCGL2d::CQCGL2d(int N, double dx,
+		 double b, double c, double dr, double di, 
+		 int threadNum)
+    : CQCGL2d(N, N, dx, dx, -1, 1, b, 1, c, -dr, -di, threadNum) {}
+
 
 CQCGL2d::~CQCGL2d(){}
 

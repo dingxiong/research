@@ -1,4 +1,4 @@
-/* time h5c++ test_CQCGL2dEIDc.cc -std=c++11 -lCQCGL2d -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I $RESH/include/ -L $RESH/lib/ -I $XDAPPS/eigen/include/eigen3 -DEIGEN_FFTW_DEFAULT -O3  -o cgl2d.out && ./cgl2d.out 
+/* time h5c++ test_CQCGL2dEIDc.cc -std=c++11 -lCQCGL2d -lmyfft -lmyH5 -ldenseRoutines -literMethod -lfftw3 -I $RESH/include/ -L $RESH/lib/ -I $XDAPPS/eigen/include/eigen3 -DEIGEN_FFTW_DEFAULT -O3  -o cgl2d.out && time ./cgl2d.out 
  */
 #include <iostream>
 #include <ctime>
@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N20
+#define N15
 
 using namespace MyH5;
 using namespace std;
@@ -20,48 +20,36 @@ int main(){
     std::vector<std::string> scheme = {"Cox_Matthews", "Krogstad", "Hochbruck_Ostermann", 
 				       "Luan_Ostermann", "IFRK43", "IFRK54", "SSPP43"};
 
-#ifdef N10
+#ifdef N15
     //====================================================================================================
-    // test the performance of the EID compared with previous implementation.
-    // The initial condition is the travelling wave, or a suppoposition of
-    // two Gaussian waves. This asymmetric initial condition will result
-    // asymmetric explosions.
+    // test a single method to see whether there is a bug
+    // Also, save the state for orbits 
     const int N = 1024; 
-    const double d = 30;
-    const double di = 0.05;
-    CQCGL2dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL2d cgl2(N, d, 4, 0.8, 0.01, di, 4);
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
 
-    std::string file = "/usr/local/home/xiong/00git/research/data/cgl/cgl2dReqDi.h5";
-    std::string groupName = to_string(di) + "/1";
-    ArrayXXcd a0;
-    double wthx, wthy, wphi, err;
-    std::tie(a0, wthx, wthy, wphi, err) = cgl2.readReq(file, groupName);
+    CQCGL2dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL2d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 4);
+    cgl.IntPrint = 1;
+    
+    MatrixXcd A0 = Gaussian2d(N, N, N/2, N/2, N/30, N/30, 2.5) 
+	+ Gaussian2d(N, N, 2*N/5, 2*N/5, N/30, N/30, 0.2);
+    ArrayXXcd a0 = cgl2.Config2Fourier(A0);
+    double T = 20;
 
-    if (true) {
-	MatrixXcd A0 = Gaussian2d(N, N, N/2, N/2, N/10, N/10, 3) 
-	    + Gaussian2d(N, N, N/2, N/4, N/10, N/10, 0.5);
-	a0 = cgl2.Config2Fourier(A0);
+    cgl.setScheme("Cox_Matthews");	
+    // ArrayXXcd aa = cgl.intgC(a0, 0.002, T, 50, true, "aa.h5");
+
+    if(true){
+	cgl.eidc.rtol = 1e-8;
+
+	cgl.setScheme("Cox_Matthews");
+	ArrayXXcd aaAdapt = cgl.intg(a0, T/(1<<10), T, 50, true, "aaCox.h5");
+
+	cgl.setScheme("SSPP43");
+	aaAdapt = cgl.intg(a0, T/(1<<10), T, 50, true, "aaSS.h5");
     }
     
-    double T = 4;
-
-    time_t t = clock();
-    ArrayXXcd aa = cgl.intgC(a0, 0.001, T, 10, true, "aa.h5");
-    t = clock()-t;
-    cout << static_cast<double>(t) / CLOCKS_PER_SEC << endl;
-
-    t = clock();
-    ArrayXXcd aa2 = cgl2.intg(a0, 0.001, static_cast<int>(T/0.001), 10, true, "aa2.h5");
-    t = clock()-t;
-    cout << static_cast<double>(t) / CLOCKS_PER_SEC << endl;
-
-    // Output:
-    // 0.871511
-    // 0.738813
-    // 4000 4001 3197.97 3297.8 0.000316152
-    
-    // the performance are almost the same.
 
 #endif
 #ifdef N20
@@ -69,17 +57,19 @@ int main(){
     // Test the accuracy of constant stepping shemes.
     // Choose Luan-Ostermann method with a small time step as the base.
     const int N = 1024; 
-    const double d = 30;
-    const double di = 0.05;
-    CQCGL2dEIDc cgl(N, d, 4, 0.8, 0.01, di);
-    CQCGL2d cgl2(N, d, 4, 0.8, 0.01, di, 4);
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL2dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL2d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 4);
+    cgl.IntPrint = 10;
  
-    MatrixXcd A0 = Gaussian2d(N, N, N/2, N/2, N/10, N/10, 3) 
-	+ Gaussian2d(N, N, N/2, N/4, N/10, N/10, 0.5);
+    MatrixXcd A0 = Gaussian2d(N, N, N/2, N/2, N/30, N/30, 2.5) 
+	+ Gaussian2d(N, N, 2*N/5, 2*N/5, N/30, N/30, 0.2);
     ArrayXXcd a0 = cgl2.Config2Fourier(A0);
 
-    double T = 4;
-    double h0 = T / (1<<18);	// T / 2^20
+    double T = 20;
+    double h0 = T / (1<<16);	// T / 2^18
     
     cgl.setScheme("Luan_Ostermann");
     ArrayXXcd x0 = cgl.intgC(a0, h0, T, 1000000, false, "aa.h5").rightCols(cgl.Ne);

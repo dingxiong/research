@@ -17,6 +17,27 @@ using namespace MyH5;
 //                      constructor                                 //
 //////////////////////////////////////////////////////////////////////
 CQCGL2dReq::CQCGL2dReq(int N, int M, double dx, double dy,
+		       double Mu, double Dr, double Di,
+		       double Br, double Bi, double Gr,
+		       double Gi,  
+		       int threadNum)
+    :CQCGL2d(N, M, dx, dy, Mu, Dr, Di, Br, Bi, Gr, Gi, threadNum)
+{
+    calPre();
+}
+
+
+CQCGL2dReq::CQCGL2dReq(int N, double dx,
+		       double Mu, double Dr, double Di,
+		       double Br, double Bi, double Gr,
+		       double Gi,  
+		       int threadNum)
+    : CQCGL2d(N, dx, Mu, Dr, Di, Br, Bi, Gr, Gi, threadNum) 
+{
+    calPre();
+}
+
+CQCGL2dReq::CQCGL2dReq(int N, int M, double dx, double dy,
 		       double b, double c, double dr, double di,
 		       int threadNum) 
     : CQCGL2d(N, M, dx, dy, b, c, dr, di, threadNum) 

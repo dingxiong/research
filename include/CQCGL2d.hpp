@@ -98,6 +98,17 @@ public:
 	    double Br, double Bi, double Gr,
 	    double Gi,  
 	    int threadNum);
+    CQCGL2d(int N, double dx,
+	    double Mu, double Dr, double Di,
+	    double Br, double Bi, double Gr,
+	    double Gi,  
+	    int threadNum);
+    CQCGL2d(int N, int M,  double dx, double dy, 
+	    double b, double c, double dr, double di, 
+	    int threadNum);
+    CQCGL2d(int N, double dx,
+	    double b, double c, double dr, double di, 
+	    int threadNum);
     ~CQCGL2d();
     CQCGL2d & operator=(const CQCGL2d &x);
     

@@ -191,7 +191,7 @@ def ax2d(fig, ax, doBlock=False, save=False, name='output',
     ax.legend(loc=loc, framealpha=alpha)
     if save:
         plt.savefig(name + '.png', format='png')
-        plt.savefig(name + '.eps', format='eps')
+        # plt.savefig(name + '.eps', format='eps')
         plt.close()
     else:
         plt.show(block=doBlock)
@@ -1015,6 +1015,7 @@ class CQCGL2dPlot():
 
     def loadSeq(self, fileName, x, y, ids):
         """
+        load a sequence of points but only at location (x, y)
         Avoid using the whole mesh since it is slow.
 
         Parameters
@@ -1030,7 +1031,7 @@ class CQCGL2dPlot():
         f.close()
         return data
 
-    def plotOneState(self, cgl, a, save=False, name='out.png',
+    def oneState(self, cgl, a, save=False, name='out.png',
                      colortype='jet', percent=0.05, size=[7, 5],
                      barTicks=None, axisLabelSize=25,
                      plotType=0):
@@ -1112,23 +1113,29 @@ class CQCGL2dPlot():
                    ' ' + files + ' ' + name)
         os.system(command)
 
-    def savePlots(self, cgl, f1, sids, f2, plotType=0, size=[7, 5]):
+    def savePlots(self, cgl, f1, f2, sids=None, plotType=0, size=[7, 5]):
         """
         Parameters
         ==========
         f1 : h5 data file
         f2 : save folder name
-        onlyMovie: true => figures are deleted
+        sids : a list which contains the ids of the states
+               if it is None, then all states will be loaded
         """
         if os.path.exists(f2):
             print 'folder already exists'
         else:
             os.makedirs(f2)
+            if sids == None:
+                f = h5py.File(f1, 'r')
+                sids = range(len(f.keys()))
+                f.close()
+
             for i in sids:
-                name = f2+'/a'+format(i, '06d')+'.png'
+                name = f2+'/a'+format(i, '06d')
                 a = self.load(f1, i)
-                self.plotOneState(cgl, a, save=True, size=size,
-                                  name=name, plotType=plotType)
+                self.oneState(cgl, a, save=True, size=size,
+                              name=name, plotType=plotType)
 
     def saveReq(self, fileName, groupName, a, wthx, wthy, wphi, err):
         f = h5py.File(fileName, 'a')
@@ -1141,10 +1148,25 @@ class CQCGL2dPlot():
         req.create_dataset('err', data=err)
         f.close()
 
-    def saveReqdi(self, fileName, di, index, a, wthx, wthy, wphi, err):
-        groupName = format(di, '.6f') + '/' + str(index)
-        return self.saveReq(fileName, groupName, a, wthx, wthy, wphi, err)
+    def toStr(self, Bi, Gi, index):
+        if abs(Bi) < 1e-6:
+            Bi = 0
+        if abs(Gi) < 1e-6:
+            Gi = 0
+        return (format(Bi, '013.6f') + '/' + format(Gi, '013.6f') +
+                '/' + str(index))
 
+    def loadReq(self, fileName, groupName):
+        f = h5py.File(fileName, 'r')
+        req = '/' + groupName + '/'
+        a = f[req+'ar'].value + 1j*f[req+'ai'].value
+        wthx = f[req+'wthx'].value
+        wthy = f[req+'wthy'].value
+        wphi = f[req+'wphi'].value
+        err = f[req+'err'].value
+        f.close()
+
+        return a, wthx, wthy, wphi, err
 
 ############################################################
 #                        KS related                        #

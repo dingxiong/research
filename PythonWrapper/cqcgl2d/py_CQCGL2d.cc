@@ -18,6 +18,25 @@ class pyCQCGL2d : public CQCGL2d {
   
 public:
 
+    pyCQCGL2d(int N, int M, double dx, double dy,
+	      double Mu, double Dr, double Di,
+	      double Br, double Bi, double Gr,
+	      double Gi,  
+	      int threadNum) :
+	CQCGL2d(N, M, dx, dy, Mu, Dr, Di, Br, Bi, Gr, Gi, threadNum) {}
+
+    pyCQCGL2d(int N, double dx,
+	      double Mu, double Dr, double Di,
+	      double Br, double Bi, double Gr,
+	      double Gi,  
+	      int threadNum) :
+	CQCGL2d(N, dx, Mu, Dr, Di, Br, Bi, Gr, Gi, threadNum) {}
+
+    pyCQCGL2d(int N, int M,  double dx, double dy, 
+	      double b, double c, double dr, double di, 
+	      int threadNum) :
+	CQCGL2d(N, M, dx, dy, b, c, dr, di, threadNum) {}
+
     pyCQCGL2d(int N, double dx,
 	      double b, double c, double dr, double di,
 	      int threadNum) :
@@ -261,6 +280,19 @@ BOOST_PYTHON_MODULE(py_CQCGL2d) {
 					       int, double, 
 					       double, double, double, double,
 					       int>())
+	.def(bp::init<int, int, double, double,
+	     double, double, double,
+	     double, double, double,
+	     double,
+	     int>())
+	.def(bp::init<int, double,
+	     double, double, double,
+	     double, double, double,
+	     double,
+	     int>())
+	.def(bp::init<int, int, double, double,
+	     double, double, double, double, 
+	     int>())
 	.def_readonly("N", &pyCQCGL2d::N)
 	.def_readonly("M", &pyCQCGL2d::M)
 	.def_readonly("dx", &pyCQCGL2d::dx)
@@ -274,10 +306,10 @@ BOOST_PYTHON_MODULE(py_CQCGL2d) {
 	.def_readonly("Gi", &pyCQCGL2d::Gi)
 	.def_readonly("Ne", &pyCQCGL2d::Ne)
 	.def_readonly("Me", &pyCQCGL2d::Me)
-	.def_readonly("b", &pyCQCGL2d::b)
-	.def_readonly("c", &pyCQCGL2d::c)
-	.def_readonly("dr", &pyCQCGL2d::dr)
-	.def_readonly("di", &pyCQCGL2d::di)
+	// .def_readonly("b", &pyCQCGL2d::b)
+	// .def_readonly("c", &pyCQCGL2d::c)
+	// .def_readonly("dr", &pyCQCGL2d::dr)
+	// .def_readonly("di", &pyCQCGL2d::di)
 	.def_readonly("Omega", &pyCQCGL2d::Omega)
 	.def_readwrite("rtol", &pyCQCGL2d::rtol)
 	.def_readwrite("nu", &pyCQCGL2d::nu)

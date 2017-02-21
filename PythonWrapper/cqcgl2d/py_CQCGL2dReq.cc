@@ -18,6 +18,25 @@ class pyCQCGL2dReq : public CQCGL2dReq {
   
 public:
 
+    pyCQCGL2dReq(int N, int M, double dx, double dy,
+		 double Mu, double Dr, double Di,
+		 double Br, double Bi, double Gr,
+		 double Gi,  
+		 int threadNum) :
+	CQCGL2dReq(N, M, dx, dy, Mu, Dr, Di, Br, Bi, Gr, Gi, threadNum) {}
+    
+    pyCQCGL2dReq(int N, double dx,
+		 double Mu, double Dr, double Di,
+		 double Br, double Bi, double Gr,
+		 double Gi,  
+		 int threadNum) :
+	CQCGL2dReq(N, dx, Mu, Dr, Di, Br, Bi, Gr, Gi, threadNum) {}
+
+    pyCQCGL2dReq(int N, int M,  double dx, double dy, 
+		 double b, double c, double dr, double di, 
+		 int threadNum) :
+	CQCGL2dReq(N, M, dx, dy, b, c, dr, di, threadNum) {}
+    
     pyCQCGL2dReq(int N, double dx,
 		 double b, double c, double dr, double di,
 		 int threadNum) :
@@ -158,6 +177,19 @@ BOOST_PYTHON_MODULE(py_CQCGL2dReq) {
 						     int, double, 
 						     double, double, double, double,
 						     int>())
+	.def(bp::init<int, int, double, double,
+	     double, double, double,
+	     double, double, double,
+	     double,
+	     int>())
+	.def(bp::init<int, double,
+	     double, double, double,
+	     double, double, double,
+	     double,
+	     int>())
+	.def(bp::init<int, int, double, double,
+	     double, double, double, double, 
+	     int>())
 	.def_readonly("N", &pyCQCGL2dReq::N)
 	.def_readonly("M", &pyCQCGL2dReq::M)
 	.def_readonly("dx", &pyCQCGL2dReq::dx)
@@ -171,10 +203,10 @@ BOOST_PYTHON_MODULE(py_CQCGL2dReq) {
 	.def_readonly("Gi", &pyCQCGL2dReq::Gi)
 	.def_readonly("Ne", &pyCQCGL2dReq::Ne)
 	.def_readonly("Me", &pyCQCGL2dReq::Me)
-	.def_readonly("b", &pyCQCGL2dReq::b)
-	.def_readonly("c", &pyCQCGL2dReq::c)
-	.def_readonly("dr", &pyCQCGL2dReq::dr)
-	.def_readonly("di", &pyCQCGL2dReq::di)
+	// .def_readonly("b", &pyCQCGL2dReq::b)
+	// .def_readonly("c", &pyCQCGL2dReq::c)
+	// .def_readonly("dr", &pyCQCGL2dReq::dr)
+	// .def_readonly("di", &pyCQCGL2dReq::di)
 	.def_readonly("Omega", &pyCQCGL2dReq::Omega)
 	.def_readwrite("rtol", &pyCQCGL2dReq::rtol)
 	.def_readwrite("nu", &pyCQCGL2dReq::nu)

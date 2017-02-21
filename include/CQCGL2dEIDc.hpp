@@ -1,5 +1,5 @@
-#ifndef CQCGL1DEIDC_H
-#define CQCGL1DEIDC_H
+#ifndef CQCGL2DEIDC_H
+#define CQCGL2DEIDC_H
 
 #include "EIDc.hpp"
 #include <Eigen/Dense>
@@ -8,6 +8,21 @@
 
 using namespace MyH5;
 
+///  integrator for 2d CQCGL
+///
+///  The domain layout is
+///  
+///           dx
+///      *************
+///      *           *
+///   dy *           *  M
+///      *           *
+///      *           * 
+///      *************
+///            N
+///
+///    
+///      
 class CQCGL2dEIDc {
     
 public :
@@ -32,6 +47,7 @@ public :
     VectorXd lte;	      /* local relative error estimation */
     VectorXd Ts;	      /* time sequnence for adaptive method */
     int cellSize = 50;
+    int IntPrint = 0;		// print frequency during integration. 
     
     struct NL {
 	CQCGL2dEIDc *cgl;
@@ -93,7 +109,7 @@ public :
 	L.middleCols(Nplus, Nalias).setZero();
 	Lv = Map<VectorXcd>(L.data(), M*N);
 	
-	int nYN0 = eidc.nYNs[eidc.scheme];
+	int nYN0 = eidc.names.at(eidc.scheme).nYN;
 	for(int i = 0; i < nYN0; i++){
 	    Yv[i].resize(M*N);
 	    Nv[i].resize(M*N);
@@ -102,6 +118,14 @@ public :
 	eidc.CN = 8*M;
     }
     
+    CQCGL2dEIDc(int N, double dx,
+		double Mu, double Dr, double Di,
+		double Br, double Bi, double Gr,
+		double Gi) 
+	: CQCGL2dEIDc(N, N, dx, dx, Mu, Dr, Di, Br, Bi, Gr, Gi) 
+    { }
+	
+
     CQCGL2dEIDc(int N, int M, double dx, double dy,
 		double b, double c, double dr, double di)
 	: CQCGL2dEIDc(N, M, dx, dy, -1, 1, b, 1, c, -dr, -di)
@@ -118,9 +142,9 @@ public :
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     inline void 
     setScheme(std::string x){
-	int nYN0 = eidc.nYNs[eidc.scheme];	
-	eidc.scheme = eidc.names[x];
-	int nYN1 = eidc.nYNs[eidc.scheme];
+	int nYN0 = eidc.names.at(eidc.scheme).nYN;
+	eidc.scheme = x;
+	int nYN1 = eidc.names.at(eidc.scheme).nYN;
 	for (int i = nYN0; i < nYN1; i++) {
 	    Yv[i].resize(M*N);
 	    Nv[i].resize(M*N);
@@ -143,7 +167,7 @@ public :
 	  const bool doSaveDisk, const string fileName){
 	
 	const int Nt = (int)round(tend/h);
-	const int m = (Nt+skip_rate-1)/skip_rate;
+	const int m = (Nt + skip_rate - 1) / skip_rate;
 	lte.resize(m);
 
 	ArrayXXcd aa;
@@ -155,8 +179,9 @@ public :
 	ArrayXcd u0 = Map<ArrayXcd>(tu0.data(), M*N);
 
 	int ks = 0;
-	auto ss = [this, &ks, &aa, &file, &doSaveDisk](ArrayXcd &x, double t, double h, double err){
-	    // fprintf(stderr, "%d ", ks);
+	auto ss = [this, &ks, &aa, &file, &doSaveDisk, &tend](ArrayXcd &x, double t, double h, double err){
+	    if( IntPrint > 0 && ks % IntPrint == 0) fprintf(stderr, "%f/%f\n", t, tend);
+
 	    Map<ArrayXXcd> xv(x.data(), M, N);
 	    ArrayXXcd uxv = unpad(xv);
 
@@ -165,7 +190,7 @@ public :
 	    if(doSaveDisk){
 		char groupName[10];
 		sprintf (groupName, "%.6d", ks);
-		std::string s = "/"+std::string(groupName);
+		std::string s = "/" + std::string(groupName);
 		Group group(file.createGroup(s));
 		std:: string DS = s + "/";
 		
@@ -204,8 +229,10 @@ public :
 	ArrayXcd u0 = Map<ArrayXcd>(tu0.data(), M*N);
 	
 	int ks = 0;
-	auto ss = [this, &ks, &aa, &file, &doSaveDisk](ArrayXcd &x, double t, double h, double err){
-	    // fprintf(stderr, "%d ", ks);
+	auto ss = [this, &ks, &aa, &file, &doSaveDisk, &tend](ArrayXcd &x, double t, double h, double err){
+
+	    if( IntPrint > 0 && ks % IntPrint == 0 ) fprintf(stderr, "%f/%f\n", t, tend);
+
 	    Map<ArrayXXcd> xv(x.data(), M, N);
 	    ArrayXXcd uxv = unpad(xv);
 
@@ -218,11 +245,11 @@ public :
 	    hs(ks) = h;
 	    lte(ks) = err;
 	    Ts(ks) = t;
-	    
+
 	    if(doSaveDisk){
 		char groupName[10];
 		sprintf (groupName, "%.6d", ks);
-		std::string s = "/"+std::string(groupName);
+		std::string s = "/" + std::string(groupName);
 		Group group(file.createGroup(s));
 		std:: string DS = s + "/";
 		
@@ -297,4 +324,4 @@ public :
 
 };
 
-#endif	/* CQCGL1DEIDC_H */
+#endif	/* CQCGL2DEIDC_H */

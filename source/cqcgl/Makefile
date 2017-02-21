@@ -36,7 +36,7 @@ SOURCE = CQCGL1dRpo_arpack.cc
 CFLAGS += -I$(XDAPPS)/arpackpp/include # -llapack -larpack -lsuperlu -lopenblas
 
 else ifeq ($(t), int2d)		# for 2d CQCGL class
-SOURCE = CQCGL2d.cc CQCGLgeneral2d.cc 
+SOURCE = CQCGL2d.cc
 
 else ifeq ($(t), req2d)
 SOURCE = CQCGL2dReq.cc

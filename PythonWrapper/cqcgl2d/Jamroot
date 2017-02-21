@@ -46,10 +46,10 @@ lib dense : : <name>denseRoutines <file>$(RESH)/lib/libdenseRoutines.so ;
 lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
 
 
-choice = 3 ;
+choice = 4 ;
 
 if $(choice) = 1 {		# single thread case
-  python-extension py_CQCGL2d : pytmp.cc np sparse dense fftw3 iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(RESH)/source/cqcgl/CQCGLgeneral2d.cc $(RESH)/source/cqcgl/CQCGL2d.cc
+  python-extension py_CQCGL2d : pytmp.cc np sparse dense fftw3 iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(RESH)/source/cqcgl/CQCGL2d.cc
   : <variant>release_assert <optimization>speed
   : <link>shared 
   <warnings>off
@@ -62,7 +62,7 @@ if $(choice) = 1 {		# single thread case
 }
 
 else if $(choice) = 2 {		# multi fftw threads case
-  python-extension py_CQCGL2d_threads : pytmp.cc np sparse dense fftw3 fftw3_threads iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(RESH)/source/cqcgl/CQCGLgeneral2d.cc $(RESH)/source/cqcgl/CQCGL2d.cc
+  python-extension py_CQCGL2d_threads : pytmp.cc np sparse dense fftw3 fftw3_threads iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(RESH)/source/cqcgl/CQCGL2d.cc
   : <variant>release_assert <optimization>speed 
   : <link>shared 
   <warnings>off
@@ -77,7 +77,7 @@ else if $(choice) = 2 {		# multi fftw threads case
 # for req lib
 
 else if $(choice) = 3 {
-  python-extension py_CQCGL2dReq : pytmp.cc np sparse dense fftw3 iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(CGL)/CQCGL2dReq.cc $(CGL)/CQCGL2d.cc $(CGL)/CQCGLgeneral2d.cc
+  python-extension py_CQCGL2dReq : pytmp.cc np sparse dense fftw3 iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(CGL)/CQCGL2dReq.cc $(CGL)/CQCGL2d.cc 
   : <variant>release_assert <optimization>speed
   : <link>shared 
   <warnings>off
@@ -89,7 +89,7 @@ else if $(choice) = 3 {
 }
 
 else if $(choice) = 4 {		# multi fftw threads case
-  python-extension py_CQCGL2dReq_threads : pytmp.cc np sparse dense fftw3 fftw3_threads iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(RESH)/source/cqcgl/CQCGLgeneral2d.cc $(RESH)/source/cqcgl/CQCGL2d.cc $(RESH)/source/cqcgl/CQCGL2dReq.cc
+  python-extension py_CQCGL2dReq_threads : pytmp.cc np sparse dense fftw3 fftw3_threads iter $(RESH)/source/myfft/myfft.cc $(RESH)/source/myH5/myH5.cc $(RESH)/source/cqcgl/CQCGL2d.cc
   : <variant>release_assert <optimization>speed 
   : <link>shared 
   <warnings>off

@@ -23,6 +23,16 @@ public :
 
     ////////////////////////////////////////////////////////////
     CQCGL2dReq(int N, int M, double dx, double dy,
+	       double Mu, double Dr, double Di,
+	       double Br, double Bi, double Gr,
+	       double Gi,  
+	       int threadNum);
+    CQCGL2dReq(int N, double dx,
+	       double Mu, double Dr, double Di,
+	       double Br, double Bi, double Gr,
+	       double Gi,  
+	       int threadNum);
+    CQCGL2dReq(int N, int M, double dx, double dy,
 	       double b, double c, double dr, double di,
 	       int threadNum);
     CQCGL2dReq(int N, double dx,

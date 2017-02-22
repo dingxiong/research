@@ -14,14 +14,15 @@ def setAxis(ax, xr, xlabel=r'$t$', ylabel=r'$\lambda_k(t)$'):
 
 if __name__ == '__main__':
 
-    case = 2
+    case = 10
 
     if case == 1:
         """
         plot the local Flouqet exponents of ppo1
         """
         # load data
-        a, T, nstp, r, s = KSreadPO('../ks22h001t120x64EV.h5', 'ppo', 1)
+        ksp = KSplot()
+        a, T, nstp, r, s = ksp.readPO('../ks22h001t120x64EV.h5', 'ppo', 1)
         expand = np.log(np.loadtxt('./ppo/FVexpand1.dat')) / (5 * T / nstp)
         
         fig = plt.figure(figsize=[3, 2])
@@ -46,6 +47,39 @@ if __name__ == '__main__':
         fig.tight_layout(pad=0)
         plt.show()
 
+    if case == 10:
+        """
+        plot the local Flouqet exponents of rpo1
+        """
+        ksp = KSplot()
+        a, T, nstp, r, s = ksp.readPO('../ks22h001t120x64EV.h5', 'rpo', 1)
+        expand = np.log(np.loadtxt('./rpo/FVexpand1.dat')) / (5 * T / nstp)
+        
+        fig, ax = pl2d(labs=[r'$t$', r'$\lambda_j(u(t))$'], axisLabelSize=25, tickSize=20)
+        ax.plot(expand[0], lw=1.5, ls='-', label=r'$j=1$')
+        ax.plot(expand[1], lw=1.5, ls='-', label=r'$j=2$')
+        ax.plot(expand[2], lw=1.5, ls='-', label=r'$j=3$')
+        ax.plot(expand[3], lw=1.5, ls='-', label=r'$j=4$')
+        ax.plot(expand[4], lw=1.5, ls='-')
+        ax.plot(expand[5], lw=1.5, ls='-', label=r'$j=5, 6$')
+        ax.plot(expand[6], lw=1.5, ls='-', label=r'$j=7$')
+        ax.plot(expand[7], lw=1.5, ls='-', label=r'$j=8$')
+
+        ax.plot(expand[8], lw=1.5, ls='-')
+        ax.plot(expand[9], lw=1.5, ls='-', label=r'$j=9, 10$')
+        
+        xr = expand.shape[1]
+        ax.set_xlim([0, xr])
+        ax.set_xticks([0, xr-1])
+        ax.set_xticklabels([0, r'$T_p$'], fontsize=20)
+        # ax.set_ylim([-2.5, 1])
+        ax.set_yticks([-2.5, -1, 0, 0.5])
+
+        ax.legend(loc='best', ncol=3, fontsize=20)
+        fig.tight_layout(pad=0)
+        plt.show(block=False)
+        
+        
     if case == 2:
         """
         plot $\lambda_i(t) -\lambda$ for a small subset

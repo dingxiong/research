@@ -164,7 +164,7 @@ public :
     inline 
     ArrayXXcd
     intgC(const ArrayXXcd &a0, const double h, const double tend, const int skip_rate,
-	  const bool doSaveDisk, const string fileName){
+	  const int saveFlag, const string fileName){
 	
 	const int Nt = (int)round(tend/h);
 	const int m = (Nt + skip_rate - 1) / skip_rate;
@@ -172,14 +172,14 @@ public :
 
 	ArrayXXcd aa;
 	H5File file;
-	if (doSaveDisk) file = H5File(fileName, H5F_ACC_TRUNC); /* openFile fails */
-	else aa.resize(Me, Ne*m);
+	if (0 == saveFlag) file = H5File(fileName, H5F_ACC_TRUNC); /* openFile fails */
+	else if (1 == saveFlag) aa.resize(Me, Ne*m);
 	
 	ArrayXXcd tu0 = pad(a0); 
 	ArrayXcd u0 = Map<ArrayXcd>(tu0.data(), M*N);
 
 	int ks = 0;
-	auto ss = [this, &ks, &aa, &file, &doSaveDisk, &tend](ArrayXcd &x, double t, double h, double err){
+	auto ss = [this, &ks, &aa, &file, &saveFlag, &tend](ArrayXcd &x, double t, double h, double err){
 	    if( IntPrint > 0 && ks % IntPrint == 0) fprintf(stderr, "%f/%f\n", t, tend);
 
 	    Map<ArrayXXcd> xv(x.data(), M, N);
@@ -187,7 +187,7 @@ public :
 
 	    lte(ks) = err;
 
-	    if(doSaveDisk){
+	    if(0 == saveFlag){
 		char groupName[10];
 		sprintf (groupName, "%.6d", ks);
 		std::string s = "/" + std::string(groupName);
@@ -197,8 +197,11 @@ public :
 		writeMatrixXd(file, DS + "ar", uxv.real());
 		writeMatrixXd(file, DS + "ai", uxv.imag());
 	    }
-	    else{
+	    else if (1 == saveFlag){
 		aa.middleCols((ks)*Ne, Ne) = uxv;
+	    }
+	    else {
+		// only try to get integeration information
 	    }
 	    	    
 	    ks++;
@@ -212,7 +215,7 @@ public :
     inline 
     ArrayXXcd
     intg(const ArrayXXcd &a0, const double h, const double tend, const int skip_rate,
-	 const bool doSaveDisk, const string fileName){
+	 const int saveFlag, const string fileName){
 	
 	const int Nt = (int)round(tend/h);
 	const int m = (Nt+skip_rate-1)/skip_rate;
@@ -222,14 +225,14 @@ public :
 
 	ArrayXXcd aa;
 	H5File file;
-	if (doSaveDisk) file = H5File(fileName, H5F_ACC_TRUNC); /* openFile fails */
-	else aa.resize(Me, Ne*m);
+	if (0 == saveFlag) file = H5File(fileName, H5F_ACC_TRUNC); /* openFile fails */
+	else if (1 == saveFlag) aa.resize(Me, Ne*m);
 	
 	ArrayXXcd tu0 = pad(a0); 
 	ArrayXcd u0 = Map<ArrayXcd>(tu0.data(), M*N);
 	
 	int ks = 0;
-	auto ss = [this, &ks, &aa, &file, &doSaveDisk, &tend](ArrayXcd &x, double t, double h, double err){
+	auto ss = [this, &ks, &aa, &file, &saveFlag, &tend](ArrayXcd &x, double t, double h, double err){
 
 	    if( IntPrint > 0 && ks % IntPrint == 0 ) fprintf(stderr, "%f/%f\n", t, tend);
 
@@ -246,7 +249,7 @@ public :
 	    lte(ks) = err;
 	    Ts(ks) = t;
 
-	    if(doSaveDisk){
+	    if(0 == saveFlag){
 		char groupName[10];
 		sprintf (groupName, "%.6d", ks);
 		std::string s = "/" + std::string(groupName);
@@ -256,9 +259,12 @@ public :
 		writeMatrixXd(file, DS + "ar", uxv.real());
 		writeMatrixXd(file, DS + "ai", uxv.imag());
 	    }
-	    else{
+	    else if (1 == saveFlag){
 		if(ks >= m) aa.conservativeResize(Eigen::NoChange, m+cellSize*Ne);
 		aa.middleCols(ks*Ne, Ne) = uxv;
+	    }
+	    else {
+		// only try to get integeration information	
 	    }
 
 	    ks++;
@@ -269,7 +275,7 @@ public :
 	hs.conservativeResize(ks);
 	lte.conservativeResize(ks);
 	Ts.conservativeResize(ks);
-	aa.conservativeResize(Eigen::NoChange, ks);
+	if(1 == saveFlag) aa.conservativeResize(Eigen::NoChange, ks);
 
 	return aa;
     }

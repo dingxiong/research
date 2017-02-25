@@ -218,7 +218,7 @@ int main(){
 #ifdef N50
     //====================================================================================================
     // static frame integration
-    // set the rtol = 1e-10 and output some statics
+    // set the rtol = 1e-10 and output time steps
     const int N = 1024; 
     const double d = 50;
     double Bi = 0.8, Gi = -0.6;
@@ -337,9 +337,7 @@ int main(){
 		if(i == 0) {
 		    erros(j, 0) = rtol; 
 		}
-		t = clock();
 		ArrayXd xf = cgl.intg(a0, T/(1<<12), T, 1000000).rightCols(1);
-		t = clock() - t;
 		double err = (xf - x0).abs().maxCoeff() / x0.abs().maxCoeff();
 		erros.row(j).segment(6*i+1, 6) << 
 		    err,  

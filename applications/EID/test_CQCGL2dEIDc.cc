@@ -8,7 +8,7 @@
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N30
+#define N70
 
 using namespace MyH5;
 using namespace std;
@@ -17,8 +17,9 @@ using namespace denseRoutines;
 
 int main(){
 
-    std::vector<std::string> scheme = {"Cox_Matthews", "Krogstad", "Hochbruck_Ostermann", 
-				       "Luan_Ostermann", "IFRK43", "IFRK54", "SSPP43"};
+    std::vector<std::string> scheme = {"IFRK43", "IFRK54",
+				       "Cox_Matthews", "Krogstad", "Hochbruck_Ostermann", 
+				       "Luan_Ostermann", "SSPP43"};
 
 #ifdef N15
     //====================================================================================================
@@ -60,7 +61,7 @@ int main(){
 
     CQCGL2dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
     CQCGL2d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 4);
-    cgl.IntPrint = 1;
+    cgl.IntPrint = 10;
 
     MatrixXcd A0 = Gaussian2d(N, N, N/2, N/2, N/30, N/30, 2.5) 
 	+ Gaussian2d(N, N, 2*N/5, 2*N/5, N/30, N/30, 0.2);
@@ -68,8 +69,7 @@ int main(){
     double T = 20;
 
     int n0 = 14, n1 = 5;
-    double h0 = T / (1<<n0);	// T / 2^17
-   
+    double h0 = T / (1<<n0);	// T / 2^13   
     double w[] = {0, -7.3981920609491505};
     MatrixXd ltes(1<<(n0 - n1), 2*scheme.size());
 
@@ -79,36 +79,113 @@ int main(){
 	    fprintf(stderr, "k = %d, scheme is %s \n", k, scheme[i].c_str());
 	    cgl.setScheme(scheme[i]);	
 	    ArrayXXcd aa = cgl.intgC(a0, h0, T, 1<<n1, 2, "aa.h5");
-	    ltes.col(i) = cgl.lte;
+	    ltes.col(k*scheme.size() + i) = cgl.lte;
 	}
     }
     savetxt("cqcgl2d_N30_lte.dat", ltes);
 #endif
 #ifdef N50
     //====================================================================================================
-    // same as N40, but test all shemes
-    KSEIDr ks(64, 22);
-    KS ks2(64, 22);
+    // static frame integration
+    // set the rtol = 1e-9 and output time steps
+    const int N = 1024; 
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL2dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL2d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 4);
+    cgl.IntPrint = 10;
+    cgl.eidc.rtol = 1e-9;
+
+    MatrixXcd A0 = Gaussian2d(N, N, N/2, N/2, N/30, N/30, 2.5) 
+	+ Gaussian2d(N, N, 2*N/5, 2*N/5, N/30, N/30, 0.2);
+    ArrayXXcd a0 = cgl2.Config2Fourier(A0);
+    double T = 20;
+    double h0 = T / (1<<12);	// T / 2^12
+    
     for(int i = 0; i < scheme.size(); i++) {
-	ks.setScheme(scheme[i]);
-	ArrayXXd aa = ks.intg(a0, T/nstp, T, 1);
-	VectorXd a1 = ks2.Reflection(aa.rightCols(1));
-	cout << (a1-a0).norm() << ' ' << ks.lte.maxCoeff() << ' ' << ks.hs.maxCoeff() << ' ';
-	cout << ks.eidr.NCalCoe << ' ' << ks.eidr.NReject << ' ' << ks.eidr.NCallF << ' ' << ks.eidr.NSteps << endl;
+	fprintf(stderr, "scheme is %s \n", scheme[i].c_str());
+	cgl.setScheme(scheme[i]);
+	ArrayXXcd aa = cgl.intg(a0, h0, T, 1<<5, 2, "aa.h5");
+	savetxt("cqcgl2d_N50_hs_"+to_string(i)+".dat", cgl.hs);
     }
     
-    // Output:
-    // 
-    // 1.19741e-08 6.53879e-09 0.0152952 8 2 3505 699
-    // 1.45044e-08 6.51859e-09 0.0251392 9 2 2600 518
-    // 7.36104e-09 6.53008e-09 0.0251002 10 2 2600 518
-    // 2.12496e-09 2.44513e-09 0.082695 8 0 1215 135
-    // 2.50557e-08 6.54958e-09 0.00559735 8 2 11695 2337
-    // 1.90432e-08 5.89591e-09 0.0132776 8 1 6202 885
-    
-
-
 #endif
+#ifdef N60
+    //====================================================================================================
+    // Comoving frame integration
+    // set the rtol = 1e-9 and output time steps
+    const int N = 1024; 
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL2dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL2d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 4);
+    cgl.IntPrint = 10;
+    cgl.eidc.rtol = 1e-9;
+    cgl.changeOmega(-7.3981920609491505);
+
+    MatrixXcd A0 = Gaussian2d(N, N, N/2, N/2, N/30, N/30, 2.5) 
+	+ Gaussian2d(N, N, 2*N/5, 2*N/5, N/30, N/30, 0.2);
+    ArrayXXcd a0 = cgl2.Config2Fourier(A0);
+    double T = 20;
+    double h0 = T / (1<<12);	// T / 2^12
     
+    for(int i = 0; i < scheme.size(); i++) {
+	fprintf(stderr, "scheme is %s \n", scheme[i].c_str());
+	cgl.setScheme(scheme[i]);
+	ArrayXXcd aa = cgl.intg(a0, h0, T, 1<<5, 2, "aa.h5");
+	savetxt("cqcgl2d_N60_comoving_hs_"+to_string(i)+".dat", cgl.hs);
+    }
+#endif
+#ifdef N70
+    //====================================================================================================
+    // static & comoving frame integration with time step adaption turned on.
+    // choose different rtol to obtain
+    //      rtol vs global relative error
+    //      rtol vs integration steps, N(x) evaluation times
+    //      
+    const int N = 1024; 
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
+
+    CQCGL2dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+    CQCGL2d cgl2(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 4);
+    cgl.IntPrint = 10;
+
+    MatrixXcd A0 = Gaussian2d(N, N, N/2, N/2, N/30, N/30, 2.5) 
+	+ Gaussian2d(N, N, 2*N/5, 2*N/5, N/30, N/30, 0.2);
+    ArrayXXcd a0 = cgl2.Config2Fourier(A0);
+    double T = 20;
+    double w[] = {0, -7.3981920609491505};
+
+    int n = 10;
+    time_t t; 
+	
+    for(int p = 0; p < 2; p++){
+	cgl.changeOmega(w[p]);
+
+	MatrixXd erros(n, 5*scheme.size()+1);
+	for(int i = 0; i < scheme.size(); i++) {
+	    cgl.setScheme(scheme[i]);	
+	    for(int j = 0, k=1; j < n; j++, k*=5){
+		fprintf(stderr, "w = %d, scheme is %s, j = %d \n\n", p, scheme[i].c_str(), j);
+		double rtol = k*1e-12;
+		cgl.eidc.rtol = rtol;
+		if(i == 0) {
+		    erros(j, 0) = rtol; 
+		}
+		ArrayXXcd xf = cgl.intg(a0, T/(1<<12), T, 1000000, 2, "aa.h5");
+		erros.row(j).segment(5*i+1, 5) << 
+		    cgl.eidc.NCalCoe, 
+		    cgl.eidc.NCallF,
+		    cgl.eidc.NReject,
+		    cgl.eidc.TotalTime,
+		    cgl.eidc.CoefficientTime;
+	    }
+	}
+	savetxt("cqcgl2d_N70_stat" + to_string(p) + ".dat", erros);
+    }
+#endif    
     return 0;
 }

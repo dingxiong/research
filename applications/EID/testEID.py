@@ -1,6 +1,5 @@
 from personalFunctions import *
 from py_CQCGL1d import *
-from py_CQCGL2d import *
 
 case = 80
 
@@ -516,21 +515,3 @@ if case == 120:
                 transform=ax.transAxes)
         ax2d(fig, ax, loc='upper right')
 
-###############################################################################
-# 2d cqcgl
-if case == 250:
-    """
-    check the integration process is correct.
-    Save the figure and compare
-    """
-    N = 1024
-    d = 30
-    di = 0.05
-    cgl = pyCQCGL2d(N, d, 4.0, 0.8, 0.01, di, 4)
-    c2dp = CQCGL2dPlot(d, d)
-
-    a1 = c2dp.load('aa.h5', 399)
-    a2 = c2dp.load('aa2.h5', 400)
-    print np.max(np.abs(a1-a2))
-    c2dp.savePlots(cgl, "aa.h5", range(400), 'fig1')
-    c2dp.savePlots(cgl, "aa2.h5", range(401), 'fig2')

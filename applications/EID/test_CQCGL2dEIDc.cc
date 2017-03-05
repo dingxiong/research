@@ -159,7 +159,7 @@ int main(){
     double T = 20;
     double w[] = {0, -7.3981920609491505};
 
-    int n = 10;
+    int n = 8;
     time_t t; 
 	
     for(int p = 0; p < 2; p++){
@@ -169,8 +169,8 @@ int main(){
 	for(int i = 0; i < scheme.size(); i++) {
 	    cgl.setScheme(scheme[i]);	
 	    for(int j = 0, k=1; j < n; j++, k*=5){
-		fprintf(stderr, "w = %d, scheme is %s, j = %d \n\n", p, scheme[i].c_str(), j);
-		double rtol = k*1e-12;
+		fprintf(stderr, "w = %f, scheme is %s, j = %d \n\n", w[p], scheme[i].c_str(), j);
+		double rtol = k*1e-11;
 		cgl.eidc.rtol = rtol;
 		if(i == 0) {
 		    erros(j, 0) = rtol; 
@@ -184,7 +184,7 @@ int main(){
 		    cgl.eidc.CoefficientTime;
 	    }
 	}
-	savetxt("cqcgl2d_N70_stat" + to_string(p) + ".dat", erros);
+	savetxt("new_cqcgl2d_N70_stat" + to_string(p) + ".dat", erros);
     }
 #endif    
     return 0;

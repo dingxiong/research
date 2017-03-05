@@ -500,7 +500,10 @@ void CQCGL1d::NL(const int k, const bool onlyOrbit){
     if(onlyOrbit){
 	F[k].ifft();
 	ArrayXcd A2 = (F[k].v2.real().square() + F[k].v2.imag().square()).cast<dcp>();
-	F[k].v2 = B * F[k].v2 * A2 + G * F[k].v2 * A2.square();
+	if(IsQintic)
+	    F[k].v2 = B * F[k].v2 * A2 + G * F[k].v2 * A2.square();
+	else 
+	    F[k].v2 = B * F[k].v2 * A2;
 	F[k].fft();
 
 	dealias(k, onlyOrbit);
@@ -511,11 +514,18 @@ void CQCGL1d::NL(const int k, const bool onlyOrbit){
 	ArrayXcd aA2 = (A.real().square() + A.imag().square()).cast<dcp>();
 	ArrayXcd A2 = A.square();
 	
-	JF[k].v2.col(0) = B * A * aA2 + G * A * aA2.square();
+	if (IsQintic)
+	    JF[k].v2.col(0) = B * A * aA2 + G * A * aA2.square();
+	else
+	    JF[k].v2.col(0) = B * A * aA2;
 	
 	const int M = JF[k].v2.cols() - 1;
-	JF[k].v2.rightCols(M) = JF[k].v2.rightCols(M).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
-	    JF[k].v2.rightCols(M).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
+	if (IsQintic)
+	    JF[k].v2.rightCols(M) = JF[k].v2.rightCols(M).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
+		JF[k].v2.rightCols(M).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
+	else
+	    JF[k].v2.rightCols(M) = JF[k].v2.rightCols(M).conjugate().colwise() *  (B * A2) +
+		JF[k].v2.rightCols(M).colwise() * (2.0*B*aA2);
 	
 	JF[k].fft();
 

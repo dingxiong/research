@@ -43,7 +43,8 @@ public:
     
     const int N;		/* dimension of FFT */
     const double d;		/* system domain size */
-    
+    bool IsQintic = true;	//  False => cubic equation
+
     int DimTan;    		/* true tangent space dimension
 				   dimTan > 0 => dimTan
 				   dimTan = 0 => Ndim

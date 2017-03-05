@@ -355,6 +355,7 @@ BOOST_PYTHON_MODULE(py_CQCGL1d) {
 	     double, double, int>())
 	.def_readonly("N", &pyCQCGL1d::N)
 	.def_readonly("d", &pyCQCGL1d::d)
+	.def_readwrite("IsQintic", &pyCQCGL1d::IsQintic)
 	.def_readonly("Mu", &pyCQCGL1d::Mu)
 	.def_readwrite("Br", &pyCQCGL1d::Br)
 	.def_readwrite("Bi", &pyCQCGL1d::Bi)

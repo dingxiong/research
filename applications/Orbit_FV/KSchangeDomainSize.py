@@ -1,7 +1,7 @@
 from py_ks import *
 from personalFunctions import *
 
-case = 20
+case = 10
 
 if case == 10:
     """
@@ -17,7 +17,7 @@ if case == 10:
     a0 = aa[-1]
     aa = ks.intg(a0, h, np.int(T/h), 5)
     
-    ksp.config(aa, [0, L, 0, T], size=[6, 6], axisLabelSize=25, tickSize=16)
+    ksp.config(aa, [0, L, 0, T], size=[3.6, 6], axisLabelSize=25, tickSize=16)
 
 if case == 20:
     """

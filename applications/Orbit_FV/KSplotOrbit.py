@@ -1,7 +1,7 @@
 from personalFunctions import *
 from py_ks import *
 
-case = 30
+case = 50
 
 N, L = 64, 22
 eqFile =  '../../data/ks22Reqx64.h5'
@@ -58,3 +58,35 @@ if case == 30:
             ksp.config(raa, [0, L, 0, Ts], axisLabelSize=25, tickSize=16,save=True, name=name+'NoLabel'+'Red',
                        labs=[None, None])
 
+if case == 50:
+    """
+    plot rpo / ppo in the full state space
+    for a few pieces 
+    """
+    ks = pyKS(N, L)
+    ksp = KSplot(ks)
+    Ts = 100
+
+    fig, ax = pl3d(size=[8, 6], labs=[r'$b_1$', r'$b_2$', r'$c_2$'])
+    fig2, ax2 = pl3d(size=[8, 6], labs=[r'$b_1$', r'$b_2$', r'$c_2$'])
+
+    poType = 'rpo'
+    poIds = [5, 22]
+    cs = ['b', 'r']
+    for i in range(len(poIds)):
+        poId = poIds[i]
+        a0, T, nstp, r, s = ksp.readPO(poFile, poType, poId)
+        h = T / nstp
+        aa = ks.intg(a0, h, np.int(T/h), 5)
+        raa, ths = ks.redSO2(aa, 1, False)
+        name = 'ks' + poType + str(i) + 'T100'
+        
+        for j in range(10):
+            aa2 = ks.Rotation(aa, -s*j / L*2*np.pi)
+            ax.plot(aa2[:, 0], aa2[:, 2], aa2[:, 3], c=cs[i])
+        ax2.plot(raa[:, 0], raa[:, 2], raa[:, 3], c=cs[i])
+        
+    plt.locator_params(nbins=4)
+    
+    ax3d(fig, ax)
+    ax3d(fig2, ax2)

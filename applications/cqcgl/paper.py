@@ -2,7 +2,7 @@ from py_CQCGL1d import *
 from personalFunctions import *
 import matplotlib.gridspec as gridspec
 
-case = 10
+case = 70
 
 
 if case == 10:
@@ -286,3 +286,116 @@ if case == 60:
     #ax.grid(which='minor', linewidth=1)
     ax2d(fig, ax)
     
+
+if case == 70:
+    """
+    same as case = 40. but in two different plots
+    """
+    N, d = 1024 , 50
+    h = 2e-3
+    sysFlag = 1
+    
+    fig = plt.figure(figsize=[8, 4])
+    nx, ny = 8, 4
+    gs = gridspec.GridSpec(nx, ny)
+
+    # req
+    Bi, Gi = 2, -2
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req, cp = CQCGLreq(cgl), CQCGLplot(cgl)
+
+    a0, wth0, wphi0, err0, e, v = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, 1, flag=2)
+    a0H = cgl.orbit2slice(a0, sysFlag)[0]
+    
+    aE = a0 + 0.001 * norm(a0) * v[0].real
+    T = 50
+    aa = cgl.intg(aE, h, np.int(T/h), 1)
+    # cp.config(aa, [0, d, 0, T])
+    aaH, ths, phis = cgl.orbit2slice(aa, sysFlag)
+    
+    ax = fig.add_subplot(gs[:nx-1, 0])
+    ax.text(0.1, 0.9, '(a)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=18, color='white')
+    ax.set_xlabel(r'$x$', fontsize=16)
+    ax.set_ylabel(r'$t$', fontsize=16)
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    im = ax.imshow(np.abs(cgl.Fourier2Config(aa)), cmap=plt.get_cmap('jet'), extent=[0, d, 0, T], 
+                   aspect='auto', origin='lower')
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax =dr.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im, cax=cax, ticks=[0, 1, 2, 3])
+    
+    ax = fig.add_subplot(gs[:, 1:], projection='3d')
+    ax.text2D(0.1, 0.9, '(b)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=18)
+    ax.set_xlabel(r'$Re(a_{-1})$', fontsize=16)
+    ax.set_ylabel(r'$Re(a_{2})$', fontsize=16)
+    ax.set_zlabel(r'$Im(a_{2})$', fontsize=16)
+    ax.set_xlim([-20, 20])
+    ax.set_ylim([0, 250])
+    ax.set_zlim([-30, 30])
+    ax.locator_params(nbins=4)
+    ax.scatter(a0H[-1], a0H[4], a0H[5], c='r', s=40)
+    ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
+
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+
+    fig = plt.figure(figsize=[8, 4])
+    nx, ny = 8, 4
+    gs = gridspec.GridSpec(nx, ny)
+
+    # rpo
+    Bi, Gi = 4.8, -4.5
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    rpo, cp = CQCGLrpo(cgl), CQCGLplot(cgl)
+
+    x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
+                                               Bi, Gi, 1, flag=2)
+    a0 = x[:cgl.Ndim]
+    po = cgl.intg(a0, T/nstp, nstp, 10)
+    poH = cgl.orbit2slice(po, sysFlag)[0]
+
+    aE = a0 + 0.001 * norm(a0) * v[0];
+
+    aa = cgl.intg(aE, T/nstp, 20*nstp, 1)
+    # cp.config(aa, [0, d, 0, 20*T])
+    aaH, ths, phis = cgl.orbit2slice(aa, sysFlag)
+    
+    ax = fig.add_subplot(gs[:nx-1, 0])
+    ax.text(0.1, 0.9, '(a)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=18, color='white')
+    ax.set_xlabel(r'$x$', fontsize=16)
+    ax.set_ylabel(r'$t$', fontsize=16)
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    im = ax.imshow(np.abs(cgl.Fourier2Config(aa)), cmap=plt.get_cmap('jet'), extent=[0, d, 0, 20*T], 
+                   aspect='auto', origin='lower')
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax =dr.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im, cax=cax, ticks=[0, 1, 2, 3])
+    
+    ax = fig.add_subplot(gs[:, 1:], projection='3d')
+    ax.text2D(0.1, 0.9, '(b)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=18)
+    ax.set_xlabel(r'$Re(a_{-1})$', fontsize=16)
+    ax.set_ylabel(r'$Re(a_{2})$', fontsize=16)
+    ax.set_zlabel(r'$Im(a_{2})$', fontsize=16)
+    # ax.set_ylim([-50, 200])
+    ax.locator_params(nbins=4)
+    ax.plot(poH[:, -1], poH[:, 4], poH[:, 5], c='r', lw=2)
+    ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
+
+    # fig, ax = pl3d(size=[8, 6], labs=[r'$Re(a_{-1})$', r'$Re(a_{2})$', r'$Im(a_{2})$'],
+    #                axisLabelSize=20, tickSize=20)
+    # ax.plot(poH[:, -1], poH[:, 4], poH[:, 5], c='r', lw=2)
+    # ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
+    # ax3d(fig, ax)
+
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+

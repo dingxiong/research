@@ -184,7 +184,7 @@ int main(){
 		    cgl.eidc.CoefficientTime;
 	    }
 	}
-	savetxt("new_cqcgl2d_N70_stat" + to_string(p) + ".dat", erros);
+	savetxt("cqcgl2d_N70_stat" + to_string(p) + ".dat", erros);
     }
 #endif    
     return 0;

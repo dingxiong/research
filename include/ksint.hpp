@@ -192,7 +192,7 @@ public:
     std::pair<MatrixXd, VectorXi>
     fundDomain(const Ref<const MatrixXd> &aa, const int p);
     std::tuple<MatrixXd, VectorXi, VectorXd>
-    redO2f(const Ref<const MatrixXd> &aa, const int p);
+    redO2f(const Ref<const MatrixXd> &aa, const int pSlice, const int pFund);
     MatrixXd redR1(const Ref<const MatrixXd> &aa);
     MatrixXd redR2(const Ref<const MatrixXd> &cc);
     MatrixXd redRef(const Ref<const MatrixXd> &aa);

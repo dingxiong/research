@@ -1115,13 +1115,20 @@ MatrixXd KS::reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
 }
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
+//////////////////////////////////////////////////////////////////////////////////////////
+//                   slice and fundamental domain
+//////////////////////////////////////////////////////////////////////////////////////////
 /**
  * @brief transform the SO2 symmetry to C_p.
  *
  * Use p-th mode to reduce SO2 symmetry. If p > 1, then the symmetry is not reduced
  * but tranformed to cyclic symmetry.
+ *
+ * For example, if p = 2, then SO2 is reduced to C2, so together with reflection,
+ * we have D2 symmetry. If we rotate to the imaginary axis, then we have rules
+ * R : ( - +  - +  - + ...)
+ * C2: ( - -  + +  - - ...)
+ * 
  *
  * @param[in]   p          index of Fourier mode 
  * @param[in]  toY         True => tranform to positive imaginary axis.
@@ -1145,13 +1152,17 @@ KS::redSO2(const Ref<const MatrixXd> &aa, const int p, const bool toY){
 }
 
 /**
- * If we use the 2nd mode to reduce SO2, then we use 1st mode
+ * If we use the 2nd mode to reduce SO2, then we use 1st mode or 3rd mode
  * to define fundamental domain. b_1 > 0 && c_1 > 0
  *
  * If we use the 1st mode to reduce SO2, then we use 2nd mode
  * to define fundamental domain. b_2 > 0
  *
  * In all these cases, we assume SO2 is reduced to positive y-axis.
+ *
+ * @param[in]  p          index of Fourier mode used to define
+ *                        the fundamental domain, not the one
+ *                        to define slice
  */
 std::pair<MatrixXd, VectorXi>
 KS::fundDomain(const Ref<const MatrixXd> &aa, const int p){
@@ -1180,10 +1191,11 @@ KS::fundDomain(const Ref<const MatrixXd> &aa, const int p){
     ArrayXd R3 = R1 * R2;
     
     ///////////////////////////////////
-    if (p == 1){
+    if (p == 1 || p == 3){
 	for(int i = 0; i < m; i++){
-	    bool x = aa(0, i) > 0;
-	    bool y = aa(1, i) > 0;
+	    int id = 2*(p-1);
+	    bool x = aa(id, i) > 0;
+	    bool y = aa(id+1, i) > 0;
 	    if(x && y) {
 		faa.col(i) = aa.col(i);
 		DomainIds(i) = 1;
@@ -1196,7 +1208,7 @@ KS::fundDomain(const Ref<const MatrixXd> &aa, const int p){
 		faa.col(i) = aa.col(i).array() * R2;
 		DomainIds(i) = 3;
 	    }
-	    else if (x && !y) {
+	    else { // if (x && !y) {
 		faa.col(i) = aa.col(i).array() * R3;
 		DomainIds(i) = 4;
 	    }
@@ -1214,6 +1226,9 @@ KS::fundDomain(const Ref<const MatrixXd> &aa, const int p){
 	    }
 	}
     }
+    else {
+	fprintf(stderr, "wrong index of Fourier mode !\n");
+    }
 
     return std::make_pair(faa, DomainIds);
 }
@@ -1221,18 +1236,15 @@ KS::fundDomain(const Ref<const MatrixXd> &aa, const int p){
 /** @brief reduce O2 symmetry to fundamental domain
  *
  *
- * @param[in] aa    states in the full state space
- * @param[in] p     index of Fourier mode used to reduce SO2
+ * @param[in] aa         states in the full state space
+ * @param[in] pSlice     index of Fourier mode used to define slice
+ * @param[in] pFund      index of Fourier mode used to define fundamental domain
+ * @return    state in fundamental domain, domain indices, angles
  **/
 std::tuple<MatrixXd, VectorXi, VectorXd>
-KS::redO2f(const Ref<const MatrixXd> &aa, const int p){
-    auto tmp = redSO2(aa, p, true);
-    int s;
-    if ( p == 1) s = 2; 
-    else if (p == 2) s = 1;
-    else fprintf(stderr, "redO2f wrong\n");
-
-    auto tmp2 = fundDomain(tmp.first, s);
+KS::redO2f(const Ref<const MatrixXd> &aa, const int pSlice, const int pFund){
+    auto tmp = redSO2(aa, pSlice, true);
+    auto tmp2 = fundDomain(tmp.first, pFund);
 
     return std::make_tuple(tmp2.first, tmp2.second, tmp.second);
 }

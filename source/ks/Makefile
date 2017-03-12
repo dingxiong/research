@@ -32,7 +32,7 @@ endif
 SHARED = $(addprefix lib, $(addsuffix .so, $(basename $(word 1, $(SOURCE)))))
 STATIC = $(addprefix lib, $(addsuffix .a, $(basename $(word 1, $(SOURCE)))))
 
-all : $(SHARED) $(STATIC) 
+all : $(SHARED) # $(STATIC) 
 
 $(SHARED): $(SOURCE)
 	$(CC) -shared -fpic $(CFLAGS) $(OPTIM) -I$(INCLUDE) -I$(EIGEN) $^ -o $@

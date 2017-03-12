@@ -257,12 +257,12 @@ public:
 			       );
     }
     
-    bp::tuple PYredO2f(bn::ndarray aa, int p){
+    bp::tuple PYredO2f(bn::ndarray aa, int pSlice, int pFund){
 	int m, n;
 	getDims(aa, m, n);
 	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
 	
-	auto tmp = redO2f(tmpaa, p);
+	auto tmp = redO2f(tmpaa, pSlice, pFund);
 	return bp::make_tuple( copy2bn(std::get<0>(tmp)),
 			       copy2bn<ArrayXXi, int>(std::get<1>(tmp)),
 			       copy2bn(std::get<2>(tmp))

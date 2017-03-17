@@ -2,11 +2,11 @@ from cglHelp import *
 from py_CQCGL2d import *
 
 
-case = 40
+case = 90
 
-labels = ["IFRK4(3)", "IFRK5(4)",
+labels = ["IF4(3)", "IF5(4)",
           "ERK4(3)2(2)", "ERK4(3)3(3)", "ERK4(3)4(3)", "ERK5(4)5(4)",
-          "SSPP4(3)"]
+          "SS4(3)"]
 mks = ['o', 's', '+', '^', 'x', 'v', 'p']
 Nscheme = len(labels)
 lss = ['--', '-.', ':', '-', '-', '-', '-']

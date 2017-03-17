@@ -1,11 +1,11 @@
-from personalFunctions import *
+from cglHelp import *
 from py_CQCGL1d import *
 
 case = 80
 
-labels = ["IFRK4(3)", "IFRK5(4)",
+labels = ["IF4(3)", "IF5(4)",
           "ERK4(3)2(2)", "ERK4(3)3(3)", "ERK4(3)4(3)", "ERK5(4)5(4)",
-          "SSPP4(3)"]
+          "SS4(3)"]
 mks = ['o', 's', '+', '^', 'x', 'v', 'p']
 Nscheme = len(labels)
 lss = ['--', '-.', ':', '-', '-', '-', '-']
@@ -322,7 +322,7 @@ if case == 90:
     static & comoving frame
     plot the relative error, Nab, Nn vs rtol
     """
-    loadFlag = 1
+    loadFlag = 0
 
     err = np.loadtxt('data/cqcgl1d_N70_stat' + ('0' if loadFlag == 0 else '1') + '.dat')
     rtol = err[:, 0]

@@ -94,7 +94,7 @@ def pl3d(size=[8, 6], labs=[r'$x$', r'$y$', r'$z$'], axisLabelSize=25,
 
 def ax3d(fig, ax, doBlock=False, save=False, name='output.png',
          angle=None, title=None,
-         loc='best', alpha=0.2):
+         loc='best', alpha=0.2, picForm='png'):
     fig.tight_layout(pad=0)
 
     if angle is not None:
@@ -105,7 +105,7 @@ def ax3d(fig, ax, doBlock=False, save=False, name='output.png',
 
     ax.legend(loc=loc, framealpha=alpha)
     if save:
-        plt.savefig(name)
+        plt.savefig(name, format=picForm)
         plt.close()
     else:
         plt.show(block=doBlock)
@@ -341,6 +341,14 @@ def plotContour(z, x=None, y=None, size=[8, 6], labs=[r'$x$', r'$y$'],
 ############################################################
 #                        Common functions                  #
 ############################################################
+
+def sortByReal(eigvalue, eigvector=None):
+    indx = np.argsort(eigvalue.real)
+    indx = indx[::-1]
+    if eigvector is None:
+        return eigvalue[indx]
+    else:
+        return eigvalue[indx], eigvector[:, indx]
 
 
 def pAngleVQ(V, Q):

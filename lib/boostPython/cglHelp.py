@@ -333,15 +333,6 @@ def plotOnePhase(cgl, a0, d=50, size=[6, 4], axisLabelSize=20,
     else:
         plt.show(block=False)
 
-        
-def sortByReal(eigvalue, eigvector=None):
-    indx = np.argsort(eigvalue.real)
-    indx = indx[::-1]
-    if eigvector is None:
-        return eigvalue[indx]
-    else:
-        return eigvalue[indx], eigvector[:, indx]
-
 
 def cqcglSaveReqEV(fileName, groupName, a, wth, wphi, err, er, ei, vr, vi):
     f = h5py.File(fileName, 'a')

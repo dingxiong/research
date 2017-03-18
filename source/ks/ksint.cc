@@ -1160,40 +1160,52 @@ KS::redSO2(const Ref<const MatrixXd> &aa, const int p, const bool toY){
  *
  * In all these cases, we assume SO2 is reduced to positive y-axis.
  *
- * @param[in]  p          index of Fourier mode used to define
- *                        the fundamental domain, not the one
- *                        to define slice
+ * @param[in] pSlice     index of Fourier mode used to define slice
+ * @param[in] pFund      index of Fourier mode used to define fundamental domain
+ * 
  */
 std::pair<MatrixXd, VectorXi>
-KS::fundDomain(const Ref<const MatrixXd> &aa, const int p){
+KS::fundDomain(const Ref<const MatrixXd> &aa, const int pSlice, const int pFund){
     int n = aa.rows();
     int m = aa.cols();
-    assert( 0 == n%2 && p > 0); 
+    assert( 0 == n%2 && pSlice > 0 && pFund > 0 && pSlice != pFund);
+ 
     MatrixXd faa(n, m);
     VectorXi DomainIds(m);
     
-    ////////////////////////////////////
-    // get reflection matrice
-    ArrayXd R1(n);
+    ArrayXd R(n);		// reflection matrix
     for(int i = 0; i < n/2; i++){
-	R1(2*i) = -1;
-	R1(2*i+1) = 1;
+	R(2*i) = -1;
+	R(2*i+1) = 1;
     }
     
-    ArrayXd R2(n);
-    int s = -1;
-    for(int i = 0; i < n/2; i++){
-	R2(2*i) = s;
-	R2(2*i+1) = s;
-	s *= -1;
+    if (pSlice == 1){		//  1st mode slice	
+	int id = 2 * (pFund - 1);
+	for (int i = 0; i < m; i++) {
+	    if(aa(id, i) > 0 ) {
+		faa.col(i) = aa.col(i);
+		DomainIds(i) = 1;
+	    }
+	    else {
+		faa.col(i) = aa.col(i).array() * R;
+		DomainIds(i) = 2;
+	    }
+	}
     }
     
-    ArrayXd R3 = R1 * R2;
+    else if (pSlice == 2){	// 2nd mode slice	
+	ArrayXd C(n);		// rotation by pi
+	int s = -1;
+	for(int i = 0; i < n/2; i++){
+	    C(2*i) = s;
+	    C(2*i+1) = s;
+	    s *= -1;
+	}
     
-    ///////////////////////////////////
-    if (p == 1 || p == 3){
+	ArrayXd RC = R * C;
+	
+	int id = 2 * (pFund - 1);
 	for(int i = 0; i < m; i++){
-	    int id = 2*(p-1);
 	    bool x = aa(id, i) > 0;
 	    bool y = aa(id+1, i) > 0;
 	    if(x && y) {
@@ -1201,31 +1213,60 @@ KS::fundDomain(const Ref<const MatrixXd> &aa, const int p){
 		DomainIds(i) = 1;
 	    }
 	    else if (!x && y) {
-		faa.col(i) = aa.col(i).array() * R1;
+		faa.col(i) = aa.col(i).array() * R;
 		DomainIds(i) = 2;
 	    }
 	    else if (!x && !y) {
-		faa.col(i) = aa.col(i).array() * R2;
+		faa.col(i) = aa.col(i).array() * C;
 		DomainIds(i) = 3;
 	    }
 	    else { // if (x && !y) {
-		faa.col(i) = aa.col(i).array() * R3;
+		faa.col(i) = aa.col(i).array() * RC;
 		DomainIds(i) = 4;
 	    }
 	}
+	
     }
-    else if (p == 2){
-	for (int i = 0; i < m; i++) {
-	    if(aa(2, i) > 0 ) {
+
+    else if (pSlice == 3){ 
+	ArrayXcd C1(n/2), C2(n/2);
+	for (int i = 0; i < n/2; i++){
+	    double th = (i+1) * 2 * M_PI / 3;
+	    C1[i] = dcp(cos(th), sin(th));
+	    C2[i] = dcp(cos(2*th), sin(2*th));
+	}
+
+	int id = 2 * (pFund - 1); 
+
+	for(int i = 0; i < m; i++){
+	    int x = aa(id, i), y = aa(id+1, i);
+	    if ( y <= x/2 && y >= -x/2){ // domain 1
 		faa.col(i) = aa.col(i);
 		DomainIds(i) = 1;
 	    }
-	    else {
-		faa.col(i) = aa.col(i).array() * R1;
+	    else if (y >= x/2 && y <= -x/2){ // domain 4
+		faa.col(i) = aa.col(i).array() * R;
+		DomainIds(i) = 4;
+	    }
+	    else if (y >= x/2 && x >= 0) { // domain 2 
+		faa.col(i) = f2a(C1 * a2f(aa.col(i)).array()).array() * R;
 		DomainIds(i) = 2;
+	    }
+	    else if(y <= x/2 && x <= 0) { // domain 5 
+		faa.col(i) = f2a(C1 * a2f(aa.col(i)).array());
+		DomainIds(i) = 5; 
+	    }
+	    else if (y >= -x/2 && x <= 0){ // domain 3
+		faa.col(i) = f2a(C2 * a2f(aa.col(i)).array());
+		DomainIds(i) = 3;
+	    }
+	    else {		// domain 6
+		faa.col(i) = f2a(C2 * a2f(aa.col(i)).array()).array() * R;
+		DomainIds(i) = 6;
 	    }
 	}
     }
+    
     else {
 	fprintf(stderr, "wrong index of Fourier mode !\n");
     }
@@ -1244,7 +1285,7 @@ KS::fundDomain(const Ref<const MatrixXd> &aa, const int p){
 std::tuple<MatrixXd, VectorXi, VectorXd>
 KS::redO2f(const Ref<const MatrixXd> &aa, const int pSlice, const int pFund){
     auto tmp = redSO2(aa, pSlice, true);
-    auto tmp2 = fundDomain(tmp.first, pFund);
+    auto tmp2 = fundDomain(tmp.first, pSlice, pFund);
 
     return std::make_tuple(tmp2.first, tmp2.second, tmp.second);
 }

@@ -93,7 +93,7 @@ class Eq(Sym):
         # ev is in cloumn format. While evr and rev are in row format
 
         if DoGetSliceState:
-            self.so = self.ks.redO2f(a0, pSlice, pFund)[0]
+            self.so = self.ks.redO2f(self.a0, pSlice, pFund)[0]
 
         # E2 and E3 may be in the slice border, so
         # just obtain their group orbits  
@@ -178,7 +178,7 @@ class PPO(Sym):
             if DoGetInsliceOrbit:
                 self.so, self.ths = self.ks.redSO2(self.fo, pSlice, toY)
                 if DoGetFundOrbit:
-                    self.fdo, self.dids = self.ks.fundDomain(self.so, pFund)
+                    self.fdo, self.dids = self.ks.fundDomain(self.so, pSlice, pFund)
                     self.jumps = getJumpPts(self.dids)
 
         

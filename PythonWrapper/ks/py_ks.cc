@@ -246,12 +246,12 @@ public:
 			      );
     }
 
-    bp::tuple PYfundDomain(bn::ndarray aa, int p){
+    bp::tuple PYfundDomain(bn::ndarray aa, int pSlice, int pFund){
 	int m, n;
 	getDims(aa, m, n);
 	Map<MatrixXd> tmpaa((double*)aa.get_data(), n, m);
 	
-	auto tmp = fundDomain(tmpaa, p);
+	auto tmp = fundDomain(tmpaa, pSlice, pFund);
 	return bp::make_tuple( copy2bn(tmp.first),
 			       copy2bn<ArrayXXi, int>(tmp.second)
 			       );

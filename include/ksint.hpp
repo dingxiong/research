@@ -190,7 +190,7 @@ public:
     std::pair<MatrixXd, VectorXd>
     redSO2(const Ref<const MatrixXd> &aa, const int p, const bool toY);
     std::pair<MatrixXd, VectorXi>
-    fundDomain(const Ref<const MatrixXd> &aa, const int p);
+    fundDomain(const Ref<const MatrixXd> &aa, const int pSlice, const int pFund);
     std::tuple<MatrixXd, VectorXi, VectorXd>
     redO2f(const Ref<const MatrixXd> &aa, const int pSlice, const int pFund);
     MatrixXd redR1(const Ref<const MatrixXd> &aa);

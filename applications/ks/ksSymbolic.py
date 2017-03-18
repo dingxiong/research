@@ -13,7 +13,7 @@ if __name__ == '__main__':
     reqFile = '../../data/ks22Reqx64.h5'
     poFile = '../../data/ks22h001t120x64EV.h5'
     
-    case = 10
+    case = 40
 
     if case == 10:
         """
@@ -21,7 +21,7 @@ if __name__ == '__main__':
         """
         inv = Inv(reqFile, poFile, 2, True, 3)
         nn = 30
-        aas, dom, jumps = inv.Es[1].getMu(vId=0, nn=nn, T=100)
+        aas, dom, jumps = inv.Es[2].getMu(vId=0, nn=nn, T=120)
         ii = [3, 7, 11]
         E2, E3 = inv.Es[1].go, inv.Es[2].go
             
@@ -85,6 +85,62 @@ if __name__ == '__main__':
                                     label='rpo'+str(inv.rpoIds[i]))
             ax.plot(E3[:, ii[0]], E3[:, ii[1]], E3[:, ii[2]], c='b')
             ax3d(fig, ax, angle=[50, 80], save=True, name='rpo'+str(k)+'.png')
+
+    if case == 40:
+        """
+        just try to have a look at the 3rd slice
+        """
+        inv = Inv(reqFile, poFile, 3, True, 2, [], [1, 3])
+        nn = 30
+        aas, dom, jumps = inv.Es[2].getMu(vId=0, nn=nn, T=120)
+        
+        ii = [1, 3, 5]
+        E2, E3 = inv.Es[1].go, inv.Es[2].go
+       
+        fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
+        inv.plotRE(ax, ii)
+        
+        for i in range(nn):
+            inv.plotFundOrbit(ax, aas[i], jumps[i], ii)
+
+        cs = ['r', 'b']
+        for i in range(len(inv.rpos)):
+            inv.plotFundOrbit(ax, inv.rpos[i].fdo, inv.rpos[i].jumps, ii,
+                              c='k' if i > 0 else cs[i],
+                              alpha=1, lw=1.5,
+                              label='rpo'+str(inv.rpoIds[i]))
+        ax.plot(E2[:, ii[0]], E2[:, ii[1]], E2[:, ii[2]], c='c')
+        #ax.plot(E3[:, ii[0]], E3[:, ii[1]], E3[:, ii[2]], c='b')
+        ax3d(fig, ax, angle=[30, 120])
+
+    if case == 50:
+        """
+        same with 40 but to save figures
+        """
+        inv = Inv(reqFile, poFile, 3, True, 2, [], [])
+        nn = 30
+        aas, dom, jumps = inv.Es[2].getMu(vId=0, nn=nn, T=120)
+
+        ii = [1, 3, 5]
+        E2, E3 = inv.Es[1].go, inv.Es[2].go
+
+        for k in range(2, 51):
+            inv.rpoIds = [1, k]
+            inv.loadPO()
+
+            fig, ax = pl3d(labs=[r'$v_1$', r'$v_2$', r'$v_3$'])
+            inv.plotRE(ax, ii)
+            for i in range(nn):
+                inv.plotFundOrbit(ax, aas[i], jumps[i], ii)
+            for i in range(len(inv.rpos)):
+                inv.plotFundOrbit(ax, inv.rpos[i].fdo, inv.rpos[i].jumps, ii,
+                                    c='k' if i > 0 else 'r',
+                                    alpha=1, lw=1.5,
+                                    label='rpo'+str(inv.rpoIds[i]))
+            ax.plot(E2[:, ii[0]], E2[:, ii[1]], E2[:, ii[2]], c='c')
+            ax3d(fig, ax, angle=[30, 120], save=True, name='rpo'+str(k)+'.eps', picForm='eps')
+        
+        
 
     if case == 14:
         """
@@ -379,7 +435,7 @@ if __name__ == '__main__':
         ax.plot(E3[:, ii[0]], E3[:, ii[1]], E3[:, ii[2]])
         ax3d(fig, ax)
 
-    if case == 40:
+    if case == 400:
         """
         watch an ergodic trajectory after reducing O2 symmetry
         """
@@ -448,7 +504,7 @@ if __name__ == '__main__':
             # ani.save('ani.mp4', dpi=200, fps=30, extra_args=['-vcodec', 'libx264'])
             plt.show()
 
-    if case == 50:
+    if case == 500:
         """
         view a collection of rpo and ppo
         """

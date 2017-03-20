@@ -2,7 +2,7 @@ from py_CQCGL1d import *
 from personalFunctions import *
 import matplotlib.gridspec as gridspec
 
-case = 70
+case = 10
 
 
 if case == 10:
@@ -10,14 +10,14 @@ if case == 10:
     plot the Bi - Gi req stability plot using the saved date from running viewReq.py
     """
     saveData = np.loadtxt("BiGiReqStab.dat")
-    cs = {0: 'g', 1: 'm', 2: 'c', 4: 'r', 6: 'b'}#, 8: 'y', 56: 'r', 14: 'grey'}
-    ms = {0: 's', 1: '^', 2: '+', 4: 'o', 6: 'D'}#, 8: '8', 56: '4', 14: 'v'}
+    cs = {0: 'c', 1: 'm', 2: 'm', 4: 'r', 6: 'b'}#, 8: 'y', 56: 'r', 14: 'grey'}
+    ms = {0: '^', 1: '^', 2: 'x', 4: 'o', 6: 'D'}#, 8: '8', 56: '4', 14: 'v'}
     fig, ax = pl2d(size=[8, 6], labs=[r'$\gamma_i$', r'$\beta_i$'], axisLabelSize=25,
                    tickSize=20, xlim=[-6, 0], ylim=[-4, 6])
     for item in saveData:
         Gi, Bi, m = item
-        ax.scatter(Gi, Bi, s=18, edgecolors='none',
-                   marker=ms.get(m, '*'), c=cs.get(m, 'k'))
+        ax.scatter(Gi, Bi, s=18 if m > 0 else 18, edgecolors='none',
+                   marker=ms.get(m, 'v'), c=cs.get(m, 'k'))
     # ax.grid(which='both')
     ax2d(fig, ax)
     

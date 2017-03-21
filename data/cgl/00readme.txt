@@ -64,3 +64,38 @@ req_N: previous soliton solutions for different N. for L = 50
 
 ############################################################
 
+reqBiGi.h5 / reqBiGiEV.h5 : relative equilibria in the parameter space (Bi, Gi)
+	   Group structure is /Bi/Gi/index/
+
+############################################################
+rpoBiGi.h5 / rpoBiGiEV.h5 : relative periodic orbits in the parameter space (Bi, Gi)
+	   Group structure is /Bi/Gi/index/
+	   
+	   fixed paramters:
+	    N = 1024, L = 50	
+	    mu = -0.1
+	    Dr = 0.125, Di = 0.5
+	    Br = 1, Gr = -0.1
+
+	   data structure :
+
+	   T     :    [double]       period
+	   x     :    [1365 x 1]     state [1362 x 1], T, theta, phi
+	   th    :    [double]       translation velocity
+	   phi   :    [double]       phase rotation velocity
+	   nstp  :    [int]          integration steps
+	   err   :    [double]       error of this orbit
+	   er    :    ?              real part of Floquet multiplier
+	   ei    :    ?              imaginary part of Floquet multiplier
+	   v     :    ?              Floquet vectors in real format
+
+	   The eigenvalues and eigenvectors are obtained by Arpack package.
+
+	   Range (Bi, Gi) = [1.9, 5.7] x [-5.6, -4.0] as a rectangle area
+
+rpoHopfBiGi.h5 : rpos close to the Hopf bifurcation line.
+
+############################################################
+
+req2dBiGi.h5 : two dimensional relative equilibria in the parameter space (Bi, Gi)
+	   

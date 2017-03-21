@@ -63,9 +63,9 @@ CQCGL1dRpo::toStr(double x, double y, int id){
  * @note group should be a new group
  * [x, T,  nstp, theta, phi, err]
  */
-void CQCGL1dRpo::writeRpo(const string fileName, const string groupName,
-			  const MatrixXd &x, const double T, const int nstp,
-			  const double th, const double phi, double err){
+void CQCGL1dRpo::write(const string fileName, const string groupName,
+		       const MatrixXd &x, const double T, const int nstp,
+		       const double th, const double phi, double err){
 
     H5File file(fileName, H5F_ACC_RDWR);
     checkGroup(file, groupName, true);
@@ -79,18 +79,18 @@ void CQCGL1dRpo::writeRpo(const string fileName, const string groupName,
     writeScalar<double>(file, DS + "err", err);
 }
 
-void CQCGL1dRpo::writeRpo2(const std::string fileName, const string groupName, 
-			   const MatrixXd &x, const int nstp, double err){	
+void CQCGL1dRpo::write2(const std::string fileName, const string groupName, 
+			const MatrixXd &x, const int nstp, double err){	
     MatrixXd tmp = x.bottomRows(3).rowwise().sum();
     double T = tmp(0);
     double th = tmp(1);
     double phi = tmp(2);
     
-    writeRpo(fileName, groupName, x, T, nstp, th, phi, err);
+    write(fileName, groupName, x, T, nstp, th, phi, err);
 }
 
 std::tuple<MatrixXd, double, int, double, double, double>
-CQCGL1dRpo::readRpo(const string fileName, const string groupName){
+CQCGL1dRpo::read(const string fileName, const string groupName){
     H5File file(fileName, H5F_ACC_RDONLY);
     string DS = "/" + groupName + "/";
     
@@ -108,7 +108,7 @@ CQCGL1dRpo::readRpo(const string fileName, const string groupName){
  * @brief move rpo from one file, group to another file, group
  */
 void
-CQCGL1dRpo::moveRpo(string infile, string ingroup, 
+CQCGL1dRpo::move(string infile, string ingroup, 
 		    string outfile, string outgroup, int flag){
     MatrixXd x;
     double T, th, phi, err;
@@ -117,8 +117,8 @@ CQCGL1dRpo::moveRpo(string infile, string ingroup,
     VectorXcd e;
     MatrixXd v;
 
-    std::tie(x, T, nstp, th, phi, err) = readRpo(infile, ingroup);
-    writeRpo(outfile, outgroup, x, T, nstp, th, phi, err);
+    std::tie(x, T, nstp, th, phi, err) = read(infile, ingroup);
+    write(outfile, outgroup, x, T, nstp, th, phi, err);
     
     if (flag == 1 || flag == 2){
 	e = readE(infile, ingroup);
@@ -573,7 +573,7 @@ CQCGL1dRpo::findRPOM_hook2(const MatrixXd &x0,
 			   const double GmresRtol,
 			   const int GmresRestart,
 			   const int GmresMaxit){
-    int n = Ndim + 3;
+    int n = Ndim + 3; 
     int m = x0.cols();
     assert( x0.rows() == n);
 
@@ -615,7 +615,7 @@ CQCGL1dRpo::findRpoParaSeq(const std::string file, int id, double step, int Ns, 
     MatrixXd x0;
     double T0, th0, phi0, err0;
     int nstp0;
-    std::tie(x0, T0, nstp0, th0, phi0, err0) = readRpo(file, toStr(Bi, Gi, id));
+    std::tie(x0, T0, nstp0, th0, phi0, err0) = read(file, toStr(Bi, Gi, id));
     
     MatrixXd x;
     double T, th, phi, err;
@@ -629,7 +629,7 @@ CQCGL1dRpo::findRpoParaSeq(const std::string file, int id, double step, int Ns, 
 	
 	// if exist, use it as seed, otherwise find req
 	if ( checkGroup(file, toStr(Bi, Gi, id), false) ){ 
-	    std::tie(x0, T0, nstp0, th0, phi0, err0) = readRpo(file, toStr(Bi, Gi, id));
+	    std::tie(x0, T0, nstp0, th0, phi0, err0) = read(file, toStr(Bi, Gi, id));
 	}
 	else {
 	    switch(nstpFlag){
@@ -643,8 +643,8 @@ CQCGL1dRpo::findRpoParaSeq(const std::string file, int id, double step, int Ns, 
 
 	    std::tie(x, err, flag) = findRPOM_hook2(x0, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
 	    if (flag == 0){
-		writeRpo2(file, toStr(Bi, Gi, id), x, nstp, err);
-		std::tie(x0, T0, nstp0, th0, phi0, err0) = readRpo(file, toStr(Bi, Gi, id));
+		write2(file, toStr(Bi, Gi, id), x, nstp, err);
+		std::tie(x0, T0, nstp0, th0, phi0, err0) = read(file, toStr(Bi, Gi, id));
 	    }
 	    else {
 		if(++Nfail == 3) break;		

@@ -20,7 +20,7 @@ using namespace MyH5;
 
 #define cee(x) (cout << (x) << endl << endl)
 
-#define CASE_50
+#define CASE_20
 
 int main(){
     
@@ -43,7 +43,7 @@ int main(){
     ArrayXd a0;
     double T, th, phi, err;
     int nstp; 
-    std::tie(a0, T, nstp, th, phi, err) = CQCGL1dRpo::readRpo(file, "0.360000/1");
+    std::tie(a0, T, nstp, th, phi, err) = CQCGL1dRpo::read(file, "0.360000/1");
     a0 *= 0.316;
 
     ArrayXXd aa = cgl.intg(a0, 1e-3, 20000, 10);
@@ -56,32 +56,31 @@ int main(){
     // find one limit cycle using previous data
     const int N = 1024;
     const double L = 50;
-    double Bi = 0.8;
-    double Gi = -3.6;
+    double Bi = 1.9;
+    double Gi = -4.1;
     
+    int id = 1;
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
-    string file = "/usr/local/home/xiong/00git/research/data/cgl/rpoT2X1.h5";
+    string file = "../../data/cgl/rpoBiGi2.h5";
     ArrayXd a0;
     double T0, th0, phi0, err0;
     int nstp0; 
-    std::tie(a0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::readRpo(file, "0.360000/1");
-    a0 *= 0.316;
-    T0 *= 10;
-    ArrayXXd aa = cgl.intg(a0, 1e-3, 20000, 10);
-    VectorXd x0(cgl.Ndim+3);
-    x0 << aa.rightCols(1), T0, th0, phi0;
-	
+    std::tie(a0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::read(file, CQCGL1dRpo::toStr(Bi, Gi, id));
+    
+    cgl.Bi = 1.5;
+    cgl.Gi -= 3.9;
+    
     double T, th, phi, err;
     MatrixXd x;
-    int nstp = static_cast<int>( T0/1e-3/10)*10; // time is enlarged.
+    int nstp = nstp0;
     int flag;
-
-    cout << T0 << ' ' << nstp << endl;
-    std::tie(x, err, flag) = cgl.findRPOM_hook2(x0, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
-    if (flag == 0) CQCGL1dRpo::writeRpo2("rpoBiGi.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);    
+    
+    std::tie(x, err, flag) = cgl.findRPOM_hook2(a0, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
+    if (flag == 0) 
+	CQCGL1dRpo::write2("../../data/cgl/rpoBiGi2.h5", cgl.toStr(cgl.Bi, cgl.Gi, 1), x, nstp, err);   
 
 #endif
-#ifdef CASE_22
+#ifdef CASE_50
     //====================================================================== 
     // find limit cycles by varying Bi and Gi but using propagated initial
     // condition
@@ -97,7 +96,7 @@ int main(){
     ArrayXd x0;
     double T0, th0, phi0, err0;
     int nstp0;
-    std::tie(x0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::readRpo(file, CQCGL1dRpo::toStr(Bi, Gi, id));
+    std::tie(x0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::read(file, CQCGL1dRpo::toStr(Bi, Gi, id));
 
     ArrayXd a0 = x0.head(cgl.Ndim);
     ArrayXXd aa = cgl.intg(a0, T0/nstp0, nstp0, 1);
@@ -113,11 +112,11 @@ int main(){
     if (!checkGroup(file, CQCGL1dRpo::toStr(cgl.Bi, cgl.Gi, id), false)){
 	fprintf(stderr, "Bi = %g Gi = %g nstp = %d T0 = %g\n", cgl.Bi, cgl.Gi, nstp, T0);
 	std::tie(x, err, flag) = cgl.findRPOM_hook2(x1, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
-	if(flag == 0) CQCGL1dRpo::writeRpo2(file, cgl.toStr(cgl.Bi, cgl.Gi, id), x, nstp, err);
+	if(flag == 0) CQCGL1dRpo::write2(file, cgl.toStr(cgl.Bi, cgl.Gi, id), x, nstp, err);
     }
     
 #endif
-#ifdef CASE_23
+#ifdef CASE_60
     //======================================================================
     // find rpo of next one in Bi-Gi plane but using multishooting
     const int N = 1024;
@@ -132,7 +131,7 @@ int main(){
     double T0, th0, phi0, err0;
     int nstp0; 
 
-    std::tie(x0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::readRpo(file, CQCGL1dRpo::toStr(Bi, Gi, 1));
+    std::tie(x0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::read(file, CQCGL1dRpo::toStr(Bi, Gi, 1));
     ArrayXd a0 = x0.head(cgl.Ndim);
     ArrayXXd aa = cgl.intg(a0, T0/nstp0, nstp0, nstp0/4);
     MatrixXd x1(cgl.Ndim+3, 4);
@@ -149,37 +148,37 @@ int main(){
     cgl.Gi += 0.1;
     cout << cgl.Bi << ' ' << cgl.Gi << endl;
     std::tie(x, err, flag) = cgl.findRPOM_hook2(x1, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
-    if (flag == 0) CQCGL1dRpo::writeRpo2("rpoBiGi2.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);    
+    if (flag == 0) CQCGL1dRpo::write2("rpoBiGi2.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);    
 
 #endif
-#ifdef CASE_25
+#ifdef CASE_70
     //======================================================================
     // use saved guess directively
     const int N = 1024;
     const double L = 50;
-    double Bi = 4.8;
-    double Gi = -4.9;
+    double Bi = 0;
+    double Gi = -3.5;
     
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
     string file = "../../data/cgl/p.h5";
     ArrayXd a0;
     double T0, th0, phi0, err0;
     int nstp0; 
-    std::tie(a0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::readRpo(file, cgl.toStr(Bi, Gi, 1));
+    std::tie(a0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::read(file, cgl.toStr(Bi, Gi, 1));
     VectorXd x0(cgl.Ndim+3);
-    // x0 << a0, T0, th0, phi0;
-    x0 << a0, 3, th0, -7.3;
-
+    x0 << a0, T0, th0, phi0;
+    // x0 << a0, 3, th0, -7.3;
+    
     double T, th, phi, err;
     MatrixXd x;
     int nstp = nstp0;
     int flag;
 
     std::tie(x, err, flag) = cgl.findRPOM_hook2(x0, nstp, 8e-10, 1e-3, 50, 30, 1e-6, 300, 1);
-    if (flag == 0) CQCGL1dRpo::writeRpo2("../../data/cgl/rpoBiGi2.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);   
+    if (flag == 0) CQCGL1dRpo::write2("../../data/cgl/rpoBiGi2.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);   
 
 #endif
-#ifdef CASE_30
+#ifdef CASE_80
     //====================================================================== 
     // test the accuracy of a limit cycle
     const int N = 1024;
@@ -192,14 +191,14 @@ int main(){
     ArrayXd a0;
     double T0, th0, phi0, err0;
     int nstp0; 
-    std::tie(a0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::readRpo(file, cgl.toStr(Bi, Gi, 1));
+    std::tie(a0, T0, nstp0, th0, phi0, err0) = CQCGL1dRpo::read(file, cgl.toStr(Bi, Gi, 1));
     printf("%g %g %g %g %d\n", T0, th0, phi0, err0, nstp0);
 
     double e = cgl.MFx2(a0, nstp0).norm();
     cee(e);
 
 #endif
-#ifdef CASE_40
+#ifdef CASE_100
     //====================================================================== 
     // find limit cycles by varying Bi and Gi
     const int N = 1024;
@@ -222,7 +221,7 @@ int main(){
 
 
 #endif
-#ifdef CASE_50
+#ifdef CASE_120
     //====================================================================== 
     // move rpo from one file to another file
     std::string fin = "../../data/cgl/rpoBiGiEV.h5";
@@ -235,7 +234,7 @@ int main(){
 	    string g = CQCGL1dRpo::toStr(Bi, Gi, 1);
 	    if (checkGroup(fin, g, false) && !checkGroup(fout, g, false)){
 		fprintf(stderr, "%d %g %g\n", 1, Bi, Gi);
-		CQCGL1dRpo::moveRpo(fin, g, fout, g, 2);
+		CQCGL1dRpo::move(fin, g, fout, g, 2);
 	    }
 	}
     }

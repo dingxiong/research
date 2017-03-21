@@ -48,22 +48,22 @@ public:
     std::string toStr(double x, double y, int id);
 
     static
-    void writeRpo(const std::string fileName, const std::string groupName,
-		  const MatrixXd &x, const double T, const int nstp,
-		  const double th, const double phi, double err);    
+    void write(const std::string fileName, const std::string groupName,
+	       const MatrixXd &x, const double T, const int nstp,
+	       const double th, const double phi, double err);    
 
     static
-    void writeRpo2(const std::string fileName, const std::string groupName, 
-		   const MatrixXd &x, const int nstp, double err);
+    void write2(const std::string fileName, const std::string groupName, 
+		const MatrixXd &x, const int nstp, double err);
 
     static
     std::tuple<MatrixXd, double, int, double, double, double>
-    readRpo(const std::string fileName, const std::string groupName);
+    read(const std::string fileName, const std::string groupName);
 
     static
     void
-    moveRpo(std::string infile, std::string ingroup, 
-	    std::string outfile, std::string outgroup, int flag);
+    move(std::string infile, std::string ingroup, 
+	 std::string outfile, std::string outgroup, int flag);
 
     static
     VectorXcd 

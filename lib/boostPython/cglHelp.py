@@ -47,7 +47,7 @@ class CQCGLplot():
         ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=1.5)
         ax2d(fig, ax, save=save, name=name)
     
-    def config(self, AA, ext, isFourier=True, tt=None, yls=None,
+    def config(self, AA, ext, isFourier=True, tt=None, yls=None, timeMode=1,
                barTicks=[2, 7], colortype='jet',
                percent='5%', size=[4, 5], labs=[r'$x$', r'$t$'],
                axisLabelSize=20, tickSize=None,
@@ -55,19 +55,23 @@ class CQCGLplot():
         """
         plot the color map of the states
         """
+        if tt is not None:
+            if timeMode == 1:
+                n = len(tt)
+                ids = [bisect_left(tt, yl) for yl in yls]
+                yts = [x / float(n) * ext[3] for x in ids]
+                ax.set_yticks(yts)
+                ax.set_yticklabels(yls)
+            else:
+                idx = self.sliceTime(tt)
+                AA = AA[idx, :]
+
         if isFourier:
             AA = self.cgl.Fourier2Config(AA)
         Aamp = np.abs(AA)
         fig, ax = pl2d(size=size, labs=labs, axisLabelSize=axisLabelSize, tickSize=tickSize)
         im = ax.imshow(Aamp, cmap=plt.get_cmap(colortype), extent=ext,
                        aspect='auto', origin='lower')
-        if tt is not None:
-            n = len(tt)
-            ids = [bisect_left(tt, yl) for yl in yls]
-            yts = [x / float(n) * ext[3] for x in ids]
-            ax.set_yticks(yts)
-            ax.set_yticklabels(yls)
-
         ax.grid('on')
         dr = make_axes_locatable(ax)
         cax = dr.append_axes('right', size=percent, pad=0.05)
@@ -75,6 +79,18 @@ class CQCGLplot():
 
         ax2d(fig, ax, save=save, name=name)
 
+    def sliceTime(self, t):
+        n = len(t)
+        hs = t[1:] - t[:-1]
+        hmax = np.max(hs)
+        idx = [0]
+        s = 0
+        for i in range(n-1):
+            s += hs[i]
+            if(s >= hmax):
+                idx.append(i)
+                s = 0
+        return idx
 
 class CQCGLreq(CQCGLBase):
     """

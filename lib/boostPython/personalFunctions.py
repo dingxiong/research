@@ -371,6 +371,12 @@ def pAngle(V, U):
     q = LA.qr(U)[0]
     return pAngleVQ(V, q)
 
+def vecAngle(v, u):
+    """
+    compute the angle between two vectors
+    """
+    return np.arccos(v.dot(u) / norm(v) / norm(u))
+
 
 def seqAng(seqDifv, U):
     """

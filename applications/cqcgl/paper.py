@@ -1,8 +1,9 @@
 from py_CQCGL1d import *
+from py_CQCGL1dEIDc import *
 from cglHelp import *
 import matplotlib.gridspec as gridspec
 
-case = 35
+case = 40
 
 
 if case == 10:
@@ -162,25 +163,27 @@ if case == 40:
     # req
     Bi, Gi = 2, -2
 
-    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    EI = pyCQCGL1dEIDc(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi)
     req, cp = CQCGLreq(cgl), CQCGLplot(cgl)
 
-    a0, wth0, wphi0, err0, e, v = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1), flag=2)
+    a0, wth0, wphi0, err0, e, v = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1), flag=2)    
     a0H = cgl.orbit2slice(a0, sysFlag)[0]
     
     aE = a0 + 0.001 * norm(a0) * v[0].real
     T = 50
-    aa = cgl.intg(aE, h, np.int(T/h), 1)
-    # cp.config(aa, [0, d, 0, T])
-    aaH, ths, phis = cgl.orbit2slice(aa, sysFlag)
+    aa = EI.intg(aE, h, T, 10)
+    aaH = cgl.orbit2slice(aa, sysFlag)[0]
     
     ax = fig.add_subplot(gs[:nx/2-1, 0])
-    ax.text(0.1, 0.9, '(a)', horizontalalignment='center',
-            transform=ax.transAxes, fontsize=18, color='white')
-    ax.set_xlabel(r'$x$', fontsize=16)
-    ax.set_ylabel(r'$t$', fontsize=16)
+    ax.text(0.9, 0.9, '(a)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=20, color='white')
+    ax.set_xlabel(r'$x$', fontsize=20)
+    ax.set_ylabel(r'$t$', fontsize=20)
     ax.tick_params(axis='both', which='major', labelsize=12)
-    im = ax.imshow(np.abs(cgl.Fourier2Config(aa)), cmap=plt.get_cmap('jet'), extent=[0, d, 0, T], 
+    aaTime = aa[cp.sliceTime(EI.Ts()), :]
+    im = ax.imshow(np.abs(cgl.Fourier2Config(aaTime)), 
+                   cmap=plt.get_cmap('jet'), extent=[0, d, 0, T], 
                    aspect='auto', origin='lower')
     ax.grid('on')
     dr = make_axes_locatable(ax)
@@ -189,49 +192,44 @@ if case == 40:
     
     ax = fig.add_subplot(gs[:nx/2, 1:], projection='3d')
     ax.text2D(0.1, 0.9, '(b)', horizontalalignment='center',
-            transform=ax.transAxes, fontsize=18)
-    ax.set_xlabel(r'$Re(a_{-1})$', fontsize=16)
-    ax.set_ylabel(r'$Re(a_{2})$', fontsize=16)
-    ax.set_zlabel(r'$Im(a_{2})$', fontsize=16)
-    ax.set_xlim([-20, 20])
-    ax.set_ylim([0, 250])
-    ax.set_zlim([-30, 30])
+              transform=ax.transAxes, fontsize=20)
+    ax.set_xlabel(r'$Re(a_0)$', fontsize=18)
+    ax.set_ylabel(r'$Re(a_2)$', fontsize=18)
+    ax.set_zlabel(r'$Im(a_2)$', fontsize=18)
+    # ax.set_xlim([-20, 20])
+    # ax.set_ylim([0, 250])
+    # ax.set_zlim([-30, 30])
     ax.locator_params(nbins=4)
-    ax.scatter(a0H[-1], a0H[4], a0H[5], c='r', s=40)
-    ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
+    ax.scatter(a0H[0], a0H[4], a0H[5], c='r', s=100, edgecolor='none')
+    ax.plot(aaH[:, 0], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.5)
     
-    # fig, ax = pl3d(size=[8, 6], labs=[r'$Re(a_{-1})$', r'$Re(a_{2})$', r'$Im(a_{2})$'],
-    #                axisLabelSize=20, tickSize=20)
-    # ax.scatter(a0H[-1], a0H[4], a0H[5], c='r', s=40)
-    # ax.set_ylim([-50, 200])
-    # ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
-    # ax3d(fig, ax)
-
     # rpo
     Bi, Gi = 4.8, -4.5
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    EI = pyCQCGL1dEIDc(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi)
     rpo, cp = CQCGLrpo(cgl), CQCGLplot(cgl)
 
-    x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
-                                               Bi, Gi, 1, flag=2)
+    x, T, nstp, th, phi, err, e, v = rpo.read('../../data/cgl/rpoBiGiEV.h5',
+                                              rpo.toStr(Bi, Gi, 1), flag=2)
     a0 = x[:cgl.Ndim]
-    po = cgl.intg(a0, T/nstp, nstp, 10)
+    po = EI.intg(a0, T/nstp, T, 1)
     poH = cgl.orbit2slice(po, sysFlag)[0]
 
     aE = a0 + 0.001 * norm(a0) * v[0];
 
-    aa = cgl.intg(aE, T/nstp, 20*nstp, 1)
-    # cp.config(aa, [0, d, 0, 20*T])
+    aa = EI.intg(aE, T/nstp, 16*T, 1)
     aaH, ths, phis = cgl.orbit2slice(aa, sysFlag)
     
     ax = fig.add_subplot(gs[nx/2:nx-1, 0])
-    ax.text(0.1, 0.9, '(c)', horizontalalignment='center',
-            transform=ax.transAxes, fontsize=18, color='white')
-    ax.set_xlabel(r'$x$', fontsize=16)
-    ax.set_ylabel(r'$t$', fontsize=16)
+    ax.text(0.9, 0.9, '(c)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=20, color='white')
+    ax.set_xlabel(r'$x$', fontsize=20)
+    ax.set_ylabel(r'$t$', fontsize=20)
     ax.tick_params(axis='both', which='major', labelsize=12)
-    im = ax.imshow(np.abs(cgl.Fourier2Config(aa)), cmap=plt.get_cmap('jet'), extent=[0, d, 0, 20*T], 
+    aaTime = aa[cp.sliceTime(EI.Ts()), :]
+    im = ax.imshow(np.abs(cgl.Fourier2Config(aaTime)), 
+                   cmap=plt.get_cmap('jet'), extent=[0, d, 0, 16*T], 
                    aspect='auto', origin='lower')
     ax.grid('on')
     dr = make_axes_locatable(ax)
@@ -240,52 +238,103 @@ if case == 40:
     
     ax = fig.add_subplot(gs[nx/2:, 1:], projection='3d')
     ax.text2D(0.1, 0.9, '(d)', horizontalalignment='center',
-            transform=ax.transAxes, fontsize=18)
-    ax.set_xlabel(r'$Re(a_{-1})$', fontsize=16)
-    ax.set_ylabel(r'$Re(a_{2})$', fontsize=16)
-    ax.set_zlabel(r'$Im(a_{2})$', fontsize=16)
+              transform=ax.transAxes, fontsize=20)
+    ax.set_xlabel(r'$Re(a_{0})$', fontsize=18)
+    ax.set_ylabel(r'$Re(a_{2})$', fontsize=18)
+    ax.set_zlabel(r'$Im(a_{2})$', fontsize=18)
     # ax.set_ylim([-50, 200])
     ax.locator_params(nbins=4)
-    ax.plot(poH[:, -1], poH[:, 4], poH[:, 5], c='r', lw=2)
-    ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
-
-    # fig, ax = pl3d(size=[8, 6], labs=[r'$Re(a_{-1})$', r'$Re(a_{2})$', r'$Im(a_{2})$'],
-    #                axisLabelSize=20, tickSize=20)
-    # ax.plot(poH[:, -1], poH[:, 4], poH[:, 5], c='r', lw=2)
-    # ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
-    # ax3d(fig, ax)
+    ax.plot(poH[:, 0], poH[:, 4], poH[:, 5], c='r', lw=2)
+    ax.plot(aaH[:, 0], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.5)
 
     fig.tight_layout(pad=0)
     plt.show(block=False)
 
+
 if case == 50:
     """
     plot one req explosion and its symmetry reduced plots
+    use it to test case = 40
     """
     N, d = 1024, 50
     h = 2e-3
-    
-    Bi, Gi = 2, -2
     sysFlag = 1
 
+    Bi, Gi = 2, -2
+
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    EI = pyCQCGL1dEIDc(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi)
     req, cp = CQCGLreq(cgl), CQCGLplot(cgl)
 
-    a0, wth0, wphi0, err0, e, v = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, 1, flag=2)
+    a0, wth0, wphi0, err0, e, v = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1), flag=2)
+
+    # get the bases
+    vt = np.vstack([v[0].real, v[0].imag, v[6].real])
+    vRed = cgl.ve2slice(vt, a0, sysFlag)
+    Q = orthAxes(vRed[0], vRed[1], vRed[2])
+
     a0H = cgl.orbit2slice(a0, sysFlag)[0]
-    
+    a0P = a0H.dot(Q)
     aE = a0 + 0.001 * norm(a0) * v[0].real
     T = 50
-    aa = cgl.intg(aE, h, np.int(T/h), 1)
-    cp.config(aa, [0, d, 0, T])
-    aaH, ths, phis = cgl.orbit2slice(aa, sysFlag)
-    # cp.config(aaH, [0, d, 0, T])
+    aa = EI.intg(aE, h, T, 2)
+    aaH = cgl.orbit2slice(aa, sysFlag)[0]
+    aaP = aaH.dot(Q) - a0P
     
-    fig, ax = pl3d(size=[8, 6], labs=[r'$Re(a_{-1})$', r'$Re(a_{2})$', r'$Im(a_{2})$'],
+    fig, ax = pl3d(size=[8, 6], labs=[r'$v_1$', r'$v_2$', r'$v_3$'],
                    axisLabelSize=20, tickSize=20)
-    ax.scatter(a0H[-1], a0H[4], a0H[5], c='r', s=40)
-    ax.set_ylim([-50, 200])
-    ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
+    ax.scatter(0, 0, 0, c='k', s=100, edgecolors='none')
+    id1 = bisect_left(EI.Ts(), 24)
+    ax.plot(aaP[id1/2:id1, 0], aaP[id1/2:id1, 1], aaP[id1/2:id1, 2], c='m', lw=1, alpha=0.5)
+    id2 = bisect_left(EI.Ts(), 33)
+    ax.plot(aaP[id2:, 0], aaP[id2:, 1], aaP[id2:, 2], c='b', lw=1, alpha=0.6)
+    ax3d(fig, ax)
+    
+if case == 55:
+    """
+    plot one rpo explosion and its symmetry reduced plots
+    use it to test case = 40
+    """
+    N, d = 1024, 50
+    h = 2e-3
+    sysFlag = 1
+
+    Bi, Gi = 4.8, -4.5
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    EI = pyCQCGL1dEIDc(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi)
+    rpo, cp = CQCGLrpo(cgl), CQCGLplot(cgl)
+
+    x, T, nstp, th, phi, err, e, v = rpo.read('../../data/cgl/rpoBiGiEV.h5',
+                                              rpo.toStr(Bi, Gi, 1), flag=2)
+    a0 = x[:cgl.Ndim]
+    
+    # get the bases
+    vt = np.vstack([v[0], v[1], v[3]])
+    vRed = cgl.ve2slice(vt, a0, sysFlag)
+    Q = orthAxes(vRed[0], vRed[1], vRed[2])
+
+    a0H = cgl.orbit2slice(a0, sysFlag)[0]
+    a0P = a0H.dot(Q)
+    
+    po = EI.intg(a0, T/nstp, T, 1)
+    poH = cgl.orbit2slice(po, sysFlag)[0]
+    poP = poH.dot(Q) - a0P
+
+    aE = a0 + 0.001 * norm(a0) * v[0];
+
+    aa = EI.intg(aE, T/nstp, 16*T, 2)
+    aaH = cgl.orbit2slice(aa, sysFlag)[0]
+    aaP = aaH.dot(Q) - a0P
+    
+    fig, ax = pl3d(size=[8, 6], labs=[r'$v_1$', r'$v_2$', r'$v_3$'],
+                   axisLabelSize=20, tickSize=20)
+    ax.scatter(0, 0, 0, c='k', s=100, edgecolors='none')
+    ax.plot(poP[:, 0], poP[:, 1], poP[:, 2], c='r', lw=2)
+    id1 = bisect_left(EI.Ts(), 23)
+    ax.plot(aaP[id1/2:id1, 0], aaP[id1/2:id1, 1], aaP[id1/2:id1, 2], c='m', lw=1, alpha=0.5)
+    id2 = bisect_left(EI.Ts(), 35)
+    ax.plot(aaP[id2:, 0], aaP[id2:, 1], aaP[id2:, 2], c='b', lw=1, alpha=0.6)
     ax3d(fig, ax)
     
     

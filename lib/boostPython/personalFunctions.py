@@ -494,9 +494,10 @@ def orthAxes(e1, e2, e3):
     x[:, 0] = e1
     x[:, 1] = e2
     x[:, 2] = e3
-    q, r = LA.qr(x)
+    q, r = LA.qr(x)             # q is a [N x 3] matrix
 
-    return q[:, 0], q[:, 1], q[:, 2]
+    # return q[:, 0], q[:, 1], q[:, 2]
+    return q                    
 
 
 def mag2vec(v1, v2):

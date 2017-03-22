@@ -22,11 +22,11 @@ int main(int argc, char **argv){
     // to visulize the limit cycle first 
     const int N = 1024;
     const double L = 50;
-    double Bi = 0.8;
-    double Gi = -3.6;
+    double Bi = 1.4;
+    double Gi = -3.9;
     
     CQCGL1dRpo_arpack cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
-    string file = "../../data/cgl/rpoBiGi.h5";
+    string file = "../../data/cgl/rpoHopfBiGi.h5";
     cgl.calEVParaSeq(file, std::vector<double>{Bi}, std::vector<double>{Gi}, 10, true);
 
 

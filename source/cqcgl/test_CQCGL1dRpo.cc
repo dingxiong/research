@@ -20,7 +20,7 @@ using namespace MyH5;
 
 #define cee(x) (cout << (x) << endl << endl)
 
-#define CASE_20
+#define CASE_70
 
 int main(){
     
@@ -156,8 +156,8 @@ int main(){
     // use saved guess directively
     const int N = 1024;
     const double L = 50;
-    double Bi = 0;
-    double Gi = -3.5;
+    double Bi = 1.4;
+    double Gi = -3.9;
     
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
     string file = "../../data/cgl/p.h5";
@@ -183,11 +183,11 @@ int main(){
     // test the accuracy of a limit cycle
     const int N = 1024;
     const double L = 50;
-    double Bi = 4.1;
-    double Gi = -4.4;
+    double Bi = 1.4;
+    double Gi = -3.9;
     
     CQCGL1dRpo cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 1);
-    string file = "/usr/local/home/xiong/00git/research/data/cgl/rpoBiGi2.h5";
+    string file = "../../data/cgl/rpoBiGi2.h5";
     ArrayXd a0;
     double T0, th0, phi0, err0;
     int nstp0; 

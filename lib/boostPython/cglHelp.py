@@ -121,13 +121,13 @@ class CQCGLreq(CQCGLBase):
         return e, v
 
     def getAxes(self, fileName, Bi, Gi, index, flag):
-        a, wth, wphi, err, e, v = self.readBiGi(fileName, Bi, Gi, index, flag=2)
+        a, wth, wphi, err, e, v = self.read(fileName, self.toStr(Bi, Gi, index), flag=2)
         aH = self.cgl.orbit2slice(a, flag)[0]
         vrH = self.cgl.ve2slice(v.real.copy(), a, flag)
         viH = self.cgl.ve2slice(v.imag.copy(), a, flag)
         
         return e, aH, vrH + 1j*viH
-    
+        
 
 class CQCGLrpo(CQCGLBase):
 
@@ -203,8 +203,8 @@ class CQCGLrpo(CQCGLBase):
         rpo.create_dataset('phi', data=phi)
         rpo.create_dataset('err', data=err)
         if e is not None:
-            rpo.create_dataset('er', e.real)
-            rpo.create_dataset('ei', e.imag)
+            rpo.create_dataset('er', data=e.real)
+            rpo.create_dataset('ei', data=e.imag)
         if v is not None:
             rpo.create_dataset('v', data=v)
         f.close()

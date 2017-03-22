@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
-from personalFunctions import *
+from cglHelp import *
 
-case = 171
+case = 16
 
 if case == 6:
     N = 1024

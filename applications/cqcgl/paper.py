@@ -1,8 +1,8 @@
 from py_CQCGL1d import *
-from personalFunctions import *
+from cglHelp import *
 import matplotlib.gridspec as gridspec
 
-case = 10
+case = 70
 
 
 if case == 10:
@@ -10,7 +10,7 @@ if case == 10:
     plot the Bi - Gi req stability plot using the saved date from running viewReq.py
     """
     saveData = np.loadtxt("BiGiReqStab.dat")
-    cs = {0: 'c', 1: 'm', 2: 'm', 4: 'r', 6: 'b'}#, 8: 'y', 56: 'r', 14: 'grey'}
+    cs = {0: 'c', 1: 'm', 2: 'g', 4: 'r', 6: 'b'}#, 8: 'y', 56: 'r', 14: 'grey'}
     ms = {0: '^', 1: '^', 2: 'x', 4: 'o', 6: 'D'}#, 8: '8', 56: '4', 14: 'v'}
     fig, ax = pl2d(size=[8, 6], labs=[r'$\gamma_i$', r'$\beta_i$'], axisLabelSize=25,
                    tickSize=20, xlim=[-6, 0], ylim=[-4, 6])
@@ -288,6 +288,92 @@ if case == 60:
     
 
 if case == 70:
+    """
+    plot one Hopf bifurcation
+    subplot (a) : heat map of the limit cycle
+    subplot (b) : symmetry-reduced state space figure
+    """
+    N, d = 1024, 50
+    h = 2e-3
+    sysFlag = 1
+
+    Bi, Gi = 1.4, -3.9
+    index = 1
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req = CQCGLreq(cgl)
+    rpo = CQCGLrpo(cgl)
+    cp = CQCGLplot(cgl)
+
+    # obtain unstable manifold of req
+    a0, wth0, wphi0, err0, e, v = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, index), flag=2)
+
+    # get the bases
+    vt = np.vstack([v[0].real, v[0].imag, v[4].real])
+    vRed = cgl.ve2slice(vt, a0, sysFlag)
+    Q = orthAxes(vRed[0], vRed[1], vRed[2])
+
+    a0H = cgl.orbit2slice(a0, sysFlag)[0]
+    a0P = a0H.dot(Q)
+
+    aE = a0 + 0.1*norm(a0)*v[0].real
+    T = 700
+    aa = cgl.intg(aE, h, np.int(200/h), 100000)
+    aE = aa[-1] 
+    aa = cgl.intg(aE, h, np.int(T/h), 50)
+    aaH = cgl.orbit2slice(aa, sysFlag)[0]
+    aaP = aaH.dot(Q)
+    
+    # obtain limit cycle
+    x, T, nstp, th, phi, err = rpo.read('../../data/cgl/rpoHopfBiGi.h5', rpo.toStr(Bi, Gi, 1))
+    ap0 = x[:-3]
+    hp = T / nstp
+    aap = cgl.intg(ap0, hp, nstp, 10)
+    aapH = cgl.orbit2slice(aap, sysFlag)[0]
+    aapP = aapH.dot(Q)
+    
+    aap4 = aap
+    for k in range(1, 4):
+        aap4 = np.vstack((aap4, cgl.Rotate(aap, -k*th, -k*phi)))
+    
+    # plot figure 
+    fig = plt.figure(figsize=[8, 4])
+    nx, ny = 8, 4
+    gs = gridspec.GridSpec(nx, ny)
+
+    ax = fig.add_subplot(gs[:nx-1, 0])
+    ax.text(0.1, 0.9, '(a)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=18, color='white')
+    ax.set_xlabel(r'$x$', fontsize=18)
+    ax.set_ylabel(r'$t$', fontsize=18)
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    im = ax.imshow(np.abs(cgl.Fourier2Config(aap4)), cmap=plt.get_cmap('jet'), extent=[0, d, 0, T], 
+                   aspect='auto', origin='lower')
+    ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax =dr.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im, cax=cax, ticks=[0, 1, 2, 3])
+    
+    ax = fig.add_subplot(gs[:, 1:], projection='3d')
+    ax.text2D(0.1, 0.9, '(b)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=18)
+    ax.set_xlabel(r'$v_1$', fontsize=16)
+    ax.set_ylabel(r'$v_2$', fontsize=16)
+    ax.set_zlabel(r'$v_3$', fontsize=16)
+    # ax.set_xlim([-20, 20])
+    # ax.set_ylim([0, 250])
+    # ax.set_zlim([-30, 30])
+    ax.locator_params(nbins=4)
+    # ax.scatter(a0H[], a0H[4], a0H[5], c='r', s=40)
+    # ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
+    # ax.plot(aapH[:, -1], aapH[:, 4], aapH[:, 5], c='r', lw=2)
+    ax.scatter(a0P[0], a0P[1], a0P[2], c='r', s=40)
+    ax.plot(aaP[:, 0], aaP[:, 1], aaP[:, 2], c='b', lw=1, alpha=0.7)
+    ax.plot(aapP[:, 0], aapP[:, 1], aapP[:, 2], c='r', lw=2)
+
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+if case == 100:
     """
     same as case = 40. but in two different plots
     """

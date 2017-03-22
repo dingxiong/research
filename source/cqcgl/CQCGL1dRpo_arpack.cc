@@ -105,7 +105,7 @@ CQCGL1dRpo_arpack::calEVParaSeq(std::string file, std::vector<double> Bis,
 	std::string g = toStr(Bi, Gi, 1);
 	if( checkGroup(file, g, false) && !checkGroup(file, g + "/er", false) ) {
 	    fprintf(stderr, "%4d/%4zd : %4g %4g\n", i, Bis.size(), Bi, Gi);
-	    std::tie(x, T, nstp, th, phi, err) = readRpo(file, g);
+	    std::tie(x, T, nstp, th, phi, err) = read(file, g);
 	    a0 = x.head(Ndim);
 	    std::tie(e, v) = evRpo(a0, T/nstp, nstp, th, phi, ne);
 	    writeE(file, g, e);

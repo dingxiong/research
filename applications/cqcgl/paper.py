@@ -2,7 +2,7 @@ from py_CQCGL1d import *
 from cglHelp import *
 import matplotlib.gridspec as gridspec
 
-case = 70
+case = 35
 
 
 if case == 10:
@@ -12,7 +12,7 @@ if case == 10:
     saveData = np.loadtxt("BiGiReqStab.dat")
     cs = {0: 'c', 1: 'm', 2: 'g', 4: 'r', 6: 'b'}#, 8: 'y', 56: 'r', 14: 'grey'}
     ms = {0: '^', 1: '^', 2: 'x', 4: 'o', 6: 'D'}#, 8: '8', 56: '4', 14: 'v'}
-    fig, ax = pl2d(size=[8, 6], labs=[r'$\gamma_i$', r'$\beta_i$'], axisLabelSize=25,
+    fig, ax = pl2d(size=[8, 6], labs=[r'$\gamma_i$', r'$\beta_i$'], axisLabelSize=30,
                    tickSize=20, xlim=[-6, 0], ylim=[-4, 6])
     for item in saveData:
         Gi, Bi, m = item
@@ -32,14 +32,13 @@ if case == 20:
     WuT = [[12, 19], [2, 7]]
     difT = [[7, 16], [0, 6]]
     skipRate = 10
-    fig = plt.figure(figsize=[8, 6])
+    fig = plt.figure(figsize=[8, 7])
     for i in range(2):
         Bi, Gi = params[i]
 
         cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
         rpo, cp = CQCGLrpo(cgl), CQCGLplot(cgl)
-        x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
-                                                         Bi, Gi, 1, flag=2)
+        x, T, nstp, th, phi, err, e, v = rpo.read('../../data/cgl/rpoBiGiEV.h5', rpo.toStr(Bi, Gi, 1), flag=2)
         a0 = x[:cgl.Ndim]
         print e[:10]
         aa0 = cgl.intg(a0, T/nstp, nstp, 10)[:-1]
@@ -63,11 +62,11 @@ if case == 20:
         for j in range(3):
             ax = fig.add_subplot('23' + str(3*i+j+1))
             ax.text(0.1, 0.9, '('+ chr(ord('a')+3*i+j) + ')', horizontalalignment='center',
-                    transform=ax.transAxes, fontsize=18, color='white')
+                    transform=ax.transAxes, fontsize=20, color='white')
             if i == 1:
-                ax.set_xlabel(r'$x$', fontsize=20)
+                ax.set_xlabel(r'$x$', fontsize=25)
             if j == 0:
-                ax.set_ylabel(r'$t$', fontsize=20)
+                ax.set_ylabel(r'$t$', fontsize=25)
             if i == 0:
                 ax.set_xticklabels([])
             ax.tick_params(axis='both', which='major', labelsize=12)
@@ -100,16 +99,50 @@ if case == 30:
         Bi, Gi = params[i]
         cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
         rpo, cp = CQCGLrpo(cgl), CQCGLplot(cgl)
-        x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
-                                                         Bi, Gi, 1, flag=2)
+        x, T, nstp, th, phi, err, e, v = rpo.read('../../data/cgl/rpoBiGiEV.h5', rpo.toStr(Bi, Gi, 1), flag=2)
         ax = fig.add_subplot('12' + str(i+1))
         ax.text(0.1, 0.9, '('+ chr(ord('a')+i) + ')', horizontalalignment='center',
-                    transform=ax.transAxes, fontsize=18)
-        ax.set_xlabel(r'$x$', fontsize=20)
+                transform=ax.transAxes, fontsize=20)
+        ax.set_xlabel(r'$x$', fontsize=30)
         # ax.set_ylabel(r'$|v_1|$', fontsize=20)
-        ax.tick_params(axis='both', which='major', labelsize=12)
+        ax.tick_params(axis='both', which='major', labelsize=13)
         Aamp = np.abs(cgl.Fourier2Config(v[0]))
         ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp.shape[0]*Aamp, lw=1.5)
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+if case == 35:
+    """
+    Similar to case = 30, but for rpo(4.6, -5.0), we plot all its unstable Floquet vectors.
+    """
+    N, d = 1024 , 50
+    
+    vs = []
+    Bi, Gi = 4.6, -5.0
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    rpo, cp = CQCGLrpo(cgl), CQCGLplot(cgl)
+    x, T, nstp, th, phi, err, e, v = rpo.read('../../data/cgl/rpoBiGiEV.h5', rpo.toStr(Bi, Gi, 1), flag=2)
+    for i in range(3):
+        vs.append(v[i])
+
+    # do not need to define another instance of cgl
+    Bi, Gi = 4.8, -4.5
+    x, T, nstp, th, phi, err, e, v = rpo.read('../../data/cgl/rpoBiGiEV.h5', rpo.toStr(Bi, Gi, 1), flag=2)
+    vs.insert(1, v[0])
+
+    fig = plt.figure(figsize=[8, 7])
+    for i in range(4):
+        ax = fig.add_subplot('22' + str(i+1))
+        ax.text(0.1, 0.9, '('+ chr(ord('a')+i) + ')', 
+                horizontalalignment='center', transform=ax.transAxes, fontsize=20)
+        if i > 1:
+            ax.set_xlabel(r'$x$', fontsize=30)
+        # ax.set_ylabel(r'$|v_1|$', fontsize=20)
+        ax.tick_params(axis='both', which='major', labelsize=13)
+        Aamp = np.abs(cgl.Fourier2Config(vs[i]))
+        ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp.shape[0]*Aamp, lw=1.5)
+
+
     fig.tight_layout(pad=0)
     plt.show(block=False)
     
@@ -132,7 +165,7 @@ if case == 40:
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
     req, cp = CQCGLreq(cgl), CQCGLplot(cgl)
 
-    a0, wth0, wphi0, err0, e, v = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, 1, flag=2)
+    a0, wth0, wphi0, err0, e, v = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1), flag=2)
     a0H = cgl.orbit2slice(a0, sysFlag)[0]
     
     aE = a0 + 0.001 * norm(a0) * v[0].real
@@ -267,7 +300,7 @@ if case == 60:
     cs = {0: 'g'}#, 10: 'm', 2: 'c', 4: 'r', 6: 'b', 8: 'y'}#, 56: 'r', 14: 'grey'}
     ms = {0: 's'}#, 10: '^', 2: '+', 4: 'o', 6: 'D', 8: 'v'}#, 56: '4', 14: 'v'}
 
-    fig, ax = pl2d(size=[8, 6], labs=[r'$\gamma_i$', r'$\beta_i$'], axisLabelSize=25, tickSize=20,
+    fig, ax = pl2d(size=[8, 6], labs=[r'$\gamma_i$', r'$\beta_i$'], axisLabelSize=30, tickSize=20,
                    xlim=[-5.7, -3.95], ylim=[1.8, 6])
     for i in range(39):
         Bi = 1.9 + i*0.1
@@ -275,7 +308,7 @@ if case == 60:
             Gi = -5.6 + 0.1*j
             rpo = CQCGLrpo()
             if rpo.checkExist(fileName, rpo.toStr(Bi, Gi, 1) + '/er'):
-                x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi(fileName, Bi, Gi, 1, flag=2)
+                x, T, nstp, th, phi, err, e, v = rpo.read(fileName, rpo.toStr(Bi, Gi, 1), flag=2)
                 m, ep, accu = numStab(e, nmarg=3, tol=1e-4, flag=1)
                 ax.scatter(Gi, Bi, s=60, edgecolors='none',
                            marker=ms.get(m, 'o'), c=cs.get(m, 'r'))
@@ -316,12 +349,12 @@ if case == 70:
     a0P = a0H.dot(Q)
 
     aE = a0 + 0.1*norm(a0)*v[0].real
-    T = 700
-    aa = cgl.intg(aE, h, np.int(200/h), 100000)
+    T = 800
+    aa = cgl.intg(aE, h, np.int(100/h), 100000)
     aE = aa[-1] 
     aa = cgl.intg(aE, h, np.int(T/h), 50)
     aaH = cgl.orbit2slice(aa, sysFlag)[0]
-    aaP = aaH.dot(Q)
+    aaP = aaH.dot(Q) - a0P
     
     # obtain limit cycle
     x, T, nstp, th, phi, err = rpo.read('../../data/cgl/rpoHopfBiGi.h5', rpo.toStr(Bi, Gi, 1))
@@ -329,7 +362,7 @@ if case == 70:
     hp = T / nstp
     aap = cgl.intg(ap0, hp, nstp, 10)
     aapH = cgl.orbit2slice(aap, sysFlag)[0]
-    aapP = aapH.dot(Q)
+    aapP = aapH.dot(Q) - a0P
     
     aap4 = aap
     for k in range(1, 4):
@@ -343,10 +376,10 @@ if case == 70:
     ax = fig.add_subplot(gs[:nx-1, 0])
     ax.text(0.1, 0.9, '(a)', horizontalalignment='center',
             transform=ax.transAxes, fontsize=18, color='white')
-    ax.set_xlabel(r'$x$', fontsize=18)
-    ax.set_ylabel(r'$t$', fontsize=18)
+    ax.set_xlabel(r'$x$', fontsize=25)
+    ax.set_ylabel(r'$t$', fontsize=25)
     ax.tick_params(axis='both', which='major', labelsize=12)
-    im = ax.imshow(np.abs(cgl.Fourier2Config(aap4)), cmap=plt.get_cmap('jet'), extent=[0, d, 0, T], 
+    im = ax.imshow(np.abs(cgl.Fourier2Config(aap4)), cmap=plt.get_cmap('jet'), extent=[0, d, 0, 4*T], 
                    aspect='auto', origin='lower')
     ax.grid('on')
     dr = make_axes_locatable(ax)
@@ -356,9 +389,9 @@ if case == 70:
     ax = fig.add_subplot(gs[:, 1:], projection='3d')
     ax.text2D(0.1, 0.9, '(b)', horizontalalignment='center',
             transform=ax.transAxes, fontsize=18)
-    ax.set_xlabel(r'$v_1$', fontsize=16)
-    ax.set_ylabel(r'$v_2$', fontsize=16)
-    ax.set_zlabel(r'$v_3$', fontsize=16)
+    ax.set_xlabel(r'$v_1$', fontsize=25)
+    ax.set_ylabel(r'$v_2$', fontsize=25)
+    ax.set_zlabel(r'$v_3$', fontsize=25)
     # ax.set_xlim([-20, 20])
     # ax.set_ylim([0, 250])
     # ax.set_zlim([-30, 30])
@@ -366,12 +399,37 @@ if case == 70:
     # ax.scatter(a0H[], a0H[4], a0H[5], c='r', s=40)
     # ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
     # ax.plot(aapH[:, -1], aapH[:, 4], aapH[:, 5], c='r', lw=2)
-    ax.scatter(a0P[0], a0P[1], a0P[2], c='r', s=40)
+    ax.scatter(0, 0, 0, c='r', s=40)
     ax.plot(aaP[:, 0], aaP[:, 1], aaP[:, 2], c='b', lw=1, alpha=0.7)
     ax.plot(aapP[:, 0], aapP[:, 1], aapP[:, 2], c='r', lw=2)
 
     fig.tight_layout(pad=0)
     plt.show(block=False)
+
+if case == 80:
+    """
+    new size L = 50
+    plot the plane soliton and composite soliton in the same figure.
+    """
+    N, d = 1024, 50
+    
+    fig, ax = pl2d(size=[8, 6], labs=[r'$x$', r'$|A|$'], axisLabelSize=30, tickSize=20)
+
+    Bi, Gi = 2.0, -5.6
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req = CQCGLreq(cgl)
+    a0, wth0, wphi0, err0 = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1), flag=0)
+    Aamp = np.abs(cgl.Fourier2Config(a0))
+    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, ls='-', c='r')
+
+    Bi, Gi = 2.7, -5.6
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req = CQCGLreq(cgl)
+    a0, wth0, wphi0, err0 = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1), flag=0)
+    Aamp = np.abs(cgl.Fourier2Config(a0))
+    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, ls='--', c='b')
+    
+    ax2d(fig, ax)
 
 if case == 100:
     """

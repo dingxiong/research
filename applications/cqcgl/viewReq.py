@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from cglHelp import *
 
-case = 16
+case = 171
 
 if case == 6:
     N = 1024
@@ -228,30 +228,6 @@ if case == 17:
 
     ax2d(fig, ax)
             
-if case == 171:
-    """
-    new size L = 50
-    plot the plane soliton and composite soliton in the same figure.
-    """
-    N, d = 1024, 50
-    
-    fig, ax = pl2d(size=[8, 6], labs=[r'$x$', r'$|A|$'], axisLabelSize=25, tickSize=20)
-
-    Bi, Gi = 2.0, -5.6
-    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
-    req = CQCGLreq(cgl)
-    a0, wth0, wphi0, err0 = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, 1, flag=0)
-    Aamp = np.abs(cgl.Fourier2Config(a0))
-    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, ls='-', c='r')
-
-    Bi, Gi = 2.7, -5.6
-    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
-    req = CQCGLreq(cgl)
-    a0, wth0, wphi0, err0 = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, 1, flag=0)
-    Aamp = np.abs(cgl.Fourier2Config(a0))
-    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, ls='--', c='b')
-    
-    ax2d(fig, ax)
 
 if case == 18:
     """

@@ -13,6 +13,10 @@ class EIDc : public EID<std::complex<double>> {
     
     EIDc(){}
     EIDc(ArrayXcd *L, ArrayXcd *Y, ArrayXcd *N) : EID<std::complex<double>>(L, Y, N){}
+    EIDc & operator=(const EIDc &x){
+	return *this;
+    }
+
     ~EIDc(){}
 
     inline ArrayXcd mean(const Ref<const ArrayXXcd> &x){

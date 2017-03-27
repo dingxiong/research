@@ -1,7 +1,7 @@
 from cglHelp import *
 from py_CQCGL1d import *
 
-case = 80
+case = 60
 
 labels = ["IF4(3)", "IF5(4)",
           "ERK4(3)2(2)", "ERK4(3)3(3)", "ERK4(3)4(3)", "ERK5(4)5(4)",

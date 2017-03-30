@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 import sympy as sp
+from personalFunctions import *
 
 class Logistic:
     def __init__(self, A):
@@ -37,24 +38,55 @@ class Logistic:
 
         return multiplier
 
+    def plotIni(self):
+        fig = plt.figure(figsize=[8, 8])
+        ax = fig.add_subplot(111)
+        ax.set_xlabel(r'$x_n$', fontsize=30)
+        ax.set_ylabel(r'$x_{n+1}$', fontsize=30)
+        ax.set_xlim([0, 1])
+        ax.set_ylim([0, 1])
+        plt.gca().set_aspect('equal', adjustable='box')
+        ax.tick_params(axis='both', which='major', labelsize=20)
+        
+        x = np.linspace(0, 1, 200)
+        y = self.oneIter(x)
+        ax.plot(x, y, lw=2, c='b')
+        ax.plot(x, x, lw=2, c='k', ls='--')
+        
+        return fig, ax
+        
+
+    def plotEnd(self, fig, ax):
+        ax2d(fig, ax)
+
+    def plotIter(self, ax, x0, n):
+        x, y = x0, self.oneIter(x0)
+        for i in range(n):
+            print i
+            newy = self.oneIter(y)
+            ax.scatter(x, y, c='g', edgecolors='none', s=100)
+            ax.plot([x, y], [y, y], lw=1.5, c='r')
+            ax.plot([y, y], [y, newy], lw=1.5, c='r')
+            x, y = y, newy
 
 if __name__ == '__main__':
     """
     experiment
     """
-    case = 4
+    case = 10
 
-    if case == 1:
-        A = 6.0
+    if case == 10:
+        A = 5.0
         order = 4
         lm = Logistic(A)
         f = lambda x : lm.multiIters(x, order)[-1] - x
-        x = fsolve(f, 0.85)
+        x = fsolve(f, 0.2)
         xn = lm.multiIters(x, order-1)
         mp = lm.dfn(xn)
+        np.set_printoptions(precision=16)
         print lm.multiIters(x, order), mp
 
-    if case == 2:
+    if case == 20:
         # Floquet multipliers for the periodic orbits up to length 4
         # { {0, 1}, {01}, {001, 011}, {0001, 0011, 0111} }
         mp = [[-4., 6.0], 
@@ -79,7 +111,7 @@ if __name__ == '__main__':
         leig = np.max(1.0 / zps),  # get the leading eigenvalues
         print leig, np.log(leig)
 
-    if case == 3:
+    if case == 30:
         # Floquet multipliers for the periodic orbits up to length 4
         # { 0, 1, 01, 001, 011, 0001, 0011, 0111 }
         
@@ -117,7 +149,14 @@ if __name__ == '__main__':
         leig = np.max(1.0 / zps),  # get the leading eigenvalues
         print leig, np.log(leig)
 
-    if case == 4:
+
+    if case == 35:
+        """
+        periodic orbits for A = 5.0
+        """
+        
+
+    if case == 40:
         # Floquet multipliers for the periodic orbits up to length 5
         # { {0, 1}, {01}, {001, 011}, {0001, 0011, 0111},
         # {00001, 00011, 00101, 00111, 01011, 01111} }     

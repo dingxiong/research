@@ -20,7 +20,7 @@ public :
     ArrayXd K, QK;
     ArrayXcd L;
 	
-    FFT<double> fft;
+    FFT<double> fft;		// support MatrixBase but not ArrayBase
 
     VectorXd hs;	      /* time step sequnce */
     VectorXd lte;	      /* local relative error estimation */

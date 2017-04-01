@@ -1,4 +1,4 @@
-# 1d and 2d cubic quintic complex Ginzburg-Landau equation
+# One- and two-dimensional cubic-quintic complex Ginzburg-Landau equation
 
 ## Inheritance diagram
 ![CQCGL1d](../../include/classCQCGL1d__inherit__graph.png)

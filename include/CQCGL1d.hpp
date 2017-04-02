@@ -10,14 +10,14 @@
 #ifndef CQCGL1D_H
 #define CQCGL1D_H
 
-// #include <fftw3.h>
 #include <complex>
 #include <utility>
 #include <algorithm>
 #include <vector>
+#include <unsupported/Eigen/FFT>
 #include "denseRoutines.hpp"
-#include "iterMethod.hpp"
-
+// #include "iterMethod.hpp"
+#include "EIDc.hpp"
 
 //////////////////////////////////////////////////////////////////////
 //                       class CQCGL1d                              //
@@ -54,7 +54,7 @@ public:
 
     struct NL {
 	CQCGL1d *cgl;
-	double N;
+	int N;
 	dcp B, G;
 	VectorXcd A;
 	NL();
@@ -104,7 +104,7 @@ public:
     std::pair<ArrayXXd, ArrayXXd>
     intgjC(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     ArrayXXd
-    intgv(const ArrayXd &a0, const ArrayXXd &v, const double h, const double tend);
+    intgvC(const ArrayXd &a0, const ArrayXXd &v, const double h, const double tend);
     ArrayXXd
     intg(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     std::pair<ArrayXXd, ArrayXXd>
@@ -183,20 +183,7 @@ public:
     std::tuple<ArrayXXd, ArrayXd, ArrayXd>
     reduceAllSymmetries(const Ref<const ArrayXXd> &aa, int flag);
     MatrixXd reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x, int flag);
-    
-    VectorXd multiF(const ArrayXXd &x, const int nstp, const double th, const double phi);
-    pair<SpMat, VectorXd>
-    multishoot(const ArrayXXd &x, const int nstp, const double th,
-	       const double phi, bool doesPrint = false);
-    std::pair<MatrixXd, VectorXd>
-    newtonReq(const ArrayXd &a0, const double th, const double phi);
-    std::tuple<ArrayXd, double, double, double>
-    findReq(const ArrayXd &a0, const double wth0, const double wphi0,
-	    const int MaxN = 100, const double tol = 1e-14,
-	    const bool doesUseMyCG = true, const bool doesPrint = true);
-    std::vector<double>
-    optThPhi(const ArrayXd &a0);
-    
+
     std::tuple<ArrayXd, double, double>
     planeWave(int k, bool isPositve);
     VectorXcd planeWaveStabE(int k, bool isPositve);

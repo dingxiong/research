@@ -1,18 +1,18 @@
 #include "CQCGL1d.hpp"
-#include <cmath>
-#include <iostream>
+
+using namespace denseRoutines;
 
 //////////////////////////////////////////////////////////////////////
 //                     Inner Class CQCGL1d                          //
 //////////////////////////////////////////////////////////////////////
 CQCGL1d::NL::NL(){}
-CQCGL1d::NL::NL(CQCGL1dEIDc *cgl) : 
+CQCGL1d::NL::NL(CQCGL1d *cgl) : 
     cgl(cgl), N(cgl->N), B(cgl->Br, cgl->Bi), G(cgl->Gr, cgl->Gi) {
     A.resize(cgl->N * cgl->DimTan);
 }
-CQCGL1d::~NL(){}
+CQCGL1d::NL::~NL(){}
 
-void CQCGL1d::NL::init(CQCGL1dEIDc *cgl){
+void CQCGL1d::NL::init(CQCGL1d *cgl){
     cgl = cgl;
     N = cgl->N;
     B = dcp(cgl->Br, cgl->Bi);
@@ -23,7 +23,7 @@ void CQCGL1d::NL::init(CQCGL1dEIDc *cgl){
 void CQCGL1d::NL::operator()(ArrayXcd &x, ArrayXcd &dxdt, double t){
     int s = x.size();
     int m = s / N;
-    assert(N * m == s && s == dxdt.size());
+    assert(m == cgl->DimTan && N * m == s && s == dxdt.size());
     
     Map<VectorXcd> xv(x.data(), s);
     Map<VectorXcd> dxdtv(dxdt.data(), s);
@@ -31,7 +31,7 @@ void CQCGL1d::NL::operator()(ArrayXcd &x, ArrayXcd &dxdt, double t){
     if (s == 1){
 	cgl->fft.inv(A, xv);
 	ArrayXcd A2 = A.array() * A.array().conjugate();
-	if (IsQintic)
+	if (cgl->IsQintic)
 	    A = B * A.array() * A2 + G * A.array() * A2.square();
 	else 
 	    A = B * A.array() * A2;
@@ -39,27 +39,30 @@ void CQCGL1d::NL::operator()(ArrayXcd &x, ArrayXcd &dxdt, double t){
 	dxdtv.segment(cgl->Nplus, cgl->Nalias).setZero(); /* dealias */
     }
     else if (s <= cgl->Ndim + 1){
-	for(int i = 0; i < m; i++)
-	    cgl->fft.inv(A.segment(i*N, N), xv.segment(i*N, N));
+	for(int i = 0; i < m; i++){
+	    Map<VectorXcd> Av(A.data() + i*N, N); // destination should be MatrixBase
+	    cgl->fft.inv(Av, xv.segment(i*N, N));
+	}
 	ArrayXcd A0 = A.head(N);
 	ArrayXcd aA2 = A0 * A0.conjugate();
 	ArrayXcd A2 = A0.square();
 	
-	if (IsQintic)
-	    A.head(N) = B * A0 * aA2 + G * A * aA2.square();
+	if (cgl->IsQintic)
+	    A.head(N) = B * A0 * aA2 + G * A.array() * aA2.square();
 	else 
 	    A.head(N) = B * A0 * aA2;
 	
 	int num = (s - 1) * N;
-	if (IsQintic)
-	    A.segment(N, num) = A.segment(N, num).conjugate().array() * (B + 2*G*aA2) * A2
-		+ A.segment(N, num).array() * (2*B + 3*G*aA2) * aA2;
+	if (cgl->IsQintic)
+	    A.segment(N, num) = A.segment(N, num).conjugate().array() * (B + 2.0*G*aA2) * A2
+		+ A.segment(N, num).array() * (2.0*B + 3.0*G*aA2) * aA2;
 	else 
 	    A.segment(N, num) = A.segment(N, num).conjugate().array() * B * A2 + 
-		A.segment(N, num).array() * 2 * B * aA2;
+		A.segment(N, num).array() * 2.0 * B * aA2;
 
 	for(int i = 0; i < m; i++){
-	    cgl->fft.fwd(dxdtv.segment(i*N, N), A.segment(i*N, N));
+	    Map<VectorXcd> dxdtv0(dxdtv.data() + i*N, N);
+	    cgl->fft.fwd(dxdtv0, A.segment(i*N, N));
 	    dxdtv.segment(i*N + cgl->Nplus, cgl->Nalias).setZero();
 	}
     }
@@ -91,7 +94,8 @@ void CQCGL1d::NL::operator()(ArrayXcd &x, ArrayXcd &dxdt, double t){
 CQCGL1d::CQCGL1d(int N, double d,
 		 double Mu, double Dr, double Di, double Br, double Bi,
 		 double Gr, double Gi, int dimTan)
-    : N(N), d(d), Mu(Mu), Dr(Dr), Di(Di), Br(Br), Bi(Bi), Gr(Gr), Gi(Gi)
+    : N(N), d(d), Mu(Mu), Dr(Dr), Di(Di), Br(Br), Bi(Bi), Gr(Gr), Gi(Gi),
+      DimTan(dimTan >= 0 ? (dimTan > 0 ? dimTan : Ndim) : 0)
 {
     CGLInit(dimTan); // calculate coefficients.
 }
@@ -145,7 +149,7 @@ void CQCGL1d::CGLInit(int dimTan){
     Nplus = (Ne + 1) / 2;
     Nminus = (Ne - 1) / 2;
     Nalias = N - Ne;
-    DimTan = dimTan >= 0 ? (dimTan > 0 ? dimTan : Ndim) : 0;
+    // DimTan = dimTan >= 0 ? (dimTan > 0 ? dimTan : Ndim) : 0;
     
     // calculate the Linear part
     K.resize(N,1);
@@ -190,6 +194,7 @@ void CQCGL1d::changeOmega(double w){
  * @param[in] a0 initial condition of Fourier coefficents. Size : [2*N,1]
  * @return state trajectory. Each column is the state followed the previous column. 
  */
+ArrayXXd 
 CQCGL1d::intgC(const ArrayXd &a0, const double h, const double tend, const int skip_rate){
     assert( Ndim == a0.size());
     
@@ -223,7 +228,7 @@ CQCGL1d::intgjC(const ArrayXd &a0, const double h, const double tend, const int 
     ArrayXXcd aa(N, M), daa(N, Ndim*M);
     lte.resize(M);
     int ks = 0;
-    auto ss = [this, &ks, &aa](ArrayXcd &x, double t, double h, double err){
+    auto ss = [this, &ks, &aa, &daa](ArrayXcd &x, double t, double h, double err){
 	ArrayXXcd state = x;
 	state.resize(N, Ndim+1);
 	aa.col(ks) = state.col(0);
@@ -255,7 +260,7 @@ CQCGL1d::intgvC(const ArrayXd &a0, const ArrayXXd &v, const double h,
 
     const int Nt = (int)round(tend/h);
     ArrayXXcd aa(N, DimTan+1);
-    auto ss = [this, &ks, &aa](ArrayXcd &x, double t, double h, double err){
+    auto ss = [this, &aa](ArrayXcd &x, double t, double h, double err){
 	ArrayXXcd state = x;
 	state.resize(N, DimTan+1);
 	aa = state;
@@ -319,7 +324,7 @@ CQCGL1d::intgj(const ArrayXd &a0, const double h, const double tend,
     hs.resize(M);
     lte.resize(M);
     int ks = 0;
-    auto ss = [this, &ks, &aa](ArrayXcd &x, double t, double h, double err){
+    auto ss = [this, &ks, &aa, &daa](ArrayXcd &x, double t, double h, double err){
 	int m = Ts.size();
 	if (ks >= m ) {
 	    Ts.conservativeResize(m+cellSize);	    
@@ -335,10 +340,10 @@ CQCGL1d::intgj(const ArrayXd &a0, const double h, const double tend,
 	state.resize(N, Ndim+1);
 	aa.col(ks) = state.col(0);
 	daa.middleCols(ks*Ndim, Ndim) = state.rightCols(Ndim);
-	ArrayXXcd = R2C(MatrixXd::Identity(Ndim, Ndim));
+	ArrayXXcd J = R2C(MatrixXd::Identity(Ndim, Ndim));
 	J.resize(N*Ndim, 1);
-	x.tail(N*Ndim) = j;
-	k++;
+	x.tail(N*Ndim) = J;
+	ks++;
     };
 
     eidc.intg(nl, ss, 0, u0, tend, h, skip_rate);
@@ -356,14 +361,14 @@ CQCGL1d::intgv(const ArrayXXd &a0, const ArrayXXd &v, const double h,
     u0.resize(N*(DimTan+1), 1);
     
     ArrayXXcd aa(N, DimTan+1); 
-    auto ss = [this, &ks, &aa](ArrayXcd &x, double t, double h, double err){
+    auto ss = [this, &aa](ArrayXcd &x, double t, double h, double err){
 	ArrayXXcd state = x;
 	state.resize(N, DimTan+1);
 	aa = state;
     };
 
     eidc.intg(nl, ss, 0, u0, tend, h, 1000000);
-    return std::make_pair(C2R(aa), C2R(daa));
+    return C2R(aa);
 }
 
 /** @brief transform conjugate matrix to its real form */
@@ -406,15 +411,15 @@ ArrayXXcd CQCGL1d::r2c(const ArrayXXd &v){
  * @brief back Fourier transform of the states. 
  */
 ArrayXXcd CQCGL1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
-    int m = aa.cols();
-    int n = aa.rows();
-    assert(Ndim == n);
-    ArrayXXcd AA(N, m);
+    int cs = aa.cols(), rs = aa.rows();
+    assert(Ndim == rs);
+    ArrayXXcd aac = R2C(aa);
+    ArrayXXcd AA(N, cs);
     
-    for(size_t i = 0; i < m; i++){
-	F[0].v1 = R2C(aa.col(i));
-	F[0].ifft();
-	AA.col(i) = F[0].v2;
+    for(size_t i = 0; i < cs; i++){
+	Map<VectorXcd> a(aac.col(i).data(), rs);
+	Map<VectorXcd> A(AA.col(i).data(), rs);
+	fft.inv(A, a);
     }
     
     return AA;
@@ -425,18 +430,17 @@ ArrayXXcd CQCGL1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
  * @brief Fourier transform of the states. Input and output are both real.
  */
 ArrayXXd CQCGL1d::Config2Fourier(const Ref<const ArrayXXcd> &AA){
-    int m = AA.cols();
-    int n = AA.rows();
-    assert(N == n);
-    ArrayXXd aa(Ndim, m);
+    int cs = AA.cols(), rs = AA.rows();
+    assert(N == rs);
+    ArrayXXcd aac(N, cs);
     
-    for(size_t i = 0; i < m; i++){
-	F[0].v2 = AA.col(i);
-	F[0].fft();
-	aa.col(i) = C2R(F[0].v3);
+    for(size_t i = 0; i < cs; i++){
+	Map<VectorXcd> a(aac.col(i).data(), rs);
+	Map<const VectorXcd> A(AA.col(i).data(), rs); // because AA is const
+	fft.fwd(a, A);
     }
     
-    return aa;
+    return C2R(aac);
 }
 
 ArrayXXd CQCGL1d::Fourier2ConfigMag(const Ref<const ArrayXXd> &aa){
@@ -503,10 +507,10 @@ CQCGL1d::calMoment(const Ref<const ArrayXXd> &aa, const int p){
  */
 ArrayXd CQCGL1d::velocity(const ArrayXd &a0){
     assert( Ndim == a0.rows() );
-    F[0].v1 = R2C(a0);
-    NL(0, true);
-    ArrayXcd vel = L*F[0].v1 + F[0].v3;
-    return C2R(vel);
+    ArrayXcd A = R2C(a0);
+    ArrayXcd v(N);
+    nl(A, v, 0);
+    return C2R(L*A + v);
 }
 
 /**
@@ -555,12 +559,17 @@ VectorXd CQCGL1d::velPhase(const Ref<const VectorXd> &aH){
 /* --------          stability matrix     ----------- */
 /* -------------------------------------------------- */
 MatrixXd CQCGL1d::stab(const ArrayXd &a0){
+    assert(a0.size() == Ndim && DimTan == Ndim);
     ArrayXXd v0(Ndim, Ndim+1); 
     v0 << a0, MatrixXd::Identity(Ndim, Ndim);
-    JF[0].v1 = R2C(v0);
-    NL(0, false);
+    ArrayXXcd u0 = R2C(v0);
+    ArrayXcd x = Map<ArrayXcd>(u0.data(), N*(Ndim+1)); // must create a new ArrayXcd variable
+    
+    ArrayXcd v(N*(Ndim+1));
+    nl(x, v, 0);
+	
     ArrayXXcd j0 = R2C(MatrixXd::Identity(Ndim, Ndim));
-    MatrixXcd Z = j0.colwise() * L + JF[0].v3.rightCols(Ndim);
+    MatrixXcd Z = j0.colwise() * L + v.rightCols(Ndim);
   
     return C2R(Z);
 }
@@ -1201,129 +1210,6 @@ MatrixXd CQCGL1d::reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x, int 
     std::tuple<ArrayXXd, ArrayXd, ArrayXd> tmp = orbit2slice(x, flag);
     return reflectVe(ve2slice(ve, x, flag), std::get<0>(tmp).col(0));
 }
-
-#if 0
-/* -------------------------------------------------- */
-/* --------          shooting related     ----------- */
-/* -------------------------------------------------- */
-
-/**
- * @brief form the multishooting vector
- *
- *  df  = [ f(x_0, nstp) - x_1,
- *          f(x_1, nstp) - x_2,
- *          ...
- *          g(\theta, \phi) f(x_{M-1}, nstp) - x_0 ]
- * 
- * @param[in] x      a stack of state vectors on a orbit. Each column is one point
- * @param[in] nstp   integration time steps for each point in x
- * @param[in] th     translation rotation angle
- * @param[in] phi    phase change angle
- */
-VectorXd CQCGL1d::multiF(const ArrayXXd &x, const int nstp, const double th, const double phi){
-    int m = x.cols();
-    int n = x.rows();
-    assert( Ndim == n );
-    
-    VectorXd F(m*n);
-    for(size_t i = 0; i < m; i++){
-	ArrayXXd aa = intg(x.col(i), nstp, nstp);
-	if(i < m-1) F.segment(i*n, n) = aa.col(1) - x.col(i+1);
-	else F.segment(i*n, n) =  Rotate(aa.col(1), th, phi)  - x.col((i+1)%m);
-    }
-
-    return F;
-}
-
-/**
- * @brief form the multishooting matrix and the difference vector
- *
- *  df  = [ f(x_0, nstp) - x_1,
- *          f(x_1, nstp) - x_2,
- *          ...
- *          g(\theta, \phi) f(x_{M-1}, nstp) - x_0 ]
- *          
- *  A relative periodic orbit has form \f$ x(0) = g_\tau(\theta) g_\rho(\phi) x(T_p) \f$.
- *  Take derivative of the above vector, we obtain
- *             [ J(x_0)   -I                                      v(f(x_0))         
- *                       J(x_1)   -I                              v(f(x_1))
- *  Jacobian =                    ....                             ...
- *               -I                   g(\theta, \phi)J(x_{M-1})   v(f(x_{M-1}))  tx1  tx2 ]
- *  
- */
-pair<CQCGL1d::SpMat, VectorXd>
-CQCGL1d::multishoot(const ArrayXXd &x, const int nstp, const double th,
-		    const double phi, bool doesPrint /* = false*/){
-    int m = x.cols();		/* number of shooting points */
-    int n = x.rows();
-    assert( Ndim == n );
-  
-    SpMat DF(m*n, m*n+3);
-    VectorXd F(m*n);
-    std::vector<Tri> nz;
-    nz.reserve(2*m*n*n);
-    
-    if(doesPrint) printf("Forming multishooting matrix:");
-
-
-    for(size_t i = 0 ; i < m; i++){
-	if(doesPrint) printf("%zd ", i);
-	std::pair<ArrayXXd, ArrayXXd> aadaa = intgj(x.col(i), nstp, nstp, nstp); 
-	ArrayXXd &aa = aadaa.first;
-	ArrayXXd &J = aadaa.second;
-	
-	if(i < m-1){
-	    // J
-	    std::vector<Tri> triJ = triMat(J, i*n, i*n);
-	    // velocity
-	    std::vector<Tri> triv = triMat(velocity(aa.col(1)), i*n, m*n);
-
-	    {
-		nz.insert(nz.end(), triJ.begin(), triJ.end());
-		nz.insert(nz.end(), triv.begin(), triv.end());
-		// f(x_i) - x_{i+1}
-		F.segment(i*n, n) = aa.col(1) - x.col(i+1);
-	    }
-	    
-	} else {
-	    ArrayXd gfx = Rotate(aa.col(1), th, phi); /* gf(x) */
-	    // g*J
-	    std::vector<Tri> triJ = triMat(Rotate(J, th, phi), i*n, i*n);
-	    // R*velocity
-	    std::vector<Tri> triv = triMat(Rotate(velocity(aa.col(1)), th, phi), i*n, m*n);
-	    // T_\tau * g * f(x_{m-1})
-	    VectorXd tx_trans = transTangent(gfx) ;
-	    std::vector<Tri> tritx_trans = triMat(tx_trans, i*n, m*n+1);	    
-	    // T_\phi * g * f(x_{m-1})
-	    ArrayXd tx_phase = phaseTangent( gfx );
-	    std::vector<Tri> tritx_phase = triMat(tx_phase, i*n, m*n+2);
-	    
-
-	    {
-		nz.insert(nz.end(), triJ.begin(), triJ.end());
-		nz.insert(nz.end(), triv.begin(), triv.end());
-		nz.insert(nz.end(), tritx_trans.begin(), tritx_trans.end());
-		nz.insert(nz.end(), tritx_phase.begin(), tritx_phase.end());
-		// g*f(x_{m-1}) - x_0
-		F.segment(i*n, n) = gfx  - x.col((i+1)%m);
-	    }
-	}
-	
-	std::vector<Tri> triI = triDiag(n, -1, i*n, ((i+1)%m)*n);
-
-	nz.insert(nz.end(), triI.begin(), triI.end());
-    }
-    
-    if(doesPrint) printf("\n");
-    
-    DF.setFromTriplets(nz.begin(), nz.end());
-
-    return make_pair(DF, F);
-}
-
-
-
-#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

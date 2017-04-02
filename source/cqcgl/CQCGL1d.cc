@@ -2,6 +2,12 @@
 
 using namespace denseRoutines;
 
+// implementation notes
+// 1) not use fft.fwd(MatrixBase, MatrixBase) but use
+//    fft.fwd(Complex * dst, const Complex * src, Index nfft)
+//    becuase the former cannot work with Map<VectorXcd> type.
+// 2) 
+
 //////////////////////////////////////////////////////////////////////
 //                     Inner Class CQCGL1d                          //
 //////////////////////////////////////////////////////////////////////
@@ -25,45 +31,40 @@ void CQCGL1d::NL::operator()(ArrayXcd &x, ArrayXcd &dxdt, double t){
     int m = s / N;
     assert(m == cgl->DimTan && N * m == s && s == dxdt.size());
     
-    Map<VectorXcd> xv(x.data(), s);
-    Map<VectorXcd> dxdtv(dxdt.data(), s);
-
     if (s == 1){
-	cgl->fft.inv(A, xv);
-	ArrayXcd A2 = A.array() * A.array().conjugate();
+	cgl->fft.inv(A.data(), x.data(), N);
+	ArrayXcd A2 = A * A.conjugate();
 	if (cgl->IsQintic)
-	    A = B * A.array() * A2 + G * A.array() * A2.square();
+	    A = B * A * A2 + G * A * A2.square();
 	else 
-	    A = B * A.array() * A2;
-	cgl->fft.fwd(dxdtv, A);	
-	dxdtv.segment(cgl->Nplus, cgl->Nalias).setZero(); /* dealias */
+	    A = B * A * A2;
+	cgl->fft.fwd(dxdt.data(), A.data(), N);	
+	dxdt.segment(cgl->Nplus, cgl->Nalias).setZero(); /* dealias */
     }
-    else if (s <= cgl->Ndim + 1){
-	for(int i = 0; i < m; i++){
-	    Map<VectorXcd> Av(A.data() + i*N, N); // destination should be MatrixBase
-	    cgl->fft.inv(Av, xv.segment(i*N, N));
-	}
+    else if (m <= cgl->Ndim + 1){
+	for(int i = 0; i < m; i++)
+	    cgl->fft.inv(A.data() + i*N, x.data() + i*N, N);
 	ArrayXcd A0 = A.head(N);
 	ArrayXcd aA2 = A0 * A0.conjugate();
 	ArrayXcd A2 = A0.square();
 	
 	if (cgl->IsQintic)
-	    A.head(N) = B * A0 * aA2 + G * A.array() * aA2.square();
+	    A.head(N) = B * A0 * aA2 + G * A0 * aA2.square();
 	else 
 	    A.head(N) = B * A0 * aA2;
 	
-	int num = (s - 1) * N;
 	if (cgl->IsQintic)
-	    A.segment(N, num) = A.segment(N, num).conjugate().array() * (B + 2.0*G*aA2) * A2
-		+ A.segment(N, num).array() * (2.0*B + 3.0*G*aA2) * aA2;
+	    for(int i = 1; i < m; i++)
+		A.segment(i*N, N) = A.segment(i*N, N).conjugate() * (B + 2.0*G*aA2) * A2
+		    + A.segment(i*N, N) * (2.0*B + 3.0*G*aA2) * aA2;
 	else 
-	    A.segment(N, num) = A.segment(N, num).conjugate().array() * B * A2 + 
-		A.segment(N, num).array() * 2.0 * B * aA2;
-
+	    for(int i = 1; i < m; i++)
+		A.segment(i*N, N) = A.segment(i*N, N).conjugate() * B * A2 + 
+		    A.segment(i*N, N) * 2.0 * B * aA2;
+	
 	for(int i = 0; i < m; i++){
-	    Map<VectorXcd> dxdtv0(dxdtv.data() + i*N, N);
-	    cgl->fft.fwd(dxdtv0, A.segment(i*N, N));
-	    dxdtv.segment(i*N + cgl->Nplus, cgl->Nalias).setZero();
+	    cgl->fft.fwd(dxdt.data() + i*N, A.data() + i*N, N);
+	    dxdt.segment(i*N + cgl->Nplus, cgl->Nalias).setZero();
 	}
     }
     else {
@@ -314,7 +315,7 @@ CQCGL1d::intgj(const ArrayXd &a0, const double h, const double tend,
     assert(a0.size() == Ndim && DimTan == Ndim);
     ArrayXXd v0(Ndim, Ndim+1); 
     v0 << a0, MatrixXd::Identity(Ndim, Ndim);
-    ArrayXXd u0 = R2C(a0);
+    ArrayXXcd u0 = R2C(a0);
     u0.resize(N*(Ndim+1), 1);
     
     const int Nt = (int)round(tend/h);
@@ -416,11 +417,8 @@ ArrayXXcd CQCGL1d::Fourier2Config(const Ref<const ArrayXXd> &aa){
     ArrayXXcd aac = R2C(aa);
     ArrayXXcd AA(N, cs);
     
-    for(size_t i = 0; i < cs; i++){
-	Map<VectorXcd> a(aac.col(i).data(), rs);
-	Map<VectorXcd> A(AA.col(i).data(), rs);
-	fft.inv(A, a);
-    }
+    for(size_t i = 0; i < cs; i++)
+	fft.inv(AA.data() + i*N, aac.data() + i*N, N);
     
     return AA;
 }
@@ -434,11 +432,8 @@ ArrayXXd CQCGL1d::Config2Fourier(const Ref<const ArrayXXcd> &AA){
     assert(N == rs);
     ArrayXXcd aac(N, cs);
     
-    for(size_t i = 0; i < cs; i++){
-	Map<VectorXcd> a(aac.col(i).data(), rs);
-	Map<const VectorXcd> A(AA.col(i).data(), rs); // because AA is const
-	fft.fwd(a, A);
-    }
+    for(size_t i = 0; i < cs; i++)
+	fft.fwd(aac.data() + i*N, AA.data() + i*N, N);
     
     return C2R(aac);
 }

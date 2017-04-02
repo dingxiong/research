@@ -56,7 +56,8 @@ public:
 	CQCGL1d *cgl;
 	int N;
 	dcp B, G;
-	VectorXcd A;
+	ArrayXcd A;
+	
 	NL();
 	NL(CQCGL1d *cgl);
 	~NL();

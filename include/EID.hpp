@@ -7,7 +7,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <Eigen/Dense>
-#include "denseRoutines.hpp"
+// #include "denseRoutines.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -173,6 +173,8 @@ public:
 	TotalTime = t_elapse.count();
     }
     
+    /// @brief constant time-stepping integrator.
+    /// @note the initial condition will not be recorded.
     template<class NL, class SS>
     void 
     intgC(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h, 

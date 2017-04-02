@@ -7,29 +7,17 @@
  *  g++ cqcgl1d.cc -shared -fpic -lfftw3 -lm -fopenmp  -march=corei7 -O3 -msse2 -msse4 -I/usr/include/eigen3 -I../../include -std=c++0x
  *
  *  */
-#ifndef CQCGLGENERAL_H
-#define CQCGLGENERAL_H
+#ifndef CQCGL1D_H
+#define CQCGL1D_H
 
 // #include <fftw3.h>
 #include <complex>
 #include <utility>
 #include <algorithm>
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
 #include <vector>
-#include "sparseRoutines.hpp"
 #include "denseRoutines.hpp"
 #include "iterMethod.hpp"
-#include "ped.hpp"
-#include "myfft.hpp"
-using std::pair; using std::make_pair;
-using Eigen::MatrixXd; using Eigen::VectorXd;
-using Eigen::MatrixXcd; using Eigen::VectorXcd;
-using Eigen::ArrayXXcd; using Eigen::ArrayXcd;
-using Eigen::ArrayXXd; using Eigen::ArrayXd;
-using Eigen::ConjugateGradient;
-using Eigen::PartialPivLU;
-using Eigen::Map; using Eigen::Ref;
+
 
 //////////////////////////////////////////////////////////////////////
 //                       class CQCGL1d                              //
@@ -38,14 +26,11 @@ class CQCGL1d {
   
 public:
     typedef std::complex<double> dcp;
-    typedef Eigen::SparseMatrix<double> SpMat;
-    typedef Eigen::Triplet<double> Tri;
     
     const int N;		/* dimension of FFT */
     const double d;		/* system domain size */
     bool IsQintic = true;	//  False => cubic equation
-
-    int DimTan;    		/* true tangent space dimension
+    const int DimTan;		/* true tangent space dimension
 				   dimTan > 0 => dimTan
 				   dimTan = 0 => Ndim
 				   dimTan < 0 => 0 
@@ -58,36 +43,32 @@ public:
     double Omega = 0;		/* used for comoving frame */
     ArrayXd K, K2, QK;
 
-    ArrayXcd L, E, E2, a21, a31, a32, a41, a43, b1, b2, b4;
+    ArrayXcd L;
 
-    MyFFT::FFT F[5], JF[5];
+    FFT<double> fft;
 
-    /* for time step adaptive ETDRK4 and Krogstad  */
-    ////////////////////////////////////////////////////////////
-    // time adaptive method related parameters
-    double rtol = 1e-10;
-    double nu = 0.9;		/* safe factor */
-    double mumax = 2.5;		/* maximal time step increase factor */
-    double mumin = 0.4;		/* minimal time step decrease factor */
-    double mue = 1.25;		/* upper lazy threshold */
-    double muc = 0.85;		/* lower lazy threshold */
-
-    int NCalCoe = 0;	      /* times to evaluate coefficient */
-    int NReject = 0;	      /* times that new state is rejected */
-    int NCallF = 0;	      /* times to call velocity function f */
-    int NSteps = 0;	      /* total number of integrations steps */
     VectorXd hs;	      /* time step sequnce */
     VectorXd lte;	      /* local relative error estimation */
     VectorXd Ts;	      /* time sequnence for adaptive method */
-    
     int cellSize = 500;	/* size of cell when resize output container */
-    int M = 64;			/* number of sample points */
-    int R = 1;			/* radius for evaluating phi(z) */
 
-    int Method = 1;
-    ////////////////////////////////////////////////////////////
-
-
+    struct NL {
+	CQCGL1d *cgl;
+	double N;
+	dcp B, G;
+	VectorXcd A;
+	NL();
+	NL(CQCGL1d *cgl);
+	~NL();
+	void init(CQCGL1d *cgl);
+	void operator()(ArrayXcd &x, ArrayXcd &dxdt, double t);
+    };
+    
+    NL nl;
+    
+    ArrayXcd Yv[10], Nv[10];
+    EIDc eidc;
+    
     ////////////////////////////////////////////////////////////
     //         constructor, destructor, copy assignment.      //
     ////////////////////////////////////////////////////////////
@@ -115,39 +96,22 @@ public:
 
     //============================================================    
     void CGLInit(int dimTan);
+    void setScheme(std::string x);
     void changeOmega(double w);
-    void changeMu(double Mu);
-
-    void calCoe(const double h);
-    void oneStep(double &du, const bool onlyOrbit);
-    ArrayXXcd ZR(ArrayXcd &z);
-    double adaptTs(bool &doChange, bool &doAccept, const double s);
 
     ArrayXXd 
-    constETD(const ArrayXXd a0, const double h, const int Nt, 
-	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
-    ArrayXXd
-    adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
-	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
-    ArrayXXd 
-    intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
+    intgC(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     std::pair<ArrayXXd, ArrayXXd>
-    intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
+    intgjC(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     ArrayXXd
-    aintg(const ArrayXd &a0, const double h, const double tend, 
-	  const int skip_rate);
+    intgv(const ArrayXd &a0, const ArrayXXd &v, const double h, const double tend);
+    ArrayXXd
+    intg(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     std::pair<ArrayXXd, ArrayXXd>
-    aintgj(const ArrayXd &a0, const double h, const double tend, 
-	   const int skip_rate);
-    ArrayXXd
-    intgv(const ArrayXd &a0, const ArrayXXd &v, const double h,
-	  const int Nt);
+    intgj(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     ArrayXXd 
-    aintgv(const ArrayXXd &a0, const ArrayXXd &v, const double h,
-	   const double tend);
+    intgv(const ArrayXXd &a0, const ArrayXXd &v, const double h, const double tend);
     
-    void dealias(const int k, const bool onlyOrbit);
-    void NL(const int k, const bool onlyOrbit);
     ArrayXXd C2R(const ArrayXXcd &v);
     ArrayXXcd R2C(const ArrayXXd &v);
     ArrayXXd c2r(const ArrayXXcd &v);
@@ -242,4 +206,4 @@ public:
 
 
 
-#endif  /* CQCGLGENERAL_H */
+#endif  /* CQCGL1D_H */

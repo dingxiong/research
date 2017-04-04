@@ -7,18 +7,6 @@
 //   Exponential Integrator with complex data type
 ////////////////////////////////////////////////////////////////////////////////
 
-/// @brief overload * in function oneStep()
-/// @note in order to pass expressions as arguments, the arguments
-///       must be declared as const
-inline 	
-ArrayXXcd operator*(const ArrayXcd &C, const ArrayXXcd &Y){
-    // for ArrayXcd * (ArrayXcd/ArrayXXcd): stateMat.colwise() * coeVec 
-    // for ArrayXd  * (ArrayXcd/ArrayXXcd): coeVec.matrix().asDiagonal() * stateMat.matrix()
-    // if stateMat is a vector, then it is just coeVec * stateMat
-    return Y.colwise() * C;
-}
-
-
 template<int Cols>
 class EIDc : public EID<std::complex<double>, Cols> {
     
@@ -37,6 +25,11 @@ public:
     }
 
     ~EIDc(){}
+
+    inline typename EID<std::complex<double>, Cols>::Arycs
+    MUL(const ArrayXcd &C, typename EID<std::complex<double>, Cols>::Arycs &Y){
+	return Y.colwise() * C;
+    }
 
     inline ArrayXcd mean(const Ref<const ArrayXXcd> &x){
 	return x.rowwise().mean();

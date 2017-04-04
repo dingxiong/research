@@ -251,97 +251,97 @@ public:
 
 	if(scheme == "Cox_Matthews") {
 	    nl(Y[0], N[0], t);	
-	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
+	    Y[1] = MUL(c[1], Y[0]) + MUL(a[1][0], N[0]);
 	    
 	    nl(Y[1], N[1], t+h/2);	
-	    Y[2] = c[1]*Y[0] + a[1][0]*N[1];
+	    Y[2] = MUL(c[1], Y[0]) + MUL(a[1][0], N[1]);
 	    
 	    nl(Y[2], N[2], t+h/2);	
-	    Y[3] = c[1]*Y[1] + a[1][0]*(2*N[2]-N[0]);
+	    Y[3] = MUL(c[1], Y[1]) + MUL(a[1][0], 2*N[2]-N[0]);
 	
 	    nl(Y[3], N[3], t+h);	
-	    Y[4] = c[3]*Y[0] + b[0]*N[0] + b[1]*(N[1] + N[2]) + b[3]*N[3];
+	    Y[4] = MUL(c[3], Y[0]) + MUL(b[0], N[0]) + MUL(b[1], N[1]+N[2]) + MUL(b[3], N[3]);
 	    
 	    nl(Y[4], N[4], t+h);
 	
-	    err = (b[3]*(N[4] - N[3])).abs().maxCoeff() / Y[4].abs().maxCoeff(); 
+	    err = MUL(b[3], N[4]-N[3]).abs().maxCoeff() / Y[4].abs().maxCoeff(); 
 	}
 	else if (scheme == "Krogstad") {
 	    nl(Y[0], N[0], t);	
-	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
+	    Y[1] = MUL(c[1], Y[0]) + MUL(a[1][0], N[0]);
 
 	    nl(Y[1], N[1], t+h/2);
-	    Y[2] = c[1]*Y[0] + a[2][0]*N[0] + a[2][1]*N[1];
+	    Y[2] = MUL(c[1], Y[0]) + MUL(a[2][0], N[0]) + MUL(a[2][1], N[1]);
 
 	    nl(Y[2], N[2], t+h/2);
-	    Y[3] = c[3]*Y[0] + a[3][0]*N[0] + a[3][2]*N[2];
+	    Y[3] = MUL(c[3], Y[0]) + MUL(a[3][0], N[0]) + MUL(a[3][2], N[2]);
 	
 	    nl(Y[3], N[3], t+h);
-	    Y[4] = c[3]*Y[0] + b[0]*N[0] + b[1]*(N[1] + N[2]) + b[3]*N[3];
+	    Y[4] = MUL(c[3], Y[0]) + MUL(b[0], N[0]) + MUL(b[1], N[1]+N[2]) + MUL(b[3], N[3]);
 	
 	    nl(Y[4], N[4], t+h);
 	
-	    err = (b[3]*(N[4] - N[3])).abs().maxCoeff() / Y[4].abs().maxCoeff();
+	    err = MUL(b[3], N[4]-N[3]).abs().maxCoeff() / Y[4].abs().maxCoeff();
 	}
 	else if (scheme == "Hochbruck_Ostermann") {
 	    nl(Y[0], N[0], t);	
-	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
+	    Y[1] = MUL(c[1], Y[0]) + MUL(a[1][0], N[0]);
 
 	    nl(Y[1], N[1], t+h/2);
-	    Y[2] = c[1]*Y[0] + a[2][0]*N[0] + a[2][1]*N[1];
+	    Y[2] = MUL(c[1], Y[0]) + MUL(a[2][0], N[0]) + MUL(a[2][1], N[1]);
 
 	    nl(Y[2], N[2], t+h/2);
-	    Y[3] = c[3]*Y[0] + a[3][0]*N[0] + a[3][1]*(N[1] + N[2]);
+	    Y[3] = MUL(c[3], Y[0]) + MUL(a[3][0], N[0]) + MUL(a[3][1], N[1]+N[2]);
 	
 	    nl(Y[3], N[3], t+h);
-	    Y[4] = c[1]*Y[0] + a[4][0]*N[0] + a[4][1]*(N[1] + N[2]) + a[4][3]*N[3];
+	    Y[4] = MUL(c[1], Y[0]) + MUL(a[4][0], N[0]) + MUL(a[4][1], N[1]+N[2]) + MUL(a[4][3], N[3]);
 	
 	    nl(Y[4], N[4], t+h/2);
-	    Y[5] = c[3]*Y[0] + b[0]*N[0] + b[3]*N[3] + b[4]*N[4];
+	    Y[5] = MUL(c[3], Y[0]) + MUL(b[0], N[0]) + MUL(b[3], N[3]) + MUL(b[4], N[4]);
 
-	    err = (b[4]*(N[4] - 0.5*N[2]- 0.5*N[1])).abs().maxCoeff() / Y[5].abs().maxCoeff();
+	    err = MUL(b[4], N[4]-0.5*N[2]-0.5*N[1]).abs().maxCoeff() / Y[5].abs().maxCoeff();
 	}
 	else if (scheme == "Luan_Ostermann"){
 	    nl(Y[0], N[0], t);	
-	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
+	    Y[1] = MUL(c[1], Y[0]) + MUL(a[1][0], N[0]);
 
 	    nl(Y[1], N[1], t+h/2);
-	    Y[2] = c[1]*Y[0] + a[2][0]*N[0] + a[2][1]*N[1];
+	    Y[2] = MUL(c[1], Y[0]) + MUL(a[2][0], N[0]) + MUL(a[2][1], N[1]);
 
 	    nl(Y[2], N[2], t+h/2);
-	    Y[3] = c[3]*Y[0] + a[3][0]*N[0] + a[3][2]* N[2];
+	    Y[3] = MUL(c[3], Y[0]) + MUL(a[3][0], N[0]) + MUL(a[3][2], N[2]);
 	
 	    nl(Y[3], N[3], t+h/4);
-	    Y[4] = c[1]*Y[0] + a[4][0]*N[0] + a[4][2]*N[2] + a[4][3]*N[3];
+	    Y[4] = MUL(c[1], Y[0]) + MUL(a[4][0], N[0]) + MUL(a[4][2], N[2]) + MUL(a[4][3], N[3]);
 	
 	    nl(Y[4], N[4], t+h/2);
-	    Y[5] = c[5]*Y[0] + a[5][0]*N[0] + a[5][3]*N[3] + a[5][4]*N[4];
+	    Y[5] = MUL(c[5], Y[0]) + MUL(a[5][0], N[0]) + MUL(a[5][3], N[3]) + MUL(a[5][4], N[4]);
 
 	    nl(Y[5], N[5], t+h/5);
-	    Y[6] = c[6]*Y[0] + a[6][0]*N[0] + a[6][3]*N[3] + a[6][4]*N[4] + a[6][5]*N[5];
+	    Y[6] = MUL(c[6], Y[0]) + MUL(a[6][0], N[0]) + MUL(a[6][3], N[3]) + MUL(a[6][4], N[4]) + MUL(a[6][5], N[5]);
 
 	    nl(Y[6], N[6], t+2*h/3);
-	    Y[7] = c[7]*Y[0] + a[7][0]*N[0] + a[7][4]*N[4] + a[7][5]*N[5] + a[7][6]*N[6];
+	    Y[7] = MUL(c[7], Y[0]) + MUL(a[7][0], N[0]) + MUL(a[7][4], N[4]) + MUL(a[7][5], N[5]) + MUL(a[7][6], N[6]);
 	    
 	    nl(Y[7], N[7], t+h);
-	    Y[8] = c[7]*Y[0] + b[0]*N[0] + b[5]*N[5] + b[6]*N[6] + b[7]*N[7];
+	    Y[8] = MUL(c[7], Y[0]) + MUL(b[0], N[0]) + MUL(b[5], N[5]) + MUL(b[6], N[6]) + MUL(b[7], N[7]);
 
 	    nl(Y[8], N[8], t+h);
 	    
-	    err = (b[7]*(N[8] - N[7])).abs().maxCoeff() / Y[8].abs().maxCoeff();
+	    err = MUL(b[7], N[8]-N[7]).abs().maxCoeff() / Y[8].abs().maxCoeff();
 	}
 	else if (scheme == "IFRK43") {
 	    nl(Y[0], N[0], t);	
-	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
+	    Y[1] = MUL(c[1], Y[0]) + MUL(a[1][0], N[0]);
 
 	    nl(Y[1], N[1], t+h/2);
-	    Y[2] = c[1]*Y[0] + (h*0.5)*N[1];
+	    Y[2] = MUL(c[1], Y[0]) + (h*0.5)*N[1];
 
 	    nl(Y[2], N[2], t+h/2);
-	    Y[3] = c[3]*Y[0] + a[3][2]* N[2];
+	    Y[3] = MUL(c[3], Y[0]) + MUL(a[3][2], N[2]);
 	
 	    nl(Y[3], N[3], t+h);
-	    Y[4] = c[3]*Y[0] + b[0]*N[0] + b[1]*(N[1]+N[2]) + (h/6)*N[3];
+	    Y[4] = MUL(c[3], Y[0]) + MUL(b[0], N[0]) + MUL(b[1], N[1]+N[2]) + (h/6)*N[3];
 
 	    nl(Y[4], N[4], t+h);
 
@@ -349,22 +349,22 @@ public:
 	}
 	else if (scheme == "IFRK54"){
 	    nl(Y[0], N[0], t);	
-	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
+	    Y[1] = MUL(c[1], Y[0]) + MUL(a[1][0], N[0]);
 
 	    nl(Y[1], N[1], t+h/5);
-	    Y[2] = c[2]*Y[0] + a[2][0]*N[0] + a[2][1]* N[1];
+	    Y[2] = MUL(c[2], Y[0]) + MUL(a[2][0], N[0]) + MUL(a[2][1], N[1]);
 
 	    nl(Y[2], N[2], t+3*h/10);
-	    Y[3] = c[3]*Y[0] + a[3][0]*N[0] + a[3][1]*N[1] + a[3][2]*N[2];
+	    Y[3] = MUL(c[3], Y[0]) + MUL(a[3][0], N[0]) + MUL(a[3][1], N[1]) + MUL(a[3][2], N[2]);
 	
 	    nl(Y[3], N[3], t+4*h/5);
-	    Y[4] = c[4]*Y[0] + a[4][0]*N[0] + a[4][1]*N[1] + a[4][2]*N[2] + a[4][3]*N[3];
+	    Y[4] = MUL(c[4], Y[0]) + MUL(a[4][0], N[0]) + MUL(a[4][1], N[1]) + MUL(a[4][2], N[2]) + MUL(a[4][3], N[3]);
 
 	    nl(Y[4], N[4], t+8*h/9);
-	    Y[5] = c[5]*Y[0] + a[5][0]*N[0] + a[5][1]*N[1] + a[5][2]*N[2] + a[5][3]*N[3] + a[5][4]*N[4];
+	    Y[5] = MUL(c[5], Y[0]) + MUL(a[5][0], N[0]) + MUL(a[5][1], N[1]) + MUL(a[5][2], N[2]) + MUL(a[5][3], N[3]) + MUL(a[5][4], N[4]);
 
 	    nl(Y[5], N[5], t+h);
-	    Y[6] = c[5]*Y[0] + b[0]*N[0] + b[2]*N[2] + b[3]*N[3] + b[4]*N[4] + (h*11./84)*N[5];
+	    Y[6] = MUL(c[5], Y[0]) + MUL(b[0], N[0]) + MUL(b[2], N[2]) + MUL(b[3], N[3]) + MUL(b[4], N[4]) + (h*11./84)*N[5];
 
 	    nl(Y[6], N[6], t+h);	    
 	    err = h*(-71./57600*N[0] + 71./16695*N[2] - 71./1920*N[3] + 17253./339200*N[4]
@@ -373,25 +373,25 @@ public:
 	else if (scheme == "SSPP43") {
 	    ArrayXcd y0 = Y[0];
 	    
-	    Y[0] = c[0] * Y[0];
+	    Y[0] = MUL(c[0], Y[0]);
 	    Y[0] = rk4(t+a1*h, a3*h, nl);
 
-	    Y[0] = c[1] * Y[0];
+	    Y[0] = MUL(c[1], Y[0]);
 	    Y[0] = rk4(t+(a1+a2+a3)*h, a2*h, nl);
 
-	    Y[0] = c[2] * Y[0];
+	    Y[0] = MUL(c[2], Y[0]);
 	    ArrayXcd t1 = rk4(t+(a1+2*a3+2*a2)*h, a1*h, nl);
 
 	    Y[0] = y0;	    	    
 
 	    Y[0] = rk4(t, a1*h, nl);
-	    Y[0] = c[2] * Y[0];
+	    Y[0] = MUL(c[2], Y[0]);
 
 	    Y[0] = rk4(t+(a1+a3)*h, a2*h, nl);
-	    Y[0] = c[1] * Y[0];
+	    Y[0] = MUL(c[1], Y[0]);
 
 	    Y[0] = rk4(t+(a1+a3+2*a2)*h, a3*h, nl);
-	    ArrayXcd t2 = c[0] * Y[0];
+	    ArrayXcd t2 = MUL(c[0], Y[0]);
 	    
 	    Y[3] = 0.5*(t1 + t2);
 	    err = 0.5*(t1 - t2).abs().maxCoeff() / Y[3].abs().maxCoeff();
@@ -704,7 +704,17 @@ public:
 	
 	return t_elapse.count();
     }
-    
+
+    /// @brief multiplication
+    /// @note in order to pass expressions as arguments, the arguments
+    ///       must be declared as const
+    inline 	
+    virtual
+    Arycs MUL(const Ary &C, const Arycs &Y){
+	// for ArrayXcd * (ArrayXcd/ArrayXXcd): Y.colwise() * C 
+	// for ArrayXd  * (ArrayXcd/ArrayXXcd): C.matrix().asDiagonal() * Y.matrix()
+    }
+
     inline 
     virtual 
     ArrayXXcd ZR(Ary &z){}

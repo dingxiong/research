@@ -51,7 +51,7 @@ public :
     NL nl;
 
     ArrayXcd Yv[10], Nv[10];
-    EIDc eidc;
+    EIDc<1> eidc;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     CQCGL1dEIDc(int N, double d, double Mu, double Dr, double Di, 

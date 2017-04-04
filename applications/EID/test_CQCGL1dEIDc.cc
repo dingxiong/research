@@ -4,11 +4,11 @@
 #include <ctime>
 #include "CQCGL1dEIDc.hpp"
 #include "myH5.hpp"
-#include "CQCGL1d.hpp"
+// #include "CQCGL1d.hpp"
 #include "denseRoutines.hpp"
 
 #define cee(x) cout << (x) << endl << endl;
-#define N60
+#define N5
 
 using namespace MyH5;
 using namespace std;
@@ -20,7 +20,16 @@ int main(){
     std::vector<std::string> scheme = {"IFRK43", "IFRK54",
 				       "Cox_Matthews", "Krogstad", "Hochbruck_Ostermann", 
 				       "Luan_Ostermann", "SSPP43"};
+#ifdef N5
+    //====================================================================================================
+    // test the integrator
+    const int N = 1024; 
+    const double d = 50;
+    double Bi = 0.8, Gi = -0.6;
 
+    CQCGL1dEIDc cgl(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi);
+
+#endif
 #ifdef N10
     //====================================================================================================
     // test the performance of the EID compared with previous implementation.

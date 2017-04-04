@@ -29,9 +29,9 @@ void CQCGL1d::NL::init(CQCGL1d *cgl){
 void CQCGL1d::NL::operator()(ArrayXcd &x, ArrayXcd &dxdt, double t){
     int s = x.size();
     int m = s / N;
-    assert(m == cgl->DimTan && N * m == s && s == dxdt.size());
+    assert(m == cgl->DimTan + 1 && N * m == s && s == dxdt.size());
     
-    if (s == 1){
+    if (s == 1){ cout << "doogd" << endl;
 	cgl->fft.inv(A.data(), x.data(), N);
 	ArrayXcd A2 = A * A.conjugate();
 	if (cgl->IsQintic)
@@ -208,7 +208,7 @@ CQCGL1d::intgC(const ArrayXd &a0, const double h, const double tend, const int s
     auto ss = [this, &ks, &aa](ArrayXcd &x, double t, double h, double err){
 	aa.col(ks) = x;
 	lte(ks++) = err;
-    };
+    }; 
 	
     eidc.intgC(nl, ss, 0, u0, tend, h, skip_rate); 
 	

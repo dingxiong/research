@@ -25,7 +25,7 @@ int main(){
     //======================================================================
     /* test the new constructor */
     const int N = 1024;
-    const int L = 30;
+    const int L = 50;
     // CQCGL1d cgl(N, L, 4.0, 0.8, 0.01, 0.06, -1);
     CQCGL1d cgl(N, L, -1, 1, 4.0, 1, 0.8, -0.01, -0.06, -1);
 	

@@ -93,6 +93,7 @@ BOOST_PYTHON_MODULE(py_CQCGL1dEIDc) {
 	.def_readonly("Di", &pyCQCGL1dEIDc::Di)
 	.def_readwrite("Gr", &pyCQCGL1dEIDc::Gr)
 	.def_readwrite("Gi", &pyCQCGL1dEIDc::Gi)
+	.def_readonly("Ndim", &pyCQCGL1dEIDc::Ndim)
 	.def_readonly("Ne", &pyCQCGL1dEIDc::Ne)
 	.def_readonly("Omega", &pyCQCGL1dEIDc::Omega)
 	.def_readwrite("eidc", &pyCQCGL1dEIDc::eidc)

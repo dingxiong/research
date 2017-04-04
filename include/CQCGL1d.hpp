@@ -16,7 +16,6 @@
 #include <vector>
 #include <unsupported/Eigen/FFT>
 #include "denseRoutines.hpp"
-// #include "iterMethod.hpp"
 #include "EIDc.hpp"
 
 //////////////////////////////////////////////////////////////////////

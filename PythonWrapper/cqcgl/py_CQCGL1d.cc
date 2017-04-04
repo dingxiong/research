@@ -56,55 +56,53 @@ public:
     }
 
    /* wrap the integrator */
-    bn::ndarray PYintg(bn::ndarray a0, double h, int Nt, int skip_rate){
+    bn::ndarray PYintgC(bn::ndarray a0, double h, double tend, int skip_rate){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	return copy2bn(intg(tmpa, h, Nt, skip_rate));
+	return copy2bn(intgC(tmpa, h, tend, skip_rate));
     }
 
     /* wrap the integrator with Jacobian */
-    bp::tuple PYintgj(bn::ndarray a0, double h, int Nt, size_t skip_rate){
+    bp::tuple PYintgjC(bn::ndarray a0, double h, double tend, size_t skip_rate){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	auto result = intgj(tmpa, h, Nt, skip_rate);
+	auto result = intgjC(tmpa, h, tend, skip_rate);
 	return bp::make_tuple(copy2bn(result.first), copy2bn(result.second));
     }
     
-    bn::ndarray PYaintg(bn::ndarray a0, double h, double tend, int skip_rate){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	return copy2bn(aintg(tmpa, h, tend, skip_rate));
-    }
-
-    bp::tuple PYaintgj(bn::ndarray a0, double h, double tend, int skip_rate){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	auto result = aintgj(tmpa, h, tend, skip_rate);
-	return bp::make_tuple(copy2bn(result.first), 
-			      copy2bn(result.second)
-			      );
-    }
-
-    bn::ndarray PYintgv(bn::ndarray a0, bn::ndarray v, double h, int Nt){
+    bn::ndarray PYintgvC(bn::ndarray a0, bn::ndarray v, double h, double tend){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
 	getDims(v, m, n);
 	Map<ArrayXXd> tmpv((double*)v.get_data(), n, m);
-	return copy2bn(intgv(tmpa, tmpv, h, Nt));
+	return copy2bn(intgvC(tmpa, tmpv, h, tend));
     }    
 
-    bn::ndarray PYaintgv(bn::ndarray a0, bn::ndarray v, double h, double tend){
+    bn::ndarray PYintg(bn::ndarray a0, double h, double tend, int skip_rate){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	return copy2bn(intg(tmpa, h, tend, skip_rate));
+    }
+
+    bp::tuple PYintgj(bn::ndarray a0, double h, double tend, int skip_rate){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	auto result = intgj(tmpa, h, tend, skip_rate);
+	return bp::make_tuple(copy2bn(result.first), copy2bn(result.second));
+    }
+
+    bn::ndarray PYintgv(bn::ndarray a0, bn::ndarray v, double h, double tend){
 	int m, n;
 	getDims(a0, m, n);
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
 	getDims(v, m, n);
 	Map<ArrayXXd> tmpv((double*)v.get_data(), n, m);
-	return copy2bn(aintgv(tmpa, tmpv, h, tend));
+	return copy2bn(intgv(tmpa, tmpv, h, tend));
     }
 
 
@@ -344,6 +342,16 @@ BOOST_PYTHON_MODULE(py_CQCGL1d) {
 			int>())
 	;
     
+    // the EIDc class
+    bp::class_<EIDc>("EIDc", bp::init<>())
+	.def_readonly("NCalCoe", &EIDc::NCalCoe)
+	.def_readonly("NReject", &EIDc::NReject)
+	.def_readonly("NCallF", &EIDc::NCallF)
+	.def_readonly("NSteps", &EIDc::NSteps)
+	.def_readonly("TotalTime", &EIDc::TotalTime)
+	.def_readonly("CoefficientTime", &EIDc::CoefficientTime)
+	.def_readwrite("rtol", &EIDc::rtol)
+	;
     
     bp::class_<pyCQCGL1d, bp::bases<CQCGL1d> >("pyCQCGL1d", bp::init<
 					       int, double, 
@@ -366,17 +374,7 @@ BOOST_PYTHON_MODULE(py_CQCGL1d) {
 	.def_readonly("Ndim", &pyCQCGL1d::Ndim)
 	.def_readonly("Ne", &pyCQCGL1d::Ne)
 	.def_readonly("Omega", &pyCQCGL1d::Omega)
-	.def_readwrite("rtol", &pyCQCGL1d::rtol)
-	.def_readwrite("nu", &pyCQCGL1d::nu)
-	.def_readwrite("mumax", &pyCQCGL1d::mumax)
-	.def_readwrite("mumin", &pyCQCGL1d::mumin)
-	.def_readwrite("mue", &pyCQCGL1d::mue)
-	.def_readwrite("muc", &pyCQCGL1d::muc)
-	.def_readwrite("NCalCoe", &pyCQCGL1d::NCalCoe)
-	.def_readwrite("NReject", &pyCQCGL1d::NReject)
-	.def_readwrite("NCallF", &pyCQCGL1d::NCallF)
-	.def_readwrite("NSteps", &pyCQCGL1d::NSteps)
-	.def_readwrite("Method", &pyCQCGL1d::Method)
+	.def_readwrite("eidc", &pyCQCGL1d::eidc)
 	.def("Ts", &pyCQCGL1d::PYTs)
 	.def("hs", &pyCQCGL1d::PYhs)
 	.def("lte", &pyCQCGL1d::PYlte)
@@ -384,13 +382,12 @@ BOOST_PYTHON_MODULE(py_CQCGL1d) {
 	.def("L", &pyCQCGL1d::PYL)
 	
 	.def("changeOmega", &pyCQCGL1d::changeOmega)
-	.def("changeMu", &pyCQCGL1d::changeMu)
+	.def("intgC", &pyCQCGL1d::PYintgC)
+	.def("intgjC", &pyCQCGL1d::PYintgjC)
+	.def("intgvC", &pyCQCGL1d::PYintgv)
 	.def("intg", &pyCQCGL1d::PYintg)
 	.def("intgj", &pyCQCGL1d::PYintgj)
-	.def("aintg", &pyCQCGL1d::PYaintg)
-	.def("aintgj", &pyCQCGL1d::PYaintgj)
 	.def("intgv", &pyCQCGL1d::PYintgv)
-	.def("aintgv", &pyCQCGL1d::PYaintgv)
 	.def("velocity", &pyCQCGL1d::PYvelocity)
 	.def("velSlice", &pyCQCGL1d::PYvelSlice)
 	.def("velPhase", &pyCQCGL1d::PYvelPhase)
@@ -418,5 +415,4 @@ BOOST_PYTHON_MODULE(py_CQCGL1d) {
 	.def("rotateOrbit", &pyCQCGL1d::PYrotateOrbit)
 	.def("C2R", &pyCQCGL1d::PYC2R)
 	;
-
 }

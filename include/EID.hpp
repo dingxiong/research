@@ -12,30 +12,29 @@
 using namespace std;
 using namespace Eigen;
 
-// using namespace denseRoutines;
-
 //////////////////////////////////////////////////////////////////////////////////
-//              Exponetial Integrator with diagonal linear part
+//              Exponetial Integrator with Diagonal Linear Part
 //////////////////////////////////////////////////////////////////////////////////
 
 /**
- * @brief ETDRK4 integration class
+ * @brief Exponential Integrator
  *
- * DT   : data type (double/complex)
- * NL   : the nonlinear function type
+ * DT          : data type (double/complex)
+ * Cols        : the cols of ArrayXXcd. for taking both ArrayXcd and ArrayXXcd
  */
-template<typename DT>
+template<typename DT, int Cols>
 class EID {
     
 public:
 
     typedef std::complex<double> dcp;
     typedef Array<DT, Dynamic, 1> Ary;
+    typedef Array<dcp, Dynamic, Cols> Arycs;
 
     //////////////////////////////////////////////////////////////////////
 
     Ary *L;
-    ArrayXcd *N, *Y;
+    Arycs *N, *Y;		// single or multiple states
 
     struct Scheme {
 	// string name;		// scheme name
@@ -99,16 +98,18 @@ public:
     // constructor and desctructor
     
     EID(){}
-    EID(Ary *L, ArrayXcd *Y, ArrayXcd *N) : L(L), Y(Y), N(N){}
+    EID(Ary *L, Arycs *Y, Arycs *N) : L(L), Y(Y), N(N){}
     ~EID(){}
     
-    void init(Ary *L, ArrayXcd *Y, ArrayXcd *N){
+    void init(Ary *L, Arycs *Y, Arycs *N){
 	this->L = L;
 	this->Y = Y;
 	this->N = N;
     }
     ////////////////////////////////////////////////////////////
 
+    // NL : the nonlinear function
+    // SS : save state function
     template<class NL, class SS>
     void 
     intg(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h0, 
@@ -193,7 +194,7 @@ public:
 	const int Nt = static_cast<int>( round((tend-t0)/h) );
 
 	double t = t0;
-	Y[0] = u0;
+	Y[0] = u0; 
 	for(int i = 0; i < Nt; i++){
 	    oneStep(t, h, nl);
 	    NCallF += nnl;
@@ -241,13 +242,15 @@ public:
     
     /**
      * nonlinear class NL provides container for intermediate steps
+     *
+     * @note the multiplication operator blow is overloaded.
      */
     template<class NL>
     void 
     oneStep(double t, double h, NL nl){
 
 	if(scheme == "Cox_Matthews") {
-      	    nl(Y[0], N[0], t);	
+	    nl(Y[0], N[0], t);	
 	    Y[1] = c[1]*Y[0] + a[1][0]*N[0];
 	    
 	    nl(Y[1], N[1], t+h/2);	
@@ -417,7 +420,9 @@ public:
 	return Y[0] + h/6* (N[0] + 2*(N[1]+N[2]) + N[3]);
     }
 
-    /// calculate the coefficients of Butcher table
+    /// @brief calculate the coefficients of Butcher table.
+    /// The size of coefficient is determined by L.
+    /// 
     /// @return time used in seconds
     double
     calCoe(double h){

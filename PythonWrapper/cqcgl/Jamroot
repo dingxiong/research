@@ -36,16 +36,16 @@ lib np : : <name>boost_numpy <file>$(XDAPPS)/BoostNumpy/lib/libboost_numpy.so ;
 lib fftw3 : : <name>fftw3 <file>/usr/lib/x86_64-linux-gnu/libfftw3.so ;
 # lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/libfftw3_threads.so ;
 lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/x86_64-linux-gnu/libfftw3_threads.so ;
-lib sparse : : <name>sparseRoutines <file>$(RESH)/lib/libsparseRoutines.so ;
+# lib sparse : : <name>sparseRoutines <file>$(RESH)/lib/libsparseRoutines.so ;
 lib dense : : <name>denseRoutines <file>$(RESH)/lib/libdenseRoutines.so ;
-lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
-lib ped : : <name>iterMethod <file>$(RESH)/lib/libped.so ;
-lib myfft : : <name>myfft_clean <file>$(RESH)/lib/libmyfft_clean.so ;
+# lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
+# lib ped : : <name>iterMethod <file>$(RESH)/lib/libped.so ;
+# lib myfft : : <name>myfft_clean <file>$(RESH)/lib/libmyfft_clean.so ;
 
 
-python-extension py_CQCGL1d : py_CQCGL1d.cc np sparse dense fftw3 iter ped $(RESH)/source/myfft/myfft.cc $(RESH)/source/cqcgl/CQCGL1d.cc 
+python-extension py_CQCGL1d : py_CQCGL1d.cc np dense fftw3 $(RESH)/source/cqcgl/CQCGL1d.cc 
   : <variant>release_assert <optimization>speed
-  : <link>shared <warnings>off <cxxflags>"-std=c++11 -DCLEAN" 
+  : <link>shared <warnings>off <cxxflags>"-std=c++11 -DEIGEN_FFTW_DEFAULT" 
   ;
 
   install py_extension : py_CQCGL1d : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;

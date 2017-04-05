@@ -1,25 +1,7 @@
 from py_CQCGL1d import *
 from cglHelp import *
 
-case = 171
-
-if case == 6:
-    N = 1024
-    d = 50
-    h = 2e-3
-    di = 0.4
-
-    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, 3, -0.1, -3.9, -1)
-    req = CQCGLreq(cgl)
-
-    a0, wth0, wphi0, err0 = req.readReqdi('../../data/cgl/reqDi.h5',
-                                          di, 1)
-    a0 = a0 * (0.1**0.5)
-    nstp = 20000
-    for i in range(5):
-        aa = cgl.intg(a0, h, nstp, 10)
-        a0 = aa[-1]
-        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
+case = 16
 
 if case == 8:
     """
@@ -157,26 +139,6 @@ if case == 14:
     ax.plot(dis, Q1, lw=2, c='b', ls='--')
     ax2d(fig, ax)
 
-if case == 15:
-    """
-    to see different profiles
-    """
-    N = 1024
-    d = 30
-    h = 1e-3
-    di = 0.10
-    c = -4.1158
-
-    cgl = pyCQCGL1d(N, d, 4.0, c, 0.01, di, -1)
-    req = CQCGLreq(cgl)
-    a0, wth0, wphi0, err0 = req.readReqdi('../../data/cgl/reqDi.h5',
-                                          di, 1)
-    nstp = 10000
-    for i in range(3):
-        aa = cgl.intg(a0, h, nstp, 10)
-        a0 = aa[-1]
-        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, nstp*h])
-
 if case == 16:
     """
     to see different profiles with L = 50
@@ -185,22 +147,22 @@ if case == 16:
     N, d = 1024, 50
     h = 2e-3
 
-    Bi, Gi = 2.5, -5
+    Bi, Gi = 0.8, -0.6
     index = 1
 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     req = CQCGLreq(cgl)
     cp = CQCGLplot(cgl)
 
-    a0, wth0, wphi0, err0, e, v = req.readReqBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, index, flag=2)
+    a0, wth0, wphi0, err0, e, v = req.readBiGi('../../data/cgl/reqBiGiEV.h5', Bi, Gi, index, flag=2)
     print e[:20]
     
-    nstp = 30000
+    T = 60
     a0 += 0.1*norm(a0)*v[0].real
     for i in range(1):
-        aa = cgl.intg(a0, h, nstp, 10)
+        aa = cgl.intgC(a0, h, T, 10)
         a0 = aa[-1]
-        cp.config(aa, [0, d, 0, nstp*h])
+        cp.config(aa, [0, d, 0, T])
 
 if case == 17:
     """

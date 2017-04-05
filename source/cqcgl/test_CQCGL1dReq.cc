@@ -24,10 +24,8 @@ int main(int argc, char **argv){
     //======================================================================
     // use the previous data as guess. But this approach does not work
     // if you change domain size L.
-    const int N = 1024;
-    const int L = 50;
-    double Bi = 0.8;
-    double Gi = -0.6;
+    const int N = 1024, L = 50;
+    double Bi = 0.8, Gi = -0.6;
     CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
 	
     string file = "/usr/local/home/xiong/00git/research/data/cgl/reqDi.h5";
@@ -48,7 +46,7 @@ int main(int argc, char **argv){
     //======================================================================
     // use a Gaussian shape guess to find the 2nd soliton. 
     const int N = 1024;
-    const int L = 50;
+    const double L = 50;
     double Bi = 0.8;
     double Gi = -0.6;
     CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
@@ -73,7 +71,7 @@ int main(int argc, char **argv){
     // use a Gaussian shape guess and evove it for a while and then to find
     // the 1st soliton
     const int N = 1024;
-    const int L = 50;
+    const double L = 50;
     double Bi = 0.8;
     double Gi = -0.6;
     CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
@@ -100,7 +98,7 @@ int main(int argc, char **argv){
     //======================================================================
     // try to calculate the eigenvalue and eigenvector of one req
     const int N = 1024;
-    const int L = 50;
+    const double L = 50;
     double Bi = 1.8;
     double Gi = -0.6;
     CQCGL1dReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
@@ -155,7 +153,7 @@ int main(int argc, char **argv){
     iterMethod::CG_PRINT = false;
 
     const int N = 1024;
-    const int L = 50;
+    const double L = 50;
     double Bi = 4.5;
     double Gi = -5.6;
 

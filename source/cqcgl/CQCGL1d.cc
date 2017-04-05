@@ -1399,3 +1399,5 @@ CQCGL1d::planeWaveStabEV(int k, bool isPositve){
     return evReq(std::get<0>(tmp), 0, std::get<2>(tmp));
 }
 
+
+

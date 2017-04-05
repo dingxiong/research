@@ -1,0 +1,51 @@
+# some points need to be memorized :
+# 
+#  1) for some reason, the source file must be compiled except the bottom library
+#     For example, fftw3.so can be linked, but myfft.so cannot. because myfft.so
+#     calls fftw3.so, so it is not in the bottom rank. The same goes to cqcgl1d.so
+#     
+#  2) It is better to use lib rather than cxxflags
+#
+#  3) after version 1.47.0 bjam is replace by b2
+# 
+
+use-project /boost : /usr/local/home/xiong/apps/sources/boost_1_57_0 ;
+
+#define source folder
+constant RESH : /usr/local/home/xiong/00git/research ;
+constant XDAPPS : /usr/local/home/xiong/apps ;
+
+
+
+project
+: requirements <library>/boost/python//boost_python 
+<implicit-dependency>/boost//headers 
+<include>$(XDAPPS)/BoostNumpy/include/
+<include>$(RESH)/include
+<include>$(XDAPPS)/eigen/include/eigen3
+: usage-requirements <implicit-dependency>/boost//headers 	 
+;
+
+import python ;
+
+# define a new variant => in order to keep assert() functions 
+variant release_assert : <optimization>speed <inlining>full <debug-symbols>off <runtime-debugging>off ;
+
+lib np : : <name>boost_numpy <file>$(XDAPPS)/BoostNumpy/lib/libboost_numpy.so ;
+# lib fftw3 : : <name>fftw3 <file>/usr/lib/libfftw3.so ;
+lib fftw3 : : <name>fftw3 <file>/usr/lib/x86_64-linux-gnu/libfftw3.so ;
+# lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/libfftw3_threads.so ;
+lib fftw3_threads : : <name>fftw3_threads <file>/usr/lib/x86_64-linux-gnu/libfftw3_threads.so ;
+# lib sparse : : <name>sparseRoutines <file>$(RESH)/lib/libsparseRoutines.so ;
+lib dense : : <name>denseRoutines <file>$(RESH)/lib/libdenseRoutines.so ;
+# lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
+# lib ped : : <name>iterMethod <file>$(RESH)/lib/libped.so ;
+# lib myfft : : <name>myfft_clean <file>$(RESH)/lib/libmyfft_clean.so ;
+
+
+python-extension py_CQCGL1d : py_CQCGL1dSub.cc np dense fftw3 $(RESH)/source/cqcgl/CQCGL1dSub.cc 
+  : <variant>release_assert <optimization>speed
+  : <link>shared <warnings>off <cxxflags>"-std=c++11 -DEIGEN_FFTW_DEFAULT" 
+  ;
+
+  install py_extension : py_CQCGL1d : <install-dependencies>on <install-type>SHARED_LIB <install-type>LIB <install-type>EXE <install-type>PYTHON_EXTENSION  <location>./pylib  ;

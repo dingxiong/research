@@ -6,7 +6,8 @@ using namespace denseRoutines;
 // 1) not use fft.fwd(MatrixBase, MatrixBase) but use
 //    fft.fwd(Complex * dst, const Complex * src, Index nfft)
 //    becuase the former cannot work with Map<VectorXcd> type.
-// 2) 
+// 2) In C++, initialization list will be evaluated in the order they were
+//    declared in the class definition
 
 //////////////////////////////////////////////////////////////////////
 //                     Inner Class CQCGL1d                          //
@@ -76,15 +77,50 @@ void CQCGL1d::NL::operator()(ArrayXXcd &x, ArrayXXcd &dxdt, double t){
  *                         dimTan > 0 => dimTan
  *                         dimTan = 0 => Ndim
  *                         dimTan < 0 => 0
+ *              
+ * Dealiasing is the method to calculate correct convolution term. For centralized
+ * FFT, it works as set Fourier modes a_k = 0 for wave number |k| > 2/3 * N.
+ * More specifically, in this code, the middle part of modes
+ * is set to zero.
+ *
+ *    |<---------------------------------------------------------->|
+ *                             FFT length: N
+ *               
+ *    |<--------------->|<--------------------->|<---------------->|
+ *        (Ne + 1) / 2         N - Ne                (Ne - 1) /2
+ *         = Nplus             = Nalias               = Nminus
+ *
+ *    @Note each term has real and imaginary part, so the indices are
+ *          0, 1, 2,... Nplus*2, Nplus*2+1,... 2*Ne-1
  */
 CQCGL1d::CQCGL1d(int N, double d,
 		 double Mu, double Dr, double Di, double Br, double Bi,
 		 double Gr, double Gi, int dimTan)
     : N(N), d(d), Mu(Mu), Dr(Dr), Di(Di), Br(Br), Bi(Bi), Gr(Gr), Gi(Gi),
-      DimTan(dimTan >= 0 ? (dimTan > 0 ? dimTan : Ndim) : 0),
+      Ne((N/3) * 2 - 1),	// make it an odd number
+      Ndim(2 * Ne),
+      Nplus((Ne + 1) / 2),
+      Nminus((Ne - 1) / 2),
+      Nalias(N - Ne),
+      DimTan((dimTan >= 0 ? (dimTan > 0 ? dimTan : Ndim) : 0)),
       nl(this)
 {
-    CGLInit(dimTan); // calculate coefficients.
+    // calculate the Linear part
+    K.resize(N,1);
+    K << ArrayXd::LinSpaced(N/2, 0, N/2-1), N/2, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1); 
+    K2.resize(Ne, 1);
+    K2 << ArrayXd::LinSpaced(Nplus, 0, Nplus-1), ArrayXd::LinSpaced(Nminus, -Nminus, -1); 
+      
+    QK = 2*M_PI/d * K; 
+    L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square(); 
+    L.segment(Nplus, Nalias).setZero();
+
+    int nYN0 = eidc.names.at(eidc.scheme).nYN; // do not call setScheme here. Different.
+    for(int i = 0; i < nYN0; i++){
+	Yv[i].resize(N, DimTan+1);
+	Nv[i].resize(N, DimTan+1);
+    }
+    eidc.init(&L, Yv, Nv);
 }
 
 /**
@@ -109,52 +145,8 @@ CQCGL1d & CQCGL1d::operator=(const CQCGL1d &x){
 }
 
 /* ------------------------------------------------------ */
-/* ----          Initialization functions         ------- */
+/* ----                 Integrator                ------- */
 /* ------------------------------------------------------ */
-
-/**
- * @brief set the corret dimension of the system
- *     
- * Dealiasing is the method to calculate correct convolution term. For centralized
- * FFT, it works as set Fourier modes a_k = 0 for wave number |k| > 2/3 * N.
- * More specifically, in this code, the middle part of modes
- * is set to zero.
- *
- *    |<---------------------------------------------------------->|
- *                             FFT length: N
- *               
- *    |<--------------->|<--------------------->|<---------------->|
- *        (Ne + 1) / 2         N - Ne                (Ne - 1) /2
- *         = Nplus             = Nalias               = Nminus
- *
- *    @Note each term has real and imaginary part, so the indices are
- *          0, 1, 2,... Nplus*2, Nplus*2+1,... 2*Ne-1
- */
-void CQCGL1d::CGLInit(int dimTan){
-    Ne = (N/3) * 2 - 1;	/* make it an odd number */
-    Ndim = 2 * Ne;	
-    Nplus = (Ne + 1) / 2;
-    Nminus = (Ne - 1) / 2;
-    Nalias = N - Ne;
-    // DimTan = dimTan >= 0 ? (dimTan > 0 ? dimTan : Ndim) : 0;
-    
-    // calculate the Linear part
-    K.resize(N,1);
-    K << ArrayXd::LinSpaced(N/2, 0, N/2-1), N/2, ArrayXd::LinSpaced(N/2-1, -N/2+1, -1); 
-    K2.resize(Ne, 1);
-    K2 << ArrayXd::LinSpaced(Nplus, 0, Nplus-1), ArrayXd::LinSpaced(Nminus, -Nminus, -1); 
-      
-    QK = 2*M_PI/d * K; 
-    L = dcp(Mu, -Omega) - dcp(Dr, Di) * QK.square(); 
-    L.segment(Nplus, Nalias).setZero();
-
-    int nYN0 = eidc.names.at(eidc.scheme).nYN; // do not call setScheme here. Different.
-    for(int i = 0; i < nYN0; i++){
-	Yv[i].resize(N, DimTan+1);
-	Nv[i].resize(N, DimTan+1);
-    }
-    eidc.init(&L, Yv, Nv);
-}
 
 void CQCGL1d::setScheme(std::string x){
     int nYN0 = eidc.names.at(eidc.scheme).nYN;

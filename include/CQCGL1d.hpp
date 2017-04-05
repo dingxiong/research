@@ -28,17 +28,15 @@ public:
     
     const int N;		/* dimension of FFT */
     const double d;		/* system domain size */
-    bool IsQintic = true;	//  False => cubic equation
-    const int DimTan;		/* true tangent space dimension
-				   dimTan > 0 => dimTan
-				   dimTan = 0 => Ndim
-				   dimTan < 0 => 0 
-				*/
-    int Ne;			/* effective number of modes */
-    int Ndim;			/* dimension of state space */
-    int Nplus, Nminus, Nalias;
     
-    double Br, Bi, Gr, Gi, Dr, Di, Mu;
+    const int Ne;		/* effective number of modes */
+    const int Ndim;		/* dimension of state space */
+    const int Nplus, Nminus, Nalias;
+    const int DimTan;		// the dimension of tangent space
+    
+    bool IsQintic = true;	//  False => cubic equation
+    
+    double Mu, Dr, Di, Br, Bi, Gr, Gi;
     double Omega = 0;		/* used for comoving frame */
     ArrayXd K, K2, QK;
 
@@ -95,7 +93,6 @@ public:
     ////////////////////////////////////////////////////////////
 
     //============================================================    
-    void CGLInit(int dimTan);
     void setScheme(std::string x);
     void changeOmega(double w);
 

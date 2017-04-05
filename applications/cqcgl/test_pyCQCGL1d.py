@@ -3,7 +3,7 @@ from cglHelp import *
 from py_CQCGL1dEIDc import pyCQCGL1dEIDc
 import time
 
-case = 10
+case = 30
 
 if case == 10:
     """
@@ -33,10 +33,10 @@ if case == 10:
     print time.time() - t
     cp.config(aa2, [0, d, 0, T])
 
-    # t = time.time()
-    # aa3  = EI.intg(aE, h, T, 10)
-    # print time.time() -t 
-    # cp.config(aa3, [0, d, 0, T])
+    t = time.time()
+    aa3  = EI.intg(aE, h, T, 10)
+    print time.time() -t 
+    cp.config(aa3, [0, d, 0, T])
 
 if case == 20:
     """
@@ -58,15 +58,27 @@ if case == 20:
     aE = a0 + 0.001 * norm(a0) * v[0].real
 
     t = time.time()
-    aa = cgl.intg(aE, T/nstp/2, 40*nstp, 10)
+    aa = cgl.intgC(aE, T/nstp/2, 20*T, 10)
     print time.time() - t 
     cp.config(aa, [0, d, 0, 20*T])
 
     t = time.time()
     aa2 = EI.intgC(aE, T/nstp/2, 20*T, 10)
     print time.time() - t
+    cp.config(aa2, [0, d, 0, 20*T])
 
-    t = time.time()
-    aa3  = EI.intg(aE, T/nstp, 20*T, 10)
-    print time.time() -t 
-    cp.config(aa3, [0, d, 0, 20*T])
+if case == 30:
+    """
+    test the function of calculating stability matrix
+    """
+    N, d = 1024 , 50
+    Bi, Gi = 0.8, -0.6
+    index = 1
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req = CQCGLreq(cgl)
+
+    a0, wth0, wphi0, err0, e0, v0 = req.read('../../data/cgl/reqBiGiEV.h5',
+                                             req.toStr(Bi, Gi, index), flag=2)
+    e, v = req.eigReq(a0, wth0, wphi0)
+    print e[:10]

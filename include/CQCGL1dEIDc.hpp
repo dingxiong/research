@@ -37,7 +37,7 @@ public :
 	}
 	~NL(){}	
 
-	void operator()(ArrayXcd &x, ArrayXcd &dxdt, double t){
+	void operator()(ArrayXXcd &x, ArrayXXcd &dxdt, double t){
 	    Map<VectorXcd> xv(x.data(), x.size());
 	    Map<VectorXcd> dxdtv(dxdt.data(), dxdt.size());
 	    cgl->fft.inv(A, xv);
@@ -50,8 +50,8 @@ public :
     
     NL nl;
 
-    ArrayXcd Yv[10], Nv[10];
-    EIDc<1> eidc;
+    ArrayXXcd Yv[10], Nv[10];
+    EIDc eidc;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     CQCGL1dEIDc(int N, double d, double Mu, double Dr, double Di, 
@@ -74,8 +74,8 @@ public :
 	
 	int nYN0 = eidc.names.at(eidc.scheme).nYN; // do not call setScheme here. Different.
 	for(int i = 0; i < nYN0; i++){
-	    Yv[i].resize(N);
-	    Nv[i].resize(N);
+	    Yv[i].resize(N, 1);
+	    Nv[i].resize(N, 1);
 	}
 	eidc.init(&L, Yv, Nv);
     }
@@ -96,8 +96,8 @@ public :
 	eidc.scheme = x;
 	int nYN1 = eidc.names.at(eidc.scheme).nYN;
 	for (int i = nYN0; i < nYN1; i++) {
-	    Yv[i].resize(N);
-	    Nv[i].resize(N);
+	    Yv[i].resize(N, 1);
+	    Nv[i].resize(N, 1);
 	}
     }
 
@@ -113,13 +113,13 @@ public :
     intgC(const ArrayXd &a0, const double h, const double tend, const int skip_rate){
 	assert( Ndim == a0.size());
 	
-	ArrayXcd u0 = R2C(a0); 
+	ArrayXXcd u0 = R2C(a0); 
 	const int Nt = (int)round(tend/h);
 	const int M = (Nt + skip_rate - 1) / skip_rate;
 	ArrayXXcd aa(N, M);
 	lte.resize(M);
 	int ks = 0;
-	auto ss = [this, &ks, &aa](ArrayXcd &x, double t, double h, double err){
+	auto ss = [this, &ks, &aa](ArrayXXcd &x, double t, double h, double err){
 	    aa.col(ks) = x;
 	    lte(ks++) = err;
 	};
@@ -134,7 +134,7 @@ public :
     intg(const ArrayXd &a0, const double h, const double tend, const int skip_rate){
 	assert( Ndim == a0.size());
 
-	ArrayXcd u0 = R2C(a0); 
+	ArrayXXcd u0 = R2C(a0); 
 	const int Nt = (int)round(tend/h);
 	const int M = (Nt+skip_rate-1)/skip_rate;
 	ArrayXXcd aa(N, M);
@@ -142,7 +142,7 @@ public :
 	hs.resize(M);
 	lte.resize(M);
 	int ks = 0;
-	auto ss = [this, &ks, &aa](ArrayXcd &x, double t, double h, double err){
+	auto ss = [this, &ks, &aa](ArrayXXcd &x, double t, double h, double err){
 	    int m = Ts.size();
 	    if (ks >= m ) {
 		Ts.conservativeResize(m+cellSize);

@@ -25,12 +25,13 @@ if case == 10:
 
     t = time.time()
     aa = cgl.intgC(aE, h, T, 10)
-    # print time.time() - t 
-    # cp.config(aa, [0, d, 0, T])
+    print time.time() - t 
+    cp.config(aa, [0, d, 0, T])
 
-    # t = time.time()
-    # aa2 = EI.intgC(aE, h, T, 10)
-    # print time.time() - t
+    t = time.time()
+    aa2 = EI.intgC(aE, h, T, 10)
+    print time.time() - t
+    cp.config(aa2, [0, d, 0, T])
 
     # t = time.time()
     # aa3  = EI.intg(aE, h, T, 10)

@@ -55,18 +55,18 @@ public:
 	CQCGL1d *cgl;
 	int N;
 	dcp B, G;
-	ArrayXcd A;
+	ArrayXXcd AA;
 	
 	NL();
 	NL(CQCGL1d *cgl);
 	~NL();
 	void init(CQCGL1d *cgl);
-	void operator()(ArrayXcd &x, ArrayXcd &dxdt, double t);
+	void operator()(ArrayXXcd &x, ArrayXXcd &dxdt, double t);
     };
     
     NL nl;
     
-    ArrayXcd Yv[10], Nv[10];
+    ArrayXXcd Yv[10], Nv[10];
     EIDc eidc;
     
     ////////////////////////////////////////////////////////////

@@ -20,21 +20,19 @@ using namespace Eigen;
  * @brief Exponential Integrator
  *
  * DT          : data type (double/complex)
- * Cols        : the cols of ArrayXXcd. for taking both ArrayXcd and ArrayXXcd
  */
-template<typename DT, int Cols>
+template<typename DT>
 class EID {
     
 public:
 
     typedef std::complex<double> dcp;
     typedef Array<DT, Dynamic, 1> Ary;
-    typedef Array<dcp, Dynamic, Cols> Arycs;
 
     //////////////////////////////////////////////////////////////////////
 
     Ary *L;
-    Arycs *N, *Y;		// single or multiple states
+    ArrayXXcd *N, *Y;		// single or multiple states
 
     struct Scheme {
 	// string name;		// scheme name
@@ -98,10 +96,10 @@ public:
     // constructor and desctructor
     
     EID(){}
-    EID(Ary *L, Arycs *Y, Arycs *N) : L(L), Y(Y), N(N){}
+    EID(Ary *L, ArrayXXcd *Y, ArrayXXcd *N) : L(L), Y(Y), N(N){}
     ~EID(){}
     
-    void init(Ary *L, Arycs *Y, Arycs *N){
+    void init(Ary *L, ArrayXXcd *Y, ArrayXXcd *N){
 	this->L = L;
 	this->Y = Y;
 	this->N = N;
@@ -112,7 +110,7 @@ public:
     // SS : save state function
     template<class NL, class SS>
     void 
-    intg(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h0, 
+    intg(NL nl, SS saveState, const double t0, const ArrayXXcd &u0, const double tend, const double h0, 
 	 const int skip_rate){
 	auto t_start = std::chrono::high_resolution_clock::now();
 	
@@ -178,7 +176,7 @@ public:
     /// @note the initial condition will not be recorded.
     template<class NL, class SS>
     void 
-    intgC(NL nl, SS saveState, const double t0, const ArrayXcd &u0, const double tend, const double h, 
+    intgC(NL nl, SS saveState, const double t0, const ArrayXXcd &u0, const double tend, const double h, 
 	  const int skip_rate){
 	int ns = names.at(scheme).nstage;
 	int nnl = names.at(scheme).nnl;
@@ -196,7 +194,7 @@ public:
 	double t = t0;
 	Y[0] = u0; 
 	for(int i = 0; i < Nt; i++){
-	    oneStep(t, h, nl);
+	    oneStep(t, h, nl); 
 	    NCallF += nnl;
 	    NSteps++;
 	    t += h;
@@ -249,9 +247,9 @@ public:
     void 
     oneStep(double t, double h, NL nl){
 
-	if(scheme == "Cox_Matthews") {
-	    nl(Y[0], N[0], t);	
-	    Y[1] = MUL(c[1], Y[0]) + MUL(a[1][0], N[0]);
+	if(scheme == "Cox_Matthews") { 
+	    nl(Y[0], N[0], t);
+	    Y[1] = MUL(c[1], Y[0]) + MUL(a[1][0], N[0]);     
 	    
 	    nl(Y[1], N[1], t+h/2);	
 	    Y[2] = MUL(c[1], Y[0]) + MUL(a[1][0], N[1]);
@@ -710,7 +708,7 @@ public:
     ///       must be declared as const
     inline 	
     virtual
-    Arycs MUL(const Ary &C, const Arycs &Y){
+    ArrayXXcd MUL(const Ary &C, const ArrayXXcd &Y){
 	// for ArrayXcd * (ArrayXcd/ArrayXXcd): Y.colwise() * C 
 	// for ArrayXd  * (ArrayXcd/ArrayXXcd): C.matrix().asDiagonal() * Y.matrix()
     }

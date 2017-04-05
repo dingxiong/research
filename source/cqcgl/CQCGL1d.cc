@@ -14,7 +14,7 @@ using namespace denseRoutines;
 CQCGL1d::NL::NL(){}
 CQCGL1d::NL::NL(CQCGL1d *cgl) : 
     cgl(cgl), N(cgl->N), B(cgl->Br, cgl->Bi), G(cgl->Gr, cgl->Gi) {
-    A.resize(cgl->N * cgl->DimTan);
+    AA.resize(cgl->N, cgl->DimTan + 1);
 }
 CQCGL1d::NL::~NL(){}
 
@@ -23,54 +23,39 @@ void CQCGL1d::NL::init(CQCGL1d *cgl){
     N = cgl->N;
     B = dcp(cgl->Br, cgl->Bi);
     G = dcp(cgl->Gr, cgl->Gi);
-    A.resize(cgl->N * cgl->DimTan);
+    AA.resize(cgl->N,  cgl->DimTan + 1);
 }
 
-void CQCGL1d::NL::operator()(ArrayXcd &x, ArrayXcd &dxdt, double t){
-    int s = x.size();
-    int m = s / N;
-    assert(m == cgl->DimTan + 1 && N * m == s && s == dxdt.size());
+void CQCGL1d::NL::operator()(ArrayXXcd &x, ArrayXXcd &dxdt, double t){
+    int cs = x.cols();
+    assert(cs == cgl->DimTan + 1 && cs == dxdt.cols() && N == x.rows() && N == dxdt.rows());
     
-    if (s == 1){ cout << "doogd" << endl;
-	cgl->fft.inv(A.data(), x.data(), N);
-	ArrayXcd A2 = A * A.conjugate();
+    for(int i = 0; i < cs; i++)
+	cgl->fft.inv(AA.data() + i*N, x.data() + i*N, N);
+    
+    ArrayXcd A = AA.col(0); 
+    ArrayXcd aA2 = A * A.conjugate();
+
+    if (cgl->IsQintic)
+	AA.col(0) = B * A * aA2 + G * A * aA2.square();
+    else 
+	AA.col(0) = B * A * aA2;
+
+    if(cs > 1){
+	int M = cs - 1;
+	ArrayXcd A2 = A.square();
 	if (cgl->IsQintic)
-	    A = B * A * A2 + G * A * A2.square();
-	else 
-	    A = B * A * A2;
-	cgl->fft.fwd(dxdt.data(), A.data(), N);	
-	dxdt.segment(cgl->Nplus, cgl->Nalias).setZero(); /* dealias */
+	    AA.rightCols(M) = AA.rightCols(M).conjugate().colwise() *  ((B+G*2.0*aA2) * A2) +
+		AA.rightCols(M).colwise() * ((2.0*B+3.0*G*aA2)*aA2);
+	else
+	    AA.rightCols(M) = AA.rightCols(M).conjugate().colwise() *  (B * A2) +
+		AA.rightCols(M).colwise() * (2.0*B*aA2);	
     }
-    else if (m <= cgl->Ndim + 1){
-	for(int i = 0; i < m; i++)
-	    cgl->fft.inv(A.data() + i*N, x.data() + i*N, N);
-	ArrayXcd A0 = A.head(N);
-	ArrayXcd aA2 = A0 * A0.conjugate();
-	ArrayXcd A2 = A0.square();
-	
-	if (cgl->IsQintic)
-	    A.head(N) = B * A0 * aA2 + G * A0 * aA2.square();
-	else 
-	    A.head(N) = B * A0 * aA2;
-	
-	if (cgl->IsQintic)
-	    for(int i = 1; i < m; i++)
-		A.segment(i*N, N) = A.segment(i*N, N).conjugate() * (B + 2.0*G*aA2) * A2
-		    + A.segment(i*N, N) * (2.0*B + 3.0*G*aA2) * aA2;
-	else 
-	    for(int i = 1; i < m; i++)
-		A.segment(i*N, N) = A.segment(i*N, N).conjugate() * B * A2 + 
-		    A.segment(i*N, N) * 2.0 * B * aA2;
-	
-	for(int i = 0; i < m; i++){
-	    cgl->fft.fwd(dxdt.data() + i*N, A.data() + i*N, N);
-	    dxdt.segment(i*N + cgl->Nplus, cgl->Nalias).setZero();
-	}
-    }
-    else {
-	fprintf(stderr, "dimension of NL is wrong !\n");
-	exit(1);
-    }
+    
+    for(int i = 0; i < cs; i++)
+	cgl->fft.fwd(dxdt.data() + i*N, AA.data() + i*N, N);
+    
+    dxdt.middleRows(cgl->Nplus, cgl->Nalias).setZero(); // dealiaze
 }   
 
 //////////////////////////////////////////////////////////////////////
@@ -96,7 +81,8 @@ CQCGL1d::CQCGL1d(int N, double d,
 		 double Mu, double Dr, double Di, double Br, double Bi,
 		 double Gr, double Gi, int dimTan)
     : N(N), d(d), Mu(Mu), Dr(Dr), Di(Di), Br(Br), Bi(Bi), Gr(Gr), Gi(Gi),
-      DimTan(dimTan >= 0 ? (dimTan > 0 ? dimTan : Ndim) : 0)
+      DimTan(dimTan >= 0 ? (dimTan > 0 ? dimTan : Ndim) : 0),
+      nl(this)
 {
     CGLInit(dimTan); // calculate coefficients.
 }
@@ -164,11 +150,10 @@ void CQCGL1d::CGLInit(int dimTan){
 
     int nYN0 = eidc.names.at(eidc.scheme).nYN; // do not call setScheme here. Different.
     for(int i = 0; i < nYN0; i++){
-	Yv[i].resize(N*(DimTan+1));
-	Nv[i].resize(N*(DimTan+1));
+	Yv[i].resize(N, DimTan+1);
+	Nv[i].resize(N, DimTan+1);
     }
     eidc.init(&L, Yv, Nv);
-    nl.init(this);
 }
 
 void CQCGL1d::setScheme(std::string x){
@@ -176,8 +161,8 @@ void CQCGL1d::setScheme(std::string x){
     eidc.scheme = x;
     int nYN1 = eidc.names.at(eidc.scheme).nYN;
     for (int i = nYN0; i < nYN1; i++) {
-	Yv[i].resize(N*(DimTan+1));
-	Nv[i].resize(N*(DimTan+1));
+	Yv[i].resize(N, DimTan+1);
+	Nv[i].resize(N, DimTan+1);
     }
 }
 
@@ -199,13 +184,13 @@ ArrayXXd
 CQCGL1d::intgC(const ArrayXd &a0, const double h, const double tend, const int skip_rate){
     assert( Ndim == a0.size());
     
-    ArrayXcd u0 = R2C(a0); 
+    ArrayXXcd u0 = R2C(a0); 
     const int Nt = (int)round(tend/h);
     const int M = (Nt + skip_rate - 1) / skip_rate;
     ArrayXXcd aa(N, M);
     lte.resize(M);
-    int ks = 0;
-    auto ss = [this, &ks, &aa](ArrayXcd &x, double t, double h, double err){
+    int ks = 0; 
+    auto ss = [this, &ks, &aa](ArrayXXcd &x, double t, double h, double err){
 	aa.col(ks) = x;
 	lte(ks++) = err;
     }; 
@@ -222,22 +207,17 @@ CQCGL1d::intgjC(const ArrayXd &a0, const double h, const double tend, const int 
     ArrayXXd v0(Ndim, Ndim+1); 
     v0 << a0, MatrixXd::Identity(Ndim, Ndim);
     ArrayXXcd u0 = R2C(v0);
-    u0.resize(N*(Ndim+1), 1);
     
     const int Nt = (int)round(tend/h);
     const int M = (Nt + skip_rate - 1) / skip_rate;
     ArrayXXcd aa(N, M), daa(N, Ndim*M);
     lte.resize(M);
     int ks = 0;
-    auto ss = [this, &ks, &aa, &daa](ArrayXcd &x, double t, double h, double err){
-	ArrayXXcd state = x;
-	state.resize(N, Ndim+1);
-	aa.col(ks) = state.col(0);
-	daa.middleCols(ks*Ndim, Ndim) = state.rightCols(Ndim);
+    auto ss = [this, &ks, &aa, &daa](ArrayXXcd &x, double t, double h, double err){
+	aa.col(ks) = x.col(0);
+	daa.middleCols(ks*Ndim, Ndim) = x.rightCols(Ndim);
 	lte(ks++) = err;
-	ArrayXXcd J = R2C(MatrixXd::Identity(Ndim, Ndim));
-	J.resize(N*Ndim, 1);
-	x.tail(N*Ndim) = J;
+	x.rightCols(Ndim) = R2C(MatrixXd::Identity(Ndim, Ndim));
     };
     
     eidc.intgC(nl, ss, 0, u0, tend, h, skip_rate);
@@ -251,20 +231,15 @@ CQCGL1d::intgjC(const ArrayXd &a0, const double h, const double tend, const int 
 ArrayXXd
 CQCGL1d::intgvC(const ArrayXd &a0, const ArrayXXd &v, const double h,
 		const double tend){
-    
-    // check the dimension of initial condition.
     assert( Ndim == a0.size() && Ndim == v.rows() && DimTan == v.cols());
     ArrayXXd v0(Ndim, DimTan+1);
     v0 << a0, v;
     ArrayXXcd u0 = R2C(v0);
-    u0.resize(N*(DimTan+1), 1);
 
     const int Nt = (int)round(tend/h);
     ArrayXXcd aa(N, DimTan+1);
-    auto ss = [this, &aa](ArrayXcd &x, double t, double h, double err){
-	ArrayXXcd state = x;
-	state.resize(N, DimTan+1);
-	aa = state;
+    auto ss = [this, &aa](ArrayXXcd &x, double t, double h, double err){
+	aa = x;
     };
     
     eidc.intgC(nl, ss, 0, u0, tend, h, Nt);
@@ -276,7 +251,7 @@ ArrayXXd
 CQCGL1d::intg(const ArrayXd &a0, const double h, const double tend, const int skip_rate){
     assert( Ndim == a0.size());
     
-    ArrayXcd u0 = R2C(a0); 
+    ArrayXXcd u0 = R2C(a0); 
     const int Nt = (int)round(tend/h);
     const int M = (Nt+skip_rate-1)/skip_rate;
     ArrayXXcd aa(N, M);
@@ -284,7 +259,7 @@ CQCGL1d::intg(const ArrayXd &a0, const double h, const double tend, const int sk
     hs.resize(M);
     lte.resize(M);
     int ks = 0;
-    auto ss = [this, &ks, &aa](ArrayXcd &x, double t, double h, double err){
+    auto ss = [this, &ks, &aa](ArrayXXcd &x, double t, double h, double err){
 	int m = Ts.size();
 	if (ks >= m ) {
 	    Ts.conservativeResize(m+cellSize);
@@ -316,7 +291,6 @@ CQCGL1d::intgj(const ArrayXd &a0, const double h, const double tend,
     ArrayXXd v0(Ndim, Ndim+1); 
     v0 << a0, MatrixXd::Identity(Ndim, Ndim);
     ArrayXXcd u0 = R2C(a0);
-    u0.resize(N*(Ndim+1), 1);
     
     const int Nt = (int)round(tend/h);
     const int M = (Nt + skip_rate - 1) / skip_rate;
@@ -325,7 +299,7 @@ CQCGL1d::intgj(const ArrayXd &a0, const double h, const double tend,
     hs.resize(M);
     lte.resize(M);
     int ks = 0;
-    auto ss = [this, &ks, &aa, &daa](ArrayXcd &x, double t, double h, double err){
+    auto ss = [this, &ks, &aa, &daa](ArrayXXcd &x, double t, double h, double err){
 	int m = Ts.size();
 	if (ks >= m ) {
 	    Ts.conservativeResize(m+cellSize);	    
@@ -337,13 +311,9 @@ CQCGL1d::intgj(const ArrayXd &a0, const double h, const double tend,
 	hs(ks) = h;
 	lte(ks) = err;
 	Ts(ks) = t;
-	ArrayXXcd state = x;
-	state.resize(N, Ndim+1);
-	aa.col(ks) = state.col(0);
-	daa.middleCols(ks*Ndim, Ndim) = state.rightCols(Ndim);
-	ArrayXXcd J = R2C(MatrixXd::Identity(Ndim, Ndim));
-	J.resize(N*Ndim, 1);
-	x.tail(N*Ndim) = J;
+	aa.col(ks) = x.col(0);
+	daa.middleCols(ks*Ndim, Ndim) = x.rightCols(Ndim);
+	x.rightCols(Ndim) = R2C(MatrixXd::Identity(Ndim, Ndim));
 	ks++;
     };
 
@@ -359,13 +329,10 @@ CQCGL1d::intgv(const ArrayXXd &a0, const ArrayXXd &v, const double h,
     ArrayXXd v0(Ndim, DimTan+1);
     v0 << a0, v;
     ArrayXXcd u0 = R2C(v0);
-    u0.resize(N*(DimTan+1), 1);
-    
+
     ArrayXXcd aa(N, DimTan+1); 
-    auto ss = [this, &aa](ArrayXcd &x, double t, double h, double err){
-	ArrayXXcd state = x;
-	state.resize(N, DimTan+1);
-	aa = state;
+    auto ss = [this, &aa](ArrayXXcd &x, double t, double h, double err){
+	aa = x;
     };
 
     eidc.intg(nl, ss, 0, u0, tend, h, 1000000);
@@ -502,8 +469,8 @@ CQCGL1d::calMoment(const Ref<const ArrayXXd> &aa, const int p){
  */
 ArrayXd CQCGL1d::velocity(const ArrayXd &a0){
     assert( Ndim == a0.rows() );
-    ArrayXcd A = R2C(a0);
-    ArrayXcd v(N);
+    ArrayXXcd A = R2C(a0);
+    ArrayXXcd v(N, 1);
     nl(A, v, 0);
     return C2R(L*A + v);
 }
@@ -558,10 +525,9 @@ MatrixXd CQCGL1d::stab(const ArrayXd &a0){
     ArrayXXd v0(Ndim, Ndim+1); 
     v0 << a0, MatrixXd::Identity(Ndim, Ndim);
     ArrayXXcd u0 = R2C(v0);
-    ArrayXcd x = Map<ArrayXcd>(u0.data(), N*(Ndim+1)); // must create a new ArrayXcd variable
     
-    ArrayXcd v(N*(Ndim+1));
-    nl(x, v, 0);
+    ArrayXXcd v(N, Ndim+1);
+    nl(u0, v, 0);
 	
     ArrayXXcd j0 = R2C(MatrixXd::Identity(Ndim, Ndim));
     MatrixXcd Z = j0.colwise() * L + v.rightCols(Ndim);

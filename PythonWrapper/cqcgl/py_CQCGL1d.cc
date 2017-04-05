@@ -375,6 +375,7 @@ BOOST_PYTHON_MODULE(py_CQCGL1d) {
 	.def_readonly("Ne", &pyCQCGL1d::Ne)
 	.def_readonly("Omega", &pyCQCGL1d::Omega)
 	.def_readwrite("eidc", &pyCQCGL1d::eidc)
+	.def_readwrite("eidc2", &pyCQCGL1d::eidc2)
 	.def("Ts", &pyCQCGL1d::PYTs)
 	.def("hs", &pyCQCGL1d::PYhs)
 	.def("lte", &pyCQCGL1d::PYlte)

@@ -56,16 +56,15 @@ public:
 	ArrayXXcd AA;
 	
 	NL();
-	NL(CQCGL1d *cgl);
+	NL(CQCGL1d *cgl, int cols);
 	~NL();
-	void init(CQCGL1d *cgl);
 	void operator()(ArrayXXcd &x, ArrayXXcd &dxdt, double t);
     };
     
-    NL nl;
+    NL nl, nl2;
     
-    ArrayXXcd Yv[10], Nv[10];
-    EIDc eidc;
+    ArrayXXcd Yv[10], Nv[10], Yv2[10], Nv2[10];
+    EIDc eidc, eidc2;
     
     ////////////////////////////////////////////////////////////
     //         constructor, destructor, copy assignment.      //

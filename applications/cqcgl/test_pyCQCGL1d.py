@@ -3,7 +3,7 @@ from cglHelp import *
 from py_CQCGL1dEIDc import pyCQCGL1dEIDc
 import time
 
-case = 30
+case = 20
 
 if case == 10:
     """

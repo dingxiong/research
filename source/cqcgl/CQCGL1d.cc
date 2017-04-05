@@ -13,23 +13,15 @@ using namespace denseRoutines;
 //                     Inner Class CQCGL1d                          //
 //////////////////////////////////////////////////////////////////////
 CQCGL1d::NL::NL(){}
-CQCGL1d::NL::NL(CQCGL1d *cgl) : 
+CQCGL1d::NL::NL(CQCGL1d *cgl, int cols) : 
     cgl(cgl), N(cgl->N), B(cgl->Br, cgl->Bi), G(cgl->Gr, cgl->Gi) {
-    AA.resize(cgl->N, cgl->DimTan + 1);
+    AA.resize(cgl->N, cols);
 }
 CQCGL1d::NL::~NL(){}
 
-void CQCGL1d::NL::init(CQCGL1d *cgl){
-    cgl = cgl;
-    N = cgl->N;
-    B = dcp(cgl->Br, cgl->Bi);
-    G = dcp(cgl->Gr, cgl->Gi);
-    AA.resize(cgl->N,  cgl->DimTan + 1);
-}
-
 void CQCGL1d::NL::operator()(ArrayXXcd &x, ArrayXXcd &dxdt, double t){
     int cs = x.cols();
-    assert(cs == cgl->DimTan + 1 && cs == dxdt.cols() && N == x.rows() && N == dxdt.rows());
+    assert(cs == dxdt.cols() && N == x.rows() && N == dxdt.rows());
     
     for(int i = 0; i < cs; i++)
 	cgl->fft.inv(AA.data() + i*N, x.data() + i*N, N);
@@ -57,7 +49,7 @@ void CQCGL1d::NL::operator()(ArrayXXcd &x, ArrayXXcd &dxdt, double t){
 	cgl->fft.fwd(dxdt.data() + i*N, AA.data() + i*N, N);
     
     dxdt.middleRows(cgl->Nplus, cgl->Nalias).setZero(); // dealiaze
-}   
+}
 
 //////////////////////////////////////////////////////////////////////
 //                        Class CQCGL1d                             //
@@ -102,8 +94,8 @@ CQCGL1d::CQCGL1d(int N, double d,
       Nplus((Ne + 1) / 2),
       Nminus((Ne - 1) / 2),
       Nalias(N - Ne),
-      DimTan((dimTan >= 0 ? (dimTan > 0 ? dimTan : Ndim) : 0)),
-      nl(this)
+      DimTan(dimTan == 0 ? Ndim : (dimTan > 0 ? dimTan : 0)),
+      nl(this, 1), nl2(this, DimTan+1)
 {
     // calculate the Linear part
     K.resize(N,1);
@@ -117,10 +109,13 @@ CQCGL1d::CQCGL1d(int N, double d,
 
     int nYN0 = eidc.names.at(eidc.scheme).nYN; // do not call setScheme here. Different.
     for(int i = 0; i < nYN0; i++){
-	Yv[i].resize(N, DimTan+1);
-	Nv[i].resize(N, DimTan+1);
+	Yv[i].resize(N, 1);
+	Nv[i].resize(N, 1);
+	Yv2[i].resize(N, DimTan+1);
+	Nv2[i].resize(N, DimTan+1);
     }
     eidc.init(&L, Yv, Nv);
+    eidc2.init(&L, Yv2, Nv2);
 }
 
 /**
@@ -153,8 +148,10 @@ void CQCGL1d::setScheme(std::string x){
     eidc.scheme = x;
     int nYN1 = eidc.names.at(eidc.scheme).nYN;
     for (int i = nYN0; i < nYN1; i++) {
-	Yv[i].resize(N, DimTan+1);
-	Nv[i].resize(N, DimTan+1);
+	Yv[i].resize(N, 1);
+	Nv[i].resize(N, 1);
+	Yv2[i].resize(N, DimTan+1);
+	Nv2[i].resize(N, DimTan+1);
     }
 }
 
@@ -212,7 +209,7 @@ CQCGL1d::intgjC(const ArrayXd &a0, const double h, const double tend, const int 
 	x.rightCols(Ndim) = R2C(MatrixXd::Identity(Ndim, Ndim));
     };
     
-    eidc.intgC(nl, ss, 0, u0, tend, h, skip_rate);
+    eidc2.intgC(nl2, ss, 0, u0, tend, h, skip_rate);
     
     return std::make_pair(C2R(aa), C2R(daa));
 }
@@ -234,7 +231,7 @@ CQCGL1d::intgvC(const ArrayXd &a0, const ArrayXXd &v, const double h,
 	aa = x;
     };
     
-    eidc.intgC(nl, ss, 0, u0, tend, h, Nt);
+    eidc2.intgC(nl2, ss, 0, u0, tend, h, Nt);
     
     return C2R(aa);	   //both the final orbit and the perturbation
 }
@@ -309,7 +306,7 @@ CQCGL1d::intgj(const ArrayXd &a0, const double h, const double tend,
 	ks++;
     };
 
-    eidc.intg(nl, ss, 0, u0, tend, h, skip_rate);
+    eidc2.intg(nl2, ss, 0, u0, tend, h, skip_rate);
     return std::make_pair(C2R(aa), C2R(daa));
 }
  
@@ -327,7 +324,7 @@ CQCGL1d::intgv(const ArrayXXd &a0, const ArrayXXd &v, const double h,
 	aa = x;
     };
 
-    eidc.intg(nl, ss, 0, u0, tend, h, 1000000);
+    eidc2.intg(nl2, ss, 0, u0, tend, h, 1000000);
     return C2R(aa);
 }
 
@@ -519,7 +516,7 @@ MatrixXd CQCGL1d::stab(const ArrayXd &a0){
     ArrayXXcd u0 = R2C(v0);
     
     ArrayXXcd v(N, Ndim+1);
-    nl(u0, v, 0);
+    nl2(u0, v, 0);
 	
     ArrayXXcd j0 = R2C(MatrixXd::Identity(Ndim, Ndim));
     MatrixXcd Z = j0.colwise() * L + v.rightCols(Ndim);

@@ -191,7 +191,7 @@ CQCGL1dSub::intgjC(const ArrayXd &a0, const double h, const double tend, const i
     
     const int Nt = (int)round(tend/h);
     const int M = (Nt + skip_rate - 1) / skip_rate;
-    ArrayXXcd aa(N, M), daa(N, Ndim*M);
+    ArrayXXcd aa(Ne, M), daa(Ne, Ndim*M);
     lte.resize(M);
     int ks = 0;
     auto ss = [this, &ks, &aa, &daa](ArrayXXcd &x, double t, double h, double err){
@@ -218,7 +218,7 @@ CQCGL1dSub::intgvC(const ArrayXd &a0, const ArrayXXd &v, const double h,
     ArrayXXcd u0 = R2C(v0);
 
     const int Nt = (int)round(tend/h);
-    ArrayXXcd aa(N, DimTan+1);
+    ArrayXXcd aa(Ne, DimTan+1);
     auto ss = [this, &aa](ArrayXXcd &x, double t, double h, double err){
 	aa = x;
     };
@@ -235,7 +235,7 @@ CQCGL1dSub::intg(const ArrayXd &a0, const double h, const double tend, const int
     ArrayXXcd u0 = R2C(a0); 
     const int Nt = (int)round(tend/h);
     const int M = (Nt+skip_rate-1)/skip_rate;
-    ArrayXXcd aa(N, M);
+    ArrayXXcd aa(Ne, M);
     Ts.resize(M);
     hs.resize(M);
     lte.resize(M);
@@ -275,7 +275,7 @@ CQCGL1dSub::intgj(const ArrayXd &a0, const double h, const double tend,
     
     const int Nt = (int)round(tend/h);
     const int M = (Nt + skip_rate - 1) / skip_rate;
-    ArrayXXcd aa(N, M), daa(N, Ndim*M);
+    ArrayXXcd aa(Ne, M), daa(Ne, Ndim*M);
     Ts.resize(M);
     hs.resize(M);
     lte.resize(M);
@@ -311,7 +311,7 @@ CQCGL1dSub::intgv(const ArrayXXd &a0, const ArrayXXd &v, const double h,
     v0 << a0, v;
     ArrayXXcd u0 = R2C(v0);
 
-    ArrayXXcd aa(N, DimTan+1); 
+    ArrayXXcd aa(Ne, DimTan+1); 
     auto ss = [this, &aa](ArrayXXcd &x, double t, double h, double err){
 	aa = x;
     };
@@ -330,7 +330,7 @@ ArrayXXcd CQCGL1dSub::R2C(const ArrayXXd &v){
     return Map<ArrayXXcd>((dcp*)&v(0,0), v.rows()/2, v.cols());
 }
 
-#if 0
+
 /* -------------------------------------------------- */
 /* -------  Fourier/Configure transformation -------- */
 /* -------------------------------------------------- */
@@ -342,29 +342,31 @@ ArrayXXcd CQCGL1dSub::Fourier2Config(const Ref<const ArrayXXd> &aa){
     int cs = aa.cols(), rs = aa.rows();
     assert(Ndim == rs);
     ArrayXXcd aac = R2C(aa);
-    ArrayXXcd AA(N, cs);
+    ArrayXXcd modes(N, cs);
+    modes << aac, ArrayXXcd::Zero(N-2*Ne+1, cs), aac.bottomRows(Ne-1).colwise().reverse();
+    ArrayXXcd field(N, cs);
     
     for(size_t i = 0; i < cs; i++)
-	fft.inv(AA.data() + i*N, aac.data() + i*N, N);
+	fft.inv(field.data() + i*N, modes.data() + i*N, N);
     
-    return AA;
+    return field;
 }
 
 
 /**
  * @brief Fourier transform of the states. Input and output are both real.
  */
-ArrayXXd CQCGL1dSub::Config2Fourier(const Ref<const ArrayXXcd> &AA){
-    int cs = AA.cols(), rs = AA.rows();
+ArrayXXd CQCGL1dSub::Config2Fourier(const Ref<const ArrayXXcd> &field){
+    int cs = field.cols(), rs = field.rows();
     assert(N == rs);
-    ArrayXXcd aac(N, cs);
+    ArrayXXcd modes(N, cs);
     
     for(size_t i = 0; i < cs; i++)
-	fft.fwd(aac.data() + i*N, AA.data() + i*N, N);
+	fft.fwd(modes.data() + i*N, field.data() + i*N, N);
     
-    return C2R(aac);
+    return C2R(modes.topRows(Ne));
 }
-
+#if 0
 ArrayXXd CQCGL1dSub::Fourier2ConfigMag(const Ref<const ArrayXXd> &aa){
     return Fourier2Config(aa).abs();
 }

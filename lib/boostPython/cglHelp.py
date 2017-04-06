@@ -48,7 +48,7 @@ class CQCGLplot():
         ax2d(fig, ax, save=save, name=name)
     
     def config(self, AA, ext, isFourier=True, tt=None, yls=None, timeMode=1,
-               barTicks=[2, 7], colortype='jet',
+               barTicks=[1, 2, 3], colortype='jet',
                percent='5%', size=[4, 5], labs=[r'$x$', r'$t$'],
                axisLabelSize=20, tickSize=None,
                save=False, name='out.png'):

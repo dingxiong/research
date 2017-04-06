@@ -62,7 +62,7 @@ public:
 	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
 	return copy2bn(intgC(tmpa, h, tend, skip_rate));
     }
-#if 0
+
     /* wrap the integrator with Jacobian */
     bp::tuple PYintgjC(bn::ndarray a0, double h, double tend, size_t skip_rate){
 	int m, n;
@@ -105,42 +105,6 @@ public:
 	return copy2bn(intgv(tmpa, tmpv, h, tend));
     }
 
-
-    /* wrap the velocity */
-    bn::ndarray PYvelocity(bn::ndarray a0){
-	int m, n;
-	getDims(a0, m, n);
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	return copy2bn(velocity(tmpa));
-    }
-
-    /* wrap the velSlice */
-    bn::ndarray PYvelSlice(bn::ndarray aH){
-	int m, n;
-	getDims(aH, m, n);
-	Map<VectorXd> tmpa((double*)aH.get_data(), m*n);
-	return copy2bn(velSlice(tmpa));
-    }
-
-    /* wrap the velPhase */
-    bn::ndarray PYvelPhase(bn::ndarray aH){
-	int m, n;
-	getDims(aH, m, n);
-	Map<VectorXd> tmpa((double*)aH.get_data(), m*n);
-	VectorXd tmpv = velPhase(tmpa);
-	return copy2bn(tmpv);
-    }
-    
-
-    /* wrap velocityReq */
-    bn::ndarray PYvelocityReq(bn::ndarray a0, double th, double phi){
-	int m, n;
-	getDims(a0, m, n);	
-	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
-	ArrayXd tmpv = velocityReq(tmpa, th, phi);
-	return copy2bn(tmpv);
-    }
-
     /* wrap Fourier2Config */
     bn::ndarray PYFourier2Config(bn::ndarray aa){
 	int m, n;
@@ -156,7 +120,7 @@ public:
 	Map<ArrayXXcd> tmpAA((dcp*)AA.get_data(), n, m);
 	return copy2bn( Config2Fourier(tmpAA) );
     }
-    
+#if 0   
     /* wrap Fourier2ConfigMag */
     bn::ndarray PYFourier2ConfigMag(bn::ndarray aa){
 	int m, n;
@@ -191,6 +155,40 @@ public:
 	return PYcalMoment(aa, 1);
     }
     
+    /* wrap the velocity */
+    bn::ndarray PYvelocity(bn::ndarray a0){
+	int m, n;
+	getDims(a0, m, n);
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	return copy2bn(velocity(tmpa));
+    }
+
+    /* wrap the velSlice */
+    bn::ndarray PYvelSlice(bn::ndarray aH){
+	int m, n;
+	getDims(aH, m, n);
+	Map<VectorXd> tmpa((double*)aH.get_data(), m*n);
+	return copy2bn(velSlice(tmpa));
+    }
+
+    /* wrap the velPhase */
+    bn::ndarray PYvelPhase(bn::ndarray aH){
+	int m, n;
+	getDims(aH, m, n);
+	Map<VectorXd> tmpa((double*)aH.get_data(), m*n);
+	VectorXd tmpv = velPhase(tmpa);
+	return copy2bn(tmpv);
+    }  
+
+    /* wrap velocityReq */
+    bn::ndarray PYvelocityReq(bn::ndarray a0, double th, double phi){
+	int m, n;
+	getDims(a0, m, n);	
+	Map<ArrayXd> tmpa((double*)a0.get_data(), m*n);
+	ArrayXd tmpv = velocityReq(tmpa, th, phi);
+	return copy2bn(tmpv);
+    }
+
     /* orbit2slice */
     bp::tuple PYorbit2slice(const bn::ndarray &aa, int method){
 	int m, n;
@@ -384,22 +382,22 @@ BOOST_PYTHON_MODULE(py_CQCGL1dSub) {
 	
 	.def("changeOmega", &pyCQCGL1dSub::changeOmega)
 	.def("intgC", &pyCQCGL1dSub::PYintgC)
-	// .def("intgjC", &pyCQCGL1dSub::PYintgjC)
-	// .def("intgvC", &pyCQCGL1dSub::PYintgv)
-	// .def("intg", &pyCQCGL1dSub::PYintg)
-	// .def("intgj", &pyCQCGL1dSub::PYintgj)
-	// .def("intgv", &pyCQCGL1dSub::PYintgv)
-	// .def("velocity", &pyCQCGL1dSub::PYvelocity)
-	// .def("velSlice", &pyCQCGL1dSub::PYvelSlice)
-	// .def("velPhase", &pyCQCGL1dSub::PYvelPhase)
-	// .def("velocityReq", &pyCQCGL1dSub::PYvelocityReq)
-	// .def("Fourier2Config", &pyCQCGL1dSub::PYFourier2Config)
-	// .def("Config2Fourier", &pyCQCGL1dSub::PYConfig2Fourier)
+	.def("intgjC", &pyCQCGL1dSub::PYintgjC)
+	.def("intgvC", &pyCQCGL1dSub::PYintgv)
+	.def("intg", &pyCQCGL1dSub::PYintg)
+	.def("intgj", &pyCQCGL1dSub::PYintgj)
+	.def("intgv", &pyCQCGL1dSub::PYintgv)
+	.def("Fourier2Config", &pyCQCGL1dSub::PYFourier2Config)
+	.def("Config2Fourier", &pyCQCGL1dSub::PYConfig2Fourier)
 	// .def("Fourier2ConfigMag", &pyCQCGL1dSub::PYFourier2ConfigMag)
 	// .def("Fourier2Phase", &pyCQCGL1dSub::PYFourier2Phase)
 	// .def("calQ", &pyCQCGL1dSub::PYcalQ)
 	// .def("calMoment", &pyCQCGL1dSub::PYcalMoment)
 	// .def("calMoment", &pyCQCGL1dSub::PYcalMoment2)
+	// .def("velocity", &pyCQCGL1dSub::PYvelocity)
+	// .def("velSlice", &pyCQCGL1dSub::PYvelSlice)
+	// .def("velPhase", &pyCQCGL1dSub::PYvelPhase)
+	// .def("velocityReq", &pyCQCGL1dSub::PYvelocityReq)
 	// .def("orbit2slice", &pyCQCGL1dSub::PYorbit2slice)
 	// .def("ve2slice", &pyCQCGL1dSub::PYve2slice)
 	// .def("stab", &pyCQCGL1dSub::PYstab)

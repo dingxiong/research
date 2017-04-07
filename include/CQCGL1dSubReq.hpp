@@ -81,9 +81,7 @@ public :
     void 
     findReqParaSeq(H5File &file, int id, double step, int Ns, bool isBi);
     void 
-    calEVParaSeq(H5File &file, std::vector<int> ids, std::vector<double> Bis,
-		 std::vector<double> Gis, bool saveV);
-    
+    calEVParaSeq(H5File &file, vector<vector<string>> gs, bool saveV);
     
 };
 

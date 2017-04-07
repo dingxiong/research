@@ -100,11 +100,14 @@ class CQCGLreq(CQCGLBase):
         CQCGLBase.__init__(self, cgl)
     
         
-    def read(self, fileName, groupName, flag=0):
+    def read(self, fileName, groupName, sub=False, flag=0):
+        """
+        sub : is subspace ?
+        """
         f = h5py.File(fileName, 'r')
         req = '/' + groupName + '/'
         a = f[req+'a'].value
-        wth = f[req+'wth'].value
+        wth = f[req+'wth'].value if not sub else None
         wphi = f[req+'wphi'].value
         err = f[req+'err'].value
         if flag == 1:
@@ -113,6 +116,7 @@ class CQCGLreq(CQCGLBase):
             e = f[req+'er'].value + 1j*f[req+'ei'].value
             v = f[req+'vr'].value + 1j*f[req+'vi'].value
         f.close()
+        
         
         if flag == 0:
             return a, wth, wphi, err
@@ -124,12 +128,12 @@ class CQCGLreq(CQCGLBase):
     def readDi(self, fileName, di, index, flag=0):
         groupName = format(di, '.6f') + '/' + str(index)
         return self.read(fileName, groupName, flag)
-
-    def readBiGi(self, fileName, Bi, Gi, index, flag=0):
-        return self.read(fileName, self.toStr(Bi, Gi, index), flag)
-
-    def eigReq(self, a0, wth0, wphi0):
-        stabMat = self.cgl.stabReq(a0, wth0, wphi0).T
+        
+    def eigReq(self, a0, wth0, wphi0, sub=False):
+        if sub:
+            stabMat = self.cgl.stabReq(a0, wphi0).T 
+        else:
+            stabMat = self.cgl.stabReq(a0, wth0, wphi0).T 
         e, v = LA.eig(stabMat)
         e, v = sortByReal(e, v)
         v = v.T.copy()

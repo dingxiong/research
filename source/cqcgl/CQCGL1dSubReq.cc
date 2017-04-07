@@ -285,11 +285,12 @@ CQCGL1dSubReq::findReqParaSeq(H5File &file, int id, double step, int Ns, bool is
     Bi = Bi0; 			// restore Bi, Gi
     Gi = Gi0;
 }
+#endif
 
-/// @brief calculate the eigenvalues and eigenvectors of req in certain range 
+/// @brief calculate the eigenvalues and eigenvectors of req in certain range
+/// gs is obtained by scanGroup()
 void 
-CQCGL1dSubReq::calEVParaSeq(H5File &file, std::vector<int> ids, std::vector<double> Bis,
-			 std::vector<double> Gis, bool saveV){
+CQCGL1dSubReq::calEVParaSeq(H5File &file, vector<vector<string>> gs, bool saveV){
     double Bi0 = Bi;
     double Gi0 = Gi;
     int id;
@@ -299,25 +300,20 @@ CQCGL1dSubReq::calEVParaSeq(H5File &file, std::vector<int> ids, std::vector<doub
     VectorXcd e;
     MatrixXcd v;
     
-    for (int i = 0; i < ids.size(); i++){
-	id = ids[i]; 
-	for (int j = 0; j < Bis.size(); j++){
-	    Bi = Bis[j];
-	    for(int k = 0; k < Gis.size(); k++){
-		Gi = Gis[k];
-		if ( checkGroup(file, toStr(Bi, Gi, id), false) ){
-		    if( !checkGroup(file, toStr(Bi, Gi, id) + "/er", false)){
-			fprintf(stderr, "%d %g %g \n", id, Bi, Gi);
-			std::tie(a0, wth0, wphi0, err0) = read(file, toStr(Bi, Gi, id));
-			std::tie(e, v) = evReq(a0, wth0, wphi0); 	
-			writeE(file, toStr(Bi, Gi, id), e);
-			if (saveV) writeV(file, toStr(Bi, Gi, id), v.leftCols(10));
-		    }
-		}
-	    }
+    for (auto entry : gs){
+	Bi = stod(entry[0]);
+	Gi = stod(entry[1]);
+	id = stoi(entry[2]);
+	if( !checkGroup(file, toStr(Bi, Gi, id) + "/er", false) ){
+	    fprintf(stderr, "%d %g %g \n", id, Bi, Gi);
+	    std::tie(a0, wphi0, err0) = read(file, toStr(Bi, Gi, id));
+	    std::tie(e, v) = evReq(a0, wphi0); 
+	    writeE(file, toStr(Bi, Gi, id), e);
+	    if(saveV) writeV(file, toStr(Bi, Gi, id), v.leftCols(10));
 	}
     }
+
     Bi = Bi0; 			// restore Bi, Gi
     Gi = Gi0;
 }
-#endif
+

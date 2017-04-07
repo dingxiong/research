@@ -21,6 +21,7 @@ CQCGL1dSub::NL::NL(CQCGL1dSub *cgl, int cols) :
 }
 CQCGL1dSub::NL::~NL(){}
 
+// the dimension should be [Ne, DimTan+1]
 void CQCGL1dSub::NL::operator()(ArrayXXcd &x, ArrayXXcd &dxdt, double t){
     int cs = x.cols();
     assert(cs == dxdt.cols() && Ne == x.rows() && Ne == dxdt.rows());
@@ -425,7 +426,7 @@ CQCGL1dSub::calMoment(const Ref<const ArrayXXd> &aa, const int p){
 ArrayXd CQCGL1dSub::velocity(const ArrayXd &a0){
     assert( Ndim == a0.rows() );
     ArrayXXcd A = R2C(a0);
-    ArrayXXcd v(N, 1);
+    ArrayXXcd v(Ne, 1);
     nl(A, v, 0);
     return C2R(L*A + v);
 }
@@ -448,7 +449,7 @@ MatrixXd CQCGL1dSub::stab(const ArrayXd &a0){
     v0 << a0, MatrixXd::Identity(Ndim, Ndim);
     ArrayXXcd u0 = R2C(v0);
     
-    ArrayXXcd v(N, Ndim+1);
+    ArrayXXcd v(Ne, Ndim+1);
     nl2(u0, v, 0);
 	
     ArrayXXcd j0 = R2C(MatrixXd::Identity(Ndim, Ndim));

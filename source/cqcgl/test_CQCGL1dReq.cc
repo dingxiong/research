@@ -62,7 +62,7 @@ int main(int argc, char **argv){
     std::tie(a, wth, wphi, err, flag) = cgl.findReq_LM(a0, wth0, wphi0, 1e-10, 100, 1000);
     fprintf(stderr, "%g %g %g\n", wth, wphi, err);
     string file = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGi.h5";
-    if (flag == 0) cgl.writeReq(file, Bi, Gi, 2, a, wth, wphi, err);
+    if (flag == 0) cgl.write(file, Bi, Gi, 2, a, wth, wphi, err);
 
 #endif
 #ifdef N30
@@ -89,7 +89,7 @@ int main(int argc, char **argv){
     std::tie(a, wth, wphi, err, flag) = cgl.findReq_LM(a0, wth0, wphi0, 1e-10, 100, 1000);
     fprintf(stderr, "%g %g %g\n", wth, wphi, err);
     string file = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGi.h5";
-    if (flag == 0) cgl.writeReq(file, Bi, Gi, 1, a, wth, wphi, err);
+    if (flag == 0) cgl.write(file, Bi, Gi, 1, a, wth, wphi, err);
     
 
 #endif
@@ -136,7 +136,7 @@ int main(int argc, char **argv){
 		    string g = CQCGL1dReq::toStr(Bi, Gi, id);
 		    if (checkGroup(fin, g+"/vr", false)){
 			fprintf(stderr, "%d %g %g\n", id, Bi, Gi);
-			CQCGL1dReq::moveReq(fin, g, fout, g, 2);
+			CQCGL1dReq::move(fin, g, fout, g, 2);
 		    }
 		}
 	    }

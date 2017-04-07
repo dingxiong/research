@@ -35,7 +35,7 @@ int main(int argc, char **argv){
     H5File file(fileName, H5F_ACC_RDWR);
     ArrayXd a0;
     double wth0, wphi0, err0;
-    std::tie(a0, wth0, wphi0, err0) = cgl0.read(file, cgl.toStr(Bi, Gi, 1));
+    std::tie(a0, wth0, wphi0, err0) = cgl0.read(file, cgl.toStr(Bi, Gi, 2));
     a0 = a0.head(cgl.Ndim);
 
     ArrayXd a;
@@ -45,6 +45,38 @@ int main(int argc, char **argv){
     fprintf(stderr, "%g %g\n", wphi, err);
     H5File fout("sub.h5", H5F_ACC_TRUNC);
     if (flag == 0) cgl.write(fout, cgl.toStr(Bi, Gi, 1), a, wphi, err);    
+#endif
+#ifdef N20
+    //======================================================================
+    // the same as N10, but navigate in the parameter plane.
+    const int N = 1024;
+    const double L = 50;
+	
+    string finName = "/usr/local/home/xiong/00git/research/data/cgl/reqBiGi.h5";
+    H5File file(finName, H5F_ACC_RDWR);
+    string foutName = "sub.h5";
+    H5File fout(foutName, H5F_ACC_TRUNC);
+    
+    ArrayXd a0;
+    double wth0, wphi0, err0;
+    ArrayXd a;
+    double wphi, err;
+    int flag;
+    auto gs = scanGroup(finName);
+    for(auto entry : gs) {
+	double Bi = stod(entry[0]), Gi = stod(entry[1]);
+	int id = stoi(entry[2]);
+	fprintf(stderr, "\n %d %g %g \n", id, Bi, Gi);
+	
+	CQCGL1dReq cgl0(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
+	CQCGL1dSubReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
+	std::tie(a0, wth0, wphi0, err0) = cgl0.read(file, cgl.toStr(Bi, Gi, id));
+	a0 = a0.head(cgl.Ndim);
+	std::tie(a, wphi, err, flag) = cgl.findReq_LM(a0, wphi0, 1e-10, 100, 1000);
+	fprintf(stderr, "%g %g\n", wphi, err);
+	if (flag == 0) cgl.write(fout, cgl.toStr(Bi, Gi, id), a, wphi, err);    
+    }
+    
 #endif
 #ifdef N40
     //======================================================================
@@ -86,12 +118,13 @@ int main(int argc, char **argv){
     VectorXcd e;
     MatrixXcd v;
     
+    int i = 0;
     for (auto entry : gs){
 	double Bi = stod(entry[0]), Gi = stod(entry[1]);
 	int id = stoi(entry[2]);
 	if( !checkGroup(fout, CQCGL1dSubReq::toStr(Bi, Gi, id) + "/er", false) ){
-	    fprintf(stderr, "%d %g %g \n", id, Bi, Gi);
-	    CQCGL1dSubReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);	    
+	    fprintf(stderr, "%d/%d : %d %g %g \n", ++i, (int)gs.size(), id, Bi, Gi);
+	    CQCGL1dSubReq cgl(N, L, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0);
 	    std::tie(a0, wphi0, err0) = cgl.read(fout, cgl.toStr(Bi, Gi, id));
 	    std::tie(e, v) = cgl.evReq(a0, wphi0); 
 	    cgl.writeE(fout, cgl.toStr(Bi, Gi, id), e);

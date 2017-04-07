@@ -21,6 +21,18 @@ class CQCGLBase():
         x = groupName in f
         f.close()
         return x
+        
+    def scanGroup(self, fileName, level):
+        """
+        get all group names with a specific level
+        """
+        f = h5py.File(fileName, 'r')
+        gs = []
+        def parse(name, obj):
+            if isinstance(obj, h5py.Group) and name.count('/') == level:
+                gs.append(name)
+        f.visititems(parse)
+        return gs
 
     
 

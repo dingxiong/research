@@ -5,7 +5,7 @@ from cglHelp import *
 #   view the reqs in the symmetric subspace
 ################################################################################
 
-case = 20
+case = 30
 
 if case == 10:
     """
@@ -42,3 +42,23 @@ if case == 20:
     print e[:10]
     cp.oneConfig(v[0].real * cgl.N)
     cp.oneConfig(v[0].imag * cgl.N)
+
+if case == 30:
+    """
+    check the accuracy of all req in symmetric subspace
+    """
+    N, d = 1024, 50
+    Bi, Gi = 0.8, -0.6
+    index = 1
+
+    cgl = pyCQCGL1dSub(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req, cp = CQCGLreq(cgl), CQCGLplot(cgl)
+    fin = '../../data/cgl/reqsubBiGi.h5'
+    
+    gs = req.scanGroup(fin, 2)
+    errs = []
+    for item in gs:
+        a0, wth0, wphi0, err0 = req.read(fin, item, sub=True)
+        errs.append(err0)
+
+    print np.max(np.abs(errs))

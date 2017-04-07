@@ -69,7 +69,7 @@ CQCGL1dReq::toStr(double Bi, double Gi, int id){
  *
  */
 std::tuple<VectorXd, double, double ,double>
-CQCGL1dReq::readReq(H5File &file, const std::string groupName){
+CQCGL1dReq::read(H5File &file, const std::string groupName){
     // H5File file(fileName, H5F_ACC_RDONLY);
     string DS = "/" + groupName + "/";
 
@@ -88,7 +88,7 @@ CQCGL1dReq::readReq(H5File &file, const std::string groupName){
  * @note group should be a new group
  */
 void 
-CQCGL1dReq::writeReq(H5File &file, const std::string groupName,
+CQCGL1dReq::write(H5File &file, const std::string groupName,
 		     const ArrayXd &a, const double wth, 
 		     const double wphi, const double err){
     
@@ -150,18 +150,18 @@ CQCGL1dReq::writeV(H5File &file, const std::string groupName,
 }
 
 void 
-CQCGL1dReq::moveReq(H5File &fin, std::string gin, H5File &fout, std::string gout,
+CQCGL1dReq::move(H5File &fin, std::string gin, H5File &fout, std::string gout,
 		    int flag){
     VectorXd a;
     VectorXcd e;
     MatrixXcd v;
     double wth, wphi, err;
 
-    std::tie(a, wth, wphi, err) = readReq(fin, gin);
+    std::tie(a, wth, wphi, err) = read(fin, gin);
     if (flag == 1 || flag == 2) e = readE(fin, gin);
     if (flag == 2) v = readV(fin, gin);
     
-    writeReq(fout, gout, a, wth, wphi, err);
+    write(fout, gout, a, wth, wphi, err);
     if (flag == 1 || flag == 2) writeE(fout, gout, e);
     if (flag == 2) writeV(fout, gout, v);
 }
@@ -190,11 +190,11 @@ CQCGL1dReq::calJJF(const VectorXd &x){
     double wphi = x(2*Ne+1);
 
     int n = a0.rows();
-    assert(Ndim == n);
+    assert(Ndim == n); 
   
     MatrixXd DF(n, n+2); 
     ArrayXd tx_trans = transTangent(a0);
-    ArrayXd tx_phase = phaseTangent(a0);
+    ArrayXd tx_phase = phaseTangent(a0); 
     DF.topLeftCorner(2*Ne, 2*Ne) = stabReq(a0, wth, wphi); 
     DF.col(2*Ne).head(2*Ne)= tx_trans;
     DF.col(2*Ne+1).head(2*Ne) = tx_phase;
@@ -204,7 +204,7 @@ CQCGL1dReq::calJJF(const VectorXd &x){
 
     MatrixXd JJ = DF.transpose() * DF;
     MatrixXd D  = JJ.diagonal().asDiagonal();
-    VectorXd df = DF.transpose() * F;
+    VectorXd df = DF.transpose() * F; 
 
     return std::make_tuple(JJ, D, df);
 }
@@ -272,7 +272,7 @@ CQCGL1dReq::findReqParaSeq(H5File &file, int id, double step, int Ns, bool isBi)
     
     ArrayXd a0;
     double wth0, wphi0, err0;
-    std::tie(a0, wth0, wphi0, err0) = readReq(file, toStr(Bi, Gi, id));
+    std::tie(a0, wth0, wphi0, err0) = read(file, toStr(Bi, Gi, id));
     
     ArrayXd a;
     double wth, wphi, err;
@@ -286,13 +286,13 @@ CQCGL1dReq::findReqParaSeq(H5File &file, int id, double step, int Ns, bool isBi)
 	
 	// if exist, use it as seed, otherwise find req
 	if ( checkGroup(file, toStr(Bi, Gi, id), false) ){ 
-	    std::tie(a0, wth0, wphi0, err0) = readReq(file, toStr(Bi, Gi, id));
+	    std::tie(a0, wth0, wphi0, err0) = read(file, toStr(Bi, Gi, id));
 	}
 	else {
 	    fprintf(stderr, "%d %g %g \n", id, Bi, Gi);
 	    std::tie(a, wth, wphi, err, flag) = findReq_LM(a0, wth0, wphi0, 1e-10, 100, 1000);
 	    if (flag == 0){
-		writeReq(file, toStr(Bi, Gi, id), a, wth, wphi, err);
+		write(file, toStr(Bi, Gi, id), a, wth, wphi, err);
 		a0 = a;
 		wth0 = wth;
 		wphi0 = wphi;
@@ -329,7 +329,7 @@ CQCGL1dReq::calEVParaSeq(H5File &file, std::vector<int> ids, std::vector<double>
 		if ( checkGroup(file, toStr(Bi, Gi, id), false) ){
 		    if( !checkGroup(file, toStr(Bi, Gi, id) + "/er", false)){
 			fprintf(stderr, "%d %g %g \n", id, Bi, Gi);
-			std::tie(a0, wth0, wphi0, err0) = readReq(file, toStr(Bi, Gi, id));
+			std::tie(a0, wth0, wphi0, err0) = read(file, toStr(Bi, Gi, id));
 			std::tie(e, v) = evReq(a0, wth0, wphi0); 	
 			writeE(file, toStr(Bi, Gi, id), e);
 			if (saveV) writeV(file, toStr(Bi, Gi, id), v.leftCols(10));

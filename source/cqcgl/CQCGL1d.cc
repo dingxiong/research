@@ -515,8 +515,8 @@ MatrixXd CQCGL1d::stab(const ArrayXd &a0){
     v0 << a0, MatrixXd::Identity(Ndim, Ndim);
     ArrayXXcd u0 = R2C(v0);
     
-    ArrayXXcd v(N, Ndim+1);
-    nl2(u0, v, 0);
+    ArrayXXcd v(N, Ndim+1); 
+    nl2(u0, v, 0); 
 	
     ArrayXXcd j0 = R2C(MatrixXd::Identity(Ndim, Ndim));
     MatrixXcd Z = j0.colwise() * L + v.rightCols(Ndim);
@@ -1167,129 +1167,6 @@ MatrixXd CQCGL1d::reduceVe(const ArrayXXd &ve, const Ref<const ArrayXd> &x, int 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if 0
-/**
- * @brief pad the input with zeros
- *
- * For example:
- *     if N = 256
- *     0, 1, 2, ..., 127, -127, ..., -1 => insert between 127 and -127
- *     The left half has one mode more than the second half
- */
-ArrayXXd CQCGL1d::pad(const Ref<const ArrayXXd> &aa){
-    int n = aa.rows();		
-    int m = aa.cols();
-    assert(Ndim == n);
-    ArrayXXd paa(2*N, m);
-    paa << aa.topRows(2*Nplus), ArrayXXd::Zero(2*Nalias, m), 
-	aa.bottomRows(2*Nminus);
-    return paa;
-}
-
-/**
- * @brief general padding/squeeze an array (arrays).
- *
- * This function is different from pad() that it only requrie n/2
- * is an odd number. It is used to prepare initial conditions for
- * Fourier modes doubled/halfed system. Alos the padding result does not
- * have dimension 2*N, but Ndim.
- *
- * @note It is user's duty to rescale the values since Fourier mode magnitude
- *       changes after doubling/halfing.
- *       For example,
- *       Initially, a_k = \sum_{i=0}^{N} f(x_n)e^{ikx}
- *       After doubling modes, ap_k is a sum of 2*N terms, and
- *       each adjacent pair is also as twice large as the previous
- *       corresponding one term.
- */
-ArrayXXd CQCGL1d::generalPadding(const Ref<const ArrayXXd> &aa){
-    int n = aa.rows();
-    int m = aa.cols();
-    assert( n % 4 == 2);
-    ArrayXXd paa(Ndim, m);
-    if (n < Ndim){
-	paa << aa.topRows(n/2 + 1), ArrayXXd::Zero(Ndim - n, m),
-	    aa.bottomRows(n/2 - 1);
-    }
-    else {
-	paa << aa.topRows(Ne + 1), aa.bottomRows(Ne - 1);
-    }
-    return paa;
-}
-
-ArrayXXcd CQCGL1d::padcp(const Ref<const ArrayXXcd> &x){
-    int n = x.rows();
-    int m = x.cols();
-    assert(Ne == n);
-    ArrayXXcd px(N, m);
-    px << x.topRows(Nplus), ArrayXXcd::Zero(Nalias, m),
-	x.bottomRows(Nminus);
-
-    return px;
-}
-
-ArrayXXd CQCGL1d::unpad(const Ref<const ArrayXXd> &paa){
-    int n = paa.rows();
-    int m = paa.cols();
-    assert(2*N == n);
-    ArrayXXd aa(Ndim, m);
-    aa << paa.topRows(2*Nplus), paa.bottomRows(2*Nminus);
-    return aa;
-}
-
-MatrixXd CQCGL1d::rk4(const VectorXd &a0, const double dt, const int nstp, const int nq){
-    VectorXd x(a0);
-    MatrixXd xx(Ndim, nstp/nq+1);
-    xx.col(0) = x;
-
-    for(int i = 0; i < nstp; i++){
-	VectorXd k1 = velocity(x);
-	VectorXd k2 = velocity(x + dt/2 * k1);
-	VectorXd k3 = velocity(x + dt/2 * k2);
-	VectorXd k4 = velocity(x + dt * k3);
-	x += dt/6 * (k1 + 2*k2 + 2*k3 + k4);
-
-	if((i+1)%nq == 0) xx.col((i+1)/nq) = x;
-    }
-
-    return xx;
-}
-
-MatrixXd CQCGL1d::velJ(const MatrixXd &xj){
-    MatrixXd vj(Ndim, Ndim+1);
-    vj.col(0) = velocity(xj.col(0));
-    vj.middleCols(1, Ndim) = stab(xj.col(0)) * xj.middleCols(1, Ndim);
-    
-    return vj;
-}
-
-std::pair<MatrixXd, MatrixXd>
-CQCGL1d::rk4j(const VectorXd &a0, const double dt, const int nstp, const int nq, const int nqr){
-    MatrixXd x(Ndim, Ndim + 1);
-    x << a0, MatrixXd::Identity(Ndim, Ndim);
-    
-    MatrixXd xx(Ndim, nstp/nq+1);
-    xx.col(0) = a0;
-    MatrixXd JJ(Ndim, Ndim*(nstp/nqr));
-    
-    for(int i = 0; i < nstp; i++){
-	MatrixXd k1 = velJ(x);
-	MatrixXd k2 = velJ(x + dt/2 *k1);
-	MatrixXd k3 = velJ(x + dt/2 *k2);
-	MatrixXd k4 = velJ(x + dt *k3);
-
-	x += dt/6 * (k1 + 2*k2 + 2*k3 + k4);
-
-	if((i+1)%nq == 0) xx.col((i+1)/nq) = x.col(0);
-	if((i+1)%nqr == 0){
-	    int k = (i+1)/nqr - 1;
-	    JJ.middleCols(k*Ndim, Ndim) = x.middleCols(1, Ndim);
-	    x.middleCols(1, Ndim) = MatrixXd::Identity(Ndim, Ndim);
-	}
-    }
-
-    return std::make_pair(xx, JJ);
-}
-
 /* -------------------------------------------------- */
 /* --------         Lyapunov functional   ----------- */
 /* -------------------------------------------------- */

@@ -1029,7 +1029,7 @@ namespace iterMethod {
 	 
 	    ////////////////////////////////////////////////
 	    // construct JJ and JF
-	    std::tuple<Mat, Mat, VectorXd> tmp = JJF(x); 
+	    std::tuple<Mat, Mat, VectorXd> tmp = JJF(x);
 	    Mat &jj = std::get<0>(tmp); 
 	    Mat &d = std::get<1>(tmp);
 	    VectorXd &jf = std::get<2>(tmp);

@@ -114,9 +114,57 @@ namespace MyH5 {
 	H5File file(fileName, H5F_ACC_RDWR);
 	return checkGroup(file, groupName, doCreate);
     }
+    
+    // obtain all unique groupnames in a file
+    // if file has datasets /a/b/c/d1, /a/b/c/d2, /a/b/d3
+    // the it outputs a/b/c, a/b
+    // from https://support.hdfgroup.org/ftp/HDF5/examples/misc-examples/h5_info.c
+    vector<string> scanGroup(std::string fileName){
+	H5File file(fileName, H5F_ACC_RDWR);
+	unordered_set<string> result;
+	vector<string> curt;
+	scanGroupHelp(file.getId(), result, curt);
+	
+	return vector<string>(result.begin(), result.end());
+    }
+    
+    // I do not know why H5Gopen does not work but H5Gopen1 works
+    void scanGroupHelp(hid_t gid, unordered_set<string> &result, vector<string> &curt) {
+	int MAX_NAME = 100;
+	char memb_name[MAX_NAME];
+	hsize_t nobj;
+	
+	herr_t err = H5Gget_num_objs(gid, &nobj);
+	for (int i = 0; i < nobj; i++) {
+	    int len = H5Gget_objname_by_idx(gid, (hsize_t)i, memb_name, (size_t)MAX_NAME );
+	    int otype =  H5Gget_objtype_by_idx(gid, (size_t)i );
+	    switch(otype) {
+	    case H5G_GROUP: {
+		hid_t grpid = H5Gopen1(gid, memb_name);
+		curt.push_back(string(memb_name));
+		scanGroupHelp(grpid, result, curt);
+		curt.pop_back();
+		H5Gclose(grpid);
+		break;
+	    }
+	    case H5G_DATASET: {
+		string groupName;
+		for(auto s : curt) groupName += s + "/";
+		groupName.pop_back();
+		if (result.find(groupName) == result.end())
+		    result.insert(groupName);
+		break;
+	    }
+	    default:
+		fprintf(stderr, "scanGroup unknown? \n");
+	    }
+	}
+    }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////         ks related          ////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+//                             KS related
+////////////////////////////////////////////////////////////////////////////////
     
     /**
      * check the existence of groups. If not, then crate it.

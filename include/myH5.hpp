@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include <cstdio>
+#include <unordered_set>
 #include "H5Cpp.h"
 
 /**
@@ -23,15 +24,26 @@ namespace MyH5 {
     Scalar readScalar(H5File &file, string DSitem);
 
     template <typename Scalar>
-    void writeScalar(H5File &file, string DSitem, Scalar value);
+    void 
+    writeScalar(H5File &file, string DSitem, Scalar value);
     
-    void writeMatrixXd(H5File &file, string DSitem, const MatrixXd &mat);
-    void writeVectorXd(H5File &file, string DSitem, const VectorXd &vec);
-    MatrixXd readMatrixXd(H5File &file, string DSitem);
-    VectorXd readVectorXd(H5File &file, string DSitem);
-    bool checkGroup(H5File &file, const std::string groupName, const bool doCreate);
-    bool checkGroup(std::string fileName, const std::string groupName, const bool doCreate);
-
+    void 
+    writeMatrixXd(H5File &file, string DSitem, const MatrixXd &mat);
+    void 
+    writeVectorXd(H5File &file, string DSitem, const VectorXd &vec);
+    MatrixXd 
+    readMatrixXd(H5File &file, string DSitem);
+    VectorXd 
+    readVectorXd(H5File &file, string DSitem);
+    bool 
+    checkGroup(H5File &file, const std::string groupName, const bool doCreate);
+    bool 
+    checkGroup(std::string fileName, const std::string groupName, const bool doCreate);
+    vector<string> 
+    scanGroup(std::string fileName);
+    void 
+    scanGroupHelp(hid_t gid, unordered_set<string> &result, vector<string> &curt);
+    
     //////////////////////////////////////////////////////////////////////
     /* KS related */
     MatrixXi

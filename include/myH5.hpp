@@ -39,10 +39,11 @@ namespace MyH5 {
     checkGroup(H5File &file, const std::string groupName, const bool doCreate);
     bool 
     checkGroup(std::string fileName, const std::string groupName, const bool doCreate);
-    vector<string> 
+    vector<vector<string>> 
     scanGroup(std::string fileName);
     void 
-    scanGroupHelp(hid_t gid, unordered_set<string> &result, vector<string> &curt);
+    scanGroupHelp(hid_t gid, vector<vector<string>> &result, unordered_set<string> &record,
+		  vector<string> &curt) ;
     
     //////////////////////////////////////////////////////////////////////
     /* KS related */

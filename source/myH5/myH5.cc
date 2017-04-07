@@ -119,17 +119,19 @@ namespace MyH5 {
     // if file has datasets /a/b/c/d1, /a/b/c/d2, /a/b/d3
     // the it outputs a/b/c, a/b
     // from https://support.hdfgroup.org/ftp/HDF5/examples/misc-examples/h5_info.c
-    vector<string> scanGroup(std::string fileName){
+    vector<vector<string>> scanGroup(std::string fileName){
 	H5File file(fileName, H5F_ACC_RDWR);
-	unordered_set<string> result;
+	unordered_set<string> record;
+	vector<vector<string>> result;
 	vector<string> curt;
-	scanGroupHelp(file.getId(), result, curt);
+	scanGroupHelp(file.getId(), result, record, curt);
 	
-	return vector<string>(result.begin(), result.end());
+	return result;
     }
     
     // I do not know why H5Gopen does not work but H5Gopen1 works
-    void scanGroupHelp(hid_t gid, unordered_set<string> &result, vector<string> &curt) {
+    void scanGroupHelp(hid_t gid, vector<vector<string>> &result, unordered_set<string> &record,
+		       vector<string> &curt) {
 	int MAX_NAME = 100;
 	char memb_name[MAX_NAME];
 	hsize_t nobj;
@@ -142,7 +144,7 @@ namespace MyH5 {
 	    case H5G_GROUP: {
 		hid_t grpid = H5Gopen1(gid, memb_name);
 		curt.push_back(string(memb_name));
-		scanGroupHelp(grpid, result, curt);
+		scanGroupHelp(grpid, result, record, curt);
 		curt.pop_back();
 		H5Gclose(grpid);
 		break;
@@ -151,8 +153,10 @@ namespace MyH5 {
 		string groupName;
 		for(auto s : curt) groupName += s + "/";
 		groupName.pop_back();
-		if (result.find(groupName) == result.end())
-		    result.insert(groupName);
+		if (record.find(groupName) == record.end()){
+		    record.insert(groupName);
+		    result.push_back(curt);
+		}
 		break;
 	    }
 	    default:

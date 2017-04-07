@@ -15,9 +15,12 @@ int main(){
 #ifdef N10
     //======================================================================
     string s = "/usr/local/home/xiong/00git/research/data/cgl/reqsubBiGi.h5";
-    vector<string> x = scanGroup(s);
-    for(auto s : x)
-	cout << s << endl;
+    vector<vector<string>> x = scanGroup(s);
+    for(auto v : x){
+	for(auto s : v)
+	    cout << s;
+	cout << endl;
+    }
     
 #endif
     return 0;

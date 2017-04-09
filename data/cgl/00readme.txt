@@ -66,6 +66,9 @@ req_N: previous soliton solutions for different N. for L = 50
 
 reqBiGi.h5 / reqBiGiEV.h5 : relative equilibria in the parameter space (Bi, Gi)
 	   Group structure is /Bi/Gi/index/
+	   Only leading 10 eigenvectors are saved.
+
+reqsubBiGi.h5 : req in the symmetric subspace.
 
 ############################################################
 rpoBiGi.h5 / rpoBiGiEV.h5 : relative periodic orbits in the parameter space (Bi, Gi)

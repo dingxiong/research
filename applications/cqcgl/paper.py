@@ -3,7 +3,7 @@ from py_CQCGL1dEIDc import *
 from cglHelp import *
 import matplotlib.gridspec as gridspec
 
-case = 60
+case = 15
 
 
 if case == 10:
@@ -54,13 +54,18 @@ if case == 15:
             Z[idy, idx] = m if m < 8 else 8
 
     levels = [-1, 0, 2, 4, 6, 8]
-    cs = ['w', 'm', 'c', 'b', 'r', 'y']
+    cs = ['w', 'm', 'c', 'grey', 'r', 'y']
     fig, ax = pl2d(size=[8, 6], labs=[r'$\beta_i$', r'$\gamma_i$'], axisLabelSize=30,
                    tickSize=20)
     for i in range(len(levels)):
         vfunc = np.vectorize(lambda t : 0 if t == levels[i] else 1)
         Z2 = vfunc(Z)
         ax.contourf(X, Y, Z2, levels=[-0.1, 0.9], colors=cs[i])
+    ax.text(0, -2, r'$S$', fontsize=25)
+    ax.text(0, -4.5, r'$U_1$', fontsize=25)
+    ax.text(1.8, -2.5, r'$U_2$', fontsize=25)
+    ax.text(2., -4.8, r'$U_3$', fontsize=25)
+    ax.text(4., -3, r'$U_{\geq 4}$', fontsize=25)
     ax.scatter(2.0,-5, c='k', s=100, edgecolor='none')
     ax.scatter(2.7,-5, c='k', s=100, edgecolor='none')
     ax.scatter(1.4,-3.9, c='k', marker='*', s=200, edgecolor='none')

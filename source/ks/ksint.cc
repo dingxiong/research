@@ -180,102 +180,6 @@ KS::intgj(const ArrayXd &a0, const double h, const double tend, const int skip_r
     return std::make_pair(C2R(aa), C2R(daa));
 }
 
-#if 0
-/** @brief intg() integrate KS system without calculating Jacobian
- *
- *  @param[in] a0 Initial condition of the orbit
- *  @param[in] nstp Number of steps to integrate
- *  @return the orbit, each column is one point
- */
-std::tuple<ArrayXXd, VectorXd, VectorXd> 
-KS::intgDP(const ArrayXd &a0, size_t nstp, size_t np){
-    if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);}  
-    Fv.vc1 = R2C(a0);  
-    ArrayXXd aa(N-2, nstp/np + 1);
-    aa.col(0) = a0;
-  
-    /* define the total dissipation and pumping */
-    VectorXd DD(nstp/np + 1), PP(nstp/np + 1);
-    double D, P, D1, D2, D3, D4, P1, P2, P3, P4;
-    D = 0; P = 0;
-    DD(0) = D; PP(0) = P;
-
-
-    for(size_t i = 1; i < nstp +1; i++){
-	D1 = disspation(Fv.vc1); P1 = pump(Fv.vc1);
-	NL(Fv); Fa.vc1 = E2*Fv.vc1 + Q*Fv.vc3; 
-
-	D2 = disspation(Fa.vc1); P2 = pump(Fa.vc1);
-	NL(Fa); Fb.vc1 = E2*Fv.vc1 + Q*Fa.vc3;
-
-	D3 = disspation(Fb.vc1); P3 = pump(Fb.vc1);
-	NL(Fb); Fc.vc1 = E2*Fa.vc1 + Q*(2.0*Fb.vc3 - Fv.vc3);
-
-	D4 = disspation(Fc.vc1); P4 = pump(Fc.vc1);
-	NL(Fc);
-
-	Fv.vc1 = E*Fv.vc1 + Fv.vc3*f1 + 2.0*(Fa.vc3+Fb.vc3)*f2 + Fc.vc3*f3;
-	D = D + h/6 * (D1 + 2*D2 + 2*D3 + D4); 
-	P = P + h/6 * (P1 + 2*P2 + 2*P3 + P4);
-    
-	if( 0 == i%np ) {
-	    aa.col(i/np) = C2R(Fv.vc1);
-	    DD(i/np) = D;
-	    PP(i/np) = P;
-	}
-    }
-  
-    return std::make_tuple(aa, DD, PP);
-}
-
-
-/** @brief intgj() integrate KS system and calculate Jacobian along this orbit.
- *
- * @param[in] a0 Initial condition of the orbit. Size [N-2,1]
- * @param[in] nstp Number of steps to integrate.
- * @return Pair value. The first element is the trajectory, dimension [N, nstp/np+1]
- *         The second element is the Jacobian along the trajectory,
- *         dimension [N*N, nstp/nqr].
- */
-std::pair<ArrayXXd, ArrayXXd>
-KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
-    assert( N-2 == a0.rows() );
-    ArrayXXd v0(N-2, N-1); 
-    v0 << a0, MatrixXd::Identity(N-2, N-2);
-    jFv.vc1 = R2C(v0);
-    ArrayXXd aa(N-2, nstp/np+1); aa.col(0) = a0;
-    ArrayXXd daa((N-2)*(N-2), nstp/nqr);
-    for(size_t i = 1; i < nstp + 1; i++){ // diagonal trick 
-	jNL(jFv); 
-	jFa.vc1 = E2.matrix().asDiagonal()*jFv.vc1.matrix() + Q.matrix().asDiagonal()*jFv.vc3.matrix();
-
-	jNL(jFa); 
-	jFb.vc1 = E2.matrix().asDiagonal()*jFv.vc1.matrix() + Q.matrix().asDiagonal()*jFa.vc3.matrix();
-
-	jNL(jFb); 
-	jFc.vc1 = E2.matrix().asDiagonal()*jFa.vc1.matrix() + Q.matrix().asDiagonal()*(2.0*jFb.vc3 - jFv.vc3).matrix();
-
-	jNL(jFc);
-
-	jFv.vc1 = E.matrix().asDiagonal()*jFv.vc1.matrix() 
-	    + f1.matrix().asDiagonal()*jFv.vc3.matrix() 
-	    + (2.0*f2).matrix().asDiagonal()*(jFa.vc3+jFb.vc3).matrix()
-	    + f3.matrix().asDiagonal()*jFc.vc3.matrix();
-    
-	if ( 0 == i%np ) aa.col(i/np) = C2R(jFv.vc1.col(0));
-	if ( 0 == i%nqr){
-	    ArrayXXd tmp = C2R(jFv.vc1.rightCols(N-2)); tmp.resize((N-2)*(N-2), 1);
-	    daa.col(i/nqr-1) = tmp;
-	    jFv.vc1.rightCols(N-2) = R2C(MatrixXd::Identity(N-2, N-2));
-	}
-    }
-  
-    return std::make_pair(aa, daa);
-}
-
-#endif
-
-
 /* @brief complex matrix to the corresponding real matrix.
  * [N/2+1, M] --> [N-2, M]
  * Since the Map is not address continous, the performance is
@@ -310,17 +214,16 @@ ArrayXXcd KS::R2C(const ArrayXXd &v){
  */
 VectorXd 
 KS::velocity(const Ref<const ArrayXd> &a0){
-    assert(a0.rows() == N-2);
-    F[0].vc1 = R2C(a0);
-    NL(0, true); 
-    F[0].vc1 = L * F[0].vc1 + F[0].vc3;
-  
-    return C2R(F[0].vc1);
+    assert( N - 2 == a0.rows() );
+    ArrayXXcd u = R2C(a0);
+    ArrayXXcd v(N/2+1, 1);
+    nl(u, v, 0);
+    return C2R(L*u + v);
 }
 
 /* return v(x) + theta *t(x) */
 VectorXd
-KS::velg(const Ref<const VectorXd> &a0, const double theta){
+KS::velRed(const Ref<const VectorXd> &a0, const double theta){
     return velocity(a0) + theta * gTangent(a0);
 }
 
@@ -328,14 +231,18 @@ KS::velg(const Ref<const VectorXd> &a0, const double theta){
  *    A = (qk^2 - qk^4) * v  - i*qk* F( F^{-1}(a0) * F^{-1}(v))
  */
 MatrixXd KS::stab(const Ref<const ArrayXd> &a0){
-    assert( N-2 == a0.rows() );
+    assert(a0.size() == N-2);
     ArrayXXd v0(N-2, N-1); 
     v0 << a0, MatrixXd::Identity(N-2, N-2);
-    JF[0].vc1 = R2C(v0);
-    NL(0, false);
-    JF[0].vc1 = PROD(L, JF[0].vc1).array() + JF[0].vc3;
+    ArrayXXcd u0 = R2C(v0);
     
-    return C2R(JF[0].vc1.rightCols(N-2));
+    ArrayXXcd v(N/2+1, N-1); 
+    nl2(u0, v, 0); 
+	
+    ArrayXXcd j0 = R2C(MatrixXd::Identity(N-2, N-2));
+    MatrixXcd Z = j0.colwise() * L + v.rightCols(N-2);
+    
+    return C2R(Z);   
 }
 
 /* the stability matrix of a relative equilibrium */
@@ -345,16 +252,14 @@ MatrixXd KS::stabReq(const Ref<const VectorXd> &a0, const double theta){
 
 /* Eigenvalues/Eigenvectors of equilibrium */
 std::pair<VectorXcd, MatrixXcd>
-KS::stabEig(const Ref<const VectorXd> &a0){
-    MatrixXd A = stab(a0);
-    return denseRoutines::evEig(A, 1);
+KS::evEq(const Ref<const VectorXd> &a0){
+    return evEig(stab(a0), 1);
 }
 
 /* Eigenvalues/Eigenvectors of equilibrium */
 std::pair<VectorXcd, MatrixXcd>
-KS::stabReqEig(const Ref<const VectorXd> &a0, const double theta){
-    MatrixXd A = stabReq(a0, theta);
-    return denseRoutines::evEig(A, 1);
+KS::evReq(const Ref<const VectorXd> &a0, const double theta){
+    return evEig(stabReq(a0, theta), 1);
 }
 
 /*************************************************** 
@@ -368,127 +273,6 @@ double KS::pump(const ArrayXcd &vc){
 double KS::disspation(const ArrayXcd &vc){
     VectorXcd tmp = vc * K * K;
     return tmp.squaredNorm();
-}
-
-/*************************************************** 
- *           Multishooting related                 *
- ***************************************************/
-
-/**
- * @brief calculate the multishooting orbit and Jacobian from
- *        several ponts along the orbit.
- * @param[in]  aa0 a set of points dimension [N, M]
- * @param[in]  nstp integration step for each short segment
- * @return     [orbit, Jacobian] pair, dimension [N, M*nstp/np+1]
- *             and [N*N, M*nstp/nqr] respectively
- */
-std::pair<ArrayXXd, ArrayXXd>
-KS::intgjMulti(const MatrixXd aa0, size_t nstp, size_t np, size_t nqr){
-    // nq and nqr should divide nstp
-    assert (nstp % np == 0 && nstp % nqr == 0);
-    int M = aa0.cols();
-    int N = aa0.rows(); 
-    
-    // set aa the dim = nstp/np + 1 to make it consistent with
-    // the original integrator
-    MatrixXd aa(N, M*nstp/np+1);
-    MatrixXd daa(N*N, M*nstp/nqr);
-    for (int i = 0; i < M; i++) {
-	std::pair<ArrayXXd, ArrayXXd> tmp = intgj(aa0.col(i), nstp, np, nqr);
-	aa.middleCols(i*nstp/np, nstp/np) = tmp.first.leftCols(nstp/np);
-	daa.middleCols(i*nstp/nqr, nstp/nqr) = tmp.second;
-	// the last color included
-	if(i == M-1) aa.rightCols(1) = tmp.first.rightCols(1);
-    }
-    
-    return std::make_pair(aa, daa);
-}
-
-
-/* try to form the Jacobian for finding the relative equilibirum
- *
- *      | A+wT , tx|
- *  J = | tx   ,  0|
- *
- *  @param[in] x  [a0, omega]
- *  return J^T*J, diag(J^T*J), J^T * F
- */
-std::tuple<MatrixXd, MatrixXd, VectorXd>
-KS::calReqJJF(const Ref<const VectorXd> &x){
-    assert(x.size() == N-1);
-    double omega = x(N-2); 
-
-    MatrixXd A = stabReq(x.head(N-2), omega); 
-    VectorXd tx = gTangent(x.head(N-2)); 
-    
-    MatrixXd J(N-1, N-1);
-    J << 
-	A, tx, 
-	tx.transpose(), 0; 
-
-    VectorXd F(N-1);
-    F << velg(x.head(N-2), omega), 0 ;
-
-    MatrixXd JJ = J.transpose() * J; 
-    MatrixXd DJJ = JJ.diagonal().asDiagonal(); 
-    VectorXd JF = J.transpose() * F; 
-    
-    return std::make_tuple(JJ, DJJ, JF); 
-}
-/**
- * @see calReqJJF
- */
-std::tuple<MatrixXd, MatrixXd, VectorXd>
-KS::calEqJJF(const Ref<const VectorXd> &x){
-    assert(x.size() == N-2);
-    
-    MatrixXd J = stab(x);
-    VectorXd F = velocity(x);
-
-    MatrixXd JJ  = J.transpose() * J;
-    MatrixXd DJJ = JJ.diagonal().asDiagonal(); 
-    VectorXd JF = J.transpose() * F; 
-    
-    return std::make_tuple(JJ, DJJ, JF);
-}
-
-/* find reqs in KS  */
-std::tuple<VectorXd, double, double>
-KS::findReq(const Ref<const VectorXd> &x, const double tol, 
-	    const int maxit, const int innerMaxit){
-
-    auto fx = [&](const VectorXd &x){
-	VectorXd F(N-1);
-	F << velg(x.head(N-2), x(N-2)), 0; 
-	return F;
-    };
-    
-    KSReqJJF<MatrixXd> jj(*this);    
-    ColPivHouseholderQR<MatrixXd> solver; 
-
-    auto result = LM0(fx, jj, solver, x, tol, maxit, innerMaxit);    
-    if(std::get<2>(result) != 0) fprintf(stderr, "Req not converged ! \n");
-    
-    VectorXd at = std::get<0>(result);
-    return std::make_tuple(at.head(N-2), at(N-2) , std::get<1>(result).back() );
-}
-
-/* find eq in KS */
-std::pair<VectorXd, double>
-KS::findEq(const Ref<const VectorXd> &x, const double tol,
-	   const int maxit, const int innerMaxit){
-    
-    auto fx = [&](const VectorXd &x){
-	return velocity(x);
-    };
-    
-    KSEqJJF<MatrixXd> jj(*this);
-    ColPivHouseholderQR<MatrixXd> solver;
-    
-    auto result = LM0(fx, jj, solver, x, tol, maxit, innerMaxit);
-    if(std::get<2>(result) != 0) fprintf(stderr, "Req not converged ! \n");
-    
-    return std::make_pair(std::get<0>(result), std::get<1>(result).back() );   
 }
 
 /*************************************************** 
@@ -1243,4 +1027,3 @@ KS::f2a(const Ref<const MatrixXcd> &f){
     
     return a;
 }
-

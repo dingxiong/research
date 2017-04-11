@@ -54,62 +54,38 @@ public:
     KS & operator=(const KS &x);
     ~KS();
   
-    /* member functions */
     /* ------------------------------------------------------------ */
-    /* related to integration */
+    void 
+    setScheme(std::string x);
     ArrayXXd 
-    intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);    
+    intgC(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     std::pair<ArrayXXd, ArrayXXd>
-    intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);
+    intgjC(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     ArrayXXd
-    aintg(const ArrayXd &a0, const double h, const double tend, 
-	  const int skip_rate);
+    intg(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     std::pair<ArrayXXd, ArrayXXd>
-    aintgj(const ArrayXd &a0, const double h, const double tend, 
-	   const int skip_rate);
-    ArrayXXd 
-    constETD(const ArrayXXd a0, const double h, const int Nt, 
-	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
-    ArrayXXd
-    adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
-	     const int skip_rate, const bool onlyOrbit, bool reInitTan);
-    void NL(const int k, const bool onlyOrbit);
-
-    /* ------------------------------------------------------------ */
-    std::pair<ArrayXXd, ArrayXXd>    
-    intgjMulti(const MatrixXd aa0, size_t nstp, size_t np, size_t nqr);
-    std::tuple<MatrixXd, MatrixXd, VectorXd>
-    calReqJJF(const Ref<const VectorXd> &x);
-    std::tuple<VectorXd, double, double>
-    findReq(const Ref<const VectorXd> &x, const double tol, 
-	    const int maxit, const int innerMaxit);
-    std::tuple<MatrixXd, MatrixXd, VectorXd>
-    calEqJJF(const Ref<const VectorXd> &x);
-    std::pair<VectorXd, double>
-    findEq(const Ref<const VectorXd> &x, const double tol,
-	   const int maxit, const int innerMaxit);
-
-
-    VectorXd 
-    velocity(const Ref<const ArrayXd> &a0);
-    VectorXd
-    velg(const Ref<const VectorXd> &a0, const double c);
-    MatrixXd stab(const Ref<const ArrayXd> &a0);
-    MatrixXd stabReq(const Ref<const VectorXd> &a0, const double theta);
-    std::pair<VectorXcd, Eigen::MatrixXcd>
-    stabEig(const Ref<const VectorXd> &a0);
-    std::pair<VectorXcd, Eigen::MatrixXcd>
-    stabReqEig(const Ref<const VectorXd> &a0, const double theta);
-
-
+    intgj(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     ArrayXXd 
     C2R(const ArrayXXcd &v);
     ArrayXXcd 
     R2C(const ArrayXXd &v);
+    /* ------------------------------------------------------------ */
+    
+    VectorXd 
+    velocity(const Ref<const ArrayXd> &a0);
+    VectorXd
+    velReq(const Ref<const VectorXd> &a0, const double c);
+    MatrixXd 
+    stab(const Ref<const ArrayXd> &a0);
+    MatrixXd 
+    stabReq(const Ref<const VectorXd> &a0, const double theta);
+    std::pair<VectorXcd, Eigen::MatrixXcd>
+    evEq(const Ref<const VectorXd> &a0);
+    std::pair<VectorXcd, Eigen::MatrixXcd>
+    evReq(const Ref<const VectorXd> &a0, const double theta);
+    
     double pump(const ArrayXcd &vc);
     double disspation(const ArrayXcd &vc);
-    std::tuple<ArrayXXd, VectorXd, VectorXd> 
-    intgDP(const ArrayXd &a0, size_t nstp, size_t np);
     ArrayXXd 
     Reflection(const Ref<const ArrayXXd> &aa);
     ArrayXXd 
@@ -172,34 +148,6 @@ public:
 	 const int p, const bool toY);
     MatrixXd redV2(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
 
-};
-
-/*============================================================
- *                       Class : Calculate KS Req LM 
- *============================================================*/
-template<class Mat>
-struct KSReqJJF {
-    KS &ks;
-    KSReqJJF(KS &ks_) : ks(ks_){}
-    
-    std::tuple<MatrixXd, MatrixXd, VectorXd>
-    operator()(const VectorXd &x) {
-	return ks.calReqJJF(x);
-    }	
-};
-
-/*============================================================
- *                       Class : Calculate KS Eq LM 
- *============================================================*/
-template<class Mat>
-struct KSEqJJF {
-    KS &ks;
-    KSEqJJF(KS &ks_) : ks(ks_){}
-    
-    std::tuple<MatrixXd, MatrixXd, VectorXd>
-    operator()(const VectorXd &x) {
-	return ks.calEqJJF(x);
-    }	
 };
 
 

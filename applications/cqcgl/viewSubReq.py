@@ -30,7 +30,7 @@ if case == 20:
     visualize the eigenvectors
     """
     N, d = 1024, 50
-    Bi, Gi = 0.8, -0.6
+    Bi, Gi = 2, -2
     index = 1
 
     cgl = pyCQCGL1dSub(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
@@ -101,28 +101,7 @@ if case == 50:
                    marker=ms.get(m, 'v'), c=cs.get(m, 'k'))
     ax2d(fig, ax)
 
-if case == 60:
-    """
-    compare eigenvalues for symmetric subspace and full space
-    """
-    N, d = 1024, 50
-    Bi, Gi = 2, -5
-    index = 1
 
-    cgl = pyCQCGL1dSub(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
-    req = CQCGLreq(cgl)
-    
-    a0, wth0, wphi0, err0, e0, v0 = req.read('../../data/cgl/reqBiGiEV.h5',
-                                             req.toStr(Bi, Gi, index), flag=2)
-    e1 = e0
-
-    a0, wth0, wphi0, err0, e0, v0 = req.read('../../data/cgl/reqsubBiGiEV.h5',
-                                             req.toStr(Bi, Gi, index), flag=2,
-                                             sub=True)
-    e2 = e0
-
-    print e1[:10]
-    print e2[:10]
 
 if case == 70:
     """
@@ -134,7 +113,7 @@ if case == 70:
     I need to draw each region indivisually. 
     """
     saveData = np.loadtxt("BiGiReqSubStab.dat")
-    BiRange = [-3.2, 5.7]
+    BiRange = [-3.2, 4]
     GiRange = [-5.6, -0.9]
     inc = 0.1
 
@@ -161,10 +140,10 @@ if case == 70:
         vfunc = np.vectorize(lambda t : 0 if t == levels[i] else 1)
         Z2 = vfunc(Z)
         ax.contourf(X, Y, Z2, levels=[-0.1, 0.9], colors=cs[i])
-    ax.text(0, -2, r'$S$', fontsize=25)
-    ax.text(0, -4.5, r'$U_1$', fontsize=25)
-    ax.text(2., -4.8, r'$U_2$', fontsize=25)
-    ax.text(4., -3, r'$U_{\geq 3}$', fontsize=25)
+    ax.text(0, -2, r'$S$', fontsize=30)
+    ax.text(0, -4.5, r'$U_1$', fontsize=30)
+    ax.text(2., -4.8, r'$U_2$', fontsize=30)
+    ax.text(3., -3, r'$U_{\geq 3}$', fontsize=30)
     ax.scatter(2.0,-5, c='k', s=100, edgecolor='none')
     ax.scatter(2.7,-5, c='k', s=100, edgecolor='none')
     ax.scatter(1.4,-3.9, c='k', marker='*', s=200, edgecolor='none')

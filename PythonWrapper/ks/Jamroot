@@ -21,12 +21,12 @@ variant release_assert : <optimization>speed <inlining>full <debug-symbols>off <
 lib np : : <name>boost_numpy <file>$(XDAPPS)/BoostNumpy/lib/libboost_numpy.so ;
 lib fftw3 : : <name>fftw3 <file>/usr/lib/x86_64-linux-gnu/libfftw3.so ;
 lib dense : : <name>denseRoutines <file>$(RESH)/lib/libdenseRoutines.so ;
-lib myfft : : <name>myfft_clean <file>$(RESH)/lib/libmyfft_clean.so ;
-lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
+# lib myfft : : <name>myfft_clean <file>$(RESH)/lib/libmyfft_clean.so ;
+# lib iter : : <name>iterMethod <file>$(RESH)/lib/libiterMethod.so ;
 
-python-extension py_ks : py_ks.cc $(RESH)/source/ks/ksint.cc $(RESH)/source/myfft/myfft.cc np fftw3 dense iter
+python-extension py_ks : py_ks.cc $(RESH)/source/ks/ksint.cc np fftw3 dense 
 : <variant>release_assert <optimization>speed 
-: <link>shared <warnings>off <cxxflags>"-std=c++11 -DCLEAN"
+: <link>shared <warnings>off <cxxflags>"-std=c++11 -DEIGEN_FFTW_DEFAULT"
 ;
 
 

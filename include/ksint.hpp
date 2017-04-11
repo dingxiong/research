@@ -5,9 +5,8 @@
 #include <complex>
 #include <tuple>
 #include <utility>
-#include <cmath>
-#include <memory>
 #include <Eigen/Dense>
+#include <unsupported/Eigen/FFT>
 #include "EIDr.hpp"
 
 /*============================================================
@@ -34,7 +33,7 @@ public:
     
     struct NL {
 	KS *ks;
-	const int N;
+	int N;
 	ArrayXXd u;
 	NL();
 	NL(KS *ks, int cols);
@@ -71,9 +70,9 @@ public:
     R2C(const Ref<const ArrayXXd> &v);
     /* ------------------------------------------------------------ */
     
-    VectorXd 
+    ArrayXd
     velocity(const Ref<const ArrayXd> &a0);
-    VectorXd
+    ArrayXd
     velReq(const Ref<const VectorXd> &a0, const double c);
     MatrixXd 
     stab(const Ref<const ArrayXd> &a0);
@@ -82,12 +81,12 @@ public:
     std::pair<VectorXcd, Eigen::MatrixXcd>
     evEq(const Ref<const VectorXd> &a0);
     std::pair<VectorXcd, Eigen::MatrixXcd>
-    evReq(const Ref<const VectorXd> &a0, const double theta);
-    
+    evReq(const Ref<const VectorXd> &a0, const double theta);    
     double 
     pump(const ArrayXcd &vc);
     double 
     disspation(const ArrayXcd &vc);
+
     ArrayXXd 
     reflect(const Ref<const ArrayXXd> &aa);
     ArrayXXd 
@@ -98,10 +97,15 @@ public:
     gTangent(const Ref<const ArrayXXd> &x);
     MatrixXd 
     gGenerator();
-    std::pair<MatrixXd, VectorXd> 
-    orbitToSlice(const Ref<const MatrixXd> &aa);
-    MatrixXd 
-    veToSlice(const MatrixXd &ve, const Ref<const VectorXd> &x);
+    std::pair<MatrixXd, VectorXd>
+    redSO2(const Ref<const MatrixXd> &aa, const int p, const bool toY);
+    std::pair<MatrixXd, VectorXi>
+    fundDomain(const Ref<const MatrixXd> &aa, const int pSlice, const int pFund);
+    std::tuple<MatrixXd, VectorXi, VectorXd>
+    redO2f(const Ref<const MatrixXd> &aa, const int pSlice, const int pFund);
+    MatrixXd
+    redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a,
+	 const int p, const bool toY);
     MatrixXd 
     veToSliceAll(const MatrixXd &eigVecs, const MatrixXd &aa,
 		 const int trunc = 0);
@@ -117,38 +121,11 @@ public:
 			 const size_t nstp, const std::string ppType,
 			 const int pos
 			 );
-    std::vector<int> reflectIndex();
-    ArrayXXd reduceReflection(const Ref<const ArrayXXd> &aaHat);
-    MatrixXd GammaMat(const Ref<const ArrayXd> &xHat);
-    MatrixXd reflectVe(const MatrixXd &ve, const Ref<const ArrayXd> &xHat);
-    MatrixXd reflectVeAll(const MatrixXd &veHat, const MatrixXd &aaHat,
-			  const int trunc = 0);
 
     MatrixXd calMag(const Ref<const MatrixXd> &aa);
     std::pair<MatrixXd, MatrixXd>
     toPole(const Ref<const MatrixXd> &aa);
-    MatrixXcd
-    a2f(const Ref<const MatrixXd> &aa);
-    MatrixXd
-    f2a(const Ref<const MatrixXcd> &f);
 
-    std::pair<MatrixXd, VectorXd>
-    redSO2(const Ref<const MatrixXd> &aa, const int p, const bool toY);
-    std::pair<MatrixXd, VectorXi>
-    fundDomain(const Ref<const MatrixXd> &aa, const int pSlice, const int pFund);
-    std::tuple<MatrixXd, VectorXi, VectorXd>
-    redO2f(const Ref<const MatrixXd> &aa, const int pSlice, const int pFund);
-    MatrixXd redR1(const Ref<const MatrixXd> &aa);
-    MatrixXd redR2(const Ref<const MatrixXd> &cc);
-    MatrixXd redRef(const Ref<const MatrixXd> &aa);
-    std::pair<MatrixXd, VectorXd>
-    redO2(const Ref<const MatrixXd> &aa, const int p, const bool toY);
-    MatrixXd Gmat1(const Ref<const VectorXd> &x);
-    MatrixXd Gmat2(const Ref<const VectorXd> &x);
-    MatrixXd
-    redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a,
-	 const int p, const bool toY);
-    MatrixXd redV2(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a);
 
 };
 

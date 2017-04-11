@@ -11,7 +11,7 @@ public :
     // constructor and destructor
     
     EIDr(){}
-    EIDr(ArrayXd *L, ArrayXcd *Y, ArrayXcd *N) : EID<double>(L, Y, N){}
+    EIDr(ArrayXd *L, ArrayXXcd *Y, ArrayXXcd *N) : EID<double>(L, Y, N){}
     EIDr & operator=(const EIDr &x){
 	return *this;
     }
@@ -21,7 +21,7 @@ public :
     inline 
     ArrayXXcd 
     MUL(const ArrayXd &C, const ArrayXXcd &Y){ 
-	return c.matrix().asDiagonal() * y.matrix();
+	return C.matrix().asDiagonal() * Y.matrix();
     }
     
     inline

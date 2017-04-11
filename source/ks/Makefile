@@ -6,7 +6,7 @@ AR = ar
 OPTIM = -O3 -msse2 -msse4 -march=corei7
 INCLUDE = ../../include
 EIGEN = /usr/local/home/xiong/apps/eigen/include/eigen3
-CFLAGS = -std=c++11 # -Wfatal-errors
+CFLAGS = -std=c++11 -DEIGEN_FFTW_DEFAULT # -Wfatal-errors
 
 ifndef t
 t = int
@@ -23,9 +23,6 @@ SOURCE = ksFEFV.cc
 
 else ifeq ($(t), refine)
 SOURCE = ksrefine.cc
-
-else ifeq ($(t), ei)
-SOURCE = KSEIDr.cc
 
 endif
 

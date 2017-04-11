@@ -4,406 +4,183 @@
 #include <cmath>
 #include <iostream>
 
-#define PROD(x, y) ((x).matrix().asDiagonal() * (y).matrix())
-//#define PROD(x, y) (y.colwise() * x)
-
 using namespace std;
 using namespace Eigen;
-using namespace MyFFT;
 using namespace denseRoutines;
 using namespace iterMethod;
 
-/*============================================================
- *                       Class : KS integrator
- *============================================================*/
+//////////////////////////////////////////////////////////////////////
+KS::NL::NL(){}
+KS::NL::NL(KS *ks, int cols) : ks(ks), N(ks->N), {
+    u.resize(ks->N, cols);
+}
+KS::NL::~NL(){}
+KS::NL::operator()(ArrayXXcd &x, ArrayXXcd &dxdt, double t){
+    int cs = x.cols();
+    assert(cs == dxdt.cols() && N/2+1 == x.rows() && N/2+1 == dxdt.rows());
+    
+    for(int i = 0; i < cs; i++)
+	ks->fft.inv(u.data() + i*N, x.data() + i*(N/2+1), N);
+    u = u.square();
+    for(int i = 0; i < cs; i++)
+	ks->fft.fwd(dxdt.data() + i*(N/2+1), u.data() + i*N, N);
+    dxdt.col(0) *= ks->G;
+    if(cs > 1)
+	dxdt.rightCols(cs-1).colwise() *= 2.0 * ks->G;
+}
 
+//////////////////////////////////////////////////////////////////////
 /*-------------------- constructor, destructor -------------------- */
-KS::KS(int N, double d) : 
-    N(N), d(d), 
-    F{ RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1)},
-    JF{ RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1)}
-{
-    ksInit();
-}
-
-KS::KS(const KS &x) : 
-    N(x.N), d(x.d),
-    F{ RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1), RFFT(N, 1)},
-    JF{ RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1), RFFT(N, N-1)}
-{
-    ksInit();
-}
-
-KS & KS::operator=(const KS &x){
-    return *this;
-}
-
-KS::~KS(){}
-
-/*------------------- member methods ------------------ */
-
-/**
- * @brief calculate the coefficients of ETDRK4 or Krogstad
- */
-void KS::calCoe(const double h){
-
-    ArrayXd hL = h*L;
-    ArrayXXcd LR = ZR(hL);
-    
-    E = hL.exp();
-    E2 = (hL/2).exp();
-
-    ArrayXXcd LR2 = LR.square();
-    ArrayXXcd LR3 = LR.cube();
-    ArrayXXcd LRe = LR.exp();
-    ArrayXXcd LReh = (LR/2).exp();
-    
-    a21 = h * ( (LReh - 1)/LR ).rowwise().mean().real(); 
-    b1 = h * ( (-4.0 - LR + LRe*(4.0 - 3.0 * LR + LR2)) / LR3 ).rowwise().mean().real();
-    b2 = h * 2 * ( (2.0 + LR + LRe*(-2.0 + LR)) / LR3 ).rowwise().mean().real();
-    b4 = h * ( (-4.0 - 3.0*LR -LR2 + LRe*(4.0 - LR) ) / LR3 ).rowwise().mean().real();
-
-    if (Method == 2) {
-	a31 = h * ( (LReh*(LR - 4) + LR + 4) / LR2 ).rowwise().mean().real();
-	a32 = h * 2 * ( (2*LReh - LR - 2) / LR2 ).rowwise().mean().real();
-	a41 = h * ( (LRe*(LR-2) + LR + 2) / LR2 ).rowwise().mean().real();
-	a43 = h * 2 * ( (LRe - LR - 1)  / LR2 ).rowwise().mean().real();
-    }
- 
-}
-
-
-/**
- * @brief calcuate the matrix to do averge of phi(z). 
- */
-
-ArrayXXcd KS::ZR(ArrayXd &z){
-    
-    int M1 = z.size();
-    ArrayXd K = ArrayXd::LinSpaced(M, 1, M); // 1,2,3,...,M 
-
-    ArrayXXcd r = R * ((K-0.5)/M * dcp(0, M_PI)).exp().transpose();
-
-    return z.template cast<std::complex<double>>().replicate(1, M) + r.replicate(M1, 1);
-}
-
-
-/* calculate the linear part and coefficient of nonlinear part */
-void KS::ksInit(){
+// dimension of physical state : N
+// dimension of state space    : N - 2 (zeroth and highest mode are excluded)
+// dimension of Fourier space  : N/2 + 1
+KS::KS(int N, double d) : N(N), d(d), nl(this, 1), nl2(this, N-1) {
     K = ArrayXd::LinSpaced(N/2+1, 0, N/2) * 2 * M_PI / d; //2*PI/d*[0, 1, 2,...,N/2]
     K(N/2) = 0;
     L = K*K - K*K*K*K; 
     G = 0.5 * dcp(0,1) * K * N;   
-    jG = ArrayXXcd::Zero(G.rows(), N-1); 
-    jG << G, 2.0*G.replicate(1, N-2); 
-}
-
-/**
- * @brief one step integrating the orbit
- *
- * Local truncation error estimation is using Frobenius norm. If we are only integrating
- * an orbit, it is reduced to L2 norm.
- */
-void 
-KS::oneStep(double &du, const bool onlyOrbit){
-    RFFT *f = F;
-    if (!onlyOrbit)  f = JF;
-
-    if (1 == Method) {
-	NL(0, onlyOrbit);
-	
-	f[1].vc1 = PROD(E2, f[0].vc1) + PROD(a21, f[0].vc3); 
-	NL(1, onlyOrbit);
-
-	f[2].vc1 = PROD(E2, f[0].vc1) + PROD(a21, f[1].vc3);
-	NL(2, onlyOrbit);
-	
-	f[3].vc1 = PROD(E2, f[1].vc1) + PROD(a21, 2*f[2].vc3 - f[0].vc3);
-	NL(3, onlyOrbit);
-
-	f[4].vc1 = PROD(E, f[0].vc1) + PROD(b1, f[0].vc3) + PROD(b2, f[1].vc3+f[2].vc3) + PROD(b4, f[3].vc3);
-	NL(4, onlyOrbit);
-
-	du = PROD(b4, f[4].vc3-f[3].vc3).norm() / f[4].vc1.matrix().norm(); 
+    
+    int nYN0 = eidc.names.at(eidc.scheme).nYN; // do not call setScheme here. Different.
+    for(int i = 0; i < nYN0; i++){
+	Yv[i].resize(N/2+1, 1);
+	Nv[i].resize(N/2+1, 1);
+	Yv2[i].resize(N/2+1, N-1);
+	Nv2[i].resize(N/2+1, N-1);
     }
-    else {
-	NL(0, onlyOrbit);
+    eidc.init(&L, Yv, Nv);
+    eidc2.init(&L, Yv2, Nv2);
+}
+KS & KS::operator=(const KS &x){
+    return *this;
+}
+KS::~KS(){}
 
-	f[1].vc1 = PROD(E2, f[0].vc1) + PROD(a21, f[0].vc3); 
-	NL(1, onlyOrbit);
-
-	f[2].vc1 = PROD(E2, f[0].vc1) + PROD(a31, f[0].vc3) + PROD(a32, f[1].vc3);
-	NL(2, onlyOrbit);
-
-	f[3].vc1 = PROD(E, f[0].vc1) + PROD(a41, f[0].vc3) + PROD(a43, f[2].vc3);
-	NL(3, onlyOrbit);
-	
-	f[4].vc1 = PROD(E, f[0].vc1) + PROD(b1, f[0].vc3) + PROD(b2, f[1].vc3+f[2].vc3) + PROD(b4, f[3].vc3);
-	NL(4, onlyOrbit);
-
-	du = PROD(b4, f[4].vc3-f[3].vc3).norm() / f[4].vc1.matrix().norm();
+/*------------------- member methods ------------------ */
+void KS::setScheme(std::string x){
+    int nYN0 = eidc.names.at(eidc.scheme).nYN;
+    eidc.scheme = x;
+    int nYN1 = eidc.names.at(eidc.scheme).nYN;
+    for (int i = nYN0; i < nYN1; i++) {
+	Yv[i].resize(N/2+1, 1);
+	Nv[i].resize(N/2+1, 1);
+	Yv2[i].resize(N/2+1, N-1);
+	Nv2[i].resize(N/2+1, N-1);
     }
 }
-
-
-/**
- * @brief calculat the damping factor of time step
- *
- * @param[out] doChange    true if time step needs change
- * @param[out] doAccept    true if accept current time step
- * @param[in]  s           estimate damping factor
- * @return     mu          final dampling factor 
- */
-double
-KS::adaptTs(bool &doChange, bool &doAccept, const double s){
-    double mu = 1;
-    doChange = true;
-    doAccept = true;
-
-    if ( s > mumax) mu = mumax;
-    else if (s > mue) mu = s;
-    else if (s >= 1) {
-	mu = 1;
-	doChange = false;
-    }
-    else {
-	doAccept = false;
-	if (s > muc) mu = muc;
-	else if (s > mumin) mu = s;
-	else mu = mumin;
-    }
-
-    return mu;
-}
-
-
 
 ArrayXXd 
-KS::intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
-    
+KS::intgC(const ArrayXd &a0, const double h, const double tend, const int skip_rate){
     assert(a0.size() == N-2);
-    return constETD(a0, h, Nt, skip_rate, true, true);
-}
-
-std::pair<ArrayXXd, ArrayXXd>
-KS::intgj(const ArrayXd &a0, const double h, const int Nt, const int skip_rate){
-    
-    assert(a0.size() == N-2);
-    ArrayXXd v0(N-2, N-1); 
-    v0 << a0, MatrixXd::Identity(N-2, N-2);
-    ArrayXXd aa = constETD(v0, h, Nt, skip_rate, false, true);
-    
-    int m = aa.cols() / (N-1);
-    ArrayXXd x(N-2, m);
-    ArrayXXd xx(N-2, m*(N-2));
-    for(int i = 0; i < m; i++){
-	x.col(i) = aa.col(i*(N-1));
-	xx.middleCols((N-2)*i, N-2) = aa.middleCols((N-1)*i+1, N-2);
-    }
-
-    return std::make_pair(x, xx);
-}
-
-
-ArrayXXd
-KS::aintg(const ArrayXd &a0, const double h, const double tend, 
-	  const int skip_rate){
-    
-    assert(a0.size() == N-2);
-    return adaptETD(a0, h, tend, skip_rate, true, true);
-}
-
-std::pair<ArrayXXd, ArrayXXd>
-KS::aintgj(const ArrayXd &a0, const double h, const double tend, 
-	   const int skip_rate){
-    
-    assert(a0.size() == N-2);
-    ArrayXXd v0(N-2, N-1); 
-    v0 << a0, MatrixXd::Identity(N-2, N-2);
-    ArrayXXd aa = adaptETD(v0, h, tend, skip_rate, false, true);
-
-    int m = aa.cols() / (N-1);
-    ArrayXXd x(N-2, m);
-    ArrayXXd xx(N-2, m*(N-2));
-    for(int i = 0; i < m; i++){
-	x.col(i) = aa.col(i*(N-1));
-	xx.middleCols((N-2)*i, N-2) = aa.middleCols((N-1)*i+1, N-2);
-    }
-
-    return std::make_pair(x, xx);
-}
-
-
-/**
- * @brief Constant time step integrator
- */
-ArrayXXd 
-KS::constETD(const ArrayXXd a0, const double h, const int Nt, 
-	     const int skip_rate, const bool onlyOrbit, bool reInitTan){
-
-    int nc = 1;			// number of columns of a single state
-    RFFT *f = F;
-    if (!onlyOrbit)  {
-	f = JF;
-	nc = N-1;
-    }
-    
-    const int M = (Nt+skip_rate-1)/skip_rate + 1;
-    f[0].vc1 = R2C(a0);
-    ArrayXXd aa(N-2, M*nc);
-    aa.leftCols(nc) = a0;
-    lte.resize(M-1);
-    NCallF = 0;
-
-    calCoe(h);
-
-    double du;
-    int num = 0;
-    for(int i = 0; i < Nt; i++){
-	oneStep(du, onlyOrbit);
-	f[0].vc1 = f[4].vc1;	// update state
-	NCallF += 5;
-	if ( (i+1)%skip_rate == 0 || i == Nt-1) {
-	    aa.middleCols((num+1)*nc, nc) = C2R(f[4].vc1);
-	    lte(num++) = du;  
-	    if (reInitTan && !onlyOrbit) {
-		f[0].vc1.rightCols(N-2) = R2C(MatrixXd::Identity(N-2, N-2));
-	    }
-	}
-    }
-
-    return aa;
-}
-
-/**
- * @brief time step adaptive integrator
- */
-ArrayXXd
-KS::adaptETD(const ArrayXXd &a0, const double h0, const double tend, 
-	     const int skip_rate, const bool onlyOrbit, 
-	     const bool reInitTan){
-    
-    int nc = 1;			// number of columns of a single state
-    RFFT *f = F;
-    if (!onlyOrbit)  {
-	f = JF;
-	nc = N-1;
-    }
-    
-    double h = h0; 
-    calCoe(h);
-
+    ArrayXXcd u0 = R2C(a0);
     const int Nt = (int)round(tend/h);
-    const int M = Nt /skip_rate + 1;
-    f[0].vc1 = R2C(a0);
+    const int M = (Nt + skip_rate - 1) / skip_rate;
+    ArrayXXd aa(N/2+1, M);
+    lte.resize(M);
+    int count = 0;
+    auto ss = [this, &count, &aa](ArrayXXcd &x, double t, double h, double err){
+	aa.col(count) = x;
+	lte(count++) = err;
+    };
+    eidc.intgC(nl, ss, 0, u0, tend, h, skip_rate);
+    return C2R(aa);
+}
 
-    ArrayXXd aa(N-2, M*nc);
+std::pair<ArrayXXd, ArrayXXd>
+KS::intgjC(const ArrayXd &a0, const double h, const double tend, const int skip_rate){
+    assert(a0.size() == N-2);
+    ArrayXXd v0(N-2, N-1); 
+    v0 << a0, MatrixXd::Identity(N-2, N-2);
+    ArrayXXcd u0 = R2C(v0);
+    
+    const int Nt = (int)round(tend/h);
+    const int M = (Nt + skip_rate - 1) / skip_rate;
+    ArrayXXcd aa(N/2+1, M), daa(N/2+1, (N-2)*M);
+    lte.resize(M);
+    int count = 0;
+    auto ss = [this, &ks, &aa, &daa](ArrayXXcd &x, double t, double h, double err){
+	aa.col(ks) = x.col(0);
+	daa.middleCols(count*(N-2), N-2) = x.rightCols(N-2);
+	lte(count++) = err;
+	x.rightCols(N-2) = R2C(MatrixXd::Identity(N-2, N-2));
+    };
+    
+    eidc2.intgC(nl2, ss, 0, u0, tend, h, skip_rate);
+    return std::make_pair(C2R(aa), C2R(daa));
+}
+
+
+ArrayXXd
+KS::intg(const ArrayXd &a0, const double h, const double tend, const int skip_rate){
+    assert(a0.size() == N-2);
+    ArrayXXcd u0 = R2C(a0); 
+    const int Nt = (int)round(tend/h);
+    const int M = (Nt+skip_rate-1)/skip_rate;
+    ArrayXXcd aa(N/2+1, M);
     Ts.resize(M);
-    aa.leftCols(nc) = a0;
-    Ts(0) = 0;
-    NCalCoe = 0;
-    NReject = 0;
-    NCallF = 0;    
-    NSteps = 0;
-    hs.resize(M-1);
-    lte.resize(M-1);
-
-    double t = 0;
-    double du = 0;
-    int num = 1;
-    bool doChange, doAccept;
-
-    bool TimeEnds = false;
-    while(!TimeEnds){ 
-
-	if ( t + h > tend){
-	    h = tend - t;
-	    calCoe(h);
-	    NCalCoe++;
-	    TimeEnds = true;
+    hs.resize(M);
+    lte.resize(M);
+    int count = 0;
+    auto ss = [this, &count, &aa](ArrayXXcd &x, double t, double h, double err){
+	int m = Ts.size();
+	if (count >= m ) {
+	    Ts.conservativeResize(m+cellSize);
+	    aa.conservativeResize(Eigen::NoChange, m+cellSize); 
+	    hs.conservativeResize(m+cellSize);
+	    lte.conservativeResize(m+cellSize);
 	}
-
-	oneStep(du, onlyOrbit);
-	NCallF += 5;		
-	double s = nu * std::pow(rtol/du, 1.0/4);
-	double mu = adaptTs(doChange, doAccept, s);
-	
-	if (doAccept){
-	    t += h;
-	    NSteps++;
-	    f[0].vc1 = f[4].vc1;
-	    if ( NSteps % skip_rate == 0 || TimeEnds) {
-		if (num >= Ts.size() ) {
-		    int m = Ts.size();
-		    Ts.conservativeResize(m+cellSize);
-		    aa.conservativeResize(Eigen::NoChange, (m+cellSize)*nc); // rows not change, just extend cols
-		    hs.conservativeResize(m-1+cellSize);
-		    lte.conservativeResize(m-1+cellSize);
-		}
-		hs(num-1) = h;
-		lte(num-1) = du;
-		aa.middleCols(num*nc, nc) = C2R(f[4].vc1);
-		Ts(num) = t;
-		num++;
-		if (reInitTan && !onlyOrbit) {
-		    f[0].vc1.rightCols(N-2) = R2C(MatrixXd::Identity(N-2, N-2));
-		}
-	    }
-	}
-	else {
-	    NReject++;
-	    TimeEnds = false;
-	}
-	
-	if (doChange) {
-	    h *= mu;
-	    calCoe(h);
-	    NCalCoe++;
-	}
-    }
+	hs(count) = h;
+	lte(count) = err;
+	aa.col(count) = x;
+	Ts(count++) = t;
+    };
     
-    // lte = lte.head(num) has aliasing problem 
-    hs.conservativeResize(num-1);
-    lte.conservativeResize(num-1);
-    Ts.conservativeResize(num);
+    eidc.intg(nl, ss, 0, u0, tend, h, skip_rate);
+	
+    hs.conservativeResize(count);
+    lte.conservativeResize(count);
+    Ts.conservativeResize(count);
+    aa.conservativeResize(Eigen::NoChange, count);
     
-    return aa.leftCols(num*nc);
+    return C2R(aa);
+}
+
+std::pair<ArrayXXd, ArrayXXd>
+KS::intgj(const ArrayXd &a0, const double h, const double tend, const int skip_rate){
+    assert(a0.size() == N-2);
+    ArrayXXd v0(N-2, N-1); 
+    v0 << a0, MatrixXd::Identity(N-2, N-2);
+    ArrayXXcd u0 = R2C(v0);
+    
+    const int Nt = (int)round(tend/h);
+    const int M = (Nt + skip_rate - 1) / skip_rate;
+    ArrayXXcd aa(N/2+1, M), daa(N/2+1, (N-2)*M);
+    Ts.resize(M);
+    hs.resize(M);
+    lte.resize(M);
+    int count = 0;
+    auto ss = [this, &count, &aa, &daa](ArrayXXcd &x, double t, double h, double err){
+	int m = Ts.size();
+	if (count >= m ) {
+	    Ts.conservativeResize(m+cellSize);	    
+	    hs.conservativeResize(m+cellSize);
+	    lte.conservativeResize(m+cellSize);
+	    aa.conservativeResize(Eigen::NoChange, m+cellSize); // rows not change, just extend cols
+	    daa.conservativeResize(Eigen::NoChange, (m+cellSize)*(N-2));
+	}
+	hs(count) = h;
+	lte(count) = err;
+	Ts(count) = t;
+	aa.col(count) = x.col(0);
+	daa.middleCols(count*(N-2), N-2) = x.rightCols(N-2);
+	x.rightCols(N-2) = R2C(MatrixXd::Identity(N-2, N-2));
+	count++;
+    };
+
+    eidc2.intg(nl2, ss, 0, u0, tend, h, skip_rate);
+    return std::make_pair(C2R(aa), C2R(daa));
 }
 
 #if 0
-/** @brief intg() integrate KS system without calculating Jacobian
- *
- *  @param[in] a0 Initial condition of the orbit
- *  @param[in] nstp Number of steps to integrate
- *  @return the orbit, each column is one point
- */
-ArrayXXd KS::intg(const ArrayXd &a0, size_t nstp, size_t np){
-    if( N-2 != a0.rows() ) {printf("dimension error of a0\n"); exit(1);}  
-    Fv.vc1 = R2C(a0);  
-    ArrayXXd aa(N-2, nstp/np + 1);
-    aa.col(0) = a0;
-
-    for(size_t i = 1; i < nstp +1; i++){
-	NL(Fv); 
-	Fa.vc1 = E2*Fv.vc1 + Q*Fv.vc3; 
-
-	NL(Fa); 
-	Fb.vc1 = E2*Fv.vc1 + Q*Fa.vc3;
-
-	NL(Fb); 
-	Fc.vc1 = E2*Fa.vc1 + Q*(2.0*Fb.vc3 - Fv.vc3);
-
-	NL(Fc);
-
-	Fv.vc1 = E*Fv.vc1 + Fv.vc3*f1 + 2.0*(Fa.vc3+Fb.vc3)*f2 + Fc.vc3*f3;
-    
-	if( 0 == i%np ) aa.col(i/np) = C2R(Fv.vc1);
-    }
-  
-    return aa;
-}
-
-
 /** @brief intg() integrate KS system without calculating Jacobian
  *
  *  @param[in] a0 Initial condition of the orbit
@@ -498,25 +275,6 @@ KS::intgj(const ArrayXd &a0, size_t nstp, size_t np, size_t nqr){
 
 #endif
 
-void KS::NL(const int k, const bool onlyOrbit){
-    if(onlyOrbit){
-	F[k].ifft();
-	F[k].vr2 = F[k].vr2 * F[k].vr2;
-	F[k].fft();
-	F[k].vc3 *= G;
-    }
-    else {
-	JF[k].ifft(); 
-	ArrayXd tmp = JF[k].vr2.col(0);	// in case of aliasing
-	JF[k].vr2 = JF[k].vr2.colwise() * tmp;
-	JF[k].fft();
-	JF[k].vc3 *= jG;
-    }
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 /* @brief complex matrix to the corresponding real matrix.
  * [N/2+1, M] --> [N-2, M]
@@ -524,23 +282,20 @@ void KS::NL(const int k, const bool onlyOrbit){
  * not good enough.
  */
 ArrayXXd KS::C2R(const ArrayXXcd &v){
-    int n = v.rows();
-    int m = v.cols();
-    ArrayXXcd vt = v.middleRows(1, n-2);
-    ArrayXXd vp(2*(n-2), m);
-    vp = Map<ArrayXXd>((double*)&vt(0,0), 2*(n-2), m);
-
+    int rs = v.rows(), cs = v.cols();
+    assert(N/2+1 == rs);
+    ArrayXXcd vt = v.middleRows(1, rs-2);
+    ArrayXXd vp = Map<ArrayXXd>((double*)&vt(0,0), 2*(rs-2), cs);
     return vp;
 }
 
 ArrayXXcd KS::R2C(const ArrayXXd &v){
-    int n = v.rows();
-    int m = v.cols();
-    assert( 0 == n%2);
-    
-    ArrayXXcd vp = ArrayXXcd::Zero(n/2+2, m);
-    vp.middleRows(1, n/2) = Map<ArrayXXcd>((dcp*)&v(0,0), n/2, m);
-
+    int rs = v.rows(), cs = v.cols();
+    assert( N - 2 == rs); 
+    ArrayXXcd vp(N+2/1, cs);
+    vp << ArrayXXcd::Zero(1, cs), 
+	Map<ArrayXXcd>((dcp*)&v(0,0), N/2-1, cs), 
+	ArrayXXcd::Zero(1, cs);
     return vp;
 }
 

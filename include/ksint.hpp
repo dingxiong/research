@@ -1,11 +1,3 @@
-/**
- * To compile this class, you need to have g++ >= 4.6, eigen >= 3.1
- * g++ ksint.cc -march=corei7 -O3 -msse4.2 -I/usr/include/eigen3
- * -lm -lfftw3 -std=c++0x
- *
- * Some notes about this class
- * 
- *  */
 #ifndef KSINT_H
 #define KSINT_H
 
@@ -16,19 +8,7 @@
 #include <cmath>
 #include <memory>
 #include <Eigen/Dense>
-#include "myfft.hpp"
-//#include "iterMethod.hpp"
-
-using Eigen::ArrayXXcd; 
-using Eigen::MatrixXcd; 
-using Eigen::ArrayXXd;
-using Eigen::ArrayXcd;
-using Eigen::ArrayXd;
-using Eigen::MatrixXd; using Eigen::VectorXd;
-using Eigen::VectorXcd; 
-using Eigen::Matrix2d;
-using Eigen::VectorXi;
-using Eigen::Map; using Eigen::Ref;
+#include "EIDr.hpp"
 
 /*============================================================
  *                       Class : KS integrator
@@ -43,53 +23,40 @@ public:
     const int N;
     const double d;
 
-    ArrayXd K, L, E, E2, a21, a31, a32, a41, a43, b1, b2, b4;
+    ArrayXd K, L;
     ArrayXcd G;
-    ArrayXXcd jG;
+    FFT<double> fft;
 
-    MyFFT::RFFT F[5], JF[5];
-
-    /* for time step adaptive ETDRK4 and Krogstad  */
-    ////////////////////////////////////////////////////////////
-    // time adaptive method related parameters
-    double rtol = 1e-8;
-    double nu = 0.9;		/* safe factor */
-    double mumax = 2.5;		/* maximal time step increase factor */
-    double mumin = 0.4;		/* minimal time step decrease factor */
-    double mue = 1.25;		/* upper lazy threshold */
-    double muc = 0.85;		/* lower lazy threshold */
-
-    int NCalCoe = 0;	      /* times to evaluate coefficient */
-    int NReject = 0;	      /* times that new state is rejected */
-    int NCallF = 0;	      /* times to call velocity function f */
-    int NSteps = 0;	      /* total number of integrations steps */
     VectorXd hs;	      /* time step sequnce */
     VectorXd lte;	      /* local relative error estimation */
     VectorXd Ts;	      /* time sequnence for adaptive method */
-
     int cellSize = 500;	/* size of cell when resize output container */
-    int M = 32;			/* number of sample points */
-    int R = 1;			/* radius for evaluating phi(z) */
-
-    int Method = 1;
+    
+    struct NL {
+	KS *ks;
+	const int N;
+	ArrayXXd u;
+	NL();
+	NL(KS *ks, int cols);
+	~NL();
+	void operator()(ArrayXXcd &x, ArrayXXcd &dxdt, double t);
+    };
+    
+    NL nl, nl2;
+    ArrayXXcd Yv[10], Nv[10], Yv2[10], Nv2[10];
+    EIDr eidc, eidc2;;
     ////////////////////////////////////////////////////////////
     
 
     //////////////////////////////////////////////////////////////////////
     /* constructor, destructor, copy assignment */
     KS(int N, double d);
-    KS(const KS &x);
     KS & operator=(const KS &x);
     ~KS();
   
     /* member functions */
     /* ------------------------------------------------------------ */
     /* related to integration */
-    void calCoe(const double h);
-    ArrayXXcd ZR(ArrayXd &z);
-    void ksInit();
-    void oneStep(double &du, const bool onlyOrbit);
-    double adaptTs(bool &doChange, bool &doAccept, const double s);
     ArrayXXd 
     intg(const ArrayXd &a0, const double h, const int Nt, const int skip_rate);    
     std::pair<ArrayXXd, ArrayXXd>

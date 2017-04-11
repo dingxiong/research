@@ -66,9 +66,9 @@ public:
     std::pair<ArrayXXd, ArrayXXd>
     intgj(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     ArrayXXd 
-    C2R(const ArrayXXcd &v);
+    C2R(const Ref<const ArrayXXcd> &v);
     ArrayXXcd 
-    R2C(const ArrayXXd &v);
+    R2C(const Ref<const ArrayXXd> &v);
     /* ------------------------------------------------------------ */
     
     VectorXd 
@@ -84,16 +84,18 @@ public:
     std::pair<VectorXcd, Eigen::MatrixXcd>
     evReq(const Ref<const VectorXd> &a0, const double theta);
     
-    double pump(const ArrayXcd &vc);
-    double disspation(const ArrayXcd &vc);
+    double 
+    pump(const ArrayXcd &vc);
+    double 
+    disspation(const ArrayXcd &vc);
     ArrayXXd 
-    Reflection(const Ref<const ArrayXXd> &aa);
+    reflect(const Ref<const ArrayXXd> &aa);
     ArrayXXd 
     half2whole(const Ref<const ArrayXXd> &aa);
     ArrayXXd 
-    Rotation(const Ref<const ArrayXXd> &aa, const double th);
-    MatrixXd 
-    gTangent(const MatrixXd &x);
+    rotate(const Ref<const ArrayXXd> &aa, const double th);
+    ArrayXXd
+    gTangent(const Ref<const ArrayXXd> &x);
     MatrixXd 
     gGenerator();
     std::pair<MatrixXd, VectorXd> 

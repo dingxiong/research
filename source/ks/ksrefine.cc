@@ -98,9 +98,9 @@ KSrefine::multiF(KS &ks, const ArrayXXd &x, const int nstp,
   // the last difference vector
   ArrayXXd aa = ks.intg(x.col(m-1), nstp, nstp);
   if(ppType.compare("ppo") == 0)
-    F.segment((m-1)*n, n) = ks.Reflection(aa.col(1)) - x.col(0);
+    F.segment((m-1)*n, n) = ks.reflect(aa.col(1)) - x.col(0);
   else if(ppType.compare("rpo") == 0)
-    F.segment((m-1)*n, n) = ks.Rotation(aa.col(1), th)  - x.col(0);
+    F.segment((m-1)*n, n) = ks.rotate(aa.col(1), th)  - x.col(0);
   else
     fprintf(stderr, "please indicate the right PO type !\n");
   
@@ -163,28 +163,28 @@ KSrefine::multishoot(KS &ks, const ArrayXXd &x, const int nstp,
       {
 	if(ppType.compare("ppo") == 0){
 	  // R*J
-	  vector<Tri> triJ = triMat(ks.Reflection(J), i*n, i*n);  
+	  vector<Tri> triJ = triMat(ks.reflect(J), i*n, i*n);  
 	  nz.insert(nz.end(), triJ.begin(), triJ.end());
 	  // R*velocity
 	  vector<Tri> triv = 
-	    triMat(ks.Reflection(ks.velocity(aa.col(1))), i*n, m*n);
+	    triMat(ks.reflect(ks.velocity(aa.col(1))), i*n, m*n);
 	  nz.insert(nz.end(), triv.begin(), triv.end());
 	  // R*f(x_{m-1}) - x_0
-	  F.segment(i*n, n) = ks.Reflection(aa.col(1)) - x.col(0);
+	  F.segment(i*n, n) = ks.reflect(aa.col(1)) - x.col(0);
 	} else if (ppType.compare("rpo") == 0){
 	  // g*J
-	  vector<Tri> triJ = triMat(ks.Rotation(J, th), i*n, i*n);
+	  vector<Tri> triJ = triMat(ks.rotate(J, th), i*n, i*n);
 	  nz.insert(nz.end(), triJ.begin(), triJ.end());  
 	  // R*velocity
 	  vector<Tri> triv = 
-	    triMat(ks.Rotation(ks.velocity(aa.col(1)), th), i*n, m*n);
+	    triMat(ks.rotate(ks.velocity(aa.col(1)), th), i*n, m*n);
 	  nz.insert(nz.end(), triv.begin(), triv.end());
 	  // T*g*f(x_{m-1})
-	  VectorXd tx = ks.gTangent( ks.Rotation(aa.col(1), th) );
+	  VectorXd tx = ks.gTangent( ks.rotate(aa.col(1), th) );
 	  vector<Tri> tritx = triMat(tx, i*n, m*n+1);
 	  nz.insert(nz.end(), tritx.begin(), tritx.end());
 	  // g*f(x_{m-1}) - x_0
-	  F.segment(i*n, n) = ks.Rotation(aa.col(1), th) - x.col(0);
+	  F.segment(i*n, n) = ks.rotate(aa.col(1), th) - x.col(0);
 	} else {
 	  fprintf(stderr, "please indicate the right PO type !\n");
 	}

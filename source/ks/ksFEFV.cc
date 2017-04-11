@@ -49,9 +49,9 @@ KScalFEFV(const string fileName,
     PED ped;
     ped.reverseOrder(daa); // reverse order.
     if(ppType.compare("ppo") == 0)
-	daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	daa.leftCols(N) = ks.reflect(daa.leftCols(N)); // R*J for ppo
     else // R*J for rpo
-	daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
+	daa.leftCols(N) = ks.rotate(daa.leftCols(N), -s*2*M_PI/L);
     pair<MatrixXd, MatrixXd> eigv = ped.EigVecs(daa, MaxN, tol, false, trunc);
     MatrixXd &eigvals = eigv.first; 
     eigvals.col(0) = eigvals.col(0).array()/T;
@@ -99,9 +99,9 @@ KScalFE(const string fileName,
     PED ped;
     ped.reverseOrder(daa); // reverse order.
     if(ppType.compare("ppo") == 0)
-	daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	daa.leftCols(N) = ks.reflect(daa.leftCols(N)); // R*J for ppo
     else // R*J for rpo
-	daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
+	daa.leftCols(N) = ks.rotate(daa.leftCols(N), -s*2*M_PI/L);
     MatrixXd eigvals = ped.EigVals(daa, MaxN, tol, false);
     eigvals.col(0) = eigvals.col(0).array()/T;
 
@@ -137,9 +137,9 @@ KSgetR(const string fileName,
     PED ped;
     ped.reverseOrder(daa); // reverse order.
     if(ppType.compare("ppo") == 0)
-	daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	daa.leftCols(N) = ks.reflect(daa.leftCols(N)); // R*J for ppo
     else // R*J for rpo
-	daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
+	daa.leftCols(N) = ks.rotate(daa.leftCols(N), -s*2*M_PI/L);
     MatrixXd eigvals = ped.EigVals(daa, MaxN, tol, false);
     eigvals.col(0) = eigvals.col(0).array()/T;
 
@@ -256,9 +256,9 @@ KScalLeftFEFV(const std::string fileName, const std::string ppType, const int pp
     int M = daa.cols();
     daa.resize(N, N*M);
     if(ppType.compare("ppo") == 0)
-	daa.rightCols(N) = ks.Reflection(daa.rightCols(N)); // R*J for ppo
+	daa.rightCols(N) = ks.reflect(daa.rightCols(N)); // R*J for ppo
     else // R*J for rpo
-	daa.rightCols(N) = ks.Rotation(daa.rightCols(N), -s*2*M_PI/L);
+	daa.rightCols(N) = ks.rotate(daa.rightCols(N), -s*2*M_PI/L);
     for(int i = 0; i < M; i++) {
 	MatrixXd tmp = daa.middleCols(i*N, N).transpose();
 	daa.middleCols(i*N, N) = tmp;

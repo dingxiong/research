@@ -109,9 +109,9 @@ int main(int argc, char **argv)
 	PED ped;
 	ped.reverseOrderSize(daa); // reverse order.
 	if(ppType.compare("ppo") == 0)
-	    daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	    daa.leftCols(N) = ks.reflect(daa.leftCols(N)); // R*J for ppo
 	else // R*J for rpo
-	    daa.leftCols(N) = ks.Rotation(daa.leftCols(N), th);
+	    daa.leftCols(N) = ks.rotate(daa.leftCols(N), th);
 	//MatrixXd eigvals = ped.EigVals(daa, 1000, 1e-15, true);
 	//eigvals.col(0) = eigvals.col(0).array()/Tnew;
 

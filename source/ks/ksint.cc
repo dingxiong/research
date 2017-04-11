@@ -185,7 +185,7 @@ KS::intgj(const ArrayXd &a0, const double h, const double tend, const int skip_r
  * Since the Map is not address continous, the performance is
  * not good enough.
  */
-ArrayXXd KS::C2R(const ArrayXXcd &v){
+ArrayXXd KS::C2R(const Ref<const ArrayXXcd> &v){
     int rs = v.rows(), cs = v.cols();
     assert(N/2+1 == rs);
     ArrayXXcd vt = v.middleRows(1, rs-2);
@@ -193,7 +193,7 @@ ArrayXXd KS::C2R(const ArrayXXcd &v){
     return vp;
 }
 
-ArrayXXcd KS::R2C(const ArrayXXd &v){
+ArrayXXcd KS::R2C(const Ref<const ArrayXXd> &v){
     int rs = v.rows(), cs = v.cols();
     assert( N - 2 == rs); 
     ArrayXXcd vp(N+2/1, cs);
@@ -202,6 +202,36 @@ ArrayXXcd KS::R2C(const ArrayXXd &v){
 	ArrayXXcd::Zero(1, cs);
     return vp;
 }
+
+MatrixXcd
+KS::a2f(const Ref<const MatrixXd> &aa){
+    int m = aa.rows();
+    int n = aa.cols();
+    assert(m % 2 == 0);
+    
+    MatrixXcd F(m/2, n);
+    for(int i = 0; i < m/2; i++){
+	F.row(i).real() = aa.row(2*i);
+	F.row(i).imag() = aa.row(2*i+1);
+    }
+    
+    return F;
+}
+
+MatrixXd
+KS::f2a(const Ref<const MatrixXcd> &f){
+    int m = f.rows();
+    int n = f.cols();
+    
+    MatrixXd a(m*2, n);
+    for(int i = 0; i < m; i++){
+	a.row(2*i) = f.row(i).real();
+	a.row(2*i+1) = f.row(i).imag();
+    }
+    
+    return a;
+}
+
 
 /*************************************************** 
  *           stability ralated                     *
@@ -280,7 +310,7 @@ double KS::disspation(const ArrayXcd &vc){
  ***************************************************/
 
 /** @brief apply reflection on each column of input  */
-ArrayXXd KS::Reflection(const Ref<const ArrayXXd> &aa){
+ArrayXXd KS::reflect(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();
     int m = aa.cols();
     assert( 0 == n%2 );
@@ -300,7 +330,7 @@ ArrayXXd KS::half2whole(const Ref<const ArrayXXd> &aa){
     int n = aa.rows();
     int m = aa.cols();
   
-    ArrayXXd raa = Reflection(aa);
+    ArrayXXd raa = reflect(aa);
     ArrayXXd aaWhole(n, 2*m);
     aaWhole << aa, raa;
   
@@ -308,44 +338,22 @@ ArrayXXd KS::half2whole(const Ref<const ArrayXXd> &aa){
 }
 
 /** @brief apply rotation to each column of input with the
- *    same angle specified
- *
+ *         same angle specified
+ *    a_k => a_k * e^{ik*th}
  */
-ArrayXXd KS::Rotation(const Ref<const ArrayXXd> &aa, const double th){
-    int n = aa.rows();
-    int m = aa.cols(); 
-    assert( 0 == n%2);
-    ArrayXXd raa(n, m);
-  
-    for(size_t i = 0; i < n/2; i++){
-	Matrix2d R;
-	double c = cos(th*(i+1));
-	double s = sin(th*(i+1));
-	R << 
-	    c, -s,
-	    s,  c;  // SO(2) matrix
-
-	raa.middleRows(2*i, 2) = R * aa.middleRows(2*i, 2).matrix();
-    }
-  
-    return raa;
+ArrayXXd KS::rotate(const Ref<const ArrayXXd> &aa, const double th){
+    assert(aa.rows() == N - 2);
+    return C2R( R2C(aa).colwise() * (dcp(0, th) * K.cast<dcp>()).exp() );
 }
 
 /** @brief group tangent of SO(2)
  *
  *  x=(b1, c1, b2, c2, ...) ==> tx=(-c1, b1, -2c2, 2b2, ...)
+ *  That is a_k => a_k * {ik}
  */
-MatrixXd KS::gTangent(const MatrixXd &x){
-    int n = x.rows();
-    int m = x.cols();
-    assert( 0 == n%2);
-    MatrixXd tx(n, m);
-    for(int i = 0; i < n/2; i++){
-	tx.row(2*i) = -(i+1) * x.row(2*i+1).array();
-	tx.row(2*i+1) = (i+1) * x.row(2*i).array(); 
-    }
-
-    return tx;
+ArrayXXd KS::gTangent(const Ref<const ArrayXXd> &x){
+    assert(x.rows() = N - 2);
+    return  C2R(R2C(x).colwise() * dcp(0, 1) * K.cast<dcp>());
 }
 
 /* group generator matrix T */
@@ -355,7 +363,6 @@ MatrixXd KS::gGenerator(){
 	T(2*i, 2*i+1) = -(i+1);
 	T(2*i+1, 2*i) = i+1;
     }
-
     return T;
 }
 
@@ -373,7 +380,7 @@ std::pair<MatrixXd, VectorXd> KS::orbitToSlice(const Ref<const MatrixXd> &aa){
     for(size_t i = 0; i < m; i++){
 	double th = atan2(aa(1,i), aa(0,i));
 	ang(i) = th;
-	raa.col(i) = Rotation(aa.col(i), -th);
+	raa.col(i) = rotate(aa.col(i), -th);
     }
     return std::make_pair(raa, ang);
 }
@@ -396,7 +403,7 @@ MatrixXd KS::veToSlice(const MatrixXd &ve, const Ref<const VectorXd> &x){
     double th = tmp.second(0);
     VectorXd tx = gTangent(xhat);
 
-    MatrixXd vep = Rotation(ve, -th);
+    MatrixXd vep = rotate(ve, -th);
     MatrixXd dot = vep.row(1)/xhat(0); //dimension [1, N]
     vep = vep - tx * dot;
   
@@ -551,7 +558,7 @@ std::vector<int> KS::reflectIndex(){
  * @param[in] aaHat        states in the 1st mode slice
  * @return                 reflection symmetry reduced states
  */
-ArrayXXd KS::reduceReflection(const Ref<const ArrayXXd> &aaHat){
+ArrayXXd KS::reducereflect(const Ref<const ArrayXXd> &aaHat){
     int n = aaHat.rows();
     int m = aaHat.cols();
     assert( n == N-2 );
@@ -685,7 +692,7 @@ KS::redSO2(const Ref<const MatrixXd> &aa, const int p, const bool toY){
     for(int i = 0; i < m; i++){
 	double th = (atan2(aa(2*p-1, i), aa(2*p-2, i)) - s )/ p;
 	ang(i) = th;
-	raa.col(i) = Rotation(aa.col(i), -th);
+	raa.col(i) = rotate(aa.col(i), -th);
     }
     return std::make_pair(raa, ang);
 }
@@ -937,7 +944,7 @@ KS::redV(const Ref<const MatrixXd> &v, const Ref<const VectorXd> &a,
     else x0(2*p-2) = 1;    
     VectorXd t0 = gTangent(x0);
     
-    MatrixXd vep = Rotation(v, -th);
+    MatrixXd vep = rotate(v, -th);
     MatrixXd dot = (t0.transpose() * vep) / (t0.transpose() * tx);
     vep = vep - tx * dot;
     
@@ -999,31 +1006,3 @@ KS::toPole(const Ref<const MatrixXd> &aa){
 }
 
 
-MatrixXcd
-KS::a2f(const Ref<const MatrixXd> &aa){
-    int m = aa.rows();
-    int n = aa.cols();
-    assert(m % 2 == 0);
-    
-    MatrixXcd F(m/2, n);
-    for(int i = 0; i < m/2; i++){
-	F.row(i).real() = aa.row(2*i);
-	F.row(i).imag() = aa.row(2*i+1);
-    }
-    
-    return F;
-}
-
-MatrixXd
-KS::f2a(const Ref<const MatrixXcd> &f){
-    int m = f.rows();
-    int n = f.cols();
-    
-    MatrixXd a(m*2, n);
-    for(int i = 0; i < m; i++){
-	a.row(2*i) = f.row(i).real();
-	a.row(2*i+1) = f.row(i).imag();
-    }
-    
-    return a;
-}

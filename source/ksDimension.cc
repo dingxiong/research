@@ -589,9 +589,9 @@ int main(){
 	PED ped;
 	ped.reverseOrderSize(daa); // reverse order.
 	if(ppType.compare("ppo") == 0)
-	  daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	  daa.leftCols(N) = ks.reflect(daa.leftCols(N)); // R*J for ppo
 	else // R*J for rpo
-	  daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
+	  daa.leftCols(N) = ks.rotate(daa.leftCols(N), -s*2*M_PI/L);
 	pair<MatrixXd, vector<int> > psd = ped.PerSchur(daa, 1000, 1e-15, false);
 	MatrixXd &Q1 = psd.first;
 	int n1 = Q1.rows();
@@ -610,7 +610,7 @@ int main(){
 	int m = Q.cols() / n;
 	MatrixXd rQ(n, m*n);
 	for (size_t i = 0; i < m; i++) {
-	  rQ.middleCols(i*n, n) = ks.Rotation( Q.middleCols(i*n, n),
+	  rQ.middleCols(i*n, n) = ks.rotate( Q.middleCols(i*n, n),
 					       -theta(i) );
 	}
   
@@ -697,9 +697,9 @@ int main(){
 	PED ped;
 	ped.reverseOrderSize(daa); // reverse order.
 	if(ppType.compare("ppo") == 0)
-	  daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	  daa.leftCols(N) = ks.reflect(daa.leftCols(N)); // R*J for ppo
 	else // R*J for rpo
-	  daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
+	  daa.leftCols(N) = ks.rotate(daa.leftCols(N), -s*2*M_PI/L);
 	pair<MatrixXd, vector<int> > psd = ped.PerSchur(daa, 10000, 1e-15, false);
 	MatrixXd &Q1 = psd.first;
 	int n1 = Q1.rows();
@@ -785,7 +785,7 @@ int main(){
 	MatrixXd aa = ks.intg(a, 2*div*nstp);
 	MatrixXd aaHat = ks.orbitToSlice(aa).first;
 	cout << (aa.rightCols(1) - aa.col(0)).norm() << endl;
-	MatrixXd paa = ks.intg(ks.Rotation(aa.col(0), 1), 2*div*nstp);
+	MatrixXd paa = ks.intg(ks.rotate(aa.col(0), 1), 2*div*nstp);
 	std::cout << (paa.rightCols(1) - paa.col(0)).norm() << std::endl;
 
 	break;
@@ -834,9 +834,9 @@ int main(){
 	PED ped;
 	ped.reverseOrderSize(daa); // reverse order.
 	if(ppType.compare("ppo") == 0)
-	  daa.leftCols(N) = ks.Reflection(daa.leftCols(N)); // R*J for ppo
+	  daa.leftCols(N) = ks.reflect(daa.leftCols(N)); // R*J for ppo
 	else // R*J for rpo
-	  daa.leftCols(N) = ks.Rotation(daa.leftCols(N), -s*2*M_PI/L);
+	  daa.leftCols(N) = ks.rotate(daa.leftCols(N), -s*2*M_PI/L);
 
 
 	switch (2) {
@@ -914,7 +914,7 @@ int main(){
 	
 	PED ped ;
 	ped.reverseOrderSize(daa);
-	daa.leftCols(N) = ks.Reflection(daa.leftCols(N));
+	daa.leftCols(N) = ks.reflect(daa.leftCols(N));
 	MatrixXd eigVals = ped.EigVals(daa, 3000, 1e-15, true);
 	
 	MatrixXd FloquetE(eigVals.rows(), eigVals.cols());

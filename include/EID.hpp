@@ -190,7 +190,7 @@ public:
 	NCalCoe += nab;
 
 	const int Nt = static_cast<int>( round((tend-t0)/h) );
-
+	
 	double t = t0;
 	Y[0] = u0; 
 	for(int i = 0; i < Nt; i++){
@@ -200,7 +200,7 @@ public:
 	    t += h;
 	    Y[0] = Y[ns]; 
 	    if((i+1)%skip_rate == 0 || i == Nt-1) saveState(Y[0], t, h, err);
-	}
+	}	
     }
 
     /**

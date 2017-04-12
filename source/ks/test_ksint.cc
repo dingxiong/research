@@ -23,7 +23,6 @@ int main(){
     ArrayXd a0 = ArrayXd::Random(N-2) * 0.1;
     KS ks(N, L);
     ArrayXXd aa = ks.intgC(a0, 0.01, 20, 10);
-    cout << "yes" << endl;
 #endif
 #if 0
     case 10 :{		  /* find eq and req for N = 64 from N = 32 */

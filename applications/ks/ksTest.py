@@ -8,13 +8,13 @@ if case == 10:
     ks = pyKS(N, L)
     t_init = time();
     a0 = np.ones(N-2)*0.1
-    for i in range(1):
-        aa = ks.intgC(a0, 0.01, 30, 10); print "a"
+    for i in range(100):
+        aa = ks.intgC(a0, 0.01, 30, 10)
     print time() - t_init
-    # t_init = time()
-    # for i in range(100):
-    #     aa, daa = ks.intgj(a0, 2000, 1, 1)
-    # print time() - t_init
+    t_init = time()
+    for i in range(1):
+        aa, daa = ks.intgjC(a0, 0.01, 30, 10)
+    print time() - t_init
 
 if case == 15:
     ks = pyKSM1(32, 0.1, 22)

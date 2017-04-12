@@ -1,19 +1,22 @@
 from personalFunctions import *
 from py_ks import *
 
-case = 70
+case = 10
 
-if case == 1:
-    ks = pyKS(32, 0.1, 22)
-    t_init = time()
-    for i in range(1000):
-        aa = ks.intg(np.ones(30)*0.1, 2000, 1)
+if case == 10:
+    N, L = 64, 22
+    ks = pyKS(N, L)
+    t_init = time();
+    a0 = np.ones(N-2)*0.1
+    for i in range(1):
+        aa = ks.intgC(a0, 0.01, 30, 10); print "a"
     print time() - t_init
-    t_init = time()
-    for i in range(100):
-        aa, daa = ks.intgj(np.ones(30)*0.1, 2000, 1, 1)
-    print time() - t_init
+    # t_init = time()
+    # for i in range(100):
+    #     aa, daa = ks.intgj(a0, 2000, 1, 1)
+    # print time() - t_init
 
+if case == 15:
     ks = pyKSM1(32, 0.1, 22)
     t_init = time()
     for i in range(1000):
@@ -29,7 +32,7 @@ if case == 1:
         aa, tt = ks.intg2(a0, 20, 1)
     print time() - t_init
 
-if case == 2:
+if case == 20:
     ks = pyKS(32, 0.1, 22)
     aa = ks.intg(np.ones(30)*0.1, 20, 1)
     aaHat, ang = ks.orbitToSlice(aa)

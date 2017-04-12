@@ -34,7 +34,8 @@ public :
      * @brief calcuate the matrix to do averge of phi(z). 
      */
     inline
-    ArrayXXcd ZR(ArrayXd &z){
+    ArrayXXcd 
+    ZR(ArrayXd &z){
     	int M1 = z.size();
 	ArrayXd K = ArrayXd::LinSpaced(M, 1, M); // 1,2,3,...,M 
 	ArrayXXcd r = R * ((K-0.5)/M * dcp(0, M_PI)).exp().transpose();

@@ -36,15 +36,15 @@ KS::KS(int N, double d) : N(N), d(d), nl(this, 1), nl2(this, N-1) {
     L = K*K - K*K*K*K; 
     G = 0.5 * dcp(0,1) * K * N;   
     
-    int nYN0 = eidc.names.at(eidc.scheme).nYN; // do not call setScheme here. Different.
+    int nYN0 = eidr.names.at(eidr.scheme).nYN; // do not call setScheme here. Different.
     for(int i = 0; i < nYN0; i++){
 	Yv[i].resize(N/2+1, 1);
 	Nv[i].resize(N/2+1, 1);
 	Yv2[i].resize(N/2+1, N-1);
 	Nv2[i].resize(N/2+1, N-1);
     }
-    eidc.init(&L, Yv, Nv);
-    eidc2.init(&L, Yv2, Nv2);
+    eidr.init(&L, Yv, Nv);
+    eidr2.init(&L, Yv2, Nv2);
 }
 KS & KS::operator=(const KS &x){
     return *this;
@@ -53,9 +53,9 @@ KS::~KS(){}
 
 /*------------------- member methods ------------------ */
 void KS::setScheme(std::string x){
-    int nYN0 = eidc.names.at(eidc.scheme).nYN;
-    eidc.scheme = x;
-    int nYN1 = eidc.names.at(eidc.scheme).nYN;
+    int nYN0 = eidr.names.at(eidr.scheme).nYN;
+    eidr.scheme = x;
+    int nYN1 = eidr.names.at(eidr.scheme).nYN;
     for (int i = nYN0; i < nYN1; i++) {
 	Yv[i].resize(N/2+1, 1);
 	Nv[i].resize(N/2+1, 1);
@@ -67,7 +67,7 @@ void KS::setScheme(std::string x){
 ArrayXXd 
 KS::intgC(const ArrayXd &a0, const double h, const double tend, const int skip_rate){
     assert(a0.size() == N-2);
-    ArrayXXcd u0 = R2C(a0);
+    ArrayXXcd u0 = R2C(a0); cout << "er ni ma" << endl;
     const int Nt = (int)round(tend/h);
     const int M = (Nt + skip_rate - 1) / skip_rate;
     ArrayXXcd aa(N/2+1, M);
@@ -77,7 +77,8 @@ KS::intgC(const ArrayXd &a0, const double h, const double tend, const int skip_r
 	aa.col(count) = x;
 	lte(count++) = err;
     };
-    eidc.intgC(nl, ss, 0, u0, tend, h, skip_rate);
+    eidr.intgC(nl, ss, 0, u0, tend, h, skip_rate); 
+    cout << "fuck" << endl;
     return C2R(aa);
 }
 
@@ -100,7 +101,7 @@ KS::intgjC(const ArrayXd &a0, const double h, const double tend, const int skip_
 	x.rightCols(N-2) = R2C(MatrixXd::Identity(N-2, N-2));
     };
     
-    eidc2.intgC(nl2, ss, 0, u0, tend, h, skip_rate);
+    eidr2.intgC(nl2, ss, 0, u0, tend, h, skip_rate);
     return std::make_pair(C2R(aa), C2R(daa));
 }
 
@@ -130,7 +131,7 @@ KS::intg(const ArrayXd &a0, const double h, const double tend, const int skip_ra
 	Ts(count++) = t;
     };
     
-    eidc.intg(nl, ss, 0, u0, tend, h, skip_rate);
+    eidr.intg(nl, ss, 0, u0, tend, h, skip_rate);
 	
     hs.conservativeResize(count);
     lte.conservativeResize(count);
@@ -172,7 +173,7 @@ KS::intgj(const ArrayXd &a0, const double h, const double tend, const int skip_r
 	count++;
     };
 
-    eidc2.intg(nl2, ss, 0, u0, tend, h, skip_rate);
+    eidr2.intg(nl2, ss, 0, u0, tend, h, skip_rate);
     return std::make_pair(C2R(aa), C2R(daa));
 }
 
@@ -181,21 +182,45 @@ KS::intgj(const ArrayXd &a0, const double h, const double tend, const int skip_r
  * Since the Map is not address continous, the performance is
  * not good enough.
  */
-ArrayXXd KS::C2R(const Ref<const ArrayXXcd> &v){
-    int rs = v.rows(), cs = v.cols();
-    assert(N/2+1 == rs);
-    ArrayXXcd vt = v.middleRows(1, rs-2);
-    ArrayXXd vp = Map<ArrayXXd>((double*)(vt.data()), 2*(rs-2), cs);
+// ArrayXXd KS::C2R(const ArrayXXcd &v){
+//     int rs = v.rows(), cs = v.cols();
+//     assert(N/2+1 == rs);
+//     ArrayXXcd vt = v.middleRows(1, rs-2);
+//     ArrayXXd vp(N-2, cs);	// Avoid double-free in boostPython
+//     Map<ArrayXXd> tmp((double*)(vt.data()), N-2, cs);
+//     vp << tmp;
+//     return vp;
+// }
+
+// ArrayXXcd KS::R2C(const ArrayXXd &v){
+//     int rs = v.rows(), cs = v.cols();
+//     assert( N - 2 == rs); 
+//     ArrayXXcd vp(N/2+1, cs); vp.setZero();
+//     vp.middleRows(1, N/2-1) = Map<ArrayXXcd>((dcp*)(v.data()), N/2-1, cs);
+//     // vp << ArrayXXcd::Zero(1, cs), 
+//     // 	Map<ArrayXXcd>((dcp*)(v.data()), N/2-1, cs), 
+//     // 	ArrayXXcd::Zero(1, cs);
+//     return vp;
+// }
+
+ArrayXXd KS::C2R(const ArrayXXcd &v){
+    int n = v.rows();
+    int m = v.cols();
+    ArrayXXcd vt = v.middleRows(1, n-2);
+    ArrayXXd vp(2*(n-2), m);
+    vp = Map<ArrayXXd>((double*)&vt(0,0), 2*(n-2), m);
+
     return vp;
 }
 
-ArrayXXcd KS::R2C(const Ref<const ArrayXXd> &v){
-    int rs = v.rows(), cs = v.cols();
-    assert( N - 2 == rs); 
-    ArrayXXcd vp(N+2/1, cs);
-    vp << ArrayXXcd::Zero(1, cs), 
-	Map<ArrayXXcd>((dcp*)(v.data()), N/2-1, cs), 
-	ArrayXXcd::Zero(1, cs);
+ArrayXXcd KS::R2C(const ArrayXXd &v){
+    int n = v.rows();
+    int m = v.cols();
+    assert( 0 == n%2);
+    
+    ArrayXXcd vp = ArrayXXcd::Zero(n/2+2, m);
+    vp.middleRows(1, n/2) = Map<ArrayXXcd>((dcp*)&v(0,0), n/2, m);
+
     return vp;
 }
 

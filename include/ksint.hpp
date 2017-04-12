@@ -43,7 +43,7 @@ public:
     
     NL nl, nl2;
     ArrayXXcd Yv[10], Nv[10], Yv2[10], Nv2[10];
-    EIDr eidc, eidc2;;
+    EIDr eidr, eidr2;;
     ////////////////////////////////////////////////////////////
     
 
@@ -65,9 +65,9 @@ public:
     std::pair<ArrayXXd, ArrayXXd>
     intgj(const ArrayXd &a0, const double h, const double tend, const int skip_rate);
     ArrayXXd 
-    C2R(const Ref<const ArrayXXcd> &v);
+    C2R(const ArrayXXcd &v);
     ArrayXXcd 
-    R2C(const Ref<const ArrayXXd> &v);
+    R2C(const ArrayXXd &v);
     /* ------------------------------------------------------------ */
     
     ArrayXd

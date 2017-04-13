@@ -47,71 +47,17 @@ namespace MyH5 {
     
     //////////////////////////////////////////////////////////////////////
     /* KS related */
-    MatrixXi
-    checkExistEV(const string fileName, const string ppType, const int NN);
-    MatrixXi
-    checkExistEV(const string fileName, const string ppType, const std::vector<int> ppIds);
-    std::tuple<MatrixXd, double, double>
-    KSreadOrigin(const string fileName, const string &ppType, const int ppId);
-
-    std::tuple<MatrixXd, double, int, double, double>
-    KSreadRPO(const string fileName, const string &ppType, const int ppId);
-    void 
-    KSwriteRPO(const string fileName, const string ppType, const int ppId,
-	       const MatrixXd &a, const double T, const int nstp,
-	       const double r, const double s
-	       );
-    void 
-    KSmoveRPO(const std::string inFile, const std::string outFile, const std::string ppType, 
-	      const int ppId);
-
-    //-----------------------------------------------------------
-    MatrixXd
-    KSreadFE(const string fileName, const string ppType, const int ppId); 
-    void 
-    KSwriteFE(const string fileName, const string ppType, const int ppId, 
-	      const MatrixXd &eigvals);
-    void 
-    KSmoveFE(const std::string inFile, const std::string outFile, const std::string ppType,
-	     const int ppId);
-    
-    //-----------------------------------------------------------
-    MatrixXd
-    KSreadFV(const string fileName, const string ppType, const int ppId);
-    void
-    KSwriteFV(const string fileName, const string ppType, const int ppId, 
-	      const MatrixXd &eigvecs);
-    void 
-    KSmoveFV(const std::string inFile, const std::string outFile, const std::string ppType,
-	     const int ppId);
-
-    //-----------------------------------------------------------
-    std::pair<MatrixXd, MatrixXd>
-    KSreadFEFV(const string fileName, const string ppType, const int ppId);
-    void 
-    KSwriteFEFV(const string fileName, const string ppType, const int ppId,
-		const MatrixXd &eigvals, const MatrixXd &eigvecs);
-    void 
-    KSmoveFEFV(const std::string inFile, const std::string outFile, const std::string ppType,
-	       const int ppId);
-    //-----------------------------------------------------------
-
-    void KScheckGroups(const string fileName, const string ppType,
-		       const int ppId);
-
     std::pair<VectorXd, double>
     KSreadEq(const std::string fileName, const int Id);
     std::tuple<VectorXd, double, double>
     KSreadReq(const std::string fileName, const int Id);
-    void KScheckReqGroups(const string fileName, const int Id);
-    void KScheckEqGroups(const string fileName, const int Id);
     void 
     KSwriteEq(const string fileName, const int Id, 
 	      const VectorXd &a, const double err);
     void 
     KSwriteReq(const string fileName, const int Id,
 	       const VectorXd &a, const double omega,
-	       const double err);        
+	       const double err);
     void 
     KSwriteEqE(const string fileName, const int Id, 
 	       const VectorXcd e);

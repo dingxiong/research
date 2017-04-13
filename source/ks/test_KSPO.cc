@@ -20,20 +20,27 @@ int main(int argc, char **argv) {
 #ifdef CASE_10
     //================================================================================    
     // move data
-    string fin = "../../data/Ruslan/ks22h1t120x64.h5";
+    string fin = "../../data/ks22h001t120x64EV.h5";
     H5File fin2(fin, H5F_ACC_RDONLY);
     string fout = "tmp.h5";
     H5File fout2(fout, H5F_ACC_TRUNC);
 
     VectorXd a;
     double T, r, s;
-    int nstp;
-    
+    int nstp; 
+    MatrixXd es, vs;
+
     vector<vector<string>> gs = scanGroup(fin);
     for(auto v : gs){
 	bool isRPO = v[0] == "rpo";
 	std::tie(a, T, nstp, s, r) = KSPO::read(fin2, v[0] + "/" + v[1], isRPO);
-	KSPO::write(fout2, KSPO::toStr(v[0], stoi(v[1])), isRPO, a, T, 0, -s/22*2*M_PI, r);
+	KSPO::write(fout2, KSPO::toStr(v[0], stoi(v[1])), isRPO, a, T, nstp, -s/22*2*M_PI, r);
+	if(checkGroup(fin2, v[0] + "/" + v[1] + "/e", false)){
+	    es = KSPO::readE(fin2, v[0] + "/" + v[1]); 
+	    vs = KSPO::readV(fin2, v[0] + "/" + v[1]);
+	    KSPO::writeE(fout2, KSPO::toStr(v[0], stoi(v[1])), es);
+	    KSPO::writeV(fout2, KSPO::toStr(v[0], stoi(v[1])), vs);
+	}
     }
     
 #endif

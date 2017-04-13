@@ -10,10 +10,14 @@ converge:
 	  upos.
 120 : angle distriubtion for T < 120
 
-Note: in the H5 files, nstp is double.
-
 ============================
 Mon Jan  5 12:46:44 EST 2015
+
+a
+T
+nstp 
+theta
+err
 
 Ruslan : Ruslan's original data
 myN32 : my data for truncation N = 32

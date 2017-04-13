@@ -38,22 +38,22 @@ public:
 	  const double theta, const double err);
     
     static
-    VectorXcd 
+    MatrixXd
     readE(H5File &file, const std::string groupName);
 
     static
-    MatrixXcd 
+    MatrixXd 
     readV(H5File &file, const std::string groupName);
     
     static
     void 
     writeE(H5File &file, const std::string groupName, 
-	   const VectorXcd e);
+	   const MatrixXd &e);
     
     static
     void 
     writeV(H5File &file, const std::string groupName, 
-	   const MatrixXcd v);
+	   const MatrixXd &v);
     
     static
     void 

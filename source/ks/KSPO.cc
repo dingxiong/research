@@ -70,51 +70,35 @@ KSPO::write(H5File &file, const std::string groupName, const bool isRPO,
     writeScalar<double>(file, DS + "err", err);
 }
 
-VectorXcd 
+MatrixXd 
 KSPO::readE(H5File &file, const std::string groupName){
     string DS = "/" + groupName + "/";
-    VectorXd er = readMatrixXd(file, DS + "er");
-    VectorXd ei = readMatrixXd(file, DS + "ei");
-    VectorXcd e(er.size());
-    e.real() = er;
-    e.imag() = ei;
-
+    MatrixXd e = readMatrixXd(file, DS + "e");
     return e;
 }
 
-MatrixXcd 
+MatrixXd 
 KSPO::readV(H5File &file, const std::string groupName){
     string DS = "/" + groupName + "/";
-    MatrixXd vr = readMatrixXd(file, DS + "vr");
-    MatrixXd vi = readMatrixXd(file, DS + "vi");
-    MatrixXcd v(vr.rows(), vr.cols());
-    v.real() = vr;
-    v.imag() = vi;
-
+    MatrixXd v = readMatrixXd(file, DS + "ve");
     return v;
 }
 
 void 
 KSPO::writeE(H5File &file, const std::string groupName, 
-	     const VectorXcd e){
-    // H5File file(fileName, H5F_ACC_RDWR);
+	     const MatrixXd &e){
     checkGroup(file, groupName, true);
     string DS = "/" + groupName + "/";
-    
-    writeMatrixXd(file, DS + "er", e.real());
-    writeMatrixXd(file, DS + "ei", e.imag());
+    writeMatrixXd(file, DS + "e", e);
 }
-
 
 void 
 KSPO::writeV(H5File &file, const std::string groupName, 
-	     const MatrixXcd v){
+	     const MatrixXd &v){
     // H5File file(fileName, H5F_ACC_RDWR);
     checkGroup(file, groupName, true);
     string DS = "/" + groupName + "/";
-    
-    writeMatrixXd(file, DS + "vr", v.real());
-    writeMatrixXd(file, DS + "vi", v.imag());
+    writeMatrixXd(file, DS + "v", v);
 }
 
 void 

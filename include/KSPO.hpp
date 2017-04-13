@@ -6,6 +6,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include "ksint.hpp"
+#include "myH5.hpp"
+
+using namespace H5;
 
 class KSPO : public KS{
 
@@ -19,6 +22,43 @@ public:
     KSPO & operator=(const KSPO &x);
     ~KSPO();
     
+    //////////////////////////////////////////////////
+    static
+    std::string 
+    toStr(string ppType, int id);
+
+    static
+    std::tuple<VectorXd, double, int, double, double>
+    read(H5File &file, const std::string groupName, const bool isRPO); 
+
+    static
+    void 
+    write(H5File &file, const std::string groupName, const bool isRPO,
+	  const ArrayXd &a, const double T, const int nstp, 
+	  const double theta, const double err);
+    
+    static
+    VectorXcd 
+    readE(H5File &file, const std::string groupName);
+
+    static
+    MatrixXcd 
+    readV(H5File &file, const std::string groupName);
+    
+    static
+    void 
+    writeE(H5File &file, const std::string groupName, 
+	   const VectorXcd e);
+    
+    static
+    void 
+    writeV(H5File &file, const std::string groupName, 
+	   const MatrixXcd v);
+    
+    static
+    void 
+    move(H5File &fin, std::string gin, H5File &fout, std::string gout,
+	 int flag = 0);
     //////////////////////////////////////////////////
     VectorXd
     MFx(const VectorXd &x, const int nstp, const bool isRPO);

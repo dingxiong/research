@@ -80,42 +80,42 @@ class KSplot():
         eigvalue, eigvector = sortByReal(eigvalue, eigvector)
         return eigvalue, eigvector
 
+    def toStr(self, poType, idx):
+        return poType + '/' + format(idx, '06d')
     
-    def readPO(self, fileName, poType, idx):
+    def readPO(self, fileName, groupName, isRPO, hasNstp=True):
         f = h5py.File(fileName, 'r')
-        po = '/' + poType + '/' + str(idx) + '/'
-        a = f[po+'a'].value
-        T = f[po+'T'].value
-        nstp = np.int(f[po+'nstp'].value)
-        r = f[po+'r'].value
-        s = 0
-        if poType == 'rpo':
-            s = f[po+'s'].value
+        DS = '/' + groupName + '/'
+        a = f[DS+'a'].value
+        T = f[DS+'T'].value
+        nstp = f[DS+'nstp'].value if hasNstp else 0
+        err = f[DS+'err'].value
+        theta = f[DS+'theta'].value if isRPO else 0
         f.close()
-        return a, T, nstp, r, s
+        return a, T, nstp, theta, err
 
 
-    def readFE(self, fileName, poType, idx):
+    def readE(self, fileName, poType, idx):
         f = h5py.File(fileName, 'r')
-        po = '/' + poType + '/' + str(idx) + '/'
-        fe = f[po+'e'].value
+        DS = '/' + poType + '/' + str(idx) + '/'
+        fe = f[DS+'e'].value
         f.close()
         return fe
 
 
-    def readFV(self, fileName, poType, idx):
+    def readV(self, fileName, poType, idx):
         f = h5py.File(fileName, 'r')
-        po = '/' + poType + '/' + str(idx) + '/'
-        fv = f[po+'ve'].value
+        DS = '/' + poType + '/' + str(idx) + '/'
+        fv = f[DS+'ve'].value
         f.close()
         return fv
 
 
-    def readFEFV(self, fileName, poType, idx):
+    def readEV(self, fileName, poType, idx):
         f = h5py.File(fileName, 'r')
-        po = '/' + poType + '/' + str(idx) + '/'
-        fe = f[po+'e'].value
-        fv = f[po+'ve'].value
+        DS = '/' + poType + '/' + str(idx) + '/'
+        fe = f[DS+'e'].value
+        fv = f[DS+'ve'].value
         f.close()
         return fe, fv
 

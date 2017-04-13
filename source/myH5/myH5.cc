@@ -120,7 +120,7 @@ namespace MyH5 {
     // the it outputs a/b/c, a/b
     // from https://support.hdfgroup.org/ftp/HDF5/examples/misc-examples/h5_info.c
     vector<vector<string>> scanGroup(std::string fileName){
-	H5File file(fileName, H5F_ACC_RDWR);
+	H5File file(fileName, H5F_ACC_RDONLY);
 	unordered_set<string> record;
 	vector<vector<string>> result;
 	vector<string> curt;

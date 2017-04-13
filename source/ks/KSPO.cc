@@ -8,6 +8,7 @@ using namespace std;
 using namespace Eigen;
 using namespace sparseRoutines;
 using namespace iterMethod;
+using namespace MyH5;
 
 ////////////////////////////////////////////////////////////
 //                     class KSPO                     //
@@ -20,6 +21,120 @@ KSPO & KSPO::operator=(const KSPO &x){
     return *this; 
 }
 KSPO::~KSPO(){}
+
+////////////////////////////////////////////////////////////////////////////////
+std::string 
+KSPO::toStr(string ppType, int id){
+    char g[20];
+    sprintf(g, "%06d", id);
+    return ppType + '/' + string(g);    
+}
+
+// [a, T, nstp, r, s]
+std::tuple<VectorXd, double, int, double, double>
+KSPO::read(H5File &file, const std::string groupName, const bool isRPO){
+    // H5File file(fileName, H5F_ACC_RDONLY);
+    string DS = "/" + groupName + "/";
+    
+    // Ruslan's orignal data does not have nstp
+    int nstp = checkGroup(file, groupName + "/nstp", false) ? 
+	readScalar<int>(file, DS + "nstp") : 0;
+    
+    double s = isRPO ? readScalar<double>(file, DS + "s") : 0;
+    
+    return make_tuple(readMatrixXd(file, DS + "a").col(0),
+		      readScalar<double>(file, DS + "T"),
+		      nstp, 
+		      s,
+		      readScalar<double>(file, DS + "r")
+		      );
+}
+
+/** [a, T, nstp, theta, err]
+ * @note group should be a new group
+ */
+void 
+KSPO::write(H5File &file, const std::string groupName, const bool isRPO,
+	    const ArrayXd &a, const double T, const int nstp,
+	    const double theta, const double err){
+    // H5File file(fileName, H5F_ACC_RDWR);
+    checkGroup(file, groupName, true);
+    string DS = "/" + groupName + "/";
+    
+    writeMatrixXd(file, DS + "a", a);
+    writeScalar<double>(file, DS + "T", T);
+    if(nstp > 0)	   // Ruslan's orignal data does not have nstp
+	writeScalar<int>(file, DS + "nstp", nstp);
+    if(isRPO)
+	writeScalar<double>(file, DS + "theta", theta);
+    writeScalar<double>(file, DS + "err", err);
+}
+
+VectorXcd 
+KSPO::readE(H5File &file, const std::string groupName){
+    string DS = "/" + groupName + "/";
+    VectorXd er = readMatrixXd(file, DS + "er");
+    VectorXd ei = readMatrixXd(file, DS + "ei");
+    VectorXcd e(er.size());
+    e.real() = er;
+    e.imag() = ei;
+
+    return e;
+}
+
+MatrixXcd 
+KSPO::readV(H5File &file, const std::string groupName){
+    string DS = "/" + groupName + "/";
+    MatrixXd vr = readMatrixXd(file, DS + "vr");
+    MatrixXd vi = readMatrixXd(file, DS + "vi");
+    MatrixXcd v(vr.rows(), vr.cols());
+    v.real() = vr;
+    v.imag() = vi;
+
+    return v;
+}
+
+void 
+KSPO::writeE(H5File &file, const std::string groupName, 
+	     const VectorXcd e){
+    // H5File file(fileName, H5F_ACC_RDWR);
+    checkGroup(file, groupName, true);
+    string DS = "/" + groupName + "/";
+    
+    writeMatrixXd(file, DS + "er", e.real());
+    writeMatrixXd(file, DS + "ei", e.imag());
+}
+
+
+void 
+KSPO::writeV(H5File &file, const std::string groupName, 
+	     const MatrixXcd v){
+    // H5File file(fileName, H5F_ACC_RDWR);
+    checkGroup(file, groupName, true);
+    string DS = "/" + groupName + "/";
+    
+    writeMatrixXd(file, DS + "vr", v.real());
+    writeMatrixXd(file, DS + "vi", v.imag());
+}
+
+void 
+KSPO::move(H5File &fin, std::string gin, H5File &fout, std::string gout,
+	   int flag){
+    // VectorXd a;
+    // VectorXcd e;
+    // MatrixXcd v;
+    // double wth, wphi, err;
+
+    // std::tie(a, wth, wphi, err) = read(fin, gin);
+    // if (flag == 1 || flag == 2) e = readE(fin, gin);
+    // if (flag == 2) v = readV(fin, gin);
+    
+    // write(fout, gout, a, wth, wphi, err);
+    // if (flag == 1 || flag == 2) writeE(fout, gout, e);
+    // if (flag == 2) writeV(fout, gout, v);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 /**
  * @brief         form [g*f(x,t) - x, ...]
@@ -107,7 +222,7 @@ KSPO::calJJF(const VectorXd &x, int nstp, const bool isRPO){
 
 	ArrayXXd gJ = isRPO ? rotate(J, th) : (i == m-1 ? reflect(J) : J);
 	VectorXd v = velocity(fx);
-	VectorXd gvfx = isRPO ? rotate(v, th) : (i == m-1 ? reflect(v) : v); 
+	VectorXd gvfx = isRPO ? (VectorXd)rotate(v, th) : (i == m-1 ? (VectorXd)reflect(v) : v); 
 	
 	vector<Tri> triJ = triMat(gJ, i*n, i*n);
 	nz.insert(nz.end(), triJ.begin(), triJ.end());
@@ -143,9 +258,9 @@ KSPO::findPO_LM(const ArrayXXd &a0, const bool isRPO, const int nstp,
     int cols = a0.cols(), rows = a0.rows();
     assert (rows == isRPO ? N : N - 1);
     
-    Map<VectorXd> x(a0.data(), cols * rows);
+    Map<const VectorXd> x(a0.data(), cols * rows);
     auto fx = [this, &isRPO, &nstp](const VectorXd &x){ return MFx(x, nstp, isRPO); };
-    KSPOJJF<SpMat> jj(this);
+    KSPOJJF<SpMat> jj(this, nstp, isRPO);
     SparseLU<SpMat> solver; 
     
     VectorXd xe;

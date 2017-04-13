@@ -5,10 +5,6 @@ The format of Flqouet exponents:
 [mu, w]: Lambda = exp(mu*T + 1i * w)
 
 ==============================
-copyh5.sh : script to combine data for T < 100 and  100 < T < 120
-mergeh5.sh : script to merge two h5 files by some selection rule
-readksh5.m : Matlab script to export h5 contents to Matlab structure.
-
 converge: 
 	  contains the information about convergence of PED on 
 	  upos.

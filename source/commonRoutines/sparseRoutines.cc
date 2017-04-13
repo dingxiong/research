@@ -22,12 +22,11 @@ namespace sparseRoutines {
     triMat(const MatrixXd &A, const size_t M /* = 0 */, 
 	   const size_t N /* = 0 */){
 	vector<Tri> tri; 
-	size_t m = A.rows();
-	size_t n = A.cols();
-	tri.reserve(m*n);
+	size_t rows = A.rows(), cols = A.cols();
+	tri.reserve(rows*cols);
 	// for efficience, loop in the row wise.
-	for(size_t j = 0; j < n; j++)
-	    for(size_t i = 0; i < m; i++)
+	for(size_t j = 0; j < cols; j++)
+	    for(size_t i = 0; i < rows; i++)
 		tri.push_back( Tri(M+i, N+j, A(i,j) ));
 
 	return tri;

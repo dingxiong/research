@@ -268,7 +268,7 @@ VectorXd CQCGL1dRpo::MDFx(const VectorXd &x, const VectorXd &dx, int nstp){
  * @brief         form [g*f(x,t) - x, ...]
  *
  * Form the difference vector, which consists of m pieces, each piece
- * correspond to (x, t, theta, phi). If m = 0, then it reduces to single
+ * correspond to (x, t, theta, phi). If m = 1, then it reduces to single
  * shooting.
  * 
  * @param[in] x   [(Ndim + 3)*m, 1] dimensional vector. 
@@ -309,7 +309,7 @@ VectorXd CQCGL1dRpo::MFx2(const VectorXd &x, int nstp){
  *
  * If m = 1, then it reduces to single shooting
  *
- * Here J_i  = | g*J(x, t) - I,  g*v(f(x,t)),  g*t1(f(x,t)),  g*t2(f(x,t))| 
+ * Here J_i  = | g*J(x, t),      g*v(f(x,t)),  g*t1(f(x,t)),  g*t2(f(x,t))| 
  *             |     v(x),          0             0                  0    |
  *             |     t1(x),         0             0                  0    |
  *             |     t2(x),         0             0                  0    |

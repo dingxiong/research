@@ -13,7 +13,7 @@ if case == 10:
     print time() - t_init
     t_init = time()
     for i in range(1):
-        aa, daa = ks.intgjC(a0, 0.01, 30, 10)
+        aa, daa = ks.intgjC(a0, 0.01, 30, 100000)
     print time() - t_init
 
 if case == 15:

@@ -313,7 +313,8 @@ ArrayXXd KS::half2whole(const Ref<const ArrayXXd> &aa){
  */
 ArrayXXd KS::rotate(const Ref<const ArrayXXd> &aa, const double th){
     assert(aa.rows() == N - 2);
-    return C2R( R2C(aa).colwise() * (dcp(0, th) * K.cast<dcp>()).exp() );
+    ArrayXd indices = ArrayXd::LinSpaced(N/2+1, 0, N/2); // different from K
+    return C2R( R2C(aa).colwise() * (dcp(0, th) * indices).exp() );
 }
 
 /** @brief group tangent of SO(2)

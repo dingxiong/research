@@ -1,10 +1,13 @@
-#include "KSPO.hpp"
-#include "iterMethod.hpp"
 #include <iostream>
 #include <fstream>
+#include "KSPO.hpp"
+#include "iterMethod.hpp"
+#include "sparseRoutines.hpp"
 
 using namespace std; 
 using namespace Eigen;
+using namespace sparseRoutines;
+using namespace iterMethod;
 
 ////////////////////////////////////////////////////////////
 //                     class KSPO                     //
@@ -34,7 +37,7 @@ KSPO::~KSPO(){}
  *                for i = 1, 2, ..., m
  */
 VectorXd
-KSPO::MFxRPO(const VectorXd &x, const int nstp, const bool isRPO){
+KSPO::MFx(const VectorXd &x, const int nstp, const bool isRPO){
     int n = isRPO ? N : N - 1;
     assert( x.size() % n == 0 );
     int m = x.size() / n;
@@ -50,7 +53,7 @@ KSPO::MFxRPO(const VectorXd &x, const int nstp, const bool isRPO){
 	assert(t > 0);
 	
 	VectorXd fx = intgC(xi.head(n-2), t/nstp, t, nstp); // single state
-	VectorXd gfx = isRPO ? rotate(fx, th) : (i == m-1 ? reflect(fx) : fx);
+	VectorXd gfx = isRPO ? (VectorXd)rotate(fx, th) : (i == m-1 ? (VectorXd)reflect(fx) : fx);
 	F.segment(i*n, N-2) = gfx - xn.head(N-2);
     }
     return F;
@@ -96,7 +99,7 @@ KSPO::calJJF(const VectorXd &x, int nstp, const bool isRPO){
 	assert( t > 0 );
 	
 	auto tmp = intgjC(xi.head(N-2), t/nstp, t, nstp);
-	ArrayXd &fx = tmp.first;
+	ArrayXXd &fx = tmp.first;
 	ArrayXXd &J = tmp.second;
 
 	VectorXd gfx = isRPO ? rotate(fx, th) : (i == m-1 ? reflect(fx) : fx);
@@ -133,154 +136,25 @@ KSPO::calJJF(const VectorXd &x, int nstp, const bool isRPO){
     return std::make_tuple(JJ, D, df);
 }
 
-std::tuple<VectorXd, double, double, double, int>
-CQCGL1dReq::findPO_LM(const ArrayXd &a0, const double wth0, const double wphi0, 
-		      const double tol,
-		      const int maxit,
-		      const int innerMaxit){
+/// @return [ (x, T, th, phi), err, flag ]
+std::tuple<ArrayXXd, double, int>
+KSPO::findPO_LM(const ArrayXXd &a0, const bool isRPO, const int nstp,		      
+		const double tol, const int maxit, const int innerMaxit){
+    int cols = a0.cols(), rows = a0.rows();
+    assert (rows == isRPO ? N : N - 1);
     
-    VectorXd x(2*Ne+2);
-    x << a0, wth0, wphi0;
-    
-    auto fx = std::bind(&CQCGL1dReq::Fx, this, ph::_1);    
-    CQCGL1dReqJJF<MatrixXd> jj(this);
-    PartialPivLU<MatrixXd> solver;
+    Map<VectorXd> x(a0.data(), cols * rows);
+    auto fx = [this, &isRPO, &nstp](const VectorXd &x){ return MFx(x, nstp, isRPO); };
+    KSPOJJF<SpMat> jj(this);
+    SparseLU<SpMat> solver; 
     
     VectorXd xe;
     std::vector<double> res;
     int flag;
     std::tie(xe, res, flag) = LM0(fx, jj, solver, x, tol, maxit, innerMaxit);    
-    if(flag != 0) fprintf(stderr, "Req not converged ! \n");
+    if(flag != 0) fprintf(stderr, "PO not converged ! \n");
     
-    VectorXd a = xe.head(2*Ne);
-    double wth = xe(2*Ne);
-    double wphi = xe(2*Ne+1);
-    return std::make_tuple( a, wth, wphi, res.back(), flag );
-}
-
-/** @brief find ppo/rpo in KS system
- *
- * @param[in] a0 guess of initial condition
- * @param[in] T guess of period
- * @param[in] h0 guess of time step
- * @param[in] Norbit number of pieces of the orbit, so each segment has Norbit/M.
- * @param[in] M number of pieces for multishooting method
- * @param[in] ppType ppo/rpo
- * @param[in] th0 guess of initial group angle. For ppo, it is zero.
- * @param[in] hinit: the initial time step to get a good starting guess.
- * @param[in] MaxN maximal number of iteration
- * @param[in] tol tolerance of convergence
- * @return initial conditions along the orbit, time step, shift, error
- *
- */
-tuple<MatrixXd, double, double, double>
-KSPO::findPOmulti(const ArrayXd &a0, const double T, const int Norbit, 
-		      const int M, const string ppType,
-		      const double hinit /* = 0.1*/,
-		      const double th0 /* = 0 */,
-		      const int MaxN /* = 100 */, 
-		      const double tol /* = 1e-14*/, 
-		      const bool Print /* = false */,
-		      const bool isSingle /* = false */){ 
-  bool Terminate = false;
-  assert(a0.rows() == N - 2 && Norbit % M == 0);
-  const int nstp = Norbit/M;
-  double h = T/Norbit;
-  double th = th0;
-  double lam = 1;
-  SparseLU<SpMat> solver; // used in the pre-CG method
-
-  // prepare the initial state sequence
-  KS ks0(N, hinit, L);
-  ArrayXXd tmpx = ks0.intg(a0, (int)ceil(T/hinit), 
-			(int)floor(T/hinit/M));
-  ArrayXXd x = tmpx.leftCols(M); 
-  double err = 0; // error 
-  
-  for(size_t i = 0; i < MaxN; i++){
-    if(Print && i%10 == 0) printf("******  i = %zd/%d  ****** \n", i, MaxN);
-    KS ks(N, h, L);
-    VectorXd F;
-    if(!isSingle) F = multiF(ks, x, nstp, ppType, th);
-    else F = multiF(ks, x.col(0), Norbit, ppType, th);
-    err = F.norm(); 
-    if(err < tol){
-      fprintf(stderr, "stop at norm(F)=%g for iteration %zd\n", err, i);
-      break;
-    }
-   
-    pair<SpMat, VectorXd> p = multishoot(ks, x, nstp, ppType, th, false); 
-    SpMat JJ = p.first.transpose() * p.first; 
-    VectorXd JF = p.first.transpose() * p.second;
-    SpMat Dia = JJ; 
-    Dia.prune(KeepDiag());
-
-    for(size_t j = 0; j < 20; j++){
-      ////////////////////////////////////////
-      // solve the update
-      SpMat H = JJ + lam * Dia; 
-      pair<VectorXd, vector<double> > cg = iterMethod::ConjGradSSOR<SpMat>
-	(H, -JF, solver, VectorXd::Zero(H.rows()), H.rows(), 1e-6);
-      VectorXd &dF = cg.first;
-      
-      ////////////////////////////////////////
-      // print the CG infomation
-      if(Print)
-	printf("CG error %g after %lu iterations.\n", 
-	       cg.second.back(), cg.second.size());
-
-      ////////////////////////////////////////
-      // update the state
-      ArrayXXd xnew = x + Map<ArrayXXd>(&dF(0), N-2, M);
-      double hnew = h + dF((N-2)*M)/nstp; // be careful here.
-      double thnew = th;
-      if(ppType.compare("rpo") == 0) thnew += dF((N-2)*M+1);
-      
-      // check the new time step positve
-      if( hnew <= 0 ){ 
-	fprintf(stderr, "new time step is negative\n");
-	Terminate = true;
-	break;
-      }
-      
-      KS ks1(N, hnew, L);
-      VectorXd newF;
-      if(!isSingle) newF = multiF(ks1, xnew, nstp, ppType, thnew); 
-      else newF = multiF(ks1, xnew.col(0), Norbit, ppType, thnew); 
-      if(Print) printf("err = %g \n", newF.norm());
-      if (newF.norm() < err){
-	x = xnew; h = hnew; th = thnew; 
-	lam = lam/10; 
-	break;
-      }
-      else{
-	lam *= 10; 
-	if(Print) printf("lam = %g \n", lam);
-	if( lam > 1e10) {
-	  fprintf(stderr, "lam = %g too large.\n", lam); 
-	  Terminate = true;
-	  break; 
-	}
-      }
-      
-    }
-    
-    if( Terminate )  break;
-  }
-  
-  return make_tuple(x, h, th, err);
-}
-
-std::tuple<VectorXd, double, double>
-KSPO::findPO(const Eigen::ArrayXd &a0, const double T, const int Norbit, 
-		 const int M, const std::string ppType,
-		 const double hinit /* = 0.1 */,
-		 const double th0 /* = 0 */, 
-		 const int MaxN /* = 100 */, 
-		 const double tol /* = 1e-14 */, 
-		 const bool Print /* = false */,
-		 const bool isSingle /* = false */){
-  tuple<MatrixXd, double, double, double> 
-    tmp = findPOmulti(a0, T, Norbit, M, ppType, hinit, th0, MaxN, tol, Print, isSingle);
-  return make_tuple(std::get<0>(tmp).col(0), std::get<1>(tmp), std::get<2>(tmp));
+    ArrayXXd states(xe);
+    states.resize(rows, cols);
+    return std::make_tuple( states, res.back(), flag );
 }

@@ -1,11 +1,11 @@
 #ifndef KSPO_H
 #define KSPO_H
 
-#include "ksint.hpp"
 #include <vector>
 #include <tuple>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include "ksint.hpp"
 
 class KSPO : public KS{
 
@@ -20,24 +20,27 @@ public:
     ~KSPO();
     
     //////////////////////////////////////////////////
-    std::tuple<VectorXd, double, double>
-    findPO(const Eigen::ArrayXd &a0, const double T, const int Norbit, 
-	   const int M, const std::string ppType,
-	   const double hinit = 0.1,
-	   const double th0 = 0, 
-	   const int MaxN = 100, 
-	   const double tol = 1e-14, 
-	   const bool Print = false,
-	   const bool isSingle = false);
-    std::tuple<MatrixXd, double, double, double>
-    findPOmulti(const Eigen::ArrayXd &a0, const double T, const int Norbit, 
-		const int M, const std::string ppType,
-		const double hinit = 0.1,
-		const double th0 = 0, 
-		const int MaxN = 100, 
-		const double tol = 1e-14, 
-		const bool Print = false,
-		const bool isSingle = false);
-  
+    VectorXd
+    MFx(const VectorXd &x, const int nstp, const bool isRPO);
+    std::tuple<SpMat, SpMat, VectorXd>
+    calJJF(const VectorXd &x, int nstp, const bool isRPO);
+    std::tuple<ArrayXXd, double, int>
+    findPO_LM(const ArrayXXd &a0, const bool isRPO, const int nstp,		      
+	      const double tol, const int maxit, const int innerMaxit);
+    
 };
+
+template<class Mat>
+struct KSPOJJF {    
+    KSPO *ks;
+    bool isRPO;
+    int nstp;
+    KSPOJJF(KSPO *ks, int nstp, bool isRPO) : ks(ks), nstp(nstp), isRPO(isRPO){}
+    
+    std::tuple<KSPO::SpMat, KSPO::SpMat, VectorXd>
+    operator()(const VectorXd &x) {
+	return ks->calJJF(x, nstp, isRPO);
+    }	
+};
+
 #endif	/* KSPO_H */

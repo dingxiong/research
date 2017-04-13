@@ -15,6 +15,9 @@ endif
 ifeq ($(t), int)
 SOURCE = ksint.cc 
 
+else ifeq ($(t), po)
+SOURCE = KSPO.cc
+
 else ifeq ($(t), dim)
 SOURCE = ksdim.cc
 

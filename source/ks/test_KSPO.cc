@@ -13,7 +13,7 @@ using namespace std;
 using namespace Eigen;
 using namespace MyH5;
 
-#define CASE_10
+#define CASE_30
 
 int main(int argc, char **argv) {
 
@@ -47,63 +47,55 @@ int main(int argc, char **argv) {
 #ifdef CASE_20
     //================================================================================    
     // test multiF(). For rpo, the shift should be reversed.
-    string fileName("../../data/ks22h02t100");
-    string ppType("ppo");
-    const int ppId = 1;
+    int N = 64;
+    double L = 22;
+    KSPO ks(N, L);
+    
+    string fileName = "../../data/ks22h001t120x64EV.h5";
+    H5File file(fileName, H5F_ACC_RDONLY);
+    string ppType = "rpo";
+    bool isRPO = ppType == "rpo";
+    int ppId = 1;
 
-    ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5");
-    std::tuple<ArrayXd, double, double, double, double>
-	pp = readks.readKSinit(ppType, ppId);	
-    ArrayXd &a = get<0>(pp); 
-    double T = get<1>(pp);
-    int nstp = (int)get<2>(pp);
-    double r = get<3>(pp);
-    double s = get<4>(pp);
-	
-    KS ks(32, T/nstp, 22);
-    ArrayXXd aa = ks.intg(a, nstp, nstp/10);
-    KSrefine ksrefine(32, 22);
-    VectorXd F = ksrefine.multiF(ks, aa.leftCols(aa.cols()-1),
-				 nstp/10, ppType, -s/22*2*M_PI);
+    ArrayXd a;
+    double T, theta, err;
+    int nstp;
+    std::tie(a, T, nstp, theta, err) = ks.read(file, ks.toStr(ppType, ppId), isRPO);
+    VectorXd x(ks.N);
+    x << a, T, theta;
+
+    VectorXd F = ks.MFx(x, nstp, isRPO);
     cout << F.norm() << endl;
 	
 #endif
+#ifdef CASE_30
+    //================================================================================    
+    // findPO
+    int N = 64;
+    double L = 22;
+    KSPO ks(N, L);
+    
+    string fileName = "../../data/ks22h001t120x64EV.h5";
+    H5File file(fileName, H5F_ACC_RDONLY);
+    string ppType = "rpo";
+    bool isRPO = ppType == "rpo";
+    int ppId = 1;
+
+    ArrayXd a;
+    double T, theta, err;
+    int nstp;
+    std::tie(a, T, nstp, theta, err) = ks.read(file, ks.toStr(ppType, ppId), isRPO);
+    VectorXd x(ks.N);
+    x << a, T, theta;
+    
+    ArrayXXd ap;
+    double errp;
+    int flag;
+    std::tie(ap, errp, flag) = ks.findPO_LM(x, isRPO, nstp, 1e-12, 100, 30);
+    // if (flag == 0) ks.write("rpoBiGi2.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);
+
+#endif
 #if 0
- case 2: // test findPO() 
-     {
-	 const int Nks = 64;
-	 const int N = Nks - 2;
-	 const double L = 22;
-	 string fileName("../../data/ks22h1t120x64");
-	 string ppType("rpo");
-	 const int ppId = 23;
-
-	 ReadKS readks(fileName+".h5", fileName+"E.h5", fileName+"EV.h5", N, Nks, L);
-	 std::tuple<ArrayXd, double, double>
-	     pp = readks.readKSorigin(ppType, ppId);	
-	 ArrayXd &a = get<0>(pp); 
-	 double T = get<1>(pp);
-	 double s = get<2>(pp); cout << s << endl;
-
-	 const int nstp = ceil(ceil(T/0.001)/10)*10; cout << nstp << endl;
-	 KSrefine ksrefine(Nks, L);
-	 tuple<MatrixXd, double, double, double> 
-	     p = ksrefine.findPOmulti(a, T, nstp, 10, ppType,
-				      0.1, -s/L*2*M_PI, 20, 1e-14, true, false);
-	 cout << get<0>(p).cols() << endl;
-	 cout << get<1>(p) * nstp << endl;
-	 cout << get<2>(p) << endl;
-	 cout << get<3>(p) << endl;
-
-	 KS ks(Nks, get<1>(p), L);
-	 VectorXd df = ksrefine.multiF(ks, get<0>(p), nstp/10, ppType, get<2>(p));
-	 VectorXd df2 = ksrefine.multiF(ks, get<0>(p).col(0), nstp, ppType, get<2>(p));
-	 cout << df.norm() << endl;
-	 cout << df2.norm() << endl;
-	 break;
-	  
-     }
-
  case 3: // distiguish rpo5 and rpo6
      {
 	 const int Nks = 32;

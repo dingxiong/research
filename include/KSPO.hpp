@@ -63,6 +63,8 @@ public:
     VectorXd
     MFx(const VectorXd &x, const int nstp, const bool isRPO);
     std::tuple<SpMat, SpMat, VectorXd>
+    multiCalJJF(const VectorXd &x, int nstp, const bool isRPO);
+    std::tuple<MatrixXd, MatrixXd, VectorXd>
     calJJF(const VectorXd &x, int nstp, const bool isRPO);
     std::tuple<ArrayXXd, double, int>
     findPO_LM(const ArrayXXd &a0, const bool isRPO, const int nstp,		      
@@ -71,16 +73,32 @@ public:
 };
 
 template<class Mat>
-struct KSPOJJF {    
+class KSPO_JJF {    
+public :
     KSPO *ks;
     bool isRPO;
     int nstp;
-    KSPOJJF(KSPO *ks, int nstp, bool isRPO) : ks(ks), nstp(nstp), isRPO(isRPO){}
+    KSPO_JJF(KSPO *ks, int nstp, bool isRPO) : ks(ks), nstp(nstp), isRPO(isRPO){}
+    
+    std::tuple<MatrixXd, MatrixXd, VectorXd>
+    operator()(const VectorXd &x) {
+	return ks->calJJF(x, nstp, isRPO);
+    }    
+};
+
+template<class Mat>
+class KSPO_MULTIJJF {    
+public:
+    KSPO *ks;
+    bool isRPO;
+    int nstp;
+    KSPO_MULTIJJF(KSPO *ks, int nstp, bool isRPO) : ks(ks), nstp(nstp), isRPO(isRPO) {}
     
     std::tuple<KSPO::SpMat, KSPO::SpMat, VectorXd>
     operator()(const VectorXd &x) {
-	return ks->calJJF(x, nstp, isRPO);
-    }	
+	return ks->multiCalJJF(x, nstp, isRPO);
+    }    
 };
+    
 
 #endif	/* KSPO_H */

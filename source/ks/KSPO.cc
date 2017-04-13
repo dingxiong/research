@@ -30,7 +30,7 @@ KSPO::toStr(string ppType, int id){
     return ppType + '/' + string(g);    
 }
 
-// [a, T, nstp, r, s]
+// [a, T, nstp, theta, err]
 std::tuple<VectorXd, double, int, double, double>
 KSPO::read(H5File &file, const std::string groupName, const bool isRPO){
     // H5File file(fileName, H5F_ACC_RDONLY);
@@ -40,13 +40,13 @@ KSPO::read(H5File &file, const std::string groupName, const bool isRPO){
     int nstp = checkGroup(file, groupName + "/nstp", false) ? 
 	readScalar<int>(file, DS + "nstp") : 0;
     
-    double s = isRPO ? readScalar<double>(file, DS + "s") : 0;
+    double theta = isRPO ? readScalar<double>(file, DS + "theta") : 0;
     
     return make_tuple(readMatrixXd(file, DS + "a").col(0),
 		      readScalar<double>(file, DS + "T"),
 		      nstp, 
-		      s,
-		      readScalar<double>(file, DS + "r")
+		      theta,
+		      readScalar<double>(file, DS + "err")
 		      );
 }
 
@@ -151,7 +151,7 @@ KSPO::MFx(const VectorXd &x, const int nstp, const bool isRPO){
 	double th = isRPO ? xi(N-1) : 0;
 	assert(t > 0);
 	
-	VectorXd fx = intgC(xi.head(n-2), t/nstp, t, nstp); // single state
+	VectorXd fx = intgC(xi.head(N-2), t/nstp, t, nstp); // single state
 	VectorXd gfx = isRPO ? (VectorXd)rotate(fx, th) : (i == m-1 ? (VectorXd)reflect(fx) : fx);
 	F.segment(i*n, N-2) = gfx - xn.head(N-2);
     }
@@ -159,15 +159,12 @@ KSPO::MFx(const VectorXd &x, const int nstp, const bool isRPO){
 }
 
 /**
- * @brief get  J 
- *
- * If m = 1, then it reduces to single shooting
+ * @brief multishooting
  *
  * For RPO 
  * Here J_i  = | g*J(x, t),      g*v(f(x,t)),  g*t(f(x,t))  | 
  *             |     v(x),          0             0         |
  *             |     t(x),          0             0         |
- *
  * For PPO
  * i = 1, ..., m-1
  * Here J_i  = | J(x, t),      v(f(x,t))  | 
@@ -176,10 +173,12 @@ KSPO::MFx(const VectorXd &x, const int nstp, const bool isRPO){
  * Here J_i  = | g*J(x, t),      g*v(f(x,t)) | 
  *             |     v(x),          0        |
  *
+ * If m = 1, then it reduces to single shooting
+ *
  * @note I do not enforce the constraints              
  */
 std::tuple<SpMat, SpMat, VectorXd>
-KSPO::calJJF(const VectorXd &x, int nstp, const bool isRPO){
+KSPO::multiCalJJF(const VectorXd &x, int nstp, const bool isRPO){
     int n = isRPO ? N : N - 1;
     assert( x.size() % n == 0 );
     int m = x.size() / n;
@@ -205,12 +204,11 @@ KSPO::calJJF(const VectorXd &x, int nstp, const bool isRPO){
 	F.segment(i*n, N-2) = gfx - xn.head(N-2);	
 
 	ArrayXXd gJ = isRPO ? rotate(J, th) : (i == m-1 ? reflect(J) : J);
-	VectorXd v = velocity(fx);
-	VectorXd gvfx = isRPO ? (VectorXd)rotate(v, th) : (i == m-1 ? (VectorXd)reflect(v) : v); 
+	VectorXd vgfx = velocity(gfx);
 	
 	vector<Tri> triJ = triMat(gJ, i*n, i*n);
 	nz.insert(nz.end(), triJ.begin(), triJ.end());
-	vector<Tri> triv = triMat(gvfx, i*n, i*n+N-2);
+	vector<Tri> triv = triMat(vgfx, i*n, i*n+N-2);
 	nz.insert(nz.end(), triv.begin(), triv.end());
 	
 	if(isRPO){
@@ -235,7 +233,45 @@ KSPO::calJJF(const VectorXd &x, int nstp, const bool isRPO){
     return std::make_tuple(JJ, D, df);
 }
 
-/// @return [ (x, T, th, phi), err, flag ]
+// single shooting
+// Here   J  = | g*J(x, t) - I,  g*v(f(x,t)),  g*t(f(x,t))  | 
+//             |     v(x),          0             0         |
+//             |     t(x),          0             0         |
+std::tuple<MatrixXd, MatrixXd, VectorXd>
+KSPO::calJJF(const VectorXd &x, int nstp, const bool isRPO){
+    int n = isRPO ? N : N - 1;
+    assert(x.size() == n);
+    
+    MatrixXd DF(n, n); DF.setZero();
+    VectorXd F(n); F.setZero();
+    
+    double t = x(N-2);
+    double th = isRPO ? x(N-1) : 0;
+    assert( t > 0 );
+    
+    auto tmp = intgjC(x.head(N-2), t/nstp, t, nstp);
+    ArrayXXd &fx = tmp.first;
+    ArrayXXd &J = tmp.second;
+
+    VectorXd gfx = (isRPO ? rotate(fx, th) :  reflect(fx));
+    F.head(N-2) = gfx - x.head(N-2);	
+    
+    DF.topLeftCorner(N-2, N-2) = (isRPO ? rotate(J, th) : reflect(J)).matrix() - MatrixXd::Identity(N-2, N-2) ;
+    DF.col(N-2).head(N-2) = velocity(gfx);
+    
+    if(isRPO){
+	DF.col(N-1).head(N-2) = gTangent(gfx); 
+    }
+    
+    MatrixXd JJ = DF.transpose() * DF;
+    MatrixXd D  = JJ.diagonal().asDiagonal();
+    VectorXd df = DF.transpose() * F; 
+
+    return std::make_tuple(JJ, D, df);
+}
+
+
+/// @return [ (x, T, th), err, flag ]
 std::tuple<ArrayXXd, double, int>
 KSPO::findPO_LM(const ArrayXXd &a0, const bool isRPO, const int nstp,		      
 		const double tol, const int maxit, const int innerMaxit){
@@ -244,13 +280,21 @@ KSPO::findPO_LM(const ArrayXXd &a0, const bool isRPO, const int nstp,
     
     Map<const VectorXd> x(a0.data(), cols * rows);
     auto fx = [this, &isRPO, &nstp](const VectorXd &x){ return MFx(x, nstp, isRPO); };
-    KSPOJJF<SpMat> jj(this, nstp, isRPO);
-    SparseLU<SpMat> solver; 
     
     VectorXd xe;
     std::vector<double> res;
     int flag;
-    std::tie(xe, res, flag) = LM0(fx, jj, solver, x, tol, maxit, innerMaxit);    
+
+    if(cols == 1){
+	KSPO_JJF<MatrixXd> jj(this, nstp, isRPO);
+	PartialPivLU<MatrixXd> solver;
+	std::tie(xe, res, flag) = LM0(fx, jj, solver, x, tol, maxit, innerMaxit);    
+    }
+    else {
+	KSPO_MULTIJJF<SpMat> jj(this, nstp, isRPO);
+	SparseLU<SpMat> solver; 	
+	std::tie(xe, res, flag) = LM0(fx, jj, solver, x, tol, maxit, innerMaxit);    
+    }
     if(flag != 0) fprintf(stderr, "PO not converged ! \n");
     
     ArrayXXd states(xe);

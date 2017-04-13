@@ -51,19 +51,6 @@ namespace MyH5 {
     KSreadEq(const std::string fileName, const int Id);
     std::tuple<VectorXd, double, double>
     KSreadReq(const std::string fileName, const int Id);
-    void 
-    KSwriteEq(const string fileName, const int Id, 
-	      const VectorXd &a, const double err);
-    void 
-    KSwriteReq(const string fileName, const int Id,
-	       const VectorXd &a, const double omega,
-	       const double err);
-    void 
-    KSwriteEqE(const string fileName, const int Id, 
-	       const VectorXcd e);
-    void 
-    KSwriteReqE(const string fileName, const int Id, 
-		const VectorXcd e);
 }
 
 //////////////////////////////////////////////////
@@ -100,9 +87,9 @@ namespace MyH5 {
     Scalar readScalar(H5File &file, string DSitem){
 	DataSet item = file.openDataSet(DSitem);
 	DataSpace dsp = item.getSpace();
-	// assert(dsp.getSimpleExtentNdims() == 0);
-	// hsize_t dims[1];
-	// int ndims = dsp.getSimpleExtentDims(dims, NULL);
+	assert(dsp.getSimpleExtentNdims() == 0);
+	hsize_t dims[1];
+	int ndims = dsp.getSimpleExtentDims(dims, NULL);
 	Scalar value(0);
 	PredType type = getPredType<Scalar>();
 	item.read(&value, type);

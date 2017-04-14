@@ -26,6 +26,10 @@ public:
     static
     std::string 
     toStr(string ppType, int id);
+    
+    static
+    std::string
+    toStr(double domainSize, string ppType, int id);
 
     static
     std::tuple<VectorXd, double, int, double, double>

@@ -30,6 +30,14 @@ KSPO::toStr(string ppType, int id){
     return ppType + '/' + string(g);    
 }
 
+std::string
+KSPO::toStr(double domainSize, string ppType, int id){
+    char g1[20], g2[20];
+    sprintf(g1, "%010.6f", domainSize);
+    sprintf(g2, "%06d", id);
+    return string(g1) + '/' + ppType + '/' + string(g2);
+}
+
 // [a, T, nstp, theta, err]
 std::tuple<VectorXd, double, int, double, double>
 KSPO::read(H5File &file, const std::string groupName, const bool isRPO){

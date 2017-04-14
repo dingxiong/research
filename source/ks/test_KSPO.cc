@@ -97,30 +97,40 @@ int main(int argc, char **argv) {
 #ifdef CASE_40
     //================================================================================
     int N = 64;
-    double L = 22-0.0001;
+    double L = 21.95;
     KSPO ks(N, L);
     
     string fileName = "../../data/ks22h001t120x64EV.h5";
     H5File file(fileName, H5F_ACC_RDONLY);
     string ppType = "rpo";
     bool isRPO = ppType == "rpo";
-    int ppId = 2;
-    int M = 20;
+    int ppId = 1;
+    int M = 10;
 
     ArrayXd a;
     double T, theta, err;
     int nstp;
     std::tie(a, T, nstp, theta, err) = ks.read(file, ks.toStr(ppType, ppId), isRPO);
-    ArrayXXd aa = ks.intgC(a, T/nstp, T, nstp/M);
+    // nstp /= 10;
+    ArrayXXd aa = ks.intgC(a, T/nstp, T, nstp/M); 
 
-    ArrayXXd x(ks.N, M);
-    x << aa, ArrayXXd::Ones(1, M) * T/M, ArrayXXd::Zero(1, M);
-    x(N-1, M-1) = theta;
-    
+    ArrayXXd x;
+    if(isRPO){
+	x.resize(ks.N, M);
+	x << aa, ArrayXXd::Ones(1, M) * T/M, ArrayXXd::Zero(1, M);
+	x(N-1, M-1) = theta;
+    }
+    else {
+	x.resize(ks.N - 1, M);
+	x << aa, ArrayXXd::Ones(1, M) * T/M;
+    }
     ArrayXXd ap;
     double errp;
     int flag;
     std::tie(ap, errp, flag) = ks.findPO_LM(x, isRPO, nstp/M, 1e-12, 100, 30);
+    
+    if (flag == 0) ks.write("tmp.h5", cgl.toStr(Bi, Gi, 1), x, nstp, err);
+
 #endif
 #if 0
  case 3: 

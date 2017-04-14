@@ -325,7 +325,8 @@ ArrayXXd KS::rotate(const Ref<const ArrayXXd> &aa, const double th){
  */
 ArrayXXd KS::gTangent(const Ref<const ArrayXXd> &x){
     assert(x.rows() == N - 2);
-    return  C2R(R2C(x).colwise() * (dcp(0, 1) * K.cast<dcp>()) );
+    ArrayXd indices = ArrayXd::LinSpaced(N/2+1, 0, N/2); // different from K
+    return  C2R(R2C(x).colwise() * (dcp(0, 1) * indices) );
 }
 
 /* group generator matrix T */

@@ -217,6 +217,16 @@ KSPO::multiCalJJF(const VectorXd &x, int nstp, const bool isRPO){
 	    nz.insert(nz.end(), tritx.begin(), tritx.end());
 	}
 	
+	// // constraint
+	// ArrayXXd v = velocity(xi.head(N-2)).transpose();
+	// triv = triMat(v, i*n+N-2, i*n);
+	// nz.insert(nz.end(), triv.begin(), triv.end());
+	// if(isRPO){
+	//     ArrayXXd t = gTangent(xi.head(N-2)).transpose();
+	//     vector<Tri> tritx = triMat(t, i*n+N-1, i*n);
+	//     nz.insert(nz.end(), tritx.begin(), tritx.end());
+	// }
+
 	// -I on the subdiagonal
 	vector<Tri> triI = triDiag(N-2, -1, i*n, j*n);
 	nz.insert(nz.end(), triI.begin(), triI.end());
@@ -253,15 +263,16 @@ KSPO::calJJF(const VectorXd &x, int nstp, const bool isRPO){
     ArrayXXd &fx = tmp.first;
     ArrayXXd &J = tmp.second;
 
-    VectorXd gfx = (isRPO ? rotate(fx, th) :  reflect(fx));
+    VectorXd gfx = isRPO ? rotate(fx, th) :  reflect(fx);
     F.head(N-2) = gfx - x.head(N-2);	
     
     DF.topLeftCorner(N-2, N-2) = (isRPO ? rotate(J, th) : reflect(J)).matrix() - MatrixXd::Identity(N-2, N-2) ;
-    DF.col(N-2).head(N-2) = velocity(gfx);
+    DF.col(N-2).head(N-2) = velocity(gfx);    
+    if(isRPO) DF.col(N-1).head(N-2) = gTangent(gfx); 
     
-    if(isRPO){
-	DF.col(N-1).head(N-2) = gTangent(gfx); 
-    }
+    // DF.row(N-2).head(N-2) = velocity(x.head(N-2)).transpose();
+    // if(isRPO) DF.row(N-1).head(N-2) = gTangent(x.head(N-2)).transpose();
+    
     
     MatrixXd JJ = DF.transpose() * DF;
     MatrixXd D  = JJ.diagonal().asDiagonal();

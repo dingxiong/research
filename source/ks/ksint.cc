@@ -17,7 +17,8 @@ void KS::NL::operator()(ArrayXXcd &x, ArrayXXcd &dxdt, double t){
     
     for(int i = 0; i < cs; i++)
 	ks->fft.inv(u.data() + i*N, x.data() + i*(N/2+1), N); 
-    u = u.square(); 
+    ArrayXd orbit = u.col(0);
+    u = u.colwise() * orbit;
     for(int i = 0; i < cs; i++)
 	ks->fft.fwd(dxdt.data() + i*(N/2+1), u.data() + i*N, N); 
     dxdt.col(0) *= ks->G;

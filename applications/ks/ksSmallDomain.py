@@ -1,7 +1,7 @@
 from ksHelp import *
 from py_ks import *
 
-case = 10
+case = 20
 
 if case == 10:
     N, L = 64, 22
@@ -69,3 +69,29 @@ if case == 30:
     ax.plot(apH[:, 1], apH[:, 5], apH[:, 3], c='r', lw=3)
     ax.plot(aaH[:, 1], aaH[:, 5], aaH[:, 3], c='b')
     ax3d(fig, ax)
+
+if case == 40:
+    """
+    have a look at stability of rpo/ppo for different L
+    """
+    N = 64
+    L0, dL = 21.95, 0.05
+    ppType = 'rpo'
+    isRPO = ppType == 'rpo'
+    ppId = 2
+    fileName = '../../data/ksh01x64EV.h5'
+    
+    Ls, Es, Ts = [], [], []
+    for i in range(20):
+        L = L0 - i * dL
+        ksp = KSplot()
+        groupName = ksp.toStr(ppType, ppId, L, flag=1)
+        if ksp.checkExist(fileName, groupName):
+            a, T, nstp, theta, err, e = ksp.readPO(fileName, groupName, isRPO, flag=1)[:6]
+            Ts.append(T)
+            Ls.append(L)
+            Es.append(e)
+
+    print Ts
+    print Ls
+    print Es

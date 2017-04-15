@@ -7,6 +7,7 @@
 #include <Eigen/Sparse>
 #include "ksint.hpp"
 #include "myH5.hpp"
+#include "ped.hpp"
 
 using namespace H5;
 
@@ -73,6 +74,10 @@ public:
     std::tuple<ArrayXXd, double, int>
     findPO_LM(const ArrayXXd &a0, const bool isRPO, const int nstp,		      
 	      const double tol, const int maxit, const int innerMaxit);
+
+    std::pair<MatrixXd, MatrixXd>
+    calEV(const bool isRPO, const ArrayXd &a0,  const double T, const int nstp, const double theta,
+	  const double tol, const int MaxN, const int trunc);
     
 };
 

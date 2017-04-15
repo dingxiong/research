@@ -1,5 +1,5 @@
 /* How to compile:
- * h5c++ test_KSPO.cc -L../../lib -I../../include -I$EIGEN -std=c++11 -lKSPO -lksint -lmyH5 -literMethod -ldenseRoutines -lsparseRoutines -lfftw3 -lm 
+ * h5c++ test_KSPO.cc -L../../lib -I../../include -I$EIGEN -std=c++11 -lKSPO -lksint -lmyH5 -literMethod -ldenseRoutines -lsparseRoutines -lped -lfftw3 -lm 
  *
  * mpicxx  has flag -cxx, which can be used to specify cc compiler. eg. -cxx=h5c++
  * */
@@ -13,7 +13,7 @@ using namespace std;
 using namespace Eigen;
 using namespace MyH5;
 
-#define CASE_40
+#define CASE_60
 
 int main(int argc, char **argv) {
 
@@ -114,11 +114,11 @@ int main(int argc, char **argv) {
     // findPO sequentially change parameters
     int N = 64;
     
-    string fileName = "tmp.h5";
+    string fileName = "../../data/ksh01x64.h5";
     H5File file(fileName, H5F_ACC_RDWR);
     string ppType = "rpo";
     bool isRPO = ppType == "rpo";
-    int ppId = 1;
+    int ppId = 2;
     int M = 10;
     
     ArrayXd a;
@@ -126,8 +126,8 @@ int main(int argc, char **argv) {
     int nstp, flag;
     ArrayXXd ap;
     
-    double dL = 0.05, L0 = 21.9;
-    for(int i = 0; i < 10; i++){
+    double dL = 0.05, L0 = 21.4;
+    for(int i = 0; i < 5; i++){
 	double L = L0 - i*dL;
 	KSPO ks(N, L);
 	
@@ -151,8 +151,58 @@ int main(int argc, char **argv) {
 	if (flag == 0) ks.write(file, ks.toStr(L, ppType, ppId), isRPO, ap.col(0).head(N-2), Tp, nstp, thetap, errp);
 	else exit(1);
     }
+#endif
+#ifdef CASE_50
+    //================================================================================
+    // calculate E/V
+    int N = 64;
+    double L = 21.95;
+    KSPO ks(N, L);
     
-   
+    string fileName = "../../data/ksh01x64.h5";
+    H5File file(fileName, H5F_ACC_RDONLY);
+    string ppType = "ppo";
+    bool isRPO = ppType == "rpo";
+    int ppId = 1;
+
+    ArrayXd a;
+    double T, theta, err;
+    int nstp;
+    std::tie(a, T, nstp, theta, err) = ks.read(file, ks.toStr(L, ppType, ppId), isRPO);
+    
+    auto ev = ks.calEV(isRPO, a, T, nstp, theta, 1e-12, 1000, 10);
+    MatrixXd &e = ev.first, &v = ev.second;
+
+    cout << e << endl;   
+#endif
+#ifdef CASE_60
+    //================================================================================
+    // calculate E/V for all rpo/ppo
+    int N = 64;
+    string fileName = "../../data/ksh01x64EV.h5";
+    H5File file(fileName, H5F_ACC_RDWR);
+    auto gs = scanGroup(fileName);
+    
+    ArrayXd a;
+    double T, theta, err;
+    int nstp;
+    
+    for(auto ss : gs){
+	double L = stod(ss[0]);
+	string ppType = ss[1];
+	bool isRPO = ppType == "rpo";
+	int ppId = stoi(ss[2]);	
+	string groupName = KSPO::toStr(L, ppType, ppId);
+	if (!checkGroup(file, groupName + "/e", false)){
+	    KSPO ks(N, L);
+	    std::tie(a, T, nstp, theta, err) = ks.read(file, groupName, isRPO);
+	    auto ev = ks.calEV(isRPO, a, T, nstp, theta, 1e-12, 1500, 10);
+	    MatrixXd &e = ev.first, &v = ev.second;
+	    ks.writeE(file, groupName, e.topRows(10));
+	    ks.writeV(file, groupName, v);
+	}
+    }
+
 #endif
 
     return 0;

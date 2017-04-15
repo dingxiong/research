@@ -320,3 +320,20 @@ KSPO::findPO_LM(const ArrayXXd &a0, const bool isRPO, const int nstp,
     states.resize(rows, cols);
     return std::make_tuple( states, res.back(), flag );
 }
+
+
+std::pair<MatrixXd, MatrixXd>
+KSPO::calEV(const bool isRPO, const ArrayXd &a0,  const double T, const int nstp, const double theta,
+	    const double tol, const int MaxN, const int trunc){
+    auto tmp = intgjC(a0, T/nstp, T, 1);
+    MatrixXd Js = tmp.second; // need to make it MatrixXd.
+    
+    PED ped;
+    ped.reverseOrder(Js);
+    Js.leftCols(N-2) = isRPO ? rotate(Js.leftCols(N-2), theta) : reflect(Js.leftCols(N-2));
+    
+    pair<MatrixXd, MatrixXd> ev = ped.EigVecs(Js, MaxN, tol, false, trunc);
+    MatrixXd &e = ev.first, &v = ev.second;
+    e.col(0) /= T;
+    return make_pair(e, v);    
+}

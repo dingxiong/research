@@ -1,10 +1,10 @@
 from ksHelp import *
 from py_ks import *
 
-case = 20
+case = 10
 
 if case == 10:
-    N, L = 64, 22
+    N, L = 64, 21.7
     ks = pyKS(N, L)
     ksp = KSplot(ks)
     

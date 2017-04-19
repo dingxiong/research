@@ -35,7 +35,6 @@ class CQCGLBase():
         return gs
 
     
-
 class CQCGLplot():
     def __init__(self, cgl=None):
         self.cgl = cgl
@@ -90,6 +89,28 @@ class CQCGLplot():
         plt.colorbar(im, cax=cax, ticks=barTicks)
 
         ax2d(fig, ax, save=save, name=name)
+
+    def wire(self, AA, ext, isFourier=True, tt=None, skipRate=1,
+             size=[8, 6], labs=[r'$x$', r'$t$', r'$|A|$'], c='k',
+             axisLabelSize=20, tickSize=None, save=False, name='out.png'):
+        """
+        plot the fence plot
+        """
+        if isFourier:
+            AA =self.cgl.Fourier2Config(AA)
+        Aamp = np.abs(AA)
+        Aamp = Aamp[::skipRate, :]
+        rows, cols = Aamp.shape
+        X = np.linspace(ext[0], ext[1], cols)
+        if tt is None:
+            Y = np.linspace(ext[2], ext[3], rows)
+        else:
+            Y = tt[::skipRate]
+        fig, ax = pl3d(size=size, labs=labs, axisLabelSize=axisLabelSize, tickSize=tickSize)
+        for i in range(Aamp.shape[0]):
+            ax.plot(X, np.ones(cols) * Y[i], Aamp[i], c=c, alpha=1)
+
+        ax3d(fig, ax, save=save, name=name)
 
     def sliceTime(self, t):
         n = len(t)
@@ -272,7 +293,7 @@ def plotConfigSurface(AA, ext, barTicks=[2, 4], colortype='jet',
     
     fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111, projection='3d')
-    surf = ax.plot_surface(X, Y, Aamp, rstride=10, cstride=10,
+    surf = ax.plot_surface(X, Y, Aamp, rstride=1, cstride=1,
                            cmap=plt.get_cmap(colortype),
                            linewidth=0, antialiased=False)
 
@@ -320,7 +341,7 @@ def plotConfigWire(AA, ext, barTicks=[2, 7], size=[7, 6], axisLabelSize=25,
     ax = fig.add_subplot(111, projection='3d')
     #ax.plot_wireframe(X, Y, Aamp)
     for i in range(Aamp.shape[0]):
-        plot(X[i], Y[i], Aamp[i], c=c, alpha=0.4)
+        ax.plot(X[i], Y[i], Aamp[i], c=c, alpha=1)
     ax.set_xlabel(r'$x$', fontsize=axisLabelSize)
     ax.set_ylabel(r'$t$', fontsize=axisLabelSize)
     ax.set_zlabel(r'$|A|$', fontsize=axisLabelSize)

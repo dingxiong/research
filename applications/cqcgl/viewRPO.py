@@ -1,8 +1,8 @@
 from py_CQCGL1d import *
-from personalFunctions import *
+from cglHelp import *
 from scipy.integrate import odeint
 
-case = 411
+case = 41
 
 if case == 1:
     """
@@ -142,15 +142,15 @@ if case == 41:
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     rpo = CQCGLrpo(cgl)
     cp = CQCGLplot(cgl)
-    x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
-                                                     Bi, Gi, 1, flag=2)
+    x, T, nstp, th, phi, err, e, v = rpo.read('../../data/cgl/rpoBiGiEV.h5',
+                                              rpo.toStr(Bi, Gi, 1), flag=2)
     a0 = x[:cgl.Ndim]
     print e[:10]
 
     a0 += 0.1*norm(a0)*v[0]
-    numT = 10
+    numT = 4
     for i in range(1):
-        aa = cgl.intg(a0, T/nstp, numT*nstp, 10)
+        aa = cgl.intg(a0, T/nstp, numT * T, 10)
         a0 = aa[-1]
         cp.config(aa, [0, d, 0, T*numT])
         

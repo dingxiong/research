@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
-from personalFunctions import *
+from cglHelp import *
 
-case = 50
+case = 55
 
 if case == 1:
     """
@@ -167,6 +167,25 @@ if case == 50:
         # plot1dfig(aa[:, 0])
         x.append(aa)
 
+if case == 55:
+    """
+    reproduce the pulstating soliton with L = 50
+    """
+    N, d = 1024 , 50
+    h = 1e-2
+    cgl = pyCQCGL1d(N, d, -0.1, 0.08, 0.5, 0.782, 1, -0.1, -0.08, -1)
+    rpo, cp = CQCGLrpo(cgl), CQCGLplot(cgl)
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.2, True)
+    a0 = cgl.Config2Fourier(A0)
+    a0 = cgl.intgC(a0, h, 100, 1000000)
+
+    T = 70
+    aa = cgl.intgC(a0, h, T, 100)
+    aa2 = cgl.intg(a0, h, T, 100)
+    cp.config(aa, [0, d, 0, T])
+    np.savez_compressed('pulsatingSoliton', states=aa, statesAdapt=aa2, Ts=cgl.Ts(), T=T)
+        
 ###############################################################################
 if case == 60:
     """
@@ -273,27 +292,28 @@ if case == 90:
     ======
     """
     N = 1024
-    d = 30
-    h = 1e-3
+    d = 60
+    h = 1e-2
 
-    epsilon = 0.835
+    epsilon = 0.844
     cgl = pyCQCGL1d(N, d, -0.1, 0.08, 1, epsilon, -0.11, -0.08, -1)
+    cp = CQCGLplot(cgl)
       
     if True:
         Ndim = cgl.Ndim
         A0 = 3*centerRand(N, 0.2, True)
         a0 = cgl.Config2Fourier(A0)
-        a0 = cgl.intg(a0, h, np.int(100/h), np.int(100/h))[-1]
+        a0 = cgl.intgC(a0, h, 100, 1000000)
 
         T = 300
-        aa = cgl.intg(a0, h, np.int(T/h), 100)
+        aa = cgl.intgC(a0, h, T, 100)
         Q = cgl.calQ(aa)
-        plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+        cp.config(aa, [0, d, 0, T])
         plot1dfig(Q)
         np.save('a0', aa[-1])
 
-    if True:
-        cgl.Br = 0.839
+    if False:
+        cgl.Br = 0.844
         a0 = load('a0.npy')
         a0 = cgl.intg(a0, h, np.int(100/h), np.int(100/h))[-1]
         T = 300
@@ -301,13 +321,13 @@ if case == 90:
         plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
         np.save('a1', aa[-1])
 
-    cgl.Br = 0.828
-    a0 = load('a0.npy')
-    a0 = cgl.intg(a0, h, np.int(100/h), np.int(100/h))[-1]
-    T = 500
-    aa = cgl.intg(a0, h, np.int(T/h), 100)
+    cgl.Br = 0.844
+    a0 = np.load('a0.npy')
+    a0 = cgl.intgC(a0, h, 100, 1000000)
+    T = 100
+    aa = cgl.intg(a0, h, T, 20)
     Q = cgl.calQ(aa)
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+    cp.config(aa, [0, d, 0, T])
     plot1dfig(Q)
     
     

@@ -131,7 +131,7 @@ CQCGL1d::CQCGL1d(int N, double d,
 CQCGL1d::CQCGL1d(int N, double d,
 		 double delta, double beta, double D, double epsilon,
 		 double mu, double nu, int dimTan)
-    : CQCGL1d::CQCGL1d(N, d, delta, beta, D/2, epsilon, 1, mu, nu) {}
+    : CQCGL1d::CQCGL1d(N, d, delta, beta, D/2, epsilon, 1, mu, nu, dimTan) {}
 
 CQCGL1d::~CQCGL1d(){}
 

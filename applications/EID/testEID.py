@@ -1,7 +1,7 @@
 from cglHelp import *
 from py_CQCGL1d import *
 
-case = 60
+case = 45
 
 labels = ["IF4(3)", "IF5(4)",
           "ERK4(3)2(2)", "ERK4(3)3(3)", "ERK4(3)4(3)", "ERK5(4)5(4)",
@@ -206,6 +206,31 @@ if case == 40:
 
     plt.tight_layout(pad=0)
     plt.show(block=False)
+
+if case == 45:
+    """
+    plot fence instead of heat
+    """
+    N, d = 1024, 50
+    fig = plt.figure(figsize=[12, 5])
+    
+    ax = ax3dinit(fig, num=131, labs=[r'$x$', r'$t$', r'$|A|$'], axisLabelSize=20, tickSize=12)
+    cgl = pyCQCGL1d(N, d, -0.1, 0.08, 0.5, 0.782, 1, -0.1, -0.08, -1)
+    skipRate = 1
+    pulsate = np.load('data/pulsatingSoliton.npz')
+    aa, aa2, Ts, T = pulsate['states'], pulsate['statesAdapt'], pulsate['Ts'], pulsate['T']
+    AA = cgl.Fourier2Config(aa)
+    Aamp = np.abs(AA)
+    Aamp = Aamp[::skipRate, :]
+    rows, cols = Aamp.shape
+    X = np.linspace(0, d, cols)
+    Y = np.linspace(0, T, rows)
+    for i in range(Aamp.shape[0]):
+        ax.plot(X, np.ones(cols) * Y[i], Aamp[i], c='k', alpha=1)
+    
+    plt.locator_params(nticks=2)
+    ax3d(fig, ax)
+    
 
 if case == 50:
     """

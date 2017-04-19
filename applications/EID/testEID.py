@@ -212,9 +212,12 @@ if case == 45:
     plot fence instead of heat
     """
     N, d = 1024, 50
-    fig = plt.figure(figsize=[12, 5])
+    fig = plt.figure(figsize=[15, 4])
     
+    # 1st
     ax = ax3dinit(fig, num=131, labs=[r'$x$', r'$t$', r'$|A|$'], axisLabelSize=20, tickSize=12)
+    ax.text2D(0.3, 0.9, '(a)', horizontalalignment='center',
+              transform=ax.transAxes, fontsize=18)
     cgl = pyCQCGL1d(N, d, -0.1, 0.08, 0.5, 0.782, 1, -0.1, -0.08, -1)
     skipRate = 1
     pulsate = np.load('data/pulsatingSoliton.npz')
@@ -228,7 +231,56 @@ if case == 45:
     for i in range(Aamp.shape[0]):
         ax.plot(X, np.ones(cols) * Y[i], Aamp[i], c='k', alpha=1)
     
-    plt.locator_params(nticks=2)
+    ax.set_yticks([0, 30, 60])
+    ax.set_zticks([0, 3])
+    ax.view_init(75, -50)
+    
+    # 2nd
+    ax = ax3dinit(fig, num=132, labs=[r'$x$', r'$t$', r'$|A|$'], axisLabelSize=20, tickSize=12)
+    ax.text2D(0.3, 0.9, '(b)', horizontalalignment='center',
+              transform=ax.transAxes, fontsize=18)
+    Bi, Gi = 3.5, -5.0
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    skipRate = 1
+    pulsate = np.load('data/extremeSoliton.npz')
+    aa, aa2, Ts, T = pulsate['states'], pulsate['statesAdapt'], pulsate['Ts'], pulsate['T']
+    AA = cgl.Fourier2Config(aa)
+    Aamp = np.abs(AA)
+    Aamp = Aamp[::skipRate, :]
+    rows, cols = Aamp.shape
+    X = np.linspace(0, d, cols)
+    Y = np.linspace(0, T, rows)
+    for i in range(Aamp.shape[0]):
+        ax.plot(X, np.ones(cols) * Y[i], Aamp[i], c='k', alpha=1)
+    
+    ax.set_ylim([0, 13])
+    ax.set_yticks([0, 5, 10])
+    ax.set_zticks([0, 1])
+    ax.view_init(60, -40)
+
+    # 3rd
+    ax = ax3dinit(fig, num=133, labs=[r'$x$', r'$t$', r'$|A|$'], axisLabelSize=20, tickSize=12)
+    ax.text2D(0.3, 0.9, '(c)', horizontalalignment='center',
+              transform=ax.transAxes, fontsize=18)
+    Bi, Gi = 0.8, -0.6
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    skipRate = 5
+    aa = np.loadtxt('data/aa.dat')
+    AA = cgl.Fourier2Config(aa)
+    Aamp = np.abs(AA)
+    Aamp = Aamp[::skipRate, :]
+    rows, cols = Aamp.shape
+    X = np.linspace(0, d, cols)
+    Y = np.linspace(0, T, rows)
+    for i in range(Aamp.shape[0]):
+        ax.plot(X, np.ones(cols) * Y[i], Aamp[i], c='k', alpha=1)
+    
+    ax.set_ylim([0, 13])
+    ax.set_yticks([0, 5, 10])
+    ax.set_zticks([0, 3])
+    ax.view_init(75, -80)
+    
+    ############
     ax3d(fig, ax)
     
 

@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from cglHelp import *
 
-case = 55
+case = 56
 
 if case == 1:
     """
@@ -185,6 +185,29 @@ if case == 55:
     aa2 = cgl.intg(a0, h, T, 100)
     cp.config(aa, [0, d, 0, T])
     np.savez_compressed('pulsatingSoliton', states=aa, statesAdapt=aa2, Ts=cgl.Ts(), T=T)
+
+
+if case == 56:
+    """
+    produce profile with extremete solition
+    """
+    N, d = 1024 , 50
+    Bi, Gi = 3.5, -5.0
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    rpo, cp = CQCGLrpo(cgl), CQCGLplot(cgl)
+    x, T, nstp, th, phi, err, e, v = rpo.read('../../data/cgl/rpoBiGiEV.h5',
+                                              rpo.toStr(Bi, Gi, 1), flag=2)
+    a0 = x[:cgl.Ndim]
+    print e[:10]
+
+    #a0 += 0.1*norm(a0)*v[0]
+    aa = cgl.intgC(a0, T/nstp, 3*T, 600)
+    aa2 = cgl.intg(a0, T/nstp, 3*T, 50)
+    cp.config(aa, [0, d, 0, 3*T])
+
+    np.savez_compressed('extremeSoliton', states=aa, statesAdapt=aa2, Ts=cgl.Ts(), T=3*T)
+
         
 ###############################################################################
 if case == 60:

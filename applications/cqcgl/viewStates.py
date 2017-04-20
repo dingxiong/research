@@ -1,7 +1,7 @@
 from py_CQCGL1d import *
 from cglHelp import *
 
-case = 56
+case = 60
 
 if case == 1:
     """
@@ -208,6 +208,46 @@ if case == 56:
 
     np.savez_compressed('extremeSoliton', states=aa, statesAdapt=aa2, Ts=cgl.Ts(), T=3*T)
 
+if case == 57:
+    """
+    produce profile with composite soliton
+    """
+    N, d = 1024 , 50
+    h = 2e-3
+    Bi, Gi = 3, -5.0
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    req, cp = CQCGLreq(cgl), CQCGLplot(cgl)
+    a0, wth0, wphi0, err = req.read('../../data/cgl/reqBiGi.h5', 
+                                    req.toStr(Bi, Gi, 1))
+    T = 10
+    aa = cgl.intgC(a0, h, T, 100)
+    aa2 = cgl.intg(a0, h, T, 50)
+    cp.config(aa, [0, d, 0, T])
+
+    np.savez_compressed('compositeSoliton', states=aa, statesAdapt=aa2, Ts=cgl.Ts(), T=T)
+
+if case == 58:
+    """
+    produce 
+    """
+    N, d = 1024, 120
+    h = 2e-3
+
+    Dr = 0.883
+    
+    cgl = pyCQCGL1d(N, d, -0.1, Dr, -1.1, 3, 1, -2.75, 1, -1)
+    cp = CQCGLplot(cgl)
+
+    Ndim = cgl.Ndim
+    A0 = 3*centerRand(N, 0.1, True)
+    a0 = cgl.Config2Fourier(A0)
+    a0 = cgl.intg(a0, h, 100, 1000000)
+
+    T = 30
+    aa = cgl.intgC(a0, h, T, 50)
+    aa2 = cgl.intg(a0, h, T, 50)
+    cp.config(aa, [0, d, 0, T])
         
 ###############################################################################
 if case == 60:
@@ -222,35 +262,38 @@ if case == 60:
     transition.
     """
     N = 1024
-    d = 30
-    h = 1e-4
+    d = 50
+    h = 2e-3
 
     Mu = -1
     cgl = pyCQCGL1d(N, d, Mu, 0.125, 0.5, 1, 1, -0.1, -0.6, -1)
+    cp = CQCGLplot(cgl)
 
     Ndim = cgl.Ndim
     A0 = 3*centerRand(N, 0.2, True)
     a0 = cgl.Config2Fourier(A0)
-    a0 = cgl.intg(a0, h, np.int(50/h), np.int(50/h))[-1]
+    a0 = cgl.intg(a0, h, 50, 1000000)
 
     # stable soliton
     T = 50
-    aa = cgl.intg(a0, h, np.int(T/h), 10)
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+    aa = cgl.intg(a0, h, T, 100)
+    cp.config(aa, [0, d, 0, T])
 
     # oscillating soltion with one frequency
-    cgl.changeMu(-0.21)
+    Mu = -0.21
+    cgl = pyCQCGL1d(N, d, Mu, 0.125, 0.5, 1, 0.8, -0.1, -0.6, -1)
     T = 50
-    aa = cgl.intg(aa[-1], h, np.int(5/h), np.int(5/h))
-    aa = cgl.intg(aa[-1], h, np.int(T/h), 10)
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+    a0 = cgl.intg(aa[-1], h, 5, 1000000)
+    aa = cgl.intg(a0, h, T, 100)
+    cp.config(aa, [0, d, 0, T])
 
     # oscillating soltion with two frequency
-    cgl.changeMu(-0.19)
-    T = 100
-    aa = cgl.intg(aa[-1], h, np.int(5/h), np.int(5/h))
-    aa = cgl.intg(aa[-1], h, np.int(T/h), 100)
-    plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])
+    Mu = -0.21
+    cgl = pyCQCGL1d(N, d, Mu, 0.125, 0.5, 1, 1, -0.1, -0.6, -1)
+    T = 80
+    a0 = cgl.intg(aa[-1], h, 5, 1000000)
+    aa = cgl.intg(a0, h, T, 100)
+    cp.config(aa, [0, d, 0, T])
 
     # aa = cgl.intg(a0, 0.01, np.int(50/0.01), 10)
     # plotConfigSpaceFromFourier(cgl, aa, [0, d, 0, T])

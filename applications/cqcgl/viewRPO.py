@@ -332,7 +332,7 @@ if case == 46:
     cp = CQCGLplot(cgl)
 
     x, T, nstp, th, phi, err, e, v = rpo.readRpoBiGi('../../data/cgl/rpoBiGiEV.h5',
-                                               Bi, Gi, 1, flag=2)
+                                                     Bi, Gi, 1, flag=2)
     a0 = x[:cgl.Ndim]
     po = cgl.intg(a0, T/nstp, nstp, 10)
     poH = cgl.orbit2slice(po, sysFlag)[0]

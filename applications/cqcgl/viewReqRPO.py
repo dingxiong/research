@@ -161,28 +161,33 @@ if case == 20:
     N, d = 1024, 50
     sysFlag = 1
 
-    Bi, Gi = 1.4, -3.9
+    Bi, Gi = 2, -5
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     req, cp = CQCGLreq(cgl), CQCGLplot(cgl)
     a0, wth, wphi, err = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1))
     OrbitEq = cgl.intg(a0, 0.001, 2, 2)
     OrbitEqH = cgl.orbit2slice(OrbitEq, sysFlag)[0]
 
-    Bi, Gi = 1.4, -3.9
+    Bi, Gi = 4.8, -4.5 
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     rpo, cp = CQCGLrpo(cgl), CQCGLplot(cgl)
-    x, T, nstp, th, phi, err = rpo.read('../../data/cgl/rpoHopfBiGi.h5', rpo.toStr(Bi, Gi, 1))
+    x, T, nstp, th, phi, err = rpo.read('../../data/cgl/rpoBiGi.h5', rpo.toStr(Bi, Gi, 1))
     po = cgl.intgC(x[:cgl.Ndim], T/nstp, T, 2)
     poH = cgl.orbit2slice(po, sysFlag)[0]
 
-    fig, ax = pl2d(size=[8, 6], labs=[r'$b_2$', r'$c_2$'], axisLabelSize=30, tickSize=20)
+    fig, ax = pl2d(size=[6.5, 6], labs=[r'$b_2$', r'$c_2$'], axisLabelSize=30, tickSize=20)
     ax.plot(OrbitEq[:, 4], OrbitEq[:, 5], ls='-', lw=2, c='r')
     ax.plot(po[:, 4], po[:, 5], ls='-', lw=2, c='b')
+    ax.set_xticks(ax.get_xticks()[::2])
+    ax.set_yticks(ax.get_yticks()[::2])
     ax2d(fig, ax)
     
-    fig, ax = pl2d(size=[8, 6], labs=[r'$\hat{b}_2$', r'$\hat{c}_2$'], axisLabelSize=30, tickSize=20)
+    fig, ax = pl2d(size=[6.5, 6], labs=[r'$\hat{b}_2$', r'$\hat{c}_2$'], axisLabelSize=30, tickSize=20)
     ax.scatter(OrbitEqH[0, 4], OrbitEqH[0, 5], s=100, edgecolors='none', marker='o', c='r')
     ax.plot(poH[:, 4], poH[:, 5], ls='-', lw=2, c='b')
+    ax.set_xlim(25, 55)
+    ax.set_xticks(ax.get_xticks()[::2])
+    ax.set_yticks(ax.get_yticks()[::2])
     ax2d(fig, ax)
 
     """

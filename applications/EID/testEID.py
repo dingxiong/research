@@ -1,7 +1,7 @@
 from cglHelp import *
 from py_CQCGL1d import *
 
-case = 45
+case = 44
 
 labels = ["IF4(3)", "IF5(4)",
           "ERK4(3)2(2)", "ERK4(3)3(3)", "ERK4(3)4(3)", "ERK5(4)5(4)",
@@ -207,6 +207,46 @@ if case == 40:
     plt.tight_layout(pad=0)
     plt.show(block=False)
 
+if case == 44:
+    """
+    transform  data in case 40 
+    """
+    N, d = 1024, 50
+    
+    # 1st
+    cgl = pyCQCGL1d(N, d, -0.1, 0.08, 0.5, 0.782, 1, -0.1, -0.08, -1)
+    pulsate = np.load('data/pulsatingSoliton.npz')
+    aa, aa2, Ts, T = pulsate['states'], pulsate['statesAdapt'], pulsate['Ts'], pulsate['T']
+    AA = cgl.Fourier2Config(aa)
+    Aamp = np.abs(AA)
+    AA2 = cgl.Fourier2Config(aa2)
+    Aamp2 = np.abs(AA2)
+    np.savez_compressed('data/pulsatingSolitonAmp.npz', Aamp=Aamp, Aamp2=Aamp2, Ts=Ts, T=T)
+
+    # 2nd
+    Bi, Gi = 3.5, -5.0
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    pulsate = np.load('data/extremeSoliton.npz')
+    aa, aa2, Ts, T = pulsate['states'], pulsate['statesAdapt'], pulsate['Ts'], pulsate['T']
+    AA = cgl.Fourier2Config(aa)
+    Aamp = np.abs(AA)
+    AA2 = cgl.Fourier2Config(aa2)
+    Aamp2 = np.abs(AA2)
+    np.savez_compressed('data/extremeSolitonAmp.npz', Aamp=Aamp, Aamp2=Aamp2, Ts=Ts, T=T)
+
+    # 3rd
+    Bi, Gi = 0.8, -0.6
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
+    aa = np.loadtxt('data/aa.dat')
+    aa2 = np.loadtxt('data/aaAdapt_Cox_Matthews.dat')
+    Ts = np.loadtxt('data/TsAdapt_Cox_Matthews.dat')
+    T = 20
+    AA = cgl.Fourier2Config(aa)
+    Aamp = np.abs(AA)
+    AA2 = cgl.Fourier2Config(aa2)
+    Aamp2 = np.abs(AA2)
+    np.savez_compressed('data/explodingSolitonAmp.npz', Aamp=Aamp, Aamp2=Aamp2, Ts=Ts, T=T)
+
 if case == 45:
     """
     plot fence instead of heat
@@ -266,6 +306,7 @@ if case == 45:
     cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, -1)
     skipRate = 5
     aa = np.loadtxt('data/aa.dat')
+    T = 20
     AA = cgl.Fourier2Config(aa)
     Aamp = np.abs(AA)
     Aamp = Aamp[::skipRate, :]

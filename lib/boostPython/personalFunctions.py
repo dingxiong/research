@@ -4,8 +4,9 @@
 from time import time
 import h5py
 import matplotlib
-matplotlib.use('Qt4Agg')
-from pylab import *
+#matplotlib.use('Qt4Agg')
+#matplotlib.use('Qt5Agg')
+#from pylab import *
 import numpy as np
 from numpy.random import rand
 from scipy.spatial.distance import pdist, cdist, squareform

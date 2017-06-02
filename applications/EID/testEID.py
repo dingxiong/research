@@ -221,7 +221,7 @@ if case == 44:
     Aamp = np.abs(AA)
     AA2 = cgl.Fourier2Config(aa2)
     Aamp2 = np.abs(AA2)
-    np.savez_compressed('data/pulsatingSolitonAmp.npz', Aamp=Aamp, Aamp2=Aamp2, Ts=Ts, T=T)
+    np.savez_compressed('data/pulsatingSolitonAmp.npz', states=Aamp, statesAdapt=Aamp2, Ts=Ts, T=T)
 
     # 2nd
     Bi, Gi = 3.5, -5.0
@@ -232,7 +232,7 @@ if case == 44:
     Aamp = np.abs(AA)
     AA2 = cgl.Fourier2Config(aa2)
     Aamp2 = np.abs(AA2)
-    np.savez_compressed('data/extremeSolitonAmp.npz', Aamp=Aamp, Aamp2=Aamp2, Ts=Ts, T=T)
+    np.savez_compressed('data/extremeSolitonAmp.npz', states=Aamp, statesAdapt=Aamp2, Ts=Ts, T=T)
 
     # 3rd
     Bi, Gi = 0.8, -0.6
@@ -245,7 +245,7 @@ if case == 44:
     Aamp = np.abs(AA)
     AA2 = cgl.Fourier2Config(aa2)
     Aamp2 = np.abs(AA2)
-    np.savez_compressed('data/explodingSolitonAmp.npz', Aamp=Aamp, Aamp2=Aamp2, Ts=Ts, T=T)
+    np.savez_compressed('data/explodingSolitonAmp.npz', states=Aamp, statesAdapt=Aamp2, Ts=Ts, T=T)
 
 if case == 45:
     """

@@ -3,7 +3,7 @@ from py_CQCGL1dEIDc import *
 from cglHelp import *
 import matplotlib.gridspec as gridspec
 
-case = 15
+case = 90
 
 
 if case == 10:
@@ -531,6 +531,20 @@ if case == 80:
     ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, ls='--', c='k')
     
     ax2d(fig, ax)
+
+if case == 90:
+    """
+    save the data for the two coexsting solitons for the same parameter
+    """
+    N, d = 1024, 50
+    Bi, Gi = 0.8, -0.6
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req = CQCGLreq(cgl)
+    a1, wth0, wphi0, err0 = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1), flag=0)
+    a2, wth0, wphi0, err0 = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 2), flag=0)
+    absA1 = np.abs(cgl.Fourier2Config(a1))
+    absA2 = np.abs(cgl.Fourier2Config(a2))
+    np.savez_compressed('solitonProfileFor08n06', absA1=absA1, absA2=absA2)
 
 if case == 100:
     """

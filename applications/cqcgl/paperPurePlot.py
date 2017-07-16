@@ -2,8 +2,9 @@ from cglHelp import *
 from matplotlib import rc
 rc('font',**{'family':'serif','serif':['Times']})  # I love Times
 rc('text', usetex=True)
+import matplotlib.gridspec as gridspec
 
-case = 60
+case = 150
 
 if case == 15:
     """
@@ -124,3 +125,105 @@ if case == 90:
     ax.plot(np.linspace(0, d, absA2.shape[0]), absA2, lw=2, ls='--', c='b')
     
     ax2d(fig, ax)
+
+if case == 76:
+    """
+    plot one Hopf bifurcation using save data
+    subplot (a) : heat map of the limit cycle
+    subplot (b) : symmetry-reduced state space figure
+    """
+    N, d = 1024, 50
+    data = np.load('hopfCycleAndWuOfReq.npz')
+    hopfCycleProfiles4Periods, T, aaP, aapP = data['hopfCycleProfiles4Periods'], data['T'], data['aaP'], data['aapP']
+
+    # plot figure 
+    fig = plt.figure(figsize=[8, 4])
+    nx, ny = 8, 4
+    gs = gridspec.GridSpec(nx, ny)
+    
+    ax = fig.add_subplot(gs[:nx-1, 0])
+    ax.text(0.1, 0.9, '(a)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=18, color='white')
+    ax.set_xlabel(r'$x$', fontsize=25)
+    ax.set_ylabel(r'$t$', fontsize=25)
+    ax.set_xticks(range(0, 60, 10))
+    ax.set_yticks(range(0, 16, 3))
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    im = ax.imshow(hopfCycleProfiles4Periods, cmap=plt.get_cmap('jet'), extent=[0, d, 0, 4*T], 
+                   aspect='auto', origin='lower')
+    # ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax =dr.append_axes('right', size='5%', pad=0.05)
+    cb = plt.colorbar(im, cax=cax, ticks=np.arange(0, 2, 0.4))
+    cb.ax.tick_params(labelsize=15)
+    
+    ax = fig.add_subplot(gs[:, 1:], projection='3d')
+    ax.text2D(0.1, 0.9, '(b)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=18)
+    ax.set_xlabel(r'$v_1$', fontsize=25)
+    ax.set_ylabel(r'$v_2$', fontsize=25)
+    ax.set_zlabel(r'$v_3$', fontsize=25)
+    # ax.set_xlim([-20, 20])
+    # ax.set_ylim([0, 250])
+    # ax.set_zlim([-30, 30])
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    ax.locator_params(nbins=4)
+    # ax.scatter(a0H[], a0H[4], a0H[5], c='r', s=40)
+    # ax.plot(aaH[:, -1], aaH[:, 4], aaH[:, 5], c='b', lw=1, alpha=0.7)
+    # ax.plot(aapH[:, -1], aapH[:, 4], aapH[:, 5], c='r', lw=2)
+    ax.scatter(0, 0, 0, c='r', s=40)
+    ax.plot(aaP[:, 0], aaP[:, 1], aaP[:, 2], c='b', lw=1, alpha=0.7)
+    ax.plot(aapP[:, 0], aapP[:, 1], aapP[:, 2], c='r', lw=2)
+
+    fig.tight_layout(pad=0)
+    plt.show(block=False)
+
+if case == 150:
+    """
+    plot the example explosions using loaded data
+    """
+    N, d = 1024, 50
+    data = np.load('explosionExample08n06.npz')
+    Aamp1 = data['AampSymmetric']
+    T1 = data['Tsymmetric']
+    Aamp2 = data['AampAsymmetric']
+    T2 = data['Tasymmetric']
+    
+    # plot the figure
+    fig = plt.figure(figsize=[8, 5])    
+
+    ax = fig.add_subplot(121)
+    ax.text(0.1, 0.9, '(a)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=30, color='white')
+    ax.set_xlabel(r'$x$', fontsize=30)
+    ax.set_ylabel(r'$t$', fontsize=30)
+    ax.set_xticks(range(0, 60, 10))
+    ax.set_yticks(range(0, 12, 2))
+    ax.tick_params(axis='both', which='major', labelsize=20)
+    im = ax.imshow(Aamp1, cmap=plt.get_cmap('jet'), extent=[0, d, 0, T1], 
+                   aspect='auto', origin='lower')
+    # ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax =dr.append_axes('right', size='5%', pad=0.05)
+    cb = plt.colorbar(im, cax=cax, ticks=np.arange(0, 4, 1))
+    cb.ax.tick_params(labelsize=20)
+
+
+    ax = fig.add_subplot(122)
+    ax.text(0.1, 0.9, '(b)', horizontalalignment='center',
+            transform=ax.transAxes, fontsize=30, color='white')
+    ax.set_xlabel(r'$x$', fontsize=30)
+    ax.set_ylabel(r'$t$', fontsize=30)
+    ax.set_xticks(range(0, 60, 10))
+    ax.set_yticks(range(0, 12, 2))
+    ax.tick_params(axis='both', which='major', labelsize=20)
+    im = ax.imshow(Aamp2, cmap=plt.get_cmap('jet'), extent=[0, d, 0, T2], 
+                   aspect='auto', origin='lower')
+    # ax.grid('on')
+    dr = make_axes_locatable(ax)
+    cax =dr.append_axes('right', size='5%', pad=0.05)
+    cb = plt.colorbar(im, cax=cax, ticks=np.arange(0, 4, 1))
+    cb.ax.tick_params(labelsize=20)
+
+    fig.tight_layout(pad=0)
+    plt.show(block=False)

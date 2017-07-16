@@ -3,7 +3,7 @@ from py_CQCGL1dEIDc import *
 from cglHelp import *
 import matplotlib.gridspec as gridspec
 
-case = 75
+case = 150
 
 
 if case == 10:
@@ -710,3 +710,41 @@ if case == 100:
     fig.tight_layout(pad=0)
     plt.show(block=False)
 
+
+
+if case == 150:
+    """
+    find one representative symmetric and asymmetric explosions
+    save the data
+    """
+    N, d = 1024 , 50
+    h = 2e-3    
+    Bi, Gi = 0.8, -0.6
+
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req, cp = CQCGLreq(cgl), CQCGLplot(cgl)
+
+    a0, wth0, wphi0, err0, e, v = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1), flag=2)    
+    aE = a0 + 0.001 * norm(a0) * v[0].real
+
+    # get rid of transicent
+    aa = cgl.intgC(aE, h, 69, 100000)
+    aE = aa[-1] if aa.ndim == 2 else aa
+
+    # save symmetric explosion
+    Tsymmetric = 10
+    aa = cgl.intgC(aE, h, Tsymmetric, 10)
+    AampSymmetric = np.abs(cgl.Fourier2Config(aa))
+    aE = aa[-1] if aa.ndim == 2 else aa
+    
+    # save asymmetric explosion
+    aa = cgl.intgC(aE, h, 189, 100000)
+    aE = aa[-1] if aa.ndim == 2 else aa
+    Tasymmetric = 10
+    aa = cgl.intgC(aE, h, Tasymmetric, 10)
+    AampAsymmetric = np.abs(cgl.Fourier2Config(aa))
+    aE = aa[-1] if aa.ndim == 2 else aa
+
+    np.savez_compressed('explosionExample08n06', AampSymmetric=AampSymmetric, AampAsymmetric=AampAsymmetric, 
+                        Tsymmetric=Tsymmetric, Tasymmetric=Tasymmetric)
+    

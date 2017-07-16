@@ -3,26 +3,7 @@ from matplotlib import rc
 rc('font',**{'family':'serif','serif':['Times']})  # I love Times
 rc('text', usetex=True)
 
-case = 90
-
-
-if case == 10:
-    """
-    plot the Bi - Gi req stability plot using the saved date from running viewReq.py
-    data format : {Gi, Bi, #unstable}
-    #unstalbe is 0, 2, 4, 6 ...
-    """
-    saveData = np.loadtxt("BiGiReqStab.dat")
-    cs = {0: 'c', 1: 'm', 2: 'g', 4: 'r', 6: 'b'}#, 8: 'y', 56: 'r', 14: 'grey'}
-    ms = {0: '^', 1: '^', 2: 'x', 4: 'o', 6: 'D'}#, 8: '8', 56: '4', 14: 'v'}
-    fig, ax = pl2d(size=[8, 6], labs=[r'$\gamma_i$', r'$\beta_i$'], axisLabelSize=30,
-                   tickSize=20, xlim=[-6, 0], ylim=[-4, 6])
-    for item in saveData:
-        Gi, Bi, m = item
-        ax.scatter(Gi, Bi, s=18 if m > 0 else 18, edgecolors='none',
-                   marker=ms.get(m, 'v'), c=cs.get(m, 'k'))
-    # ax.grid(which='both')
-    ax2d(fig, ax)
+case = 60
 
 if case == 15:
     """
@@ -34,8 +15,8 @@ if case == 15:
     I need to draw each region indivisually. 
     """
     saveData = np.loadtxt("BiGiReqStab.dat")
-    BiRange = [-3.2, 4]
-    GiRange = [-5.6, -0.9]
+    BiRange = [-3.2, 3.5]
+    GiRange = [-5.6, -0.5]
     inc = 0.1
 
     nx = np.int(np.rint( (BiRange[1] - BiRange[0])/inc ) + 1)
@@ -63,7 +44,7 @@ if case == 15:
         ax.contourf(X, Y, Z2, levels=[-0.1, 0.9], colors=cs[i])
 
     # add zoom rectangle
-    BiZoom = [1.9, 4]
+    BiZoom = [1.9, 3.5]
     GiZoom = [-5.6, -4]
     ax.plot([BiZoom[0], BiZoom[0]], [GiZoom[0], GiZoom[1]], ls='--', lw=3, c='k')
     ax.plot([BiZoom[1], BiZoom[1]], [GiZoom[0], GiZoom[1]], ls='--', lw=3, c='k')
@@ -74,14 +55,15 @@ if case == 15:
     ax.text(0, -4.5, r'$U_1$', fontsize=30)
     ax.text(1.8, -2.5, r'$U_2$', fontsize=30)
     ax.text(2., -4.8, r'$U_3$', fontsize=30)
-    ax.text(3., -3, r'$U_{\geq 4}$', fontsize=30)
-    ax.scatter(2.0,-5, c='k', s=100, edgecolor='none')
-    ax.scatter(2.7,-5, c='k', s=100, edgecolor='none')
+    ax.text(2.7, -3, r'$U_{\geq 4}$', fontsize=30)
+    #ax.scatter(2.0,-5, c='k', s=100, edgecolor='none')
+    #ax.scatter(2.7,-5, c='k', s=100, edgecolor='none')
+    ax.scatter(0.8, -0.6, c='k', s=100, edgecolor='none')
     ax.scatter(1.4,-3.9, c='k', marker='*', s=200, edgecolor='none')
     ax.set_xlim(BiRange)
     ax.set_ylim(GiRange)
 
-    ax.set_xticks(range(-3, 5))
+    ax.set_xticks(range(-3, 4))
     ax2d(fig, ax)
 
 if case == 60:
@@ -109,7 +91,7 @@ if case == 60:
                            marker=ms.get(m, 'o'), c=cs.get(m, 'r'))
 
     # add zoom rectangle
-    BiZoom = [1.9, 4]
+    BiZoom = [1.9, 3.5]
     GiZoom = [-5.6, -4]
     ax.plot([BiZoom[1], BiZoom[1]], [GiZoom[0], GiZoom[1]], ls='--', lw=3, c='k')
     ax.plot([BiZoom[0], BiZoom[0]], [GiZoom[0], GiZoom[1]], ls='--', lw=3, c='k')
@@ -129,19 +111,16 @@ if case == 60:
 if case == 90:
     """
     plot the two coexisting soltions for the same paramter in the same figure
+    load saved data
     """
     N, d = 1024, 50
     
     fig, ax = pl2d(size=[8, 6], labs=[r'$x$', r'$|A|$'], axisLabelSize=30, tickSize=25)
-
     Bi, Gi = 0.8, -0.6
-    req = CQCGLreq()
-    a0, wth0, wphi0, err0 = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1), flag=0)
-    Aamp = np.abs(cgl.Fourier2Config(a0))
-    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, ls='-', c='k')
-
-    a0, wth0, wphi0, err0 = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 2), flag=0)
-    Aamp = np.abs(cgl.Fourier2Config(a0))
-    ax.plot(np.linspace(0, d, Aamp.shape[0]), Aamp, lw=2, ls='--', c='k')
+    
+    profiles = np.load('solitonProfileFor08n06.npz')
+    absA1, absA2 = profiles['absA1'], profiles['absA2']
+    ax.plot(np.linspace(0, d, absA1.shape[0]), absA1, lw=2, ls='-', c='r')
+    ax.plot(np.linspace(0, d, absA2.shape[0]), absA2, lw=2, ls='--', c='b')
     
     ax2d(fig, ax)

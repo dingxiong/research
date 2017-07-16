@@ -3,7 +3,7 @@ from py_CQCGL1dEIDc import *
 from cglHelp import *
 import matplotlib.gridspec as gridspec
 
-case = 90
+case = 75
 
 
 if case == 10:
@@ -506,6 +506,58 @@ if case == 70:
 
     fig.tight_layout(pad=0)
     plt.show(block=False)
+
+
+if case == 75:
+    """
+    same as case 70 but only save the data
+    """
+    N, d = 1024, 50
+    h = 2e-3
+    sysFlag = 1
+
+    Bi, Gi = 1.4, -3.9
+    index = 1
+    cgl = pyCQCGL1d(N, d, -0.1, 0.125, 0.5, 1, Bi, -0.1, Gi, 0)
+    req = CQCGLreq(cgl)
+    rpo = CQCGLrpo(cgl)
+    cp = CQCGLplot(cgl)
+
+    # obtain unstable manifold of req
+    a0, wth0, wphi0, err0, e, v = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, index), flag=2)
+
+    # get the bases
+    vt = np.vstack([v[0].real, v[0].imag, v[4].real])
+    vRed = cgl.ve2slice(vt, a0, sysFlag)
+    Q = orthAxes(vRed[0], vRed[1], vRed[2])
+
+    a0H = cgl.orbit2slice(a0, sysFlag)[0]
+    a0P = a0H.dot(Q)
+
+    aE = a0 + 0.1*norm(a0)*v[0].real
+    T = 800
+    aa = cgl.intgC(aE, h, 100, 100000)
+    aE = aa[-1] if aa.ndim == 2 else aa 
+    aa = cgl.intgC(aE, h, T, 50)
+    aaH = cgl.orbit2slice(aa, sysFlag)[0]
+    aaP = aaH.dot(Q) - a0P
+    
+    # obtain limit cycle
+    x, T, nstp, th, phi, err = rpo.read('../../data/cgl/rpoHopfBiGi.h5', rpo.toStr(Bi, Gi, 1))
+    ap0 = x[:-3]
+    hp = T / nstp
+    aap = cgl.intgC(ap0, hp, T, 10)
+    aapH = cgl.orbit2slice(aap, sysFlag)[0]
+    aapP = aapH.dot(Q) - a0P
+    
+    aap4 = aap
+    for k in range(1, 4):
+        aap4 = np.vstack((aap4, cgl.Rotate(aap, -k*th, -k*phi)))
+    
+    # save the data
+
+    hopfCycleProfiles4Periods = np.abs(cgl.Fourier2Config(aap4))
+    np.savez_compressed('hopfCycleAndWuOfReq', hopfCycleProfiles4Periods=hopfCycleProfiles4Periods, T=T, aaP=aaP, aapP=aapP)
 
 if case == 80:
     """

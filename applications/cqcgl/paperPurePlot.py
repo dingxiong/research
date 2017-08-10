@@ -4,7 +4,7 @@ rc('font',**{'family':'serif','serif':['Times']})  # I love Times
 rc('text', usetex=True)
 import matplotlib.gridspec as gridspec
 
-case = 150
+case = 240
 
 if case == 15:
     """
@@ -104,6 +104,9 @@ if case == 60:
     #ax.yaxis.set_minor_locator(AutoMinorLocator(10))
     #ax.grid(which='major', linewidth=2)
     #ax.grid(which='minor', linewidth=1)
+    ax.scatter(4.6, -5.0, c='k', s=200, edgecolor='none')
+    ax.scatter(4.8, -4.5, c='k', marker='*', s=400, edgecolor='none')
+
     ax.set_yticks([-4, -4.5, -5, -5.5])
     ax.set_xticks(np.arange(2, 6, 0.5))
     ax2d(fig, ax)
@@ -227,3 +230,66 @@ if case == 150:
 
     fig.tight_layout(pad=0)
     plt.show(block=False)
+
+
+if case == 200:
+    """
+    print out the eigen exponents of Hopt RPO
+    """
+    Bi, Gi = 1.4, -3.9
+    rpo = CQCGLrpo()
+    x, T, nstp, th, phi, err, e, v = rpo.read('../../data/cgl/rpoHopfBiGi.h5', rpo.toStr(Bi, Gi, 1), flag=2)
+    mu = np.log(np.abs(e)) / T
+    theta = np.arctan2(e.imag, e.real)
+    
+if case == 220:
+    """
+    print out the eigen exponents of rpos
+    """
+    rpo = CQCGLrpo()
+    Bi, Gi = (4.6, -5.0) if False else (4.8, -4.5)
+    x, T, nstp, th, phi, err, e, v = rpo.read('../../data/cgl/rpoBiGiEV.h5', rpo.toStr(Bi, Gi, 1), flag=2)
+    mu = np.log(np.abs(e)) / T
+    theta = np.arctan2(e.imag, e.real)
+
+if case == 240:
+    """
+    plot the stability exponent diagram
+    """
+    req = CQCGLreq()
+    Bi, Gi = 0.8, -0.6
+    
+    a0, wth0, wphi0, err0, e, v = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1), flag=2)
+    def Lam(k):
+        return -0.1 - (0.125 + 0.5j) * (2*np.pi/50 * k)**2
+    # Lam = lambda k : -0.1 - (0.125 + 0.5j) * (2*np.pi/50 * k)**2
+    
+    M = (e.shape[0] - 2 ) / 4
+    x = [0, 0]
+    for i in range(1, M+1):
+        x = x + [i]*4
+    x = np.array(x)
+
+    fig = plt.figure(figsize=[8, 6])
+    ax = fig.add_subplot(111)
+    ax.tick_params(axis='x', which='major', labelsize=25)
+    ax.set_xlabel(r'$j$', fontsize=30)
+    ax.tick_params(axis='y', which='major', colors='r', labelsize=25)
+    ax.set_ylabel(r'$\mu^{(j)}$', color='r', fontsize=30)
+
+    ax.scatter(x, e.real, c='r', s=10)
+    ax.plot(x, Lam(x).real, c='k', ls='--', lw=2)
+
+    ax2 = ax.twinx()
+    ax2.tick_params(axis='both', which='major', colors='b', labelsize=25)
+    ax2.set_ylabel(r'$\omega^{(j)}$', color='b', fontsize=30)
+
+    ax2.scatter(x, np.abs(e.imag), c='b', s=10)
+    ax2.plot(x, np.abs(Lam(x).imag), c='k', ls='--', lw=2)
+    ax2d(fig, ax)
+    
+    # fig, ax = pl2d(size=[8, 6], labs=[r'$j$', r'$\omega^{(j)}$'], axisLabelSize=30, tickSize=25)
+    # ax.scatter(x, np.abs(e.imag), c='r', s=10)
+    # #ax.plot(x, np.abs(e.imag))
+    # ax.plot(x, np.abs(Lam(x).imag), c='b', ls='--', lw=2)
+    # ax2d(fig, ax)

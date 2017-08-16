@@ -273,19 +273,38 @@ if case == 240:
     fig = plt.figure(figsize=[8, 6])
     ax = fig.add_subplot(111)
     ax.tick_params(axis='x', which='major', labelsize=25)
-    ax.set_xlabel(r'$j$', fontsize=30)
+    ax.set_xlabel(r'$k$', fontsize=30)
     ax.tick_params(axis='y', which='major', colors='r', labelsize=25)
     ax.set_ylabel(r'$\mu^{(j)}$', color='r', fontsize=30)
 
-    ax.scatter(x, e.real, c='r', s=10)
+    ax.scatter(x, e.real, s=10, facecolors='none', edgecolors='r')
     ax.plot(x, Lam(x).real, c='k', ls='--', lw=2)
 
     ax2 = ax.twinx()
-    ax2.tick_params(axis='both', which='major', colors='b', labelsize=25)
+    ax2.tick_params(axis='y', which='major', colors='b', labelsize=25)
     ax2.set_ylabel(r'$\omega^{(j)}$', color='b', fontsize=30)
 
-    ax2.scatter(x, np.abs(e.imag), c='b', s=10)
+    ax2.scatter(x, np.abs(e.imag), s=10, facecolors='none', edgecolors='b')
     ax2.plot(x, np.abs(Lam(x).imag), c='k', ls='--', lw=2)
+
+    # plot insert
+    x = x[:200]
+    e = e[:200]
+    axInsert = plt.axes([.22, .4, .3, .3])
+    axInsert.tick_params(axis='x', which='major', labelsize=18)
+    axInsert.set_xlabel(r'$k$', fontsize=25)
+    axInsert.tick_params(axis='y', which='major', colors='r', labelsize=18)
+
+    axInsert.scatter(x, e.real, s=10, facecolors='none', edgecolors='r')
+    axInsert.plot(x, Lam(x).real, c='k', ls='--', lw=2)
+
+    axInsert2 = axInsert.twinx()
+    axInsert2.tick_params(axis='y', which='major', colors='b', labelsize=18)
+
+    axInsert2.scatter(x, np.abs(e.imag), s=10, facecolors='none', edgecolors='b')
+    axInsert2.plot(x, np.abs(Lam(x).imag), c='k', ls='--', lw=2)
+
+    # END
     ax2d(fig, ax)
     
     # fig, ax = pl2d(size=[8, 6], labs=[r'$j$', r'$\omega^{(j)}$'], axisLabelSize=30, tickSize=25)

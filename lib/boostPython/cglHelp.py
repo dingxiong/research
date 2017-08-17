@@ -34,6 +34,24 @@ class CQCGLBase():
         f.visititems(parse)
         return gs
 
+    def checkVecSym(self, v):
+        """
+        check the symmetry of a vector
+        symmetric : a_k = a_{-k}
+        anti-symmetric : a_k = - a_{-k}
+        """
+        vr, vi = v.real, v.imag
+        vr, vi = vr[::2] + 1j*vr[1::2], vi[::2] + 1j*vi[1::2]
+        # pad a_0 at end
+        vr, vi = np.append(vr, vr[0]), np.append(vi, vi[0])
+
+        sym_r = norm(vr - vr[::-1]) / norm(vr)
+        sym_i = norm(vi - vi[::-1]) / norm(vi)
+        anti_r = norm(vr + vr[::-1]) / norm(vr)
+        anti_i = norm(vi + vi[::-1]) / norm(vi)
+
+        return np.array([sym_r, sym_i, anti_r, anti_i])
+        
     
 class CQCGLplot():
     def __init__(self, cgl=None):

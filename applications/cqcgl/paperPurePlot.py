@@ -282,7 +282,7 @@ if case == 240:
 
     ax2 = ax.twinx()
     ax2.tick_params(axis='y', which='major', colors='b', labelsize=25)
-    ax2.set_ylabel(r'$\omega^{(j)}$', color='b', fontsize=30)
+    ax2.set_ylabel(r'$|\omega^{(j)}|$', color='b', fontsize=30)
 
     ax2.scatter(x, np.abs(e.imag), s=10, facecolors='none', edgecolors='b')
     ax2.plot(x, np.abs(Lam(x).imag), c='k', ls='--', lw=2)

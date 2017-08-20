@@ -270,6 +270,10 @@ if case == 240:
         x = x + [i]*4
     x = np.array(x)
 
+    e_thresh = 180
+    eip = -np.abs(e.imag)
+    eip[:e_thresh] *= -1
+
     fig = plt.figure(figsize=[8, 6])
     ax = fig.add_subplot(111)
     ax.tick_params(axis='x', which='major', labelsize=25)
@@ -282,15 +286,17 @@ if case == 240:
 
     ax2 = ax.twinx()
     ax2.tick_params(axis='y', which='major', colors='b', labelsize=25)
-    ax2.set_ylabel(r'$|\omega^{(j)}|$', color='b', fontsize=30)
+    ax2.set_ylabel(r'$\omega^{(j)}$', color='b', fontsize=30)
 
-    ax2.scatter(x, np.abs(e.imag), s=10, facecolors='none', edgecolors='b')
-    ax2.plot(x, np.abs(Lam(x).imag), c='k', ls='--', lw=2)
+    ax2.scatter(x, eip, s=10, facecolors='none', edgecolors='b')
+    ax2.plot(x, Lam(x).imag, c='k', ls='--', lw=2)
+    ax2.set_ylim([-1200, 50])
 
     # plot insert
     x = x[:200]
     e = e[:200]
-    axInsert = plt.axes([.22, .4, .3, .3])
+    eip = eip[:200]
+    axInsert = plt.axes([.23, .25, .35, .35])
     axInsert.tick_params(axis='x', which='major', labelsize=18)
     axInsert.set_xlabel(r'$k$', fontsize=25)
     axInsert.tick_params(axis='y', which='major', colors='r', labelsize=18)
@@ -301,8 +307,8 @@ if case == 240:
     axInsert2 = axInsert.twinx()
     axInsert2.tick_params(axis='y', which='major', colors='b', labelsize=18)
 
-    axInsert2.scatter(x, np.abs(e.imag), s=10, facecolors='none', edgecolors='b')
-    axInsert2.plot(x, np.abs(Lam(x).imag), c='k', ls='--', lw=2)
+    axInsert2.scatter(x, eip, s=10, facecolors='none', edgecolors='b')
+    axInsert2.plot(x, Lam(x).imag, c='k', ls='--', lw=2)
 
     # END
     ax2d(fig, ax)
@@ -312,3 +318,50 @@ if case == 240:
     # #ax.plot(x, np.abs(e.imag))
     # ax.plot(x, np.abs(Lam(x).imag), c='b', ls='--', lw=2)
     # ax2d(fig, ax)
+
+
+if case == 250:
+    """
+    test of case 240
+    """
+    req = CQCGLreq()
+    Bi, Gi = 0.8, -0.6
+    
+    a0, wth0, wphi0, err0, e, v = req.read('../../data/cgl/reqBiGiEV.h5', req.toStr(Bi, Gi, 1), flag=2)
+    def Lam(k):
+        return -0.1 - (0.125 + 0.5j) * (2*np.pi/50 * k)**2
+    
+    M = (e.shape[0] - 2 ) / 4
+    x = [0, 0]
+    for i in range(1, M+1):
+        x = x + [i]*4
+    x = np.array(x)
+
+    e_thresh = 180
+    eip = -np.abs(e.imag)
+    eip[:e_thresh] *= -1
+
+    x = x[200:300]
+    e = e[200:300]
+    eip = eip[200:300]
+
+    fig = plt.figure(figsize=[8, 6])
+    ax = fig.add_subplot(111)
+    ax.tick_params(axis='x', which='major', labelsize=25)
+    ax.set_xlabel(r'$k$', fontsize=30)
+    ax.tick_params(axis='y', which='major', colors='r', labelsize=25)
+    ax.set_ylabel(r'$\mu^{(j)}$', color='r', fontsize=30)
+
+    ax.scatter(x, e.real, s=10, facecolors='none', edgecolors='r')
+    ax.plot(x, Lam(x).real, c='k', ls='--', lw=2)
+
+    # ax2 = ax.twinx()
+    # ax2.tick_params(axis='y', which='major', colors='b', labelsize=25)
+    # ax2.set_ylabel(r'$\omega^{(j)}$', color='b', fontsize=30)
+
+    # ax2.scatter(x, eip, s=10, facecolors='none', edgecolors='b')
+    # ax2.plot(x, Lam(x).imag, c='k', ls='--', lw=2)
+    # ax2.set_ylim([-1200, 50])
+
+    # END
+    ax2d(fig, ax)

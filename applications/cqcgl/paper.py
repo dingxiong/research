@@ -747,5 +747,5 @@ if case == 150:
     aE = aa[-1] if aa.ndim == 2 else aa
 
     np.savez_compressed('explosionExample08n06', AampSymmetric=AampSymmetric, AampAsymmetric=AampAsymmetric, 
-                        Tsymmetric=Tsymmetric, Tasymmetric=Tasymmetric)
+                        Tsymmetric=Tsymmetric, Tasymmetric=Tasymmetric, a0RealAsymmetric=a0RealAsymmetric)
     

@@ -743,6 +743,7 @@ if case == 150:
     Tasymmetric = 10
     aa = cgl.intgC(aE, h, Tasymmetric, 10)
     AampAsymmetric = np.abs(cgl.Fourier2Config(aa))
+    a0RealAsymmetric = aa[:, 0].real
     aE = aa[-1] if aa.ndim == 2 else aa
 
     np.savez_compressed('explosionExample08n06', AampSymmetric=AampSymmetric, AampAsymmetric=AampAsymmetric, 

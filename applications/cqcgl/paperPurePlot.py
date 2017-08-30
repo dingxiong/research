@@ -231,7 +231,6 @@ if case == 150:
     fig.tight_layout(pad=0)
     plt.show(block=False)
 
-
 if case == 200:
     """
     print out the eigen exponents of Hopt RPO
@@ -276,39 +275,41 @@ if case == 240:
 
     fig = plt.figure(figsize=[8, 6])
     ax = fig.add_subplot(111)
-    ax.tick_params(axis='x', which='major', labelsize=25)
+    ax.tick_params(axis='x', which='major', labelsize=22)
     ax.set_xlabel(r'$k$', fontsize=30)
-    ax.tick_params(axis='y', which='major', colors='r', labelsize=25)
+    ax.tick_params(axis='y', which='major', colors='r', labelsize=22)
     ax.set_ylabel(r'$\mu^{(j)}$', color='r', fontsize=30)
 
     ax.scatter(x, e.real, s=10, facecolors='none', edgecolors='r')
-    ax.plot(x, Lam(x).real, c='k', ls='--', lw=2)
+    ax.plot(x, Lam(x).real, c='y', ls='--', lw=2)
+    ax.set_ylim([-250, 50])
 
     ax2 = ax.twinx()
-    ax2.tick_params(axis='y', which='major', colors='b', labelsize=25)
+    ax2.tick_params(axis='y', which='major', colors='b', labelsize=22)
     ax2.set_ylabel(r'$\omega^{(j)}$', color='b', fontsize=30)
 
     ax2.scatter(x, eip, s=10, facecolors='none', edgecolors='b')
     ax2.plot(x, Lam(x).imag, c='k', ls='--', lw=2)
     ax2.set_ylim([-1200, 50])
 
-    # plot insert
+    # Plot insert
     x = x[:200]
     e = e[:200]
     eip = eip[:200]
-    axInsert = plt.axes([.23, .25, .35, .35])
+    axInsert = plt.axes([.23, .25, .32, .32])
     axInsert.tick_params(axis='x', which='major', labelsize=18)
     axInsert.set_xlabel(r'$k$', fontsize=25)
     axInsert.tick_params(axis='y', which='major', colors='r', labelsize=18)
 
     axInsert.scatter(x, e.real, s=10, facecolors='none', edgecolors='r')
-    axInsert.plot(x, Lam(x).real, c='k', ls='--', lw=2)
+    axInsert.plot(x, Lam(x).real, c='y', ls='--', lw=3)
 
     axInsert2 = axInsert.twinx()
     axInsert2.tick_params(axis='y', which='major', colors='b', labelsize=18)
 
     axInsert2.scatter(x, eip, s=10, facecolors='none', edgecolors='b')
-    axInsert2.plot(x, Lam(x).imag, c='k', ls='--', lw=2)
+    axInsert2.plot(x, Lam(x).imag, c='k', ls='--', lw=3)
+    axInsert2.set_ylim([-30, 20])
 
     # END
     ax2d(fig, ax)
